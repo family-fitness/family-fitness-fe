@@ -49,5 +49,11 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   },
-  "description": "우리가족 체력키움 프론트엔드 (Next.js PWA)"
+  "description": "우리가족 체력키움 프론트엔드 (Next.js PWA)",
+  "overrides": {
+    "ajv": "^6.12.6"
+  },
+  "engines": {
+    "node": ">=22"
+  }
 }

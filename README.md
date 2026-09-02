@@ -30,7 +30,10 @@
 
 ## 시작하기
 
+Node 22 이상이 필요합니다 (`.nvmrc` 참고).
+
 ```bash
+nvm use          # .nvmrc 의 버전으로 맞춥니다
 npm install
 cp .env.example .env.local
 npm run dev            # http://localhost:3000
@@ -61,6 +64,32 @@ Next 서버 →  http://localhost:8080/api/v1/families/...
 | `npm run format` | 포맷 자동 정리 |
 
 커밋하면 `pre-commit` 훅이 변경 파일만 자동으로 린트·포맷합니다.
+
+## 알아둘 것
+
+### `overrides.ajv`
+
+`package.json` 의 `overrides` 로 ajv 를 6.x 로 고정해뒀습니다.
+
+`eslint@9` 는 ajv 6 API 를 쓰는데 `@hookform/resolvers` 가 ajv 8 을 요구해서, npm 이
+루트에 ajv 6 을 올려놓고 락파일과 어긋난 상태로 남깁니다. 그러면 CI 의 `npm ci` 가
+"lock file is not in sync" 로 실패합니다. `@hookform/resolvers` 는 AJV 리졸버용으로만
+ajv 가 필요하고 우리는 Zod 리졸버만 쓰므로 6 으로 통일해도 문제가 없습니다.
+
+의존성을 추가한 뒤 `npm ci` 가 실패하면 이걸 먼저 의심하세요.
+
+```bash
+rm -rf node_modules package-lock.json && npm install && npm ci
+```
+
+### 한글 경로에서 커밋이 막힐 때
+
+프로젝트 경로에 한글이 들어 있으면 macOS 가 파일명을 NFD 로 저장해서 lint-staged 가
+`is outside repository` 로 실패합니다.
+
+```bash
+git config core.precomposeunicode false
+```
 
 ## 작업 규칙
 
