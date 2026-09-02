@@ -1,0 +1,3 @@
+# GitHub Ruleset 과 똑같은 정규식을 로컬에서 먼저 검사한다.
+# push 하고 나서 막히는 것보다 커밋할 때 막히는 게 낫다.
+node .husky/check-commit-msg.mjs "$1"
