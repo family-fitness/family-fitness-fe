@@ -80,6 +80,24 @@ rm -rf node_modules package-lock.json && npm install && npm ci
 git config core.precomposeunicode false
 ```
 
+## 작업 규칙
+
+폴더 구조, 상태 관리 기준, 브랜치 · 커밋 규칙, 그리고 화면을 만들 때 지켜야 할
+도메인 규칙은 [AGENTS.md](./AGENTS.md) 에 있습니다. 새 화면을 만들기 전에 읽어 주세요.
+Claude Code 같은 AI 도구도 이 파일을 읽고 규칙을 따릅니다.
+
+```bash
+# 1. 이슈를 연다  →  이슈 번호 확인
+# 2. 브랜치를 판다
+git switch -c feature/FE-12-login-page
+
+# 3. 작은 단위로 커밋한다
+git commit -m "feat: 카카오 로그인 버튼 추가"
+
+# 4. develop 으로 PR
+gh pr create --base develop
+```
+
 ## 팀
 
 유범익 (PM · AI/ML) · 이상진 (Frontend · UX · 활동량 연동) · 최비성 (Backend · 데이터)
