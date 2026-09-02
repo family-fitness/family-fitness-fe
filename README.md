@@ -8,24 +8,24 @@
 
 ## 관련 레포
 
-| 레포 | 내용 |
-|---|---|
-| [family-fitness-fe](https://github.com/family-fitness/family-fitness-fe) | **여기.** 프론트엔드 |
+| 레포                                                                     | 내용                                                                     |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| [family-fitness-fe](https://github.com/family-fitness/family-fitness-fe) | **여기.** 프론트엔드                                                     |
 | [family-fitness-be](https://github.com/family-fitness/family-fitness-be) | Kotlin + Spring Boot. 기획 문서(`docs/user-flow.md`, `docs/erd.md`) 원본 |
-| [family-fitness-ai](https://github.com/family-fitness/family-fitness-ai) | Python AI 서비스 (RAG 검색·임베딩) |
+| [family-fitness-ai](https://github.com/family-fitness/family-fitness-ai) | Python AI 서비스 (RAG 검색·임베딩)                                       |
 
 ## 기술 스택
 
-| 영역 | 선택 |
-|---|---|
+| 영역       | 선택                                      |
+| ---------- | ----------------------------------------- |
 | 프레임워크 | Next.js (App Router) · React · TypeScript |
-| 서버 상태 | TanStack Query |
-| 전역 상태 | Zustand |
-| 스타일 | Tailwind CSS |
-| 차트 | Recharts |
-| 폼 | React Hook Form + Zod |
-| 목 서버 | MSW |
-| PWA | Serwist |
+| 서버 상태  | TanStack Query                            |
+| 전역 상태  | Zustand                                   |
+| 스타일     | Tailwind CSS                              |
+| 차트       | Recharts                                  |
+| 폼         | React Hook Form + Zod                     |
+| 목 서버    | MSW                                       |
+| PWA        | Serwist                                   |
 
 Next.js 를 고른 이유는 공공데이터포털 API 가 CORS 를 열어주지 않기 때문입니다.
 브라우저가 직접 호출할 수 없어 중계 서버가 필요한데, Next 의 라우트 핸들러로 프론트 안에서

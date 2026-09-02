@@ -6,6 +6,7 @@ labels: enhancement
 ---
 
 ## 📌 작업 유형
+
 - [ ] 프론트엔드 (Frontend)
 - [ ] 백엔드 (Backend)
 - [ ] AI / 모델
@@ -22,16 +23,19 @@ labels: enhancement
 ---
 
 ## 🎯 구현 방향 (선택)
+
 -
 
 ---
 
 ## 🔗 관련 자료 (선택)
+
 -
 
 ---
 
 ## ✅ 완료 조건 (Definition of Done)
+
 - [ ]
 - [ ]
 
