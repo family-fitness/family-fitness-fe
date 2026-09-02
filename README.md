@@ -60,6 +60,7 @@ Next 서버 →  http://localhost:8080/api/v1/families/...
 | `npm run dev` | 개발 서버 |
 | `npm run build` | 프로덕션 빌드 |
 | `npm run verify` | **CI 와 같은 검사** — 포맷 + 린트 + 타입체크 |
+| `npm run typecheck` | 라우트 타입 생성(`next typegen`) 후 `tsc --noEmit` |
 | `npm run lint:fix` | 린트 자동 수정 |
 | `npm run format` | 포맷 자동 정리 |
 
