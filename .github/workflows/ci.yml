@@ -35,5 +35,8 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Check mock server rules
+        run: npm run check:mocks
+
       - name: Build
         run: npm run build
