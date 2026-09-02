@@ -158,3 +158,69 @@ npx openapi-typescript http://localhost:8080/v3/api-docs -o src/lib/api/schema.t
 아이가 자기 화면에서 자기가 나쁘다는 신호를 본다.
 
 등급은 같은 색상의 명도 단계로만 구분한다.
+
+## 협업 규칙
+
+### 브랜치
+
+| 브랜치      | 역할                                                         |
+| ----------- | ------------------------------------------------------------ |
+| `main`      | 항상 배포 가능한 상태. 운영 반영·태그 관리                   |
+| `develop`   | 다음 릴리스를 위한 통합 브랜치. 기능 브랜치가 모이는 곳      |
+| `feature/*` | 단일 기능 단위. 완료 후 PR 로 develop 에 병합                |
+| `hotfix/*`  | main 에서 발견된 긴급 이슈. 수정 후 main + develop 양쪽 반영 |
+| `release/*` | 배포 전 최종 점검과 버전 태깅                                |
+
+**작업 하나당 브랜치 하나다.** "프론트엔드" 같은 큰 브랜치는 만들지 않는다.
+
+GitHub Ruleset 정규식 — `.husky/check-branch-name.mjs` 가 push 전에 같은 걸 검사한다.
+
+```
+^(feature|hotfix|chore|docs|release)/[\w\-]+
+```
+
+`feat/` 이 아니라 `feature/` 다. 슬래시는 한 번만 쓴다.
+
+```
+feature/FE-12-login-page
+chore/FE-3-update-dependencies
+hotfix/FE-9-fix-null-crash
+release/v1-0-0
+```
+
+### 커밋
+
+**작게, 자주 한다.** 기능 하나 만들면 커밋, 버그 고치면 커밋, 수정 하나 있어도 커밋.
+여러 작업을 모아 한 번에 커밋하지 않는다. 브랜치 하나 안에 작은 커밋 여러 개가 쌓이고,
+그게 PR 하나가 된다.
+
+GitHub Ruleset 정규식 — `.husky/check-commit-msg.mjs` 가 커밋할 때 같은 걸 검사한다.
+
+```
+^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([\w\p{Hangul}\-\.]+\))?(!)?: [\w\p{Hangul} ]+([\s\S]*)
+```
+
+무엇을 했는지가 제목에 있어야 한다.
+
+| 나쁨              | 좋음                                    |
+| ----------------- | --------------------------------------- |
+| `feat: 로그인`    | `feat: 카카오 로그인 버튼 추가`         |
+| `fix: 버그 수정`  | `fix: 측정 폼 선택 항목 검증 누락 수정` |
+| `chore: 업데이트` | `chore(deps): TanStack Query 버전 올림` |
+
+### 작업 순서
+
+1. 이슈를 먼저 연다 (`[FEAT]` / `[BUG]` 템플릿)
+2. 이슈 번호를 넣어 브랜치를 판다 — `feature/FE-<이슈번호>-<설명>`
+3. 작은 단위로 커밋한다. `npm run verify` 가 통과해야 한다
+4. develop 으로 PR 을 연다. PR 템플릿의 `Closes #<이슈번호>` 를 채운다
+5. CI 통과를 확인하고 병합한다
+
+> GitHub 는 **기본 브랜치(main)** 로 병합될 때만 `Closes #` 를 자동 처리한다.
+> develop 으로 병합하는 우리 플로우에서는 이슈가 자동으로 닫히지 않으니 직접 닫는다.
+
+### 커밋 전 확인
+
+```bash
+npm run verify     # format:check + lint + typecheck. CI 와 같은 검사
+```
