@@ -23,5 +23,8 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   },
-  "description": "우리가족 체력키움 프론트엔드"
+  "description": "우리가족 체력키움 프론트엔드",
+  "engines": {
+    "node": ">=22"
+  }
 }
