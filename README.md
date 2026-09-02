@@ -8,28 +8,77 @@
 
 ## 관련 레포
 
-| 레포 | 내용 |
-|---|---|
-| [family-fitness-fe](https://github.com/family-fitness/family-fitness-fe) | **여기.** 프론트엔드 |
+| 레포                                                                     | 내용                                                                     |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| [family-fitness-fe](https://github.com/family-fitness/family-fitness-fe) | **여기.** 프론트엔드                                                     |
 | [family-fitness-be](https://github.com/family-fitness/family-fitness-be) | Kotlin + Spring Boot. 기획 문서(`docs/user-flow.md`, `docs/erd.md`) 원본 |
-| [family-fitness-ai](https://github.com/family-fitness/family-fitness-ai) | Python AI 서비스 (RAG 검색·임베딩) |
+| [family-fitness-ai](https://github.com/family-fitness/family-fitness-ai) | Python AI 서비스 (RAG 검색·임베딩)                                       |
 
 ## 기술 스택
 
-| 영역 | 선택 |
-|---|---|
+| 영역       | 선택                                      |
+| ---------- | ----------------------------------------- |
 | 프레임워크 | Next.js (App Router) · React · TypeScript |
-| 서버 상태 | TanStack Query |
-| 전역 상태 | Zustand |
-| 스타일 | Tailwind CSS |
-| 차트 | Recharts |
-| 폼 | React Hook Form + Zod |
-| 목 서버 | MSW |
-| PWA | Serwist |
+| 서버 상태  | TanStack Query                            |
+| 전역 상태  | Zustand                                   |
+| 스타일     | Tailwind CSS                              |
+| 차트       | Recharts                                  |
+| 폼         | React Hook Form + Zod                     |
+| 목 서버    | MSW                                       |
+| PWA        | Serwist                                   |
 
 Next.js 를 고른 이유는 공공데이터포털 API 가 CORS 를 열어주지 않기 때문입니다.
 브라우저가 직접 호출할 수 없어 중계 서버가 필요한데, Next 의 라우트 핸들러로 프론트 안에서
 해결됩니다. 서비스키도 브라우저에 노출되지 않습니다.
+
+## 시작하기
+
+Node 22 이상이 필요합니다 (`.nvmrc` 참고).
+
+```bash
+nvm use          # .nvmrc 의 버전으로 맞춥니다
+npm install
+npm run dev      # http://localhost:3000
+```
+
+## 명령어
+
+| 명령어             | 하는 일                                      |
+| ------------------ | -------------------------------------------- |
+| `npm run dev`      | 개발 서버                                    |
+| `npm run build`    | 프로덕션 빌드                                |
+| `npm run verify`   | **CI 와 같은 검사** — 포맷 + 린트 + 타입체크 |
+| `npm run lint:fix` | 린트 자동 수정                               |
+| `npm run format`   | 포맷 자동 정리                               |
+
+커밋하면 `pre-commit` 훅이 변경된 파일만 자동으로 린트 · 포맷합니다.
+커밋 메시지와 브랜치 이름은 GitHub Ruleset 과 같은 규칙으로 로컬에서 먼저 검사합니다.
+
+## 알아둘 것
+
+### `overrides.ajv`
+
+`package.json` 의 `overrides` 로 ajv 를 6.x 에 고정해뒀습니다.
+
+`eslint@9` 는 ajv 6 API 를 쓰는데 `@hookform/resolvers` 가 ajv 8 을 요구해서, npm 이
+루트에 ajv 6 을 올려놓고 락파일과 어긋난 상태로 남깁니다. 그러면 CI 의 `npm ci` 가
+"lock file is not in sync" 로 실패합니다. `@hookform/resolvers` 는 AJV 리졸버용으로만
+ajv 가 필요하고 우리는 Zod 리졸버만 쓰므로 6 으로 통일해도 문제가 없습니다.
+
+의존성을 추가한 뒤 `npm ci` 가 실패하면 이걸 먼저 의심하세요.
+
+```bash
+rm -rf node_modules package-lock.json && npm install && npm ci
+```
+
+### 한글 경로에서 커밋이 막힐 때
+
+프로젝트 경로에 한글이 들어 있으면 macOS 가 파일명을 NFD 로 저장해서 lint-staged 가
+`is outside repository` 로 실패합니다.
+
+```bash
+git config core.precomposeunicode false
+```
 
 ## 팀
 
