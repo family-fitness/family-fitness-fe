@@ -380,8 +380,10 @@ export function useToggleFavorite(profileId: Uuid) {
 
 /**
  * 근처 공공체육시설 · 가족 강좌.
- * 공공데이터포털 API 는 CORS 를 열어주지 않으므로 Next 의 Route Handler 가 프록시한다.
- * 그래서 이 경로만 /api/v1 이 아니라 /api/facilities 다.
+ *
+ * 공공데이터포털 API 는 CORS 를 열어주지 않아 브라우저가 직접 부를 수 없다.
+ * 그 중계는 백엔드가 한다 — user-flow.md 의 API 목록에 GET /facilities 로 잡혀 있다.
+ * 프론트는 다른 API 와 똑같이 /api/v1 아래로 부른다.
  */
 export function useFacilities(query: FacilityQuery) {
   const search = new URLSearchParams({
@@ -392,10 +394,6 @@ export function useFacilities(query: FacilityQuery) {
 
   return useQuery({
     queryKey: qk.facilities(query),
-    queryFn: async () => {
-      const res = await fetch(`/api/facilities?${search}`);
-      if (!res.ok) throw new Error("근처 시설을 불러오지 못했어요");
-      return res.json() as Promise<Facility[]>;
-    },
+    queryFn: () => api.get<Facility[]>(`/facilities?${search}`),
   });
 }

@@ -469,8 +469,7 @@ const videos = [
     return new HttpResponse(null, { status: 204 });
   }),
 
-  // 공공데이터포털 프록시는 /api/v1 이 아니라 Next 의 Route Handler 다
-  http.get("/api/facilities", () => HttpResponse.json(seed.facilities)),
+  http.get(`${BASE}/facilities`, () => HttpResponse.json(seed.facilities)),
 ];
 
 export const handlers = [...identity, ...fitness, ...coaching, ...missions, ...videos];
