@@ -55,5 +55,10 @@
   },
   "overrides": {
     "ajv": "^6.12.6"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }
