@@ -1,26 +1,108 @@
 @import "tailwindcss";
+/* 한글 본문 서체. 동적 서브셋이라 필요한 글자만 내려받는다 */
+@import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/**
+ * 디자인 토큰.
+ *
+ * 이 앱의 모든 화면이 "우리 아이가 지금 어디쯤 있나"다. 백분위 · 등급 · 예측 곡선이
+ * 전부 축 위의 위치라서, 눈금을 시각 언어의 중심에 뒀다.
+ *
+ * 색을 고를 때 지킨 것
+ *   - 등급을 경고색으로 칠하지 않는다. 낮은 등급이 빨강이면 아이가 자기 화면에서
+ *     자기가 나쁘다는 신호를 본다. 등급은 같은 색상의 명도 단계로만 구분한다
+ *   - accent(mark)는 "지금 여기"를 가리키는 데만 쓴다. 여기저기 뿌리면 눈금이 안 읽힌다
+ */
+@theme {
+  /* 바탕과 글자 */
+  --color-paper: #f6f7f4; /* 배경 */
+  --color-surface: #ffffff; /* 카드 */
+  --color-ink: #14211c; /* 본문 · 눈금선 */
+  --color-mute: #6b7b72; /* 보조 텍스트 */
+  --color-faint: #9aa8a0; /* 더 약한 텍스트 */
+  --color-line: #e4e9e3; /* 구분선 · 등급 밴드 */
+
+  /* 주 색 — 성장. 서비스 이름이 "체력키움"이다 */
+  --color-grow-50: #eef6f1;
+  --color-grow-100: #d3e8dc;
+  --color-grow-200: #a7d1bb;
+  --color-grow-300: #6fb494;
+  --color-grow-400: #3d9270;
+  --color-grow: #186b48;
+  --color-grow-700: #12543a;
+
+  /* 지금 여기를 가리키는 색. 눈금 위 마커에만 쓴다 */
+  --color-mark: #ff5c2b;
+  --color-mark-soft: #ffe6dd;
+
+  /* 서체 */
+  --font-sans: "Pretendard Variable", Pretendard, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  /* 모서리 — 앱처럼 보이려면 크게 */
+  --radius-card: 1rem;
+  --radius-sheet: 1.5rem;
+
+  /* 앱 셸 */
+  --spacing-tabbar: 3.75rem;
+  --width-phone: 26.875rem; /* 430px. iPhone Pro Max 너비 */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
+/* 다크 모드 — 밝기를 뒤집되 역할은 그대로 둔다 */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  @theme {
+    --color-paper: #0f1614;
+    --color-surface: #17211d;
+    --color-ink: #e8efea;
+    --color-mute: #93a49b;
+    --color-faint: #6b7b72;
+    --color-line: #26332d;
+
+    --color-grow-50: #12251c;
+    --color-grow-100: #16342553;
+    --color-grow-200: #1e5c40;
+    --color-grow-300: #2f8459;
+    --color-grow-400: #4fa87a;
+    --color-grow: #6fc296;
+    --color-grow-700: #9ad9b6;
+
+    --color-mark: #ff7a52;
+    --color-mark-soft: #3a1f16;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    /* 앱처럼 보이려면 당겨서 새로고침이나 고무줄 스크롤이 없어야 한다 */
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    font-family: var(--font-sans);
+  }
+
+  /* 숫자는 자릿수가 흔들리면 눈금처럼 안 읽힌다 */
+  .tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 키보드 사용자가 지금 어디 있는지 항상 보이게 */
+  :focus-visible {
+    outline: 2px solid var(--color-grow);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
