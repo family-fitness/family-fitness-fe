@@ -114,19 +114,29 @@ export function UnmeasuredNote({ members }: { members: FitnessMapMember[] }) {
   );
 }
 
-/** 가족 전체를 한 줄로 요약. 눈금 위에 붙인다 */
+/**
+ * 눈금 위에 붙는 한 줄.
+ *
+ * 백분위를 사람끼리 평균내지 않는다. 41세 여성의 62 와 9세 남아의 59 는 각자 다른
+ * 규준에서 나온 값이라 평균이 뜻하는 게 없다. 대신 셀 수 있는 사실만 말한다.
+ */
 export function FamilySummary({ members }: { members: FitnessMapMember[] }) {
-  const measured = members.filter((m) => m.overallPercentile !== null);
+  const measurable = members.filter((m) => m.profile.measurable);
+  const measured = measurable.filter((m) => m.overallPercentile !== null);
   if (measured.length === 0) return null;
 
-  const average = Math.round(
-    measured.reduce((sum, m) => sum + (m.overallPercentile ?? 0), 0) / measured.length,
-  );
+  const aboveAverage = measured.filter((m) => (m.overallPercentile ?? 0) >= 50).length;
 
   return (
-    <div className="flex items-baseline gap-2">
-      <Badge tone="grow">가족 평균 상위 {Math.max(1, 100 - average)}%</Badge>
-      <span className="text-faint text-xs">{measured.length}명 측정 기준</span>
+    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+      <Badge tone="grow">
+        {measurable.length}명 중 {measured.length}명 측정
+      </Badge>
+      <span className="text-mute text-xs">
+        {aboveAverage === measured.length
+          ? "모두 또래 평균 위에 있어요"
+          : `${aboveAverage}명이 또래 평균 위에 있어요`}
+      </span>
     </div>
   );
 }

@@ -48,9 +48,15 @@
   --width-phone: 26.875rem; /* 430px. iPhone Pro Max 너비 */
 }
 
-/* 다크 모드 — 밝기를 뒤집되 역할은 그대로 둔다 */
+/**
+ * 다크 모드.
+ *
+ * Tailwind v4 의 @theme 는 최상위에서만 쓸 수 있다. @media 안에 중첩하면
+ * 조용히 무시되거나 값이 항상 적용돼 버린다. 그래서 다크에서는 @theme 가 만들어 둔
+ * CSS 변수를 :root 에서 덮어쓴다. 밝기만 뒤집고 역할은 그대로 둔다.
+ */
 @media (prefers-color-scheme: dark) {
-  @theme {
+  :root {
     --color-paper: #0f1614;
     --color-surface: #17211d;
     --color-ink: #e8efea;
@@ -59,7 +65,7 @@
     --color-line: #26332d;
 
     --color-grow-50: #12251c;
-    --color-grow-100: #16342553;
+    --color-grow-100: #163425;
     --color-grow-200: #1e5c40;
     --color-grow-300: #2f8459;
     --color-grow-400: #4fa87a;
