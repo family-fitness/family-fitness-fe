@@ -33,6 +33,11 @@ const post = (p: string, body?: unknown) =>
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
 
+type MockMission = {
+  id: string;
+  participants: { profileId: string; status: string; verifiedBy: string | null }[];
+};
+
 let failed = 0;
 function check(name: string, ok: boolean, detail = "") {
   console.log(`${ok ? "통과" : "실패"}  ${name}${detail ? ` — ${detail}` : ""}`);
@@ -42,7 +47,7 @@ function check(name: string, ok: boolean, detail = "") {
 const RUN_ID = "66666666-6666-4666-8666-666666666601";
 
 // 1. 승인 전에는 미션이 0건이다
-let missions = (await (await get(`/families/${FAMILY_ID}/missions`)).json()) as unknown[];
+let missions = (await (await get(`/families/${FAMILY_ID}/missions`)).json()) as MockMission[];
 check("승인 전 미션 0건", missions.length === 0, `실제 ${missions.length}건`);
 
 // 2. 자녀 계정은 승인할 수 없다
@@ -56,7 +61,7 @@ check(
 );
 
 // 3. 승인 실패했으니 미션은 여전히 0건이다
-missions = (await (await get(`/families/${FAMILY_ID}/missions`)).json()) as unknown[];
+missions = (await (await get(`/families/${FAMILY_ID}/missions`)).json()) as MockMission[];
 check("차단 후에도 미션 0건", missions.length === 0, `실제 ${missions.length}건`);
 
 // 4. 보호자가 승인하면 미션이 생긴다
@@ -69,10 +74,7 @@ check(
   `${res.status} ${run.status}`,
 );
 
-missions = (await (await get(`/families/${FAMILY_ID}/missions`)).json()) as {
-  id: string;
-  participants: { profileId: string; status: string; verifiedBy: string | null }[];
-}[];
+missions = (await (await get(`/families/${FAMILY_ID}/missions`)).json()) as MockMission[];
 check("승인 후 미션 생성", missions.length === 3, `실제 ${missions.length}건`);
 
 // 5. 중복 승인은 막힌다
@@ -111,7 +113,7 @@ check(
 );
 
 // 8~10. 미션 진행 판정
-const target = missions[0];
+const target: MockMission = missions[0];
 const targetProfile = target.participants[0].profileId;
 
 res = await post(`/missions/${target.id}/progress`, {
@@ -119,7 +121,7 @@ res = await post(`/missions/${target.id}/progress`, {
   verifiedBy: "VIDEO_PROGRESS",
   progressPercent: 62,
 });
-let mission = (await res.json()) as (typeof missions)[number];
+let mission = (await res.json()) as MockMission;
 let p = mission.participants.find((x) => x.profileId === targetProfile)!;
 check("영상 62퍼센트는 미완료", p.status === "IN_PROGRESS", p.status);
 
@@ -128,7 +130,7 @@ res = await post(`/missions/${target.id}/progress`, {
   verifiedBy: "VIDEO_PROGRESS",
   progressPercent: 94,
 });
-mission = (await res.json()) as (typeof missions)[number];
+mission = (await res.json()) as MockMission;
 p = mission.participants.find((x) => x.profileId === targetProfile)!;
 check(
   "영상 94퍼센트는 완료",
@@ -136,13 +138,13 @@ check(
   `${p.status} ${p.verifiedBy}`,
 );
 
-const second = missions[1];
+const second: MockMission = missions[1];
 res = await post(`/missions/${second.id}/progress`, {
   profileId: second.participants[0].profileId,
   verifiedBy: "SELF_REPORT",
   steps: 9000,
 });
-mission = (await res.json()) as (typeof missions)[number];
+mission = (await res.json()) as MockMission;
 p = mission.participants[0];
 check(
   "걸음수 자기신고는 미완료 유지",
