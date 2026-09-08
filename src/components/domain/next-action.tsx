@@ -34,13 +34,13 @@ export function NextAction({
     <Link
       href={action.href}
       className={cn(
-        "rounded-card flex items-center gap-3 px-4 py-3.5",
-        action.urgent ? "bg-mark-soft text-mark" : "bg-grow-50 text-grow",
+        "press rounded-card flex items-center gap-3 px-4 py-3.5",
+        action.urgent ? "bg-track text-white" : "bg-field text-white",
       )}
     >
       <action.icon className="size-5 shrink-0" aria-hidden />
-      <span className="flex-1 text-sm font-medium">{action.label}</span>
-      <ChevronRight className="size-4 shrink-0 opacity-60" aria-hidden />
+      <span className="flex-1 text-sm font-bold">{action.label}</span>
+      <ChevronRight className="size-4 shrink-0 opacity-70" aria-hidden />
     </Link>
   );
 }
@@ -57,7 +57,6 @@ function pickAction(
   missions: Mission[] | undefined,
   members: FitnessMapMember[],
 ): Action | null {
-  // 1. 승인 대기. 여기서 막히면 미션이 하나도 안 생긴다
   if (coachRun?.status === "AWAITING_APPROVAL") {
     return {
       href: "/coach/weekly",
@@ -67,13 +66,11 @@ function pickAction(
     };
   }
 
-  // 2. 아직 아무도 안 끝낸 미션
   const pending = missions?.find((m) => m.participants.some((p) => p.status !== "DONE"));
   if (pending) {
     return { href: `/missions/${pending.id}`, label: `${pending.title} 하러 가기`, icon: Play };
   }
 
-  // 3. 측정할 수 있는데 아직 안 한 사람
   const unmeasured = members.find(
     (m) => m.profile.measurable && m.headline === null && m.profile.userId !== null,
   );

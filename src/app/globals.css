@@ -2,103 +2,285 @@
 /* 한글 본문 서체. 동적 서브셋이라 필요한 글자만 내려받는다 */
 @import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 
-/**
- * 디자인 토큰.
- *
- * 이 앱의 모든 화면이 "우리 아이가 지금 어디쯤 있나"다. 백분위 · 등급 · 예측 곡선이
- * 전부 축 위의 위치라서, 눈금을 시각 언어의 중심에 뒀다.
- *
- * 색을 고를 때 지킨 것
- *   - 등급을 경고색으로 칠하지 않는다. 낮은 등급이 빨강이면 아이가 자기 화면에서
- *     자기가 나쁘다는 신호를 본다. 등급은 같은 색상의 명도 단계로만 구분한다
- *   - accent(mark)는 "지금 여기"를 가리키는 데만 쓴다. 여기저기 뿌리면 눈금이 안 읽힌다
- */
+/* ─────────────────────────────────────────────
+   우리가족 체력키움
+   컨셉: 학교 운동장 · 우레탄 트랙.
+   백분위는 곧 "레인 위 어디쯤"이다. 측정 안 한 사람은 아직 출발선에 서 있고,
+   기록은 전광판에 뜬다. 아이도 부모도 아는 공간이라 설명이 필요 없다.
+   ───────────────────────────────────────────── */
 @theme {
-  /* 바탕과 글자 */
-  --color-paper: #f6f7f4; /* 배경 */
-  --color-surface: #ffffff; /* 카드 */
-  --color-ink: #14211c; /* 본문 · 눈금선 */
-  --color-mute: #6b7b72; /* 보조 텍스트 */
-  --color-faint: #9aa8a0; /* 더 약한 텍스트 */
-  --color-line: #e4e9e3; /* 구분선 · 등급 밴드 */
+  /* 트랙 */
+  --color-track: #b4523a; /* 우레탄 트랙 적갈색 (주 색) */
+  --color-track-deep: #8f3e2b;
+  --color-track-soft: #e6c3b7;
+  --color-lane: #ffffff; /* 레인 라인 */
 
-  /* 주 색 — 성장. 서비스 이름이 "체력키움"이다 */
-  --color-grow-50: #eef6f1;
-  --color-grow-100: #d3e8dc;
-  --color-grow-200: #a7d1bb;
-  --color-grow-300: #6fb494;
-  --color-grow-400: #3d9270;
-  --color-grow: #186b48;
-  --color-grow-700: #12543a;
+  /* 잔디 — 성취 · 완료 */
+  --color-field: #3f7a55;
+  --color-field-soft: #e4f0e8;
 
-  /* 지금 여기를 가리키는 색. 눈금 위 마커에만 쓴다 */
-  --color-mark: #ff5c2b;
-  --color-mark-soft: #ffe6dd;
+  /* 전광판 — 숫자가 뜨는 자리 */
+  --color-board: #14232c;
+  --color-board-lit: #ffd24a;
+
+  /* 종이/글자 */
+  --color-paper: #f3f5f4; /* 화면 바깥 · 앱 배경 */
+  --color-card: #ffffff;
+  --color-ink: #1c2b33; /* 남색 먹 */
+  --color-ink-soft: #6b7f89;
+  --color-faint: #9dadb5;
+  --color-line: #dfe6e5;
 
   /* 서체 */
   --font-sans: "Pretendard Variable", Pretendard, system-ui, sans-serif;
+  --font-board: var(--font-bebas), "Pretendard Variable", sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 
-  /* 모서리 — 앱처럼 보이려면 크게 */
-  --radius-card: 1rem;
-  --radius-sheet: 1.5rem;
-
-  /* 앱 셸 */
-  --spacing-tabbar: 3.75rem;
-  --width-phone: 26.875rem; /* 430px. iPhone Pro Max 너비 */
+  --radius-card: 14px;
+  --radius-sheet: 22px;
+  --spacing-tabbar: 4.25rem;
+  --width-phone: 30rem;
 }
 
-/**
- * 다크 모드.
- *
- * Tailwind v4 의 @theme 는 최상위에서만 쓸 수 있다. @media 안에 중첩하면
- * 조용히 무시되거나 값이 항상 적용돼 버린다. 그래서 다크에서는 @theme 가 만들어 둔
- * CSS 변수를 :root 에서 덮어쓴다. 밝기만 뒤집고 역할은 그대로 둔다.
- */
+/* 다크 모드.
+   Tailwind v4 의 @theme 는 최상위에서만 쓸 수 있다. @media 안에 중첩하면
+   다크 값이 항상 적용돼 라이트 모드가 사라진다. 그래서 변수를 :root 에서 덮어쓴다. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-paper: #0f1614;
-    --color-surface: #17211d;
-    --color-ink: #e8efea;
-    --color-mute: #93a49b;
-    --color-faint: #6b7b72;
-    --color-line: #26332d;
+    --color-track: #d4694f;
+    --color-track-deep: #b4523a;
+    --color-track-soft: #3d251d;
+    --color-lane: #e8eeec;
 
-    --color-grow-50: #12251c;
-    --color-grow-100: #163425;
-    --color-grow-200: #1e5c40;
-    --color-grow-300: #2f8459;
-    --color-grow-400: #4fa87a;
-    --color-grow: #6fc296;
-    --color-grow-700: #9ad9b6;
+    --color-field: #5c9c72;
+    --color-field-soft: #17281e;
 
-    --color-mark: #ff7a52;
-    --color-mark-soft: #3a1f16;
+    --color-board: #0c161c;
+    --color-board-lit: #ffd24a;
+
+    --color-paper: #0e1a20;
+    --color-card: #16242c;
+    --color-ink: #e6eef1;
+    --color-ink-soft: #93a7b0;
+    --color-faint: #64787f;
+    --color-line: #24363f;
   }
+}
+
+html {
+  /* 데스크톱 거터: 트랙 바깥에서 안쪽을 내려다본 느낌 */
+  background-color: #a34a34;
+  background-image:
+    radial-gradient(120% 90% at 50% 0%, #c25f45 0%, #a34a34 55%, #8a3d2a 100%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 84px);
+  background-attachment: fixed;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* ── 앱 프레임 ── */
+/* 데스크톱에서 폰 화면처럼 보이게 가운데로 좁히고 양옆은 트랙이 보이게 둔다 */
+.app-frame {
+  max-width: var(--width-phone);
+  margin: 0 auto;
+  min-height: 100dvh;
+  background: var(--color-paper);
+  box-shadow: 0 0 48px -18px rgba(60, 20, 10, 0.45);
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+.app-main {
+  padding-bottom: calc(var(--spacing-tabbar) + env(safe-area-inset-bottom) + 1.25rem);
+}
+
+/* ── 타이포 ── */
+/* 전광판 숫자. 기록이 뜨는 자리에만 쓴다 */
+.board-num {
+  font-family: var(--font-board);
+  letter-spacing: 0.02em;
+  line-height: 0.9;
+}
+.tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ── 레인 ── */
+/* 트랙의 한 줄. 구성원 하나가 레인 하나를 가진다 */
+.lane {
+  position: relative;
+  background: var(--color-track-soft);
+  overflow: hidden;
+}
+/* 레인 사이를 가르는 흰 실선. 트랙의 레인 라인이다 */
+.lane + .lane {
+  border-top: 2px solid var(--color-lane);
+}
+.track-body {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid var(--color-lane);
+  position: relative;
+}
+/* 또래 평균 — 트랙을 세로로 가로지르는 점선 */
+.avg-line {
+  position: absolute;
+  inset-block: 0;
+  left: 50%;
+  width: 2px;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.95) 0 6px,
+    transparent 6px 11px
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+/* 출발선 — 아직 측정하지 않은 사람이 서 있는 자리 */
+.start-line {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 8px;
+  background: repeating-linear-gradient(-45deg, var(--color-lane) 0 3px, transparent 3px 6px);
+}
+/* 결승 테이프 — 목표를 넘었을 때 */
+.finish-tape {
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  width: 10px;
+  background: repeating-linear-gradient(0deg, var(--color-ink) 0 5px, var(--color-lane) 5px 10px);
+  opacity: 0.75;
+}
+
+/* ── 전광판 ── */
+.board {
+  background: var(--color-board);
+  color: var(--color-board-lit);
+  border-radius: 12px;
+  /* 전광판 격자 — 아주 은은하게 */
+  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 6px 6px;
+}
+
+/* ── 카드 ── */
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-card);
+}
+
+/* ── 버튼 터치 피드백 ── */
+.press {
+  transition:
+    transform 0.08s ease,
+    background 0.15s ease;
+  touch-action: manipulation;
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* ── 모션 ── */
+@keyframes shimmer {
+  0% {
+    background-position: -180% 0;
+  }
+  100% {
+    background-position: 180% 0;
+  }
+}
+.skeleton {
+  border-radius: 8px;
+  background: linear-gradient(100deg, #e6ecea 30%, #f2f6f5 50%, #e6ecea 70%);
+  background-size: 220% 100%;
+  animation: shimmer 1.25s ease-in-out infinite;
+}
+
+/* 진입 페이드업 */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 0.4s ease-out both;
+}
+
+/* 레인을 달려와 자기 기록에 멈춘다 */
+@keyframes runIn {
+  from {
+    transform: translateX(-14px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.run-in {
+  animation: runIn 0.55s cubic-bezier(0.16, 0.84, 0.3, 1) both;
+}
+
+/* 전광판 숫자가 켜진다 */
+@keyframes boardOn {
+  0% {
+    opacity: 0.15;
+  }
+  35% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.board-on {
+  animation: boardOn 0.7s ease-out both;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.pop {
+  animation: pop 0.28s ease-out;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
 }
 
 @layer base {
-  html {
-    background: var(--color-paper);
-    color: var(--color-ink);
-    /* 앱처럼 보이려면 당겨서 새로고침이나 고무줄 스크롤이 없어야 한다 */
-    overscroll-behavior: none;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  body {
-    font-family: var(--font-sans);
-  }
-
-  /* 숫자는 자릿수가 흔들리면 눈금처럼 안 읽힌다 */
-  .tabular {
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* 키보드 사용자가 지금 어디 있는지 항상 보이게 */
   :focus-visible {
-    outline: 2px solid var(--color-grow);
+    outline: 2px solid var(--color-track);
     outline-offset: 2px;
   }
 
