@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Mission, Profile } from "@/lib/api/types";
 import { avatarFor } from "@/lib/avatar";
 import { Avatar, Illustration } from "@/components/ui/illustration";
+import { SpriteField } from "@/components/scene/sprite-field";
 
 /**
  * 아이 화면.
@@ -39,7 +40,19 @@ export function KidHome({
   ).length;
 
   return (
-    <div className="px-5 pt-2 pb-6">
+    <div className="relative px-5 pt-2 pb-6">
+      {/* 배경에 조각이 천천히 떠다닌다.
+          아이 화면은 부모 화면보다 놀이처럼 보여도 된다.
+          CSS 로 수십 개를 움직이면 프레임이 떨어져서 WebGL 로 그린다. */}
+      <SpriteField
+        assets={["deco/deco-sparkle", "deco/deco-cloud-1", "deco/deco-cloud-2"]}
+        count={9}
+        speed={0.55}
+        opacity={0.14}
+        scale={[14, 30]}
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-56"
+      />
+
       {/* 인사 — 이름을 크게. 아이는 자기 이름을 먼저 찾는다 */}
       <div className="flex items-center gap-3">
         <Avatar parts={avatarFor(profile)} size={72} />
