@@ -1,12 +1,11 @@
 "use client";
 
-import { Users } from "lucide-react";
-
 import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
+import { Section } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { MemberCardSkeleton, Skeleton } from "@/components/ui/skeleton";
-import { MemberCard } from "@/components/domain/member-card";
+import { MemberRowSkeleton, Skeleton } from "@/components/ui/skeleton";
+import { MemberRow } from "@/components/domain/member-row";
 import { NextAction } from "@/components/domain/next-action";
 import { useFitnessMap, useLatestCoachRun, useMissions } from "@/lib/api/queries";
 import { FAMILY_ID } from "@/mocks/data";
@@ -18,7 +17,7 @@ import { FAMILY_ID } from "@/mocks/data";
  *
  * 위계
  *   1. 지금 할 일 한 줄 — 사람이 행동으로 넘어가는 자리
- *   2. 구성원 카드 — 기록이 주인공이라 숫자를 크게 띄운다
+ *   2. 구성원 목록 — 기록이 주인공이라 숫자를 크게 띄운다
  */
 export default function HomePage() {
   // TODO 인증이 붙으면 로그인한 계정의 가족 id 로 바꾼다
@@ -35,7 +34,7 @@ export default function HomePage() {
       <>
         <PageHeader eyebrow="FAMILY" title="우리 가족" />
         <Screen>
-          <EmptyState icon={Users} title="기록을 불러오지 못했어요" description={error.message} />
+          <EmptyState scene="error" title="기록을 불러오지 못했어요" description={error.message} />
         </Screen>
       </>
     );
@@ -67,25 +66,26 @@ export default function HomePage() {
         }
       />
 
-      <Screen className="space-y-5">
+      <Screen className="space-y-6">
         <NextAction coachRun={coachRun} missions={missions} members={members} />
 
-        <section className="space-y-2.5">
-          <div className="section-head">
-            <h2>구성원</h2>
-          </div>
-          <ul className="space-y-2.5">
-            {members.map((member, index) => (
-              <li
-                key={member.profile.id}
-                className="rise"
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                <MemberCard member={member} delay={index * 0.05} />
-              </li>
-            ))}
-          </ul>
-        </section>
+        {measured.length === 0 ? (
+          <EmptyState
+            scene="first-measure"
+            title="첫 측정을 등록해 보세요"
+            description="집에서 잴 수 있는 항목부터 시작하면 됩니다. 몇 개만 넣어도 또래 중 어디쯤인지 알 수 있어요."
+          />
+        ) : (
+          <Section title="구성원">
+            <ul className="divide-rows">
+              {members.map((member, index) => (
+                <li key={member.profile.id}>
+                  <MemberRow member={member} delay={index * 0.06} />
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
 
         <p className="text-faint px-1 text-[0.7rem] leading-relaxed">
           숫자는 또래 100명 중 자기 자리예요. 국민체력100 규준에 따라 나이와 성별이 같은 사람들과
@@ -100,13 +100,13 @@ function HomeSkeleton() {
   return (
     <>
       <PageHeader eyebrow="FAMILY" title="우리 가족" />
-      <Screen className="space-y-5">
+      <Screen className="space-y-6">
         <Skeleton className="rounded-card h-14" />
-        <div className="space-y-2.5">
-          <Skeleton className="h-6 w-20" />
-          <MemberCardSkeleton />
-          <MemberCardSkeleton />
-          <MemberCardSkeleton />
+        <div>
+          <Skeleton className="mb-2 h-6 w-20" />
+          <MemberRowSkeleton />
+          <MemberRowSkeleton />
+          <MemberRowSkeleton />
         </div>
       </Screen>
     </>

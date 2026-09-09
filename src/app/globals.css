@@ -7,65 +7,81 @@
    타이포가 주인공이고, 색은 셋뿐이고, 선으로 구획을 나눈다.
    숫자는 전광판 글자로 크게 띄운다 — 기록이 주인공인 서비스라서.
    ───────────────────────────────────────────── */
+/* ─────────────────────────────────────────────
+   우리가족 체력키움 — 색 · 서체
+
+   색은 국민체력100 공식 사이트에서 그대로 가져왔다.
+   공공데이터 기반 서비스라 그 기관이 쓰는 색을 쓰는 게 맞고,
+   AI 가 기본값으로 뱉는 보라·네온 계열을 피하는 방법이기도 하다.
+
+     흰 배경 #FFFFFF · 연회색 #F4F4F4 · 본문 #333333
+     공식 파랑 #2784E6 (로그인 버튼) · 로고 남색 #1B2574
+
+   쓰지 않는 것 — 그라데이션, 네온, 보라, 채도 높은 형광색.
+   ───────────────────────────────────────────── */
 @theme {
   /* 바탕 · 글자 */
-  --color-paper: #f5f4f0; /* 살짝 따뜻한 오프화이트 */
-  --color-card: #ffffff;
-  --color-ink: #16202b; /* 딥 네이비 먹 */
-  --color-ink-soft: #6a7683;
-  --color-faint: #9aa5b1;
-  --color-line: #dcdcd5;
-  --color-rule: #16202b; /* 굵은 구획선 */
+  --color-paper: #ffffff; /* 배경은 흰색으로 통일 */
+  --color-sub: #f4f4f4; /* 구획을 나눌 때만 쓰는 연회색 */
+  --color-ink: #22262b;
+  --color-ink-soft: #667079;
+  --color-faint: #98a1aa;
+  --color-line: #e3e6ea;
+  --color-rule: #1b2574;
 
-  /* 포인트 — 기록 · 행동 */
-  --color-signal: #2f5fe0; /* 코발트 블루 */
-  --color-signal-deep: #1f45ab;
-  --color-signal-soft: #e6ecfc;
+  /* 포인트 — 국민체력100 공식 */
+  --color-signal: #2784e6;
+  --color-signal-deep: #1b2574;
+  --color-signal-soft: #eaf3fd;
 
-  /* 전광판 */
-  --color-board: #16202b;
-  --color-board-lit: #ffd54a;
+  /* 기록 강조 — 마스코트 노랑 */
+  --color-mark: #ffb800;
+  --color-mark-soft: #fff5dc;
 
-  /* 완료 · 성취 */
-  --color-done: #1f7a4d;
-  --color-done-soft: #e2f2ea;
+  /* 완료 */
+  --color-done: #1f8a5f;
+  --color-done-soft: #e6f4ee;
 
   /* 서체 */
   --font-sans: "Pretendard Variable", Pretendard, system-ui, sans-serif;
   --font-board: var(--font-bebas), "Pretendard Variable", sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 
-  --radius-card: 14px;
+  --radius-card: 16px;
   --spacing-tabbar: 4.25rem;
   --width-phone: 30rem;
 }
 
+/* 다크 모드.
+   Tailwind v4 의 @theme 는 최상위에서만 쓸 수 있다. @media 안에 중첩하면
+   다크 값이 항상 적용돼 라이트 모드가 사라진다. 변수를 :root 에서 덮어쓴다.
+
+   밝기를 뒤집되 파랑은 어두운 바탕에서 눈이 아프지 않게 조금 밝히고 채도를 낮춘다. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-paper: #10161d;
-    --color-card: #19222c;
-    --color-ink: #eef1f4;
-    --color-ink-soft: #9aa8b5;
-    --color-faint: #6b7986;
-    --color-line: #2a3440;
-    --color-rule: #eef1f4;
+    --color-paper: #14181d;
+    --color-sub: #1c2229;
+    --color-ink: #e9edf1;
+    --color-ink-soft: #9aa5b0;
+    --color-faint: #6d7883;
+    --color-line: #2a323b;
+    --color-rule: #9db8dd;
 
-    --color-signal: #6d92f5;
-    --color-signal-deep: #9db3f8;
-    --color-signal-soft: #1b2740;
+    --color-signal: #5aa4ee;
+    --color-signal-deep: #a7c8f0;
+    --color-signal-soft: #16283c;
 
-    --color-board: #0a1017;
-    --color-board-lit: #ffd54a;
+    --color-mark: #ffc633;
+    --color-mark-soft: #2e2513;
 
-    --color-done: #4fb383;
-    --color-done-soft: #16281f;
+    --color-done: #4bb389;
+    --color-done-soft: #14291f;
   }
 }
 
 html {
-  /* 데스크톱 거터 */
-  background-color: #1b2530;
-  background-image: radial-gradient(120% 90% at 50% 0%, #2a3846 0%, #1b2530 60%, #131b23 100%);
+  /* 데스크톱 거터. 앱 화면과 대비되게 한 단계 어둡게만 둔다 */
+  background-color: #dfe4ea;
   background-attachment: fixed;
   overflow-x: hidden;
   overscroll-behavior-y: none;
@@ -84,7 +100,7 @@ body {
   margin: 0 auto;
   min-height: 100dvh;
   background: var(--color-paper);
-  box-shadow: 0 0 60px -20px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 40px -14px rgba(27, 37, 116, 0.25);
   padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
@@ -167,21 +183,14 @@ body {
 }
 
 /* ── 카드 ── */
-.card {
-  background: var(--color-card);
-  border: 1.5px solid var(--color-line);
-  border-radius: var(--radius-card);
+/* 배경이 흰색이라 카드에 흰 배경을 또 깔 수 없다.
+   구획은 선으로만 나눈다. 균일한 라운드 카드를 나열하는 건
+   AI 가 만든 화면에서 가장 자주 보이는 모양이라 피한다. */
+.divide-rows > * + * {
+  border-top: 1px solid var(--color-line);
 }
 
 /* ── 전광판 ── */
-.board {
-  background: var(--color-board);
-  color: var(--color-board-lit);
-  border-radius: 10px;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
-  background-size: 6px 6px;
-}
-
 /* ── 기록 막대 ── */
 /* 또래 평균(50) 자리에 눈금을 둔다. 기준이 없으면 위치가 뜻을 잃는다 */
 .record-rail {
@@ -229,7 +238,7 @@ body {
 }
 .skeleton {
   border-radius: 8px;
-  background: linear-gradient(100deg, #e7e6e0 30%, #f2f1ec 50%, #e7e6e0 70%);
+  background: linear-gradient(100deg, #eceff2 30%, #f6f8fa 50%, #eceff2 70%);
   background-size: 220% 100%;
   animation: shimmer 1.25s ease-in-out infinite;
 }
