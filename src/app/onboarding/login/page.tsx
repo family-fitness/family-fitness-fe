@@ -1,12 +1,12 @@
-import { AppHeader } from "@/components/app-shell/app-header";
+import { PageHeader } from "@/components/app-shell/page-header";
 import { PlainScreen } from "@/components/app-shell/screen";
 
 export default function Page() {
   return (
     <>
-      <AppHeader title="로그인" back />
+      <PageHeader eyebrow="START" title="로그인" back />
       <PlainScreen>
-        <p className="text-mute py-10 text-center text-sm">카카오 로그인으로 시작합니다.</p>
+        <p className="text-ink-soft py-10 text-center text-sm">카카오 로그인으로 시작합니다.</p>
       </PlainScreen>
     </>
   );

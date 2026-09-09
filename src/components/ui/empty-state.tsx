@@ -15,7 +15,7 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-      <span className="bg-track-soft text-track rounded-full p-3">
+      <span className="bg-signal-soft text-signal rounded-full p-3">
         <Icon className="size-6" aria-hidden />
       </span>
       <p className="font-bold">{title}</p>

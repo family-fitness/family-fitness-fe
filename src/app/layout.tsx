@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, IBM_Plex_Mono } from "next/font/google";
 
 import { BottomTabBar } from "@/components/app-shell/bottom-tab-bar";
-import { TrackDecor } from "@/components/app-shell/track-decor";
+import { DesktopDecor } from "@/components/app-shell/desktop-decor";
 import { MswProvider } from "@/providers/msw-provider";
 import { QueryProvider } from "@/providers/query-provider";
 
@@ -32,8 +32,8 @@ export const viewport: Viewport = {
   userScalable: false,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f3f5f4" },
-    { media: "(prefers-color-scheme: dark)", color: "#0e1a20" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f4f0" },
+    { media: "(prefers-color-scheme: dark)", color: "#10161d" },
   ],
 };
 
@@ -43,7 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full antialiased">
         <MswProvider>
           <QueryProvider>
-            <TrackDecor />
+            <DesktopDecor />
             <div className="app-frame relative z-[1]">
               <div className="app-main">{children}</div>
             </div>

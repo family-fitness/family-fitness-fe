@@ -35,7 +35,7 @@ export function NextAction({
       href={action.href}
       className={cn(
         "press rounded-card flex items-center gap-3 px-4 py-3.5",
-        action.urgent ? "bg-track text-white" : "bg-field text-white",
+        action.urgent ? "bg-signal text-white" : "bg-ink text-paper",
       )}
     >
       <action.icon className="size-5 shrink-0" aria-hidden />

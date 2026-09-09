@@ -5,16 +5,6 @@ export function Skeleton({ className }: { className?: string }) {
   return <div className={cn("skeleton", className)} />;
 }
 
-export function TrackSkeleton() {
-  return (
-    <div className="space-y-1">
-      {[0, 1, 2, 3, 4].map((i) => (
-        <Skeleton key={i} className="h-11 rounded-[10px]" />
-      ))}
-    </div>
-  );
-}
-
 export function MemberCardSkeleton() {
   return (
     <div className="card space-y-3 p-4">
@@ -22,7 +12,8 @@ export function MemberCardSkeleton() {
         <Skeleton className="h-5 w-20" />
         <Skeleton className="h-4 w-14" />
       </div>
-      <Skeleton className="h-4 w-40" />
+      <Skeleton className="h-10 w-32" />
+      <Skeleton className="h-2.5 w-full rounded-full" />
     </div>
   );
 }
