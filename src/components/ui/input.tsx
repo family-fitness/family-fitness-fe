@@ -36,16 +36,16 @@ export function Field({
           aria-describedby={describedBy || undefined}
           aria-invalid={error ? true : undefined}
           className={cn(
-            "bg-surface border-line h-12 w-full rounded-xl border px-4 text-base",
-            "placeholder:text-faint focus:border-grow focus:outline-none",
+            "border-line bg-paper h-12 w-full rounded-xl border px-4 text-base",
+            "placeholder:text-faint focus:border-signal focus:outline-none",
             unit && "pr-12",
-            error && "border-mark",
+            error && "border-signal-deep",
             className,
           )}
           {...props}
         />
         {unit && (
-          <span className="text-mute absolute top-1/2 right-4 -translate-y-1/2 text-sm">
+          <span className="text-ink-soft absolute top-1/2 right-4 -translate-y-1/2 text-sm">
             {unit}
           </span>
         )}
@@ -57,7 +57,7 @@ export function Field({
         </p>
       )}
       {error && (
-        <p id={`${id}-error`} className="text-mark text-xs">
+        <p id={`${id}-error`} className="text-signal-deep text-xs">
           {error}
         </p>
       )}
@@ -88,12 +88,14 @@ export function ChoiceList<T extends string>({
             onClick={() => onChange(option.value)}
             className={cn(
               "w-full rounded-xl border p-4 text-left transition-colors",
-              selected ? "border-grow bg-grow-50" : "border-line bg-surface",
+              selected ? "border-signal bg-signal-soft" : "border-line bg-paper",
             )}
           >
-            <span className={cn("font-medium", selected && "text-grow")}>{option.label}</span>
+            <span className={cn("font-medium", selected && "text-signal-deep")}>
+              {option.label}
+            </span>
             {option.description && (
-              <span className="text-mute mt-1 block text-sm">{option.description}</span>
+              <span className="text-ink-soft mt-1 block text-sm">{option.description}</span>
             )}
           </button>
         );

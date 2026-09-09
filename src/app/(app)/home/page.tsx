@@ -5,9 +5,12 @@ import { Screen } from "@/components/app-shell/screen";
 import { Section } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MemberRowSkeleton, Skeleton } from "@/components/ui/skeleton";
+import { KidHome } from "@/components/domain/kid-home";
 import { MemberRow } from "@/components/domain/member-row";
 import { NextAction } from "@/components/domain/next-action";
+import { ProfileSwitcher } from "@/components/domain/profile-switcher";
 import { useFitnessMap, useLatestCoachRun, useMissions } from "@/lib/api/queries";
+import { useProfileStore } from "@/stores/profile-store";
 import { FAMILY_ID } from "@/mocks/data";
 
 /**
@@ -26,6 +29,7 @@ export default function HomePage() {
   const { data, isPending, error } = useFitnessMap(familyId);
   const { data: coachRun } = useLatestCoachRun(familyId);
   const { data: missions } = useMissions(familyId);
+  const currentProfileId = useProfileStore((s) => s.currentProfileId);
 
   if (isPending) return <HomeSkeleton />;
 
@@ -41,6 +45,22 @@ export default function HomePage() {
   }
 
   const { family, members } = data;
+  const profiles = members.map((m) => m.profile);
+
+  // 자녀 프로필을 보고 있으면 화면을 통째로 바꾼다.
+  // 부모가 보는 정보(백분위 · 등급 · 약점)를 아이에게 그대로 보여주지 않는다.
+  const current = profiles.find((p) => p.id === currentProfileId);
+  if (current?.role === "CHILD") {
+    return (
+      <>
+        <div className="flex justify-end px-4 pt-3">
+          <ProfileSwitcher profiles={profiles} />
+        </div>
+        <KidHome profile={current} missions={missions} />
+      </>
+    );
+  }
+
   const measurable = members.filter((m) => m.profile.measurable);
   const measured = measurable.filter((m) => m.overallPercentile !== null);
   const aboveAverage = measured.filter((m) => (m.overallPercentile ?? 0) >= 50).length;
@@ -50,6 +70,7 @@ export default function HomePage() {
       <PageHeader
         eyebrow="FAMILY"
         title={family.name}
+        action={<ProfileSwitcher profiles={profiles} />}
         meta={
           <>
             <span>

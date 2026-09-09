@@ -6,24 +6,27 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * 크기가 넷인 이유는 화면마다 손이 다르기 때문이다.
+ * kid 는 아이가 직접 누르는 버튼이다. 조사한 권장치(6~8세 50~60pt)에 맞춰 64px 로 뒀다.
+ */
 const button = cva(
-  "inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-colors disabled:pointer-events-none disabled:opacity-45",
+  "press inline-flex items-center justify-center gap-2 font-bold disabled:pointer-events-none disabled:opacity-40",
   {
     variants: {
       variant: {
-        primary: "bg-grow text-white hover:bg-grow-700",
-        soft: "bg-grow-50 text-grow hover:bg-grow-100",
-        outline: "border border-line text-ink hover:bg-line/40",
-        ghost: "text-mute hover:bg-line/40",
-        // 되돌리기 어려운 동작(거절, 동의 철회)에만 쓴다
-        danger: "border border-mark/40 text-mark hover:bg-mark-soft",
+        primary: "bg-signal text-white",
+        soft: "bg-signal-soft text-signal-deep",
+        outline: "border-line text-ink border-1.5 border",
+        ghost: "text-ink-soft",
+        // 되돌리기 어려운 동작(거절, 동의 철회)에만
+        danger: "border-line text-ink-soft border",
       },
       size: {
-        sm: "h-9 px-4 text-sm",
-        md: "h-11 px-5 text-[0.95rem]",
-        lg: "h-13 px-6 text-base",
-        // 화면 아래에 붙는 주 동작 버튼
-        block: "h-13 w-full px-6 text-base",
+        sm: "h-9 rounded-lg px-3.5 text-sm",
+        md: "h-11 rounded-xl px-5 text-[0.95rem]",
+        block: "h-13 w-full rounded-xl px-6 text-base",
+        kid: "h-16 w-full rounded-2xl px-6 text-xl",
       },
     },
     defaultVariants: { variant: "primary", size: "md" },
