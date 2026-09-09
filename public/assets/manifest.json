@@ -1,0 +1,479 @@
+{
+  "generatedAt": "2026-09-09T03:20:38.078Z",
+  "assets": [
+    {
+      "file": "char/body-adult-f.png",
+      "width": 113,
+      "height": 256,
+      "bytes": 13904
+    },
+    {
+      "file": "char/body-adult-m.png",
+      "width": 114,
+      "height": 256,
+      "bytes": 15363
+    },
+    {
+      "file": "char/body-child-f.png",
+      "width": 157,
+      "height": 256,
+      "bytes": 19053
+    },
+    {
+      "file": "char/body-child-m.png",
+      "width": 142,
+      "height": 256,
+      "bytes": 19155
+    },
+    {
+      "file": "char/body-toddler.png",
+      "width": 188,
+      "height": 256,
+      "bytes": 24394
+    },
+    {
+      "file": "char/face-calm.png",
+      "width": 196,
+      "height": 129,
+      "bytes": 6952
+    },
+    {
+      "file": "char/face-cheer.png",
+      "width": 256,
+      "height": 179,
+      "bytes": 12735
+    },
+    {
+      "file": "char/face-focused.png",
+      "width": 256,
+      "height": 111,
+      "bytes": 8263
+    },
+    {
+      "file": "char/face-happy.png",
+      "width": 256,
+      "height": 140,
+      "bytes": 12067
+    },
+    {
+      "file": "char/face-proud.png",
+      "width": 256,
+      "height": 134,
+      "bytes": 13396
+    },
+    {
+      "file": "char/face-tired.png",
+      "width": 256,
+      "height": 115,
+      "bytes": 7111
+    },
+    {
+      "file": "char/hair-bob.png",
+      "width": 256,
+      "height": 244,
+      "bytes": 33585
+    },
+    {
+      "file": "char/hair-bun.png",
+      "width": 183,
+      "height": 256,
+      "bytes": 23979
+    },
+    {
+      "file": "char/hair-cap.png",
+      "width": 203,
+      "height": 256,
+      "bytes": 26636
+    },
+    {
+      "file": "char/hair-crop.png",
+      "width": 240,
+      "height": 256,
+      "bytes": 31529
+    },
+    {
+      "file": "char/hair-curly.png",
+      "width": 232,
+      "height": 256,
+      "bytes": 29956
+    },
+    {
+      "file": "char/hair-ponytail.png",
+      "width": 256,
+      "height": 224,
+      "bytes": 26476
+    },
+    {
+      "file": "char/hair-short-m.png",
+      "width": 214,
+      "height": 256,
+      "bytes": 29339
+    },
+    {
+      "file": "char/hair-twintail.png",
+      "width": 256,
+      "height": 217,
+      "bytes": 26954
+    },
+    {
+      "file": "char/prop-bottle.png",
+      "width": 81,
+      "height": 256,
+      "bytes": 13707
+    },
+    {
+      "file": "char/prop-headband.png",
+      "width": 256,
+      "height": 84,
+      "bytes": 11577
+    },
+    {
+      "file": "char/prop-towel.png",
+      "width": 197,
+      "height": 256,
+      "bytes": 27776
+    },
+    {
+      "file": "char/top-apron.png",
+      "width": 206,
+      "height": 256,
+      "bytes": 24423
+    },
+    {
+      "file": "char/top-hoodie.png",
+      "width": 252,
+      "height": 256,
+      "bytes": 36366
+    },
+    {
+      "file": "char/top-jersey-blue.png",
+      "width": 167,
+      "height": 256,
+      "bytes": 25321
+    },
+    {
+      "file": "char/top-jersey-white.png",
+      "width": 242,
+      "height": 256,
+      "bytes": 25803
+    },
+    {
+      "file": "char/top-tracksuit.png",
+      "width": 256,
+      "height": 255,
+      "bytes": 38045
+    },
+    {
+      "file": "char/top-tshirt-yellow.png",
+      "width": 248,
+      "height": 256,
+      "bytes": 25537
+    },
+    {
+      "file": "deco/deco-arrow-up.png",
+      "width": 256,
+      "height": 233,
+      "bytes": 16293
+    },
+    {
+      "file": "deco/deco-cloud-1.png",
+      "width": 256,
+      "height": 160,
+      "bytes": 18076
+    },
+    {
+      "file": "deco/deco-cloud-2.png",
+      "width": 256,
+      "height": 76,
+      "bytes": 10340
+    },
+    {
+      "file": "deco/deco-confetti.png",
+      "width": 252,
+      "height": 256,
+      "bytes": 10772
+    },
+    {
+      "file": "deco/deco-dots.png",
+      "width": 256,
+      "height": 253,
+      "bytes": 18180
+    },
+    {
+      "file": "deco/deco-grass.png",
+      "width": 256,
+      "height": 55,
+      "bytes": 9806
+    },
+    {
+      "file": "deco/deco-line-wave.png",
+      "width": 256,
+      "height": 37,
+      "bytes": 6133
+    },
+    {
+      "file": "deco/deco-ribbon.png",
+      "width": 256,
+      "height": 71,
+      "bytes": 10714
+    },
+    {
+      "file": "deco/deco-sparkle.png",
+      "width": 256,
+      "height": 241,
+      "bytes": 15579
+    },
+    {
+      "file": "deco/deco-star.png",
+      "width": 256,
+      "height": 252,
+      "bytes": 19610
+    },
+    {
+      "file": "deco/deco-sun.png",
+      "width": 251,
+      "height": 256,
+      "bytes": 19753
+    },
+    {
+      "file": "deco/deco-track-lines.png",
+      "width": 256,
+      "height": 73,
+      "bytes": 9266
+    },
+    {
+      "file": "item/grade-1.png",
+      "width": 256,
+      "height": 249,
+      "bytes": 37969
+    },
+    {
+      "file": "item/grade-2.png",
+      "width": 256,
+      "height": 251,
+      "bytes": 36780
+    },
+    {
+      "file": "item/grade-3.png",
+      "width": 256,
+      "height": 253,
+      "bytes": 31459
+    },
+    {
+      "file": "item/grade-4.png",
+      "width": 256,
+      "height": 248,
+      "bytes": 33325
+    },
+    {
+      "file": "item/grade-5.png",
+      "width": 256,
+      "height": 253,
+      "bytes": 32140
+    },
+    {
+      "file": "item/item-bottle.png",
+      "width": 110,
+      "height": 256,
+      "bytes": 14492
+    },
+    {
+      "file": "item/item-calendar.png",
+      "width": 256,
+      "height": 241,
+      "bytes": 25950
+    },
+    {
+      "file": "item/item-clipboard.png",
+      "width": 179,
+      "height": 256,
+      "bytes": 21193
+    },
+    {
+      "file": "item/item-cone.png",
+      "width": 207,
+      "height": 256,
+      "bytes": 20948
+    },
+    {
+      "file": "item/item-grip.png",
+      "width": 180,
+      "height": 256,
+      "bytes": 22562
+    },
+    {
+      "file": "item/item-mat.png",
+      "width": 256,
+      "height": 169,
+      "bytes": 20863
+    },
+    {
+      "file": "item/item-medal.png",
+      "width": 157,
+      "height": 256,
+      "bytes": 19916
+    },
+    {
+      "file": "item/item-shoes.png",
+      "width": 256,
+      "height": 198,
+      "bytes": 28859
+    },
+    {
+      "file": "item/item-stopwatch.png",
+      "width": 209,
+      "height": 256,
+      "bytes": 27046
+    },
+    {
+      "file": "item/item-tape.png",
+      "width": 256,
+      "height": 225,
+      "bytes": 21740
+    },
+    {
+      "file": "item/item-trophy.png",
+      "width": 242,
+      "height": 256,
+      "bytes": 23379
+    },
+    {
+      "file": "item/item-whistle.png",
+      "width": 256,
+      "height": 236,
+      "bytes": 26774
+    },
+    {
+      "file": "move/move-grip.png",
+      "width": 86,
+      "height": 384,
+      "bytes": 18252
+    },
+    {
+      "file": "move/move-jump-rope.png",
+      "width": 194,
+      "height": 384,
+      "bytes": 23626
+    },
+    {
+      "file": "move/move-long-jump.png",
+      "width": 329,
+      "height": 384,
+      "bytes": 43616
+    },
+    {
+      "file": "move/move-plank.png",
+      "width": 384,
+      "height": 151,
+      "bytes": 22686
+    },
+    {
+      "file": "move/move-shuttle-run.png",
+      "width": 352,
+      "height": 384,
+      "bytes": 39367
+    },
+    {
+      "file": "move/move-single-leg.png",
+      "width": 297,
+      "height": 384,
+      "bytes": 27910
+    },
+    {
+      "file": "move/move-sit-and-reach.png",
+      "width": 384,
+      "height": 298,
+      "bytes": 43983
+    },
+    {
+      "file": "move/move-situp.png",
+      "width": 384,
+      "height": 215,
+      "bytes": 29188
+    },
+    {
+      "file": "move/move-squat.png",
+      "width": 270,
+      "height": 384,
+      "bytes": 29426
+    },
+    {
+      "file": "move/move-stretch-back.png",
+      "width": 199,
+      "height": 384,
+      "bytes": 28973
+    },
+    {
+      "file": "move/move-stretch-leg.png",
+      "width": 384,
+      "height": 327,
+      "bytes": 45598
+    },
+    {
+      "file": "move/move-walk.png",
+      "width": 250,
+      "height": 384,
+      "bytes": 34537
+    },
+    {
+      "file": "scene/scene-done.png",
+      "width": 384,
+      "height": 169,
+      "bytes": 20459
+    },
+    {
+      "file": "scene/scene-error.png",
+      "width": 384,
+      "height": 240,
+      "bytes": 36582
+    },
+    {
+      "file": "scene/scene-first-measure.png",
+      "width": 223,
+      "height": 384,
+      "bytes": 30028
+    },
+    {
+      "file": "scene/scene-invite.png",
+      "width": 370,
+      "height": 384,
+      "bytes": 66717
+    },
+    {
+      "file": "scene/scene-no-cheer.png",
+      "width": 384,
+      "height": 329,
+      "bytes": 50345
+    },
+    {
+      "file": "scene/scene-no-mission.png",
+      "width": 384,
+      "height": 155,
+      "bytes": 26202
+    },
+    {
+      "file": "scene/scene-no-record.png",
+      "width": 383,
+      "height": 384,
+      "bytes": 51026
+    },
+    {
+      "file": "scene/scene-no-video.png",
+      "width": 384,
+      "height": 162,
+      "bytes": 32124
+    },
+    {
+      "file": "scene/scene-too-young.png",
+      "width": 320,
+      "height": 384,
+      "bytes": 29543
+    },
+    {
+      "file": "scene/scene-waiting-approval.png",
+      "width": 299,
+      "height": 384,
+      "bytes": 51899
+    }
+  ]
+}

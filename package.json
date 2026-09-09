@@ -13,7 +13,9 @@
     "typecheck": "next typegen && tsc --noEmit",
     "verify": "npm run format:check && npm run lint && npm run typecheck",
     "prepare": "husky",
-    "check:mocks": "tsx scripts/check-mocks.mts"
+    "check:mocks": "tsx scripts/check-mocks.mts",
+    "shot": "node scripts/screenshot.mjs",
+    "assets": "node scripts/prepare-assets.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -30,6 +32,7 @@
     "react-hook-form": "^7.87.0",
     "recharts": "^3.10.1",
     "tailwind-merge": "^3.6.0",
+    "three": "^0.186.0",
     "zod": "^4.5.4",
     "zustand": "^5.0.15"
   },
@@ -39,12 +42,14 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "^0.185.4",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "lint-staged": "^17.4.1",
     "msw": "^2.15.0",
+    "playwright": "^1.63.0",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "serwist": "^9.5.12",

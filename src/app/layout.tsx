@@ -1,12 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono } from "next/font/google";
+import { Bebas_Neue, IBM_Plex_Mono } from "next/font/google";
 
+import { BottomTabBar } from "@/components/app-shell/bottom-tab-bar";
+import { DesktopDecor } from "@/components/app-shell/desktop-decor";
 import { MswProvider } from "@/providers/msw-provider";
 import { QueryProvider } from "@/providers/query-provider";
 
 import "./globals.css";
 
-// 숫자와 단위, 눈금 라벨에 쓴다. 자릿수가 흔들리면 눈금처럼 안 읽힌다
+// 전광판 숫자. 기록이 뜨는 자리에만 쓴다
+const bebas = Bebas_Neue({ weight: "400", subsets: ["latin"], variable: "--font-bebas" });
+
+// 표 안에서 자릿수를 맞춰야 하는 숫자
 const plexMono = IBM_Plex_Mono({
   weight: ["400", "500"],
   subsets: ["latin"],
@@ -27,17 +32,23 @@ export const viewport: Viewport = {
   userScalable: false,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f7f4" },
-    { media: "(prefers-color-scheme: dark)", color: "#0f1614" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f4f0" },
+    { media: "(prefers-color-scheme: dark)", color: "#10161d" },
   ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" className={`${plexMono.variable} h-full antialiased`}>
-      <body className="bg-paper text-ink min-h-full">
+    <html lang="ko" className={`h-full ${bebas.variable} ${plexMono.variable}`}>
+      <body className="min-h-full antialiased">
         <MswProvider>
-          <QueryProvider>{children}</QueryProvider>
+          <QueryProvider>
+            <DesktopDecor />
+            <div className="app-frame relative z-[1]">
+              <div className="app-main">{children}</div>
+            </div>
+            <BottomTabBar />
+          </QueryProvider>
         </MswProvider>
       </body>
     </html>

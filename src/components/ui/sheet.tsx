@@ -56,7 +56,7 @@ export function Sheet({
             aria-modal="true"
             aria-label={title}
             className={cn(
-              "rounded-t-sheet bg-surface max-w-phone relative w-full p-5",
+              "bg-paper max-w-phone relative w-full rounded-t-[22px] p-5",
               "pb-[calc(1.25rem+env(safe-area-inset-bottom))]",
               className,
             )}
@@ -73,7 +73,7 @@ export function Sheet({
                   type="button"
                   onClick={onClose}
                   aria-label="닫기"
-                  className="text-mute hover:text-ink -m-2 p-2"
+                  className="text-ink-soft hover:text-ink -m-2 p-2"
                 >
                   <X className="size-5" />
                 </button>

@@ -5,13 +5,13 @@ import { cn } from "@/lib/utils";
 import { GRADE_LABEL } from "@/lib/fitness-items";
 import type { FitnessGrade } from "@/lib/api/types";
 
-const badge = cva("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium", {
+const badge = cva("inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold", {
   variants: {
     tone: {
-      neutral: "bg-line text-mute",
-      grow: "bg-grow-50 text-grow",
-      mark: "bg-mark-soft text-mark",
-      outline: "border-line text-mute border",
+      neutral: "bg-line text-ink-soft",
+      signal: "bg-signal-soft text-signal-deep",
+      done: "bg-done-soft text-done",
+      outline: "border-line text-ink-soft border",
     },
   },
   defaultVariants: { tone: "neutral" },
@@ -26,24 +26,24 @@ export function Badge({
 }
 
 /**
- * 국민체력100 등급 배지.
+ * 국민체력100 등급.
  *
  * 낮은 등급을 빨강으로 칠하지 않는다. 아이가 자기 화면에서 자기가 나쁘다는 신호를
- * 보게 되기 때문이다. 같은 초록 계열의 명도 단계로만 구분한다.
+ * 보게 되기 때문이다. 하나의 색을 진하기 단계로만 나눈다.
  */
 const GRADE_STYLE: Record<FitnessGrade, string> = {
-  1: "bg-grow text-white",
-  2: "bg-grow-300 text-white",
-  3: "bg-grow-200 text-grow-700",
-  4: "bg-grow-100 text-grow-700",
-  5: "bg-grow-50 text-grow",
+  1: "bg-ink text-paper",
+  2: "bg-ink/72 text-paper",
+  3: "bg-ink/45 text-paper",
+  4: "bg-line text-ink-soft",
+  5: "bg-line/60 text-ink-soft",
 };
 
 export function GradeBadge({ grade }: { grade: FitnessGrade }) {
   return (
     <span
       className={cn(
-        "tabular inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold",
+        "inline-flex shrink-0 items-center rounded-md px-2 py-1 text-xs font-extrabold",
         GRADE_STYLE[grade],
       )}
     >
