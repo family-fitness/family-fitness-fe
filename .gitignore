@@ -40,3 +40,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 이미지 생성 AI 원본. public/assets 로 가공해서 쓴다
+/family-fitness-assets

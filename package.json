@@ -14,7 +14,8 @@
     "verify": "npm run format:check && npm run lint && npm run typecheck",
     "prepare": "husky",
     "check:mocks": "tsx scripts/check-mocks.mts",
-    "shot": "node scripts/screenshot.mjs"
+    "shot": "node scripts/screenshot.mjs",
+    "assets": "node scripts/prepare-assets.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
