@@ -18,8 +18,7 @@ Object.defineProperty(globalThis, "location", {
 
 import { setupServer } from "msw/node";
 
-import { FAMILY_ID, PROFILE_IDS } from "@/mocks/data";
-import { handlers, setCurrentProfile } from "@/mocks/handlers";
+import { DEMO, handlers, setActingProfile } from "@/mocks/handlers";
 
 const server = setupServer(...handlers);
 server.listen({ onUnhandledRequest: "warn" });
@@ -47,11 +46,11 @@ function check(name: string, ok: boolean, detail = "") {
 const RUN_ID = "66666666-6666-4666-8666-666666666601";
 
 // 1. 승인 전에는 미션이 0건이다
-let missions = (await (await get(`/families/${FAMILY_ID}/missions`)).json()) as MockMission[];
+let missions = (await (await get(`/families/${DEMO.familyId}/missions`)).json()) as MockMission[];
 check("승인 전 미션 0건", missions.length === 0, `실제 ${missions.length}건`);
 
 // 2. 자녀 계정은 승인할 수 없다
-setCurrentProfile(PROFILE_IDS.hajun);
+setActingProfile(DEMO.kid);
 let res = await post(`/coach/runs/${RUN_ID}/approve`);
 let body = (await res.json()) as { code?: string };
 check(
@@ -61,11 +60,11 @@ check(
 );
 
 // 3. 승인 실패했으니 미션은 여전히 0건이다
-missions = (await (await get(`/families/${FAMILY_ID}/missions`)).json()) as MockMission[];
+missions = (await (await get(`/families/${DEMO.familyId}/missions`)).json()) as MockMission[];
 check("차단 후에도 미션 0건", missions.length === 0, `실제 ${missions.length}건`);
 
 // 4. 보호자가 승인하면 미션이 생긴다
-setCurrentProfile(PROFILE_IDS.mom);
+setActingProfile(DEMO.mom);
 res = await post(`/coach/runs/${RUN_ID}/approve`);
 const run = (await res.json()) as { status?: string };
 check(
@@ -74,7 +73,7 @@ check(
   `${res.status} ${run.status}`,
 );
 
-missions = (await (await get(`/families/${FAMILY_ID}/missions`)).json()) as MockMission[];
+missions = (await (await get(`/families/${DEMO.familyId}/missions`)).json()) as MockMission[];
 check("승인 후 미션 생성", missions.length === 3, `실제 ${missions.length}건`);
 
 // 5. 중복 승인은 막힌다
@@ -87,7 +86,7 @@ check(
 );
 
 // 6. 측정 불가 연령은 저장이 막힌다
-res = await post(`/profiles/${PROFILE_IDS.seoa}/fitness-tests`, {
+res = await post(`/profiles/${DEMO.kid}/fitness-tests`, {
   measuredOn: "2026-09-08",
   source: "HOME",
   items: [{ item: "SIT_AND_REACH", value: 5 }],
@@ -100,7 +99,7 @@ check(
 );
 
 // 7. 항목 0개면 저장이 막힌다
-res = await post(`/profiles/${PROFILE_IDS.hajun}/fitness-tests`, {
+res = await post(`/profiles/${DEMO.kid}/fitness-tests`, {
   measuredOn: "2026-09-08",
   source: "HOME",
   items: [],
@@ -153,7 +152,7 @@ check(
 );
 
 // 11. 영상 추천은 연령 라벨로 걸러진다 (유아용 영상이 부모에게 뜨면 안 된다)
-const momVideos = (await (await get(`/profiles/${PROFILE_IDS.mom}/videos/recommend`)).json()) as {
+const momVideos = (await (await get(`/profiles/${DEMO.mom}/videos/recommend`)).json()) as {
   minAge: number;
   maxAge: number;
 }[];

@@ -71,35 +71,46 @@ export const BAND_COPY: Record<Band, string> = {
 };
 
 /* ─── 생성된 스키마에 이름 붙이기 ──────────────────────────── */
+/* 오른쪽 이름은 서버가 정한 것이다. 바뀌면 여기서 타입 에러로 드러난다 */
 
 /** identity 가 내보내는 유일한 공개 언어. Profile 엔티티는 나오지 않는다 */
-export type ProfileSummary = S["ProfileSummaryResponse"];
+export type ProfileSummary = S["ProfileSummary"];
 export type MeResponse = S["MeResponse"];
 export type AuthResponse = S["AuthResponse"];
+export type FamilyProfiles = S["FamilyProfilesResponse"];
+export type InviteCode = S["InviteResponse"];
+export type Cheer = S["CheerResponse"];
 
 export type FitnessMap = S["FitnessMapResponse"];
-export type FitnessMapMember = S["FitnessMapMemberResponse"];
+export type FitnessMapMember = S["Member"];
+/** 구성원의 최근 측정 요약. 없으면 null 이 온다 */
+export type MemberLatest = S["Latest"];
 export type FitnessItems = S["FitnessItemsResponse"];
-export type FitnessItem = S["FitnessItemResponse"];
+export type FitnessItem = S["Item"];
 export type FitnessTestResult = S["FitnessTestResponse"];
-export type LatestFitnessTest = S["LatestFitnessTestResponse"];
+export type LatestFitnessTest = S["LatestFitnessResponse"];
+export type ItemResult = S["ItemResult"];
+export type RadarPoint = S["RadarPointResponse"];
+export type FactorPoint = S["FactorPoint"];
 export type PredictionResult = S["PredictionResponse"];
 
-export type CoachRun = S["CoachRunResponse"];
-export type CoachProposal = S["CoachProposalResponse"];
-export type CoachApproveResult = S["CoachApproveResponse"];
-export type CoachChatResult = S["CoachChatResponse"];
+export type CoachRun = S["CoachRunView"];
+export type CoachProposal = S["ProposalView"];
+export type CoachStep = S["CoachStep"];
+export type CoachApproveResult = S["ApproveCoachRunView"];
+export type CoachChatResult = S["ChatView"];
+export type ChatCitation = S["ChatCitationView"];
 
-export type MissionList = S["MissionListResponse"];
-export type Mission = S["MissionResponse"];
-export type MissionParticipant = S["MissionParticipantResponse"];
+export type MissionList = S["MissionListView"];
+export type Mission = S["MissionView"];
+export type MissionParticipant = S["MissionParticipantView"];
+export type MissionVideo = S["MissionVideoView"];
 
-export type VideoList = S["VideoListResponse"];
-export type Video = S["VideoResponse"];
+export type VideoList = S["VideoListView"];
+export type Video = S["VideoView"];
+export type VideoLabel = S["VideoLabel"];
 
-export type WeeklyReport = S["WeeklyReportResponse"];
-export type Cheer = S["CheerResponse"];
-export type InviteCode = S["InviteCodeResponse"];
+export type WeeklyReport = S["WeeklyReportView"];
 
 /* ─── 오류 ─────────────────────────────────────────────────── */
 

@@ -16,7 +16,8 @@
     "check:mocks": "tsx scripts/check-mocks.mts",
     "shot": "node scripts/screenshot.mjs",
     "assets": "node scripts/prepare-assets.mjs",
-    "api:types": "openapi-typescript http://localhost:8080/v3/api-docs -o src/lib/api/schema.ts"
+    "api:types": "openapi-typescript http://localhost:8080/v3/api-docs -o src/lib/api/schema.ts",
+    "api:fixtures": "node scripts/capture-fixtures.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
