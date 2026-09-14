@@ -15,7 +15,8 @@
     "prepare": "husky",
     "check:mocks": "tsx scripts/check-mocks.mts",
     "shot": "node scripts/screenshot.mjs",
-    "assets": "node scripts/prepare-assets.mjs"
+    "assets": "node scripts/prepare-assets.mjs",
+    "api:types": "openapi-typescript http://localhost:8080/v3/api-docs -o src/lib/api/schema.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -49,6 +50,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.4.1",
     "msw": "^2.15.0",
+    "openapi-typescript": "^7.13.0",
     "playwright": "^1.63.0",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
