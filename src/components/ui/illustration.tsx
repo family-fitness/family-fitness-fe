@@ -31,17 +31,23 @@ export function Illustration({
   const [failed, setFailed] = useState(false);
   if (failed) return null;
 
+  // 정사각 상자에 비율을 지켜 앉힌다.
+  // 너비만 고정하고 높이를 auto 로 두면 세로로 긴 그림(서 있는 자세)이 폭주한다.
   return (
-    <Image
-      src={`/assets/${name}.png`}
-      alt={alt}
-      width={size}
-      height={size}
-      priority={priority}
-      onError={() => setFailed(true)}
-      className={cn("shrink-0 object-contain select-none", className)}
-      style={{ width: size, height: "auto" }}
-    />
+    <span
+      className={cn("relative inline-block shrink-0 select-none", className)}
+      style={{ width: size, height: size }}
+    >
+      <Image
+        src={`/assets/${name}.png`}
+        alt={alt}
+        fill
+        sizes={`${size}px`}
+        priority={priority}
+        onError={() => setFailed(true)}
+        className="object-contain"
+      />
+    </span>
   );
 }
 
