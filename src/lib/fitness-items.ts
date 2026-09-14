@@ -112,3 +112,30 @@ export function gradeFromPercentile(percentile: number): FitnessGrade {
   if (percentile >= 20) return 4;
   return 5;
 }
+
+/**
+ * 측정 항목과 그림을 잇는다.
+ *
+ * 자세 그림이 없으면 "윗몸말아올리기 를 1분 동안 몇 번" 이라는 글만 남는다.
+ * 부모가 집에서 아이를 재는 상황이라, 자세가 맞는지 눈으로 확인할 수 있어야 한다.
+ */
+export const ITEM_POSE: Record<FitnessItemCode, string> = {
+  SIT_UP: "move/move-situp",
+  SIT_AND_REACH: "move/move-sit-and-reach",
+  SINGLE_LEG_STAND: "move/move-single-leg",
+  GRIP_STRENGTH: "move/move-grip",
+  STANDING_LONG_JUMP: "move/move-long-jump",
+  SHUTTLE_RUN: "move/move-shuttle-run",
+};
+
+/** 장비가 필요한 항목에만 그 장비 그림을 붙인다 */
+export const ITEM_EQUIPMENT: Partial<Record<FitnessItemCode, string>> = {
+  GRIP_STRENGTH: "item/item-grip",
+  STANDING_LONG_JUMP: "item/item-tape",
+  SHUTTLE_RUN: "item/item-cone",
+};
+
+/** 국민체력100 등급 도장 */
+export function gradeSeal(grade: FitnessGrade): string {
+  return `item/grade-${grade}`;
+}
