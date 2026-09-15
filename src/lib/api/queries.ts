@@ -7,6 +7,7 @@ import type {
   AgeGroup,
   AuthResponse,
   Cheer,
+  CheerLogList,
   CoachApproveResult,
   CoachChatResult,
   CoachRun,
@@ -41,6 +42,8 @@ export const qk = {
       ["family", familyId, "missions", scope ?? "ALL", status ?? "ALL"] as const,
     report: (familyId: Uuid, weekStart?: string) =>
       ["family", familyId, "report", weekStart ?? "current"] as const,
+    cheers: (familyId: Uuid, toProfileId?: Uuid) =>
+      ["family", familyId, "cheers", toProfileId ?? "all"] as const,
   },
   profile: {
     latestTest: (profileId: Uuid) => ["profile", profileId, "fitness-tests", "latest"] as const,
@@ -418,10 +421,28 @@ export function useSendCheer(familyId: Uuid) {
       fromProfileId: string;
       toProfileId: string;
       message?: string;
+      /** 도장 종류 키(「stamp-star」). 서버의 emoji 칸에 싣는다 — 이모지 문자는 쓰지 않는다 */
       emoji?: string;
       missionId?: string;
     }) => api.post<Cheer>(`/families/${familyId}/cheers`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.family.report(familyId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "cheers"] });
+    },
+  });
+}
+
+/**
+ * 받은 도장 · 칭찬.
+ *
+ * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
+ *   백엔드에 `GET /families/{familyId}/cheers` 를 요청해 뒀다.
+ */
+export function useCheers(familyId: Uuid | undefined, toProfileId?: Uuid) {
+  return useQuery({
+    queryKey: qk.family.cheers(familyId ?? "", toProfileId),
+    queryFn: () => api.get<CheerLogList>(`/families/${familyId}/cheers${query({ toProfileId })}`),
+    enabled: Boolean(familyId),
   });
 }
 

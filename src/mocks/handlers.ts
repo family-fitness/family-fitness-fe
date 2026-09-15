@@ -17,6 +17,7 @@ import { HttpResponse, http, type PathParams } from "msw";
 
 import type {
   AgeGroup,
+  CheerLog,
   FitnessTestResult,
   ItemResult,
   ApiErrorBody,
@@ -101,6 +102,8 @@ const db = {
   /** 승인 전에는 비어 있다. 승인 핸들러가 채운다 */
   missions: [] as MissionRow[],
   videos: structuredClone(fixtures.videos.videos),
+  /** 부모가 찍어 준 도장. 받은 쪽에서 볼 수 있어야 한다 */
+  cheers: [] as CheerLog[],
   /** 지금 로그인해서 보고 있는 사람. 승인 권한 테스트를 위해 바꿀 수 있다 */
   actingProfileId: DEMO.mom as string,
 };
@@ -252,10 +255,30 @@ const identity = [
     if (body.fromProfileId === body.toProfileId) {
       return fail(422, "SELF_CHEER", "자기 자신에게는 보낼 수 없습니다");
     }
-    return HttpResponse.json(
-      { cheerId: uuid(), ...body, createdAt: new Date().toISOString() },
-      { status: 201 },
-    );
+    const cheer = { cheerId: uuid(), ...body, createdAt: new Date().toISOString() };
+    // 받은 쪽에서 볼 수 있어야 도장 기능이 성립한다
+    db.cheers.unshift({
+      cheerId: cheer.cheerId,
+      fromProfileId: body.fromProfileId,
+      fromName:
+        db.profiles.profiles.find((p) => p.profileId === body.fromProfileId)?.name ?? "가족",
+      toProfileId: body.toProfileId,
+      message: body.message ?? null,
+      stamp: body.emoji ?? null,
+      missionId: body.missionId ?? null,
+      createdAt: cheer.createdAt,
+    });
+    return HttpResponse.json(cheer, { status: 201 });
+  }),
+
+  /**
+   * ▲ 서버에 아직 없다. 제안 모양으로 답한다.
+   * 도장을 보내는 길은 있는데 받은 걸 보는 길이 없어서 기능이 성립하지 않는다.
+   */
+  http.get(`${BASE}/families/:familyId/cheers`, ({ request }) => {
+    const to = new URL(request.url).searchParams.get("toProfileId");
+    const cheers = to ? db.cheers.filter((c) => c.toProfileId === to) : db.cheers;
+    return HttpResponse.json({ cheers });
   }),
 ];
 
