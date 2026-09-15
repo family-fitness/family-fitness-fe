@@ -15,17 +15,71 @@
  */
 import { HttpResponse, http, type PathParams } from "msw";
 
-import type { AgeGroup, ApiErrorBody, Band, ProfileSummary } from "@/lib/api/types";
+import type {
+  AgeGroup,
+  FitnessTestResult,
+  ItemResult,
+  ApiErrorBody,
+  Band,
+  CoachApproveResult,
+  CoachRun,
+  FamilyProfiles,
+  FitnessItems,
+  FitnessMap,
+  LatestFitnessTest,
+  MeResponse,
+  Mission,
+  MissionList,
+  PredictionResult,
+  ProfileSummary,
+  VideoList,
+  WeeklyReport,
+} from "@/lib/api/types";
 
 import fixturesJson from "./fixtures.json";
 
 /**
- * fixtures.json 은 실제 응답이라 TypeScript 가 값에서 타입을 아주 좁게 추론한다
- * (rejectedReason: null, maxProgress: null 처럼). 목 서버는 그 값을 바꿔 가며 쓰므로
- * 한 겹 느슨하게 받는다. 화면이 쓰는 타입은 schema.ts 가 지킨다.
+ * 픽스처의 모양.
+ *
+ * fixtures.json 은 실제 응답이라 TypeScript 가 값에서 타입을 지나치게 좁게 추론한다
+ * (`rejectedReason: null` 이면 타입이 `null` 이 된다). 목 서버는 그 값을 바꿔 가며 쓰므로
+ * 계약 타입으로 다시 붙여 준다. 백엔드가 필드를 바꾸면 여기서 타입 에러가 난다.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 실제 응답 JSON 을 가변 상태로 쓰기 위한 한 지점
-const fixtures = fixturesJson as any;
+/**
+ * 선택 표시(`?`)만 걷어낸다.
+ *
+ * 백엔드 springdoc 이 `required` 를 내보내지 않아서 생성된 스키마는 **모든 필드가
+ * 선택**이다. 실제 응답에는 다 들어 있는데도 목 서버 코드마다 `?.` 와 `?? []` 가 붙는다.
+ * 픽스처는 진짜 응답이므로 여기서만 "다 있다" 고 못박는다.
+ *
+ * `null` 은 그대로 둔다 — `rejectedReason: null` 처럼 의미가 있는 null 이 있다.
+ */
+type Concrete<T> = T extends (infer U)[]
+  ? Concrete<U>[]
+  : T extends object
+    ? { [K in keyof T]-?: Concrete<T[K]> }
+    : T;
+
+interface Fixtures {
+  me: MeResponse;
+  profiles: FamilyProfiles;
+  fitnessMap: FitnessMap;
+  itemsByAgeGroup: Record<string, FitnessItems>;
+  latestByProfile: Record<string, LatestFitnessTest>;
+  coachRun: CoachRun;
+  coachApprove: CoachApproveResult;
+  missionsAfterApproval: MissionList;
+  videos: VideoList;
+  report: WeeklyReport;
+  prediction: PredictionResult;
+}
+
+const fixtures = fixturesJson as unknown as Concrete<Fixtures>;
+
+/** 목 서버가 만들고 고치는 값들. 응답과 같은 모양이어야 화면이 진짜처럼 돈다 */
+type Profile = Concrete<ProfileSummary>;
+type MapMember = Concrete<FitnessMap>["members"][number];
+type MissionRow = Concrete<Mission>;
 
 const BASE = "/api/v1";
 
@@ -42,10 +96,10 @@ export const DEMO = {
 const db = {
   profiles: structuredClone(fixtures.profiles),
   fitnessMap: structuredClone(fixtures.fitnessMap),
-  latest: structuredClone(fixtures.latestByProfile) as Record<string, unknown>,
+  latest: structuredClone(fixtures.latestByProfile),
   coachRun: structuredClone(fixtures.coachRun),
   /** 승인 전에는 비어 있다. 승인 핸들러가 채운다 */
-  missions: [] as unknown[],
+  missions: [] as MissionRow[],
   videos: structuredClone(fixtures.videos.videos),
   /** 지금 로그인해서 보고 있는 사람. 승인 권한 테스트를 위해 바꿀 수 있다 */
   actingProfileId: DEMO.mom as string,
@@ -55,7 +109,7 @@ export function setActingProfile(profileId: string) {
   db.actingProfileId = profileId;
 }
 
-function acting(): ProfileSummary | undefined {
+function acting(): Profile | undefined {
   return db.profiles.profiles.find((p) => p.profileId === db.actingProfileId);
 }
 
@@ -102,7 +156,7 @@ const identity = [
       return fail(422, "CONSENT_REQUIRED", "보호자 동의가 필요합니다");
     }
 
-    const profile: ProfileSummary = {
+    const profile: Profile = {
       profileId: uuid(),
       familyId: DEMO.familyId,
       name: String(body.name ?? ""),
@@ -117,7 +171,7 @@ const identity = [
       consentGiven: consentRequired ? true : true,
     };
     db.profiles.profiles.push(profile);
-    db.fitnessMap.members.push({
+    const mapMember: MapMember = {
       profileId: profile.profileId,
       name: profile.name,
       role: profile.role,
@@ -129,7 +183,8 @@ const identity = [
       consentGiven: profile.consentGiven,
       headline: null,
       latest: null,
-    });
+    };
+    db.fitnessMap.members.push(mapMember);
     return HttpResponse.json(profile, { status: 201 });
   }),
 
@@ -167,7 +222,7 @@ const identity = [
       if (profile.role === "CHILD")
         return fail(422, "NOT_APPLICABLE", "자녀에게는 없는 설정입니다");
 
-      profile.supportMode = supportMode as ProfileSummary["supportMode"];
+      profile.supportMode = supportMode as Profile["supportMode"];
       syncMapMember(profile);
       return HttpResponse.json(profile);
     },
@@ -212,7 +267,15 @@ function ageGroupOf(age: number): AgeGroup {
   return "어르신";
 }
 
-function syncMapMember(profile: ProfileSummary) {
+/** 백분위 → 등급. 서버가 주는 값은 1·2·3등급과 「참가」뿐이다 */
+function gradeOf(percentile: number): NonNullable<Concrete<ItemResult>["grade"]> {
+  if (percentile >= 90) return "1등급";
+  if (percentile >= 75) return "2등급";
+  if (percentile >= 50) return "3등급";
+  return "참가";
+}
+
+function syncMapMember(profile: Profile) {
   const member = db.fitnessMap.members.find((m) => m.profileId === profile.profileId);
   if (!member) return;
   member.supportMode = profile.supportMode;
@@ -225,7 +288,7 @@ function syncMapMember(profile: ProfileSummary) {
 const fitness = [
   http.get(`${BASE}/fitness/items`, ({ request }) => {
     const ageGroup = new URL(request.url).searchParams.get("ageGroup") as AgeGroup | null;
-    const table = fixtures.itemsByAgeGroup as Record<string, unknown>;
+    const table = fixtures.itemsByAgeGroup;
     return HttpResponse.json(table[ageGroup ?? "유소년"] ?? table["유소년"]);
   }),
 
@@ -262,12 +325,8 @@ const fitness = [
         return fail(400, "ITEM_NOT_ALLOWED", "허용되지 않는 항목입니다");
       }
 
-      const catalogue = (
-        fixtures.itemsByAgeGroup as Record<
-          string,
-          { items: { itemCode: string; itemLabel: string; unit: string; factor: string }[] }
-        >
-      )[profile.ageGroup ?? "유소년"];
+      const catalogue =
+        fixtures.itemsByAgeGroup[profile.ageGroup] ?? fixtures.itemsByAgeGroup["유소년"];
 
       const items = measured.map((entry) => {
         const meta = catalogue?.items.find((i) => i.itemCode === entry.itemCode);
@@ -279,14 +338,7 @@ const fitness = [
           unit: meta?.unit ?? "",
           value: entry.value,
           percentile,
-          grade:
-            percentile >= 90
-              ? "1등급"
-              : percentile >= 75
-                ? "2등급"
-                : percentile >= 50
-                  ? "3등급"
-                  : "참가",
+          grade: gradeOf(percentile),
           band: bandOf(percentile),
           topPercentText: `상위 ${100 - percentile}%`,
         };
@@ -296,7 +348,7 @@ const fitness = [
       const factorOf = (code: string) =>
         catalogue?.items.find((i) => i.itemCode === code)?.factor ?? "유연성";
 
-      const result = {
+      const result: Concrete<FitnessTestResult> = {
         fitnessTestId: uuid(),
         testedOn: body.testedOn,
         items,
@@ -316,7 +368,7 @@ const fitness = [
       const overall = Math.round(items.reduce((s, i) => s + i.percentile, 0) / items.length);
       db.latest[profileId] = {
         ...result,
-        radar: (fixtures.latestByProfile[DEMO.kid] as { radar: unknown }).radar,
+        radar: fixtures.latestByProfile[DEMO.kid].radar,
         coachDirection: sorted[0].percentile > 75 ? "STRENGTHEN" : "GROWTH",
       };
 
@@ -429,14 +481,29 @@ const missions = [
   http.post(`${BASE}/families/:familyId/missions`, async ({ request }) => {
     const me = acting();
     if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자가 아닙니다");
-    const body = (await request.json()) as Record<string, unknown>;
-    const mission = {
+    const body = (await request.json()) as {
+      title: string;
+      startDate: string;
+      endDate: string;
+      targetMetric: MissionRow["targetMetric"];
+      targetValue: number;
+      videoId?: string;
+      participantProfileIds: string[];
+    };
+    const mission: MissionRow = {
       missionId: uuid(),
+      title: body.title,
       origin: "MANUAL",
       coachRunId: null,
+      targetMetric: body.targetMetric,
+      targetValue: body.targetValue,
+      // 걸음수는 서버가 확인할 수 없다. 영상 재생률과 타이머만 서버가 안다
       serverVerifiable: body.targetMetric !== "STEPS",
-      ...body,
-      participants: (body.participantProfileIds as string[]).map((id) => ({
+      startDate: body.startDate,
+      endDate: body.endDate,
+      rationale: null,
+      video: null,
+      participants: body.participantProfileIds.map((id) => ({
         profileId: id,
         name: db.profiles.profiles.find((p) => p.profileId === id)?.name ?? "",
         progress: 0,
@@ -502,7 +569,9 @@ const videos = [
     if (list === "RECENT") result = result.filter((v) => v.maxProgress !== null);
     // 연령 안전 필터. 라벨 없는 영상은 아이 연령대에 나가지 않는다
     if (ageGroup === "유소년") {
-      result = result.filter((v) => v.label && v.label.ageFrom <= 12 && v.label.ageTo >= 7);
+      result = result.filter(
+        (v) => v.label?.ageFrom != null && v.label.ageFrom <= 12 && (v.label.ageTo ?? 99) >= 7,
+      );
     }
     return HttpResponse.json({ videos: result, nextCursor: null });
   }),
