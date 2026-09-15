@@ -33,6 +33,9 @@ import { useRoleStore } from "@/stores/role-store";
  *   - 약한 항목. "너는 유연성이 약해" 를 아이에게 말하지 않는다
  *   - 못 한 날에 대한 지적
  */
+/** 컴포넌트 밖에 둔다. 안에서 만들면 렌더마다 새 배열이라 WebGL 이 다시 만들어진다 */
+const DRIFT_ASSETS = ["deco/deco-sparkle", "deco/deco-cloud-1", "deco/deco-cloud-2"];
+
 export default function KidHomePage() {
   const router = useRouter();
   const { familyId, isPending } = useSession();
@@ -95,7 +98,7 @@ export default function KidHomePage() {
       <Stage wide className="relative space-y-7">
         {/* 배경에 조각이 천천히 떠다닌다. 아이 화면은 부모 화면보다 놀이처럼 보여도 된다 */}
         <SpriteField
-          assets={["deco/deco-sparkle", "deco/deco-cloud-1", "deco/deco-cloud-2"]}
+          assets={DRIFT_ASSETS}
           count={9}
           speed={0.5}
           opacity={0.14}

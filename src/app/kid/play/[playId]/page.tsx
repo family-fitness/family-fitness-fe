@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { KidCharacter } from "@/components/domain/kid-character";
 import { MissionTimer } from "@/components/domain/mission-timer";
+import { RepGame } from "@/components/domain/rep-game";
 import { YouTubePlayer } from "@/components/domain/youtube-player";
 import { DoneCard } from "@/components/domain/done-card";
 import { ApiError } from "@/lib/api/client";
@@ -16,6 +17,7 @@ import { useMissions, useRecordTimer, useRecordVideoProgress, useVideos } from "
 import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 import { targetCopy } from "@/lib/mission";
+import { cn } from "@/lib/utils";
 
 /**
  * 운동하기.
@@ -60,6 +62,12 @@ export default function PlayPage() {
 
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /*
+    같은 운동을 두 가지 방법으로 할 수 있다.
+    영상은 따라 하기 좋고, 놀이는 셀 수 있어서 더 오래 한다 —
+    페르소나 서준(초4)은 끝까지 보는 것보다 세는 쪽에 반응한다.
+  */
+  const [how, setHow] = useState<"video" | "game">("video");
 
   if (missionPending || videoPending) return <PlaySkeleton />;
 
@@ -102,7 +110,54 @@ export default function PlayPage() {
     <>
       <AppBar back title={title} />
       <Stage wide className="space-y-5">
-        {video?.videoId ? (
+        <div className="flex gap-2" role="tablist" aria-label="어떻게 할까요">
+          {(
+            [
+              ["video", "영상 보기"],
+              ["game", "놀이로 하기"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={how === value}
+              onClick={() => setHow(value)}
+              className={cn("chip press flex-1 justify-center", how === value && "chip-on")}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {how === "game" ? (
+          <RepGame
+            pending={recordTimer.isPending}
+            onFinish={async ({ seconds }) => {
+              setError(null);
+              // 1분을 채웠고 미션이 있으면 서버에 시간으로 기록한다.
+              // 횟수는 아이가 센 값이라 보내지 않는다
+              const minutes = Math.floor(seconds / 60);
+              if (mission?.missionId && minutes >= 1) {
+                const endedAt = new Date();
+                const startedAt = new Date(endedAt.getTime() - seconds * 1000);
+                try {
+                  await recordTimer.mutateAsync({
+                    profileId: childProfileId ?? "",
+                    startedAt: startedAt.toISOString(),
+                    endedAt: endedAt.toISOString(),
+                    activeMinutes: minutes,
+                  });
+                } catch (e) {
+                  setError(
+                    e instanceof ApiError ? e.userMessage : "기록하지 못했어요. 다시 해 볼까요?",
+                  );
+                }
+              }
+              setDone(true);
+            }}
+          />
+        ) : video?.videoId ? (
           <YouTubePlayer
             videoId={video.videoId}
             startSec={video.startSec}
@@ -121,7 +176,8 @@ export default function PlayPage() {
           </div>
         )}
 
-        <div>
+        {/* 놀이 중에는 제목을 다시 쓰지 않는다. 위 막대에 이미 있고, 화면이 좁다 */}
+        <div className={cn(how === "game" && "hidden")}>
           <h1 className="text-xl leading-snug font-extrabold">{title}</h1>
           {mission && (
             <p className="text-ink-soft mt-1 text-sm">
@@ -134,7 +190,7 @@ export default function PlayPage() {
         </div>
 
         {/* 타이머 미션이면 여기서 시간을 잰다. 서버가 진짜로 아는 값이다 */}
-        {isTimer && mission?.missionId && (
+        {how === "video" && isTimer && mission?.missionId && (
           <MissionTimer
             missionId={mission.missionId}
             pending={recordTimer.isPending}
@@ -161,17 +217,21 @@ export default function PlayPage() {
         )}
 
         {/* 아이가 누르는 마지막 버튼. 여기까지 오면 오늘 할 일은 끝이다 */}
-        <button
-          type="button"
-          onClick={() => setDone(true)}
-          className="press bg-signal w-full rounded-2xl py-5 text-xl font-extrabold text-white"
-        >
-          다 했어요!
-        </button>
+        {how === "video" && (
+          <>
+            <button
+              type="button"
+              onClick={() => setDone(true)}
+              className="press bg-signal w-full rounded-2xl py-5 text-xl font-extrabold text-white"
+            >
+              다 했어요!
+            </button>
 
-        <p className="text-faint text-center text-xs leading-relaxed">
-          영상을 끝까지 보면 자동으로 기록돼요. 중간에 그만둬도 괜찮아요.
-        </p>
+            <p className="text-faint text-center text-xs leading-relaxed">
+              영상을 끝까지 보면 자동으로 기록돼요. 중간에 그만둬도 괜찮아요.
+            </p>
+          </>
+        )}
       </Stage>
     </>
   );
