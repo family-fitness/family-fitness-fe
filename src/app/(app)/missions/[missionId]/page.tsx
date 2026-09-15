@@ -1,13 +1,14 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Celebrate } from "@/components/scene/celebrate";
 import { MissionTimer } from "@/components/domain/mission-timer";
 import { VerifyLabel } from "@/components/domain/mission-row";
 import { YouTubePlayer } from "@/components/domain/youtube-player";
@@ -44,6 +45,21 @@ export default function MissionDetailPage() {
   const mission = data?.missions?.find((m) => m.missionId === missionId);
 
   const [error, setError] = useState<string | null>(null);
+  const [celebrating, setCelebrating] = useState(false);
+
+  // 내가 방금 끝냈을 때만 한 번 터뜨린다. 들어올 때마다 터지면 축하가 아니라 소음이다
+  const myCompletion = mission?.participants?.find(
+    (p) => p.profileId === profile?.profileId,
+  )?.completed;
+  const wasCompleted = useRef<boolean | undefined>(undefined);
+  useEffect(() => {
+    if (myCompletion && wasCompleted.current === false) {
+      setCelebrating(true);
+      const id = setTimeout(() => setCelebrating(false), 2600);
+      return () => clearTimeout(id);
+    }
+    wasCompleted.current = myCompletion;
+  }, [myCompletion]);
 
   const recordTimer = useRecordTimer(missionId, familyId ?? "");
   const recordSteps = useRecordSteps(missionId, familyId ?? "");
@@ -74,6 +90,7 @@ export default function MissionDetailPage() {
 
   return (
     <>
+      <Celebrate show={celebrating} />
       <PageHeader
         eyebrow="MISSION"
         title={mission.title ?? "미션"}
