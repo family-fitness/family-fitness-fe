@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 
 import { Stage } from "@/components/app-shell/stage";
-import { Illustration } from "@/components/ui/illustration";
+import { Avatar } from "@/components/ui/illustration";
+import { KidCharacter } from "@/components/domain/kid-character";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFamilyProfiles } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
@@ -82,12 +84,11 @@ export default function StartPage() {
       </div>
 
       <RoleCard
-        art="anim/wave-1"
-        fallbackArt="move/move-jump-rope"
         title="아이"
-        description="오늘 할 운동을 보고 바로 시작해요"
+        description="오늘 할 운동 바로 시작하기"
         tone="kid"
         onClick={goKid}
+        art={<KidCharacter motion="wave" size={96} />}
       />
 
       {childAccount ? (
@@ -96,17 +97,27 @@ export default function StartPage() {
         </p>
       ) : (
         <RoleCard
-          art="char/face-parent-1"
-          fallbackArt="move/move-walk"
           title="부모"
-          description="아이 체력을 보고 칭찬을 보내요"
+          description="아이 체력 보고 칭찬 보내기"
           tone="parent"
           onClick={goParent}
+          /* 어른 아바타를 조립해 쓴다. 1차 에셋의 move/* 는 다 아이 체형이라
+             그대로 쓰면 「부모」 칸에 아이가 앉아 있다 */
+          art={<Avatar parts={PARENT_AVATAR} size={68} />}
         />
       )}
     </Stage>
   );
 }
+
+/** 부모 칸에 세울 어른. 2차 에셋의 부모 얼굴이 오면 그걸로 바꾼다 */
+const PARENT_AVATAR = {
+  // Avatar 가 "char/" 를 스스로 붙인다. 여기서 또 붙이면 char/char/… 이 되어 사라진다
+  body: "body-adult-f",
+  hair: "hair-bob",
+  face: "face-calm",
+  top: "top-tshirt-yellow",
+};
 
 /**
  * 고르는 칸.
@@ -116,15 +127,12 @@ export default function StartPage() {
  */
 function RoleCard({
   art,
-  fallbackArt,
   title,
   description,
   tone,
   onClick,
 }: {
-  art: string;
-  /** 2차 에셋이 오기 전까지 쓸 그림. Illustration 은 없으면 조용히 숨는다 */
-  fallbackArt: string;
+  art: ReactNode;
   title: string;
   description: string;
   tone: "kid" | "parent";
@@ -141,7 +149,7 @@ function RoleCard({
           : "press border-line flex items-center gap-4 rounded-3xl border p-5 text-left"
       }
     >
-      <Illustration name={art} fallback={fallbackArt} size={kid ? 96 : 68} />
+      {art}
       <span className="min-w-0">
         <span className={kid ? "block text-2xl font-extrabold" : "block text-xl font-extrabold"}>
           {title}
