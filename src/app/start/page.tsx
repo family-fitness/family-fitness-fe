@@ -39,7 +39,7 @@ export default function StartPage() {
     setMode("kid");
     if (!hasFamily) {
       // 아이 계정은 부모가 만들어 둔 프로필에 붙는다. 스스로 가족을 만들 수 없다
-      router.push("/start/join");
+      router.push("/claim");
       return;
     }
     if (children.length === 1) {

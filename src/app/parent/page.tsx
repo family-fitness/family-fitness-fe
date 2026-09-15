@@ -14,7 +14,8 @@ import { ChildSwitch } from "@/components/domain/child-switch";
 import { PeerCompare } from "@/components/domain/peer-compare";
 import { TodayBoard } from "@/components/domain/today-board";
 import { UpdateNudge } from "@/components/domain/update-nudge";
-import { useFitnessMap, useMissions } from "@/lib/api/queries";
+import { useCoachRun, useFitnessMap, useMissions } from "@/lib/api/queries";
+import { useCoachRunId } from "@/stores/coach-store";
 import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 import { withJosa } from "@/lib/utils";
@@ -33,6 +34,11 @@ export default function ParentHomePage() {
   const { familyId, profile, isPending } = useSession();
   const { data: map, isPending: mapPending } = useFitnessMap(familyId);
   const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
+
+  // 이번 주 제안이 승인을 기다리고 있으면 여기서 먼저 말한다.
+  // 승인 전에는 미션이 0건이라 「오늘」이 영원히 비어 보인다
+  const runId = useCoachRunId(familyId);
+  const { data: run } = useCoachRun(runId);
 
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
@@ -119,15 +125,41 @@ export default function ParentHomePage() {
           />
         </section>
 
-        {/* 5. 더 볼 것 */}
+        {/* 5. 이번 주 운동을 짜는 곳. 여기서 막히면 「오늘」이 영원히 빈칸이다 */}
         <section>
-          <SectionTitle>자세히 보기</SectionTitle>
+          <SectionTitle>이번 주</SectionTitle>
+          <ul className="divide-rows">
+            <HomeLink
+              href="/coach/weekly"
+              art="item/item-clipboard"
+              title="이번 주 운동 짜기"
+              description={
+                run?.status === "AWAITING_APPROVAL"
+                  ? "제안이 승인을 기다리고 있어요"
+                  : run?.status === "RUNNING"
+                    ? "코치가 만드는 중이에요"
+                    : "가족 기록을 보고 코치가 한 주를 짜요"
+              }
+              badge={run?.status === "AWAITING_APPROVAL" ? "승인 기다림" : undefined}
+            />
+            <HomeLink
+              href="/coach/chat"
+              art="char/face-cheer"
+              title="코치에게 묻기"
+              description="답에는 어디서 찾았는지가 같이 붙어요"
+            />
+          </ul>
+        </section>
+
+        {/* 6. 아이를 더 자세히 */}
+        <section>
+          <SectionTitle>{withJosa(child.name ?? "아이", "은는")} 어떤가</SectionTitle>
           <ul className="divide-rows">
             <HomeLink
               href={`/parent/child/${child.profileId}`}
               art="item/item-compare"
-              fallback="item/item-clipboard"
-              title={`${withJosa(child.name ?? "아이", "은는")} 어떻게 자라고 있나`}
+              fallback="item/item-growth-up"
+              title="어떻게 자라고 있나"
               description="점수와 키·몸무게 변화"
             />
             <HomeLink
@@ -144,10 +176,47 @@ export default function ParentHomePage() {
             />
           </ul>
         </section>
+
+        {/*
+          7. 부모 자신.
+          기획서의 출발점이 「부모가 움직이지 않으면 아이도 움직이지 않는다」다.
+          아이 화면만 있고 부모가 할 일이 없으면 이 앱은 잔소리 도구가 된다.
+        */}
+        <section>
+          <SectionTitle>나도 함께</SectionTitle>
+          <ul className="divide-rows">
+            <HomeLink
+              href="/settings/support-mode"
+              art="item/item-shoes"
+              title="얼마나 같이 뛸지"
+              description={SUPPORT_COPY[profile?.supportMode ?? "none"]}
+            />
+            <HomeLink
+              href={`/p/${profile?.profileId}/measure`}
+              art="item/item-tape"
+              title="내 체력도 재보기"
+              description="아이와 같은 기준으로 또래 중 어디인지"
+            />
+            <HomeLink
+              href="/family/report"
+              art="item/item-calendar"
+              title="이번 주 우리 가족"
+              description="누가 얼마나 움직였는지"
+            />
+          </ul>
+        </section>
       </Stage>
     </>
   );
 }
+
+/** 참여 방식을 한 줄로. 고르지 않았으면 고르라고 말한다 */
+const SUPPORT_COPY: Record<string, string> = {
+  CHEER_ONLY: "응원할게요",
+  WEEKEND: "주말에는 같이",
+  FULL: "매번 같이",
+  none: "아직 안 골랐어요",
+};
 
 function HomeLink({
   href,
@@ -155,12 +224,15 @@ function HomeLink({
   fallback,
   title,
   description,
+  badge,
 }: {
   href: string;
   art: string;
   fallback?: string;
   title: string;
   description?: string;
+  /** 지금 손봐야 할 줄에만 붙인다. 모든 줄에 배지가 있으면 아무것도 눈에 안 띈다 */
+  badge?: string;
 }) {
   return (
     <li>
@@ -170,6 +242,11 @@ function HomeLink({
           <span className="block text-sm font-bold">{title}</span>
           {description && <span className="text-ink-soft mt-0.5 block text-xs">{description}</span>}
         </span>
+        {badge && (
+          <span className="bg-signal shrink-0 rounded-full px-2.5 py-1 text-[0.68rem] font-extrabold text-white">
+            {badge}
+          </span>
+        )}
       </Link>
     </li>
   );

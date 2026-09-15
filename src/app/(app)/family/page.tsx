@@ -50,7 +50,7 @@ export default function FamilyHubPage() {
             description="누가 얼마나 움직였는지"
           />
           <LinkRow
-            href="/onboarding/members"
+            href="/parent/family"
             art="scene/scene-invite"
             title="가족 더하기 · 초대"
             description="프로필을 만들고 초대코드를 보내요"

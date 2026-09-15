@@ -43,7 +43,7 @@ function ClaimContent() {
     const id = setTimeout(() => {
       if (useAuthStore.getState().accessToken) return;
       const query = code ? `?claimCode=${encodeURIComponent(code)}` : "";
-      router.replace(`/onboarding/login${query}`);
+      router.replace(`/login${query}`);
     }, 350);
     return () => clearTimeout(id);
   }, [token, code, router]);

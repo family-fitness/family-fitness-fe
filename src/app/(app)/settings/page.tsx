@@ -46,7 +46,7 @@ export default function SettingsPage() {
           variant="danger"
           onClick={() => {
             signOut();
-            router.replace("/onboarding/login");
+            router.replace("/login");
           }}
         >
           로그아웃

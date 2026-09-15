@@ -26,7 +26,7 @@ const DEV_ACCOUNTS = [
 ];
 
 /** 구글이 돌아올 자리. 인가코드는 이 주소로 붙어서 온다 */
-const REDIRECT_PATH = "/onboarding/login";
+const REDIRECT_PATH = "/login";
 
 export default function LoginPage() {
   return (
@@ -98,7 +98,7 @@ function LoginContent() {
           size="block"
           onClick={() => {
             // 구글 인가코드 교환은 백엔드가 한다. 여기서는 구글로 보내기만 한다
-            const redirectUri = `${window.location.origin}/onboarding/login`;
+            const redirectUri = `${window.location.origin}/login`;
             router.push(`/api/v1/auth/google/start?redirectUri=${encodeURIComponent(redirectUri)}`);
           }}
         >

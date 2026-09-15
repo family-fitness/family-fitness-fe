@@ -59,7 +59,7 @@ export default function CreateFamilyPage() {
               familyName: familyName.trim(),
               owner: { name: name.trim(), birthDate, sex },
             });
-            router.replace("/onboarding/members");
+            router.replace("/start/child");
           } catch (err) {
             setError(
               err instanceof ApiError && err.code === "ALREADY_IN_FAMILY"
