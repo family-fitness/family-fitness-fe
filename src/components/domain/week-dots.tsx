@@ -48,8 +48,18 @@ export function WeekDots({
 
   return (
     <section className={className}>
+      {/*
+        0일일 때 "0일 움직였어요" 라고 쓰지 않는다. 첫 화면에 늘 0이 뜨는데
+        그건 시작하기도 전에 기죽이는 말이다.
+      */}
       <p className="text-sm font-bold">
-        이번 주 <span className="text-signal-deep">{count}일</span> 움직였어요
+        {count === 0 ? (
+          "움직인 날을 여기 칠해요"
+        ) : (
+          <>
+            이번 주 <span className="text-signal-deep">{count}일</span> 움직였어요
+          </>
+        )}
       </p>
       <ul className="mt-2 flex justify-between gap-1.5">
         {days.map((day, i) => {
