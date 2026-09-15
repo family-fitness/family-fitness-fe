@@ -105,6 +105,26 @@ body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
 }
+/* 대화 입력창. 탭바 바로 위에 붙어 화면 바닥에 머문다 —
+   sticky 로 두면 글이 짧을 때 화면 가운데에 떠 버린다 */
+.composer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--spacing-tabbar) + env(safe-area-inset-bottom));
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+.composer > * {
+  width: 100%;
+  max-width: var(--width-phone);
+  pointer-events: auto;
+  background: var(--color-paper);
+  border-top: 1px solid var(--color-line);
+}
+
 .app-main {
   padding-bottom: calc(var(--spacing-tabbar) + env(safe-area-inset-bottom) + 1.25rem);
 }
