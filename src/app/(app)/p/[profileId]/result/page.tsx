@@ -6,30 +6,39 @@ import { useParams } from "next/navigation";
 
 import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
+import { BandChip, GradeBadge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FactorRadar } from "@/components/domain/factor-radar";
 import { RecordRow } from "@/components/domain/record-bar";
-import { GRADE_LABEL, gradeSeal, itemLabel, itemUnit } from "@/lib/fitness-items";
-import { useLatestFitnessTest, useMyProfiles } from "@/lib/api/queries";
+import { factorPose, itemPose } from "@/lib/fitness-items";
+import { useLatestFitnessTest } from "@/lib/api/queries";
+import { useSession } from "@/lib/session";
 import { formatDate, withJosa } from "@/lib/utils";
 
 /**
- * 측정 결과 — 국민체력100 규준 대비 백분위와 등급.
+ * 측정 결과.
  *
- * 등급은 도장으로 보여준다. 색으로 좋고 나쁨을 가르지 않는다.
- * 도장은 테두리 겹수만 다르다 — 1등급이 다섯 겹, 5등급이 한 겹이다.
+ * 화면의 주인공은 **레이더**다. 항목 하나의 등급보다 "어느 요인이 비어 있는가" 가
+ * 다음 한 주를 정하기 때문이다.
+ *
+ * 문구는 서버가 준 것을 그대로 쓴다 — `topPercentText`, `disclaimer`.
+ * 백분위에서 "상위 N%" 를 프론트가 다시 만들면 반올림이 서버와 달라진다.
+ *
+ * 등급은 1·2·3등급과 「참가」뿐이다. 「미달」·「하위」 같은 말을 만들어 붙이지 않는다.
  */
 export default function ResultPage() {
   const { profileId } = useParams<{ profileId: string }>();
+  const { profiles, isChild } = useSession();
+  const profile = profiles.find((p) => p.profileId === profileId);
 
-  const { data: profiles } = useMyProfiles();
-  const profile = profiles?.find((p) => p.id === profileId);
   const { data: test, isPending } = useLatestFitnessTest(profileId);
 
   if (isPending) return <ResultSkeleton />;
 
-  if (!test) {
+  // 이력이 없어도 404 가 아니다. fitnessTestId 가 null 로 온다
+  if (!test || test.fitnessTestId == null) {
     return (
       <>
         <PageHeader eyebrow="RESULT" title="측정 결과" back />
@@ -52,78 +61,97 @@ export default function ResultPage() {
     );
   }
 
-  const sorted = [...test.items].sort((a, b) => (a.percentile ?? 0) - (b.percentile ?? 0));
-  const weakest = sorted[0];
+  const items = test.items ?? [];
+  const radar = test.radar ?? [];
+  const strongest = test.strongest;
+  const weakest = test.weakest;
 
   return (
     <>
       <PageHeader
         eyebrow="RESULT"
-        title={profile ? `${profile.displayName} 결과` : "측정 결과"}
+        title={profile ? `${profile.name} 결과` : "측정 결과"}
         back
         meta={
           <>
-            <span>{formatDate(test.measuredOn)} 측정</span>
-            <span className="text-faint">
-              {test.source === "HOME" ? "집에서 직접" : "센터 결과지"}
-            </span>
+            {test.testedOn && <span>{formatDate(test.testedOn)} 측정</span>}
+            <span className="text-faint">{items.length}개 항목</span>
           </>
         }
       />
 
-      <Screen className="space-y-7">
-        {/* 종합 — 기록이 주인공이라 크게 띄운다 */}
-        <div className="flex items-center gap-4">
-          {test.overallGrade && (
-            <Illustration
-              name={gradeSeal(test.overallGrade)}
-              size={88}
-              alt={GRADE_LABEL[test.overallGrade]}
-            />
-          )}
-          <div className="min-w-0">
-            <p className="text-ink-soft text-sm font-semibold">또래 중 내 자리</p>
-            <p className="board-num text-[3.4rem] leading-none">{test.overallPercentile}</p>
-            <p className="text-ink-soft mt-1 text-sm">
-              {test.overallGrade && `${GRADE_LABEL[test.overallGrade]} · `}
-              상위 {Math.max(1, 100 - (test.overallPercentile ?? 0))}%
-            </p>
-          </div>
-        </div>
+      <Screen className="space-y-8">
+        {radar.length >= 3 && <FactorRadar points={radar} />}
 
-        <section className="space-y-4">
+        {/* 잘하는 것을 먼저 말한다. 약한 것부터 들이밀면 아이가 화면을 닫는다 */}
+        {(strongest || weakest) && (
+          <section className="divide-rows">
+            {strongest && (
+              <div className="flex items-center gap-3 py-3">
+                <Illustration name={factorPose(strongest.factor)} size={48} />
+                <div className="min-w-0">
+                  <p className="text-faint text-[0.7rem] font-bold">잘하고 있는 영역</p>
+                  <p className="text-[0.95rem] font-bold">{strongest.factor}</p>
+                </div>
+              </div>
+            )}
+            {weakest && (
+              <div className="flex items-center gap-3 py-3">
+                <Illustration name={factorPose(weakest.factor)} size={48} />
+                <div className="min-w-0">
+                  <p className="text-faint text-[0.7rem] font-bold">지금 키우기 좋은 영역</p>
+                  <p className="text-[0.95rem] font-bold">{weakest.factor}</p>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        <section className="space-y-5">
           <div className="section-head">
             <h2>항목별</h2>
           </div>
-          {test.items.map((entry, index) => (
-            <div key={entry.item} className="flex items-start gap-3">
-              <Illustration name={`move/move-${poseKey(entry.item)}`} size={52} className="mt-1" />
+          {items.map((entry, index) => (
+            <div key={entry.itemCode} className="flex items-start gap-3">
+              <Illustration
+                name={itemPose({ itemCode: entry.itemCode, factor: undefined })}
+                size={52}
+                className="mt-1"
+              />
               <div className="min-w-0 flex-1">
                 <RecordRow
-                  label={itemLabel(entry.item)}
-                  value={`${entry.value}${itemUnit(entry.item)}`}
-                  percentile={entry.percentile ?? 0}
+                  label={entry.itemLabel ?? entry.itemCode ?? ""}
+                  value={`${entry.value}${entry.unit ?? ""}`}
+                  percentile={entry.percentile}
+                  caption={entry.topPercentText}
                   delay={index * 0.08}
                 />
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {/* 자녀 화면에서는 서열(등급) 대신 상태(band) 만 보여준다 */}
+                  {!isChild && <GradeBadge grade={entry.grade} />}
+                  <BandChip band={entry.band} />
+                </div>
               </div>
             </div>
           ))}
         </section>
 
-        {/* 약한 항목을 짚되 아이 화면에서는 이 화면 자체를 보여주지 않는다 */}
-        {weakest && (
-          <div className="bg-signal-soft rounded-2xl p-4">
-            <p className="text-signal-deep text-sm font-bold">
-              {withJosa(itemLabel(weakest.item), "이가")} 가장 낮아요
-            </p>
-            <p className="text-ink-soft mt-1 text-sm leading-relaxed">
-              코치가 이 항목을 올리는 운동을 찾아 줍니다. 승인하면 이번 주 미션이 돼요.
-            </p>
-            <Link href="/coach/weekly" className="text-signal mt-2 inline-block text-sm font-bold">
-              이번 주 제안 보기
-            </Link>
-          </div>
-        )}
+        {/* 다음에 뭘 할지. 서버가 정한 방향을 그대로 따른다 */}
+        <div className="bg-signal-soft rounded-2xl p-4">
+          <p className="text-signal-deep text-sm font-bold">
+            {test.coachDirection === "STRENGTHEN"
+              ? "잘하는 영역을 더 키울 때예요"
+              : weakest
+                ? `${withJosa(weakest.factor ?? "", "을를")} 키우기 좋은 때예요`
+                : "이번 주 운동을 찾아볼까요"}
+          </p>
+          <p className="text-ink-soft mt-1 text-sm leading-relaxed">
+            코치가 이 결과에 맞는 운동을 찾아 제안해요. 보호자가 승인하면 이번 주 미션이 돼요.
+          </p>
+          <Link href="/coach/weekly" className="text-signal mt-2 inline-block text-sm font-bold">
+            이번 주 제안 보기
+          </Link>
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <Link
@@ -142,26 +170,12 @@ export default function ResultPage() {
           </Link>
         </div>
 
-        <p className="text-faint text-[0.7rem] leading-relaxed">
-          국민체력100 규준에 따라 나이와 성별이 같은 사람들과 비교한 값이에요. 측정 환경에 따라
-          결과가 달라질 수 있어요.
-        </p>
+        {/* 서버가 준 고지 문구. 줄이거나 접지 않는다 */}
+        {test.disclaimer && (
+          <p className="text-faint text-[0.7rem] leading-relaxed">{test.disclaimer}</p>
+        )}
       </Screen>
     </>
-  );
-}
-
-/** FitnessItemCode 를 move 에셋 이름으로 바꾼다 */
-function poseKey(code: string): string {
-  return (
-    {
-      SIT_UP: "situp",
-      SIT_AND_REACH: "sit-and-reach",
-      SINGLE_LEG_STAND: "single-leg",
-      GRIP_STRENGTH: "grip",
-      STANDING_LONG_JUMP: "long-jump",
-      SHUTTLE_RUN: "shuttle-run",
-    }[code] ?? "situp"
   );
 }
 
@@ -169,13 +183,9 @@ function ResultSkeleton() {
   return (
     <>
       <PageHeader eyebrow="RESULT" title="측정 결과" back />
-      <Screen className="space-y-7">
-        <div className="flex items-center gap-4">
-          <Skeleton className="size-22 rounded-full" />
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-12 w-28" />
-          </div>
+      <Screen className="space-y-8">
+        <div className="flex justify-center">
+          <Skeleton className="size-60 rounded-full" />
         </div>
         {[0, 1, 2].map((i) => (
           <div key={i} className="flex gap-3">
@@ -183,6 +193,7 @@ function ResultSkeleton() {
             <div className="flex-1 space-y-2">
               <Skeleton className="h-4 w-40" />
               <Skeleton className="h-2.5 w-full rounded-full" />
+              <Skeleton className="h-5 w-24 rounded-md" />
             </div>
           </div>
         ))}
