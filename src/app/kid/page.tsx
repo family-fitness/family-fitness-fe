@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { SectionTitle, Stage } from "@/components/app-shell/stage";
+import { ErrorState } from "@/components/ui/error-state";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KidCharacter } from "@/components/domain/kid-character";
@@ -39,10 +40,16 @@ const DRIFT_ASSETS = ["deco/deco-sparkle", "deco/deco-cloud-1", "deco/deco-cloud
 
 export default function KidHomePage() {
   const router = useRouter();
-  const { familyId, isPending } = useSession();
+  const { familyId, isPending, error: sessionError } = useSession();
   const childProfileId = useRoleStore((s) => s.childProfileId);
 
-  const { data: map, isPending: mapPending } = useFitnessMap(familyId);
+  const {
+    data: map,
+    isPending: mapPending,
+    error: mapError,
+    refetch: refetchMap,
+    isRefetching,
+  } = useFitnessMap(familyId);
   const { data: family } = useFamilyProfiles(familyId);
   const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
   /*
@@ -58,6 +65,19 @@ export default function KidHomePage() {
 
   // 미션이 없어도 할 게 있어야 한다. 연령대에 맞는 영상을 하나 권한다
   const { data: videos } = useVideos({ list: "ALL", ageGroup: profile?.ageGroup });
+
+  // /me 가 실패하면 가족 지도는 시작도 못 한다. 실패를 기다림보다 먼저 본다
+  const failure = sessionError ?? mapError;
+  if (failure) {
+    return (
+      <>
+        <AppBar title="" />
+        <Stage wide>
+          <ErrorState error={failure} onRetry={() => void refetchMap()} retrying={isRefetching} />
+        </Stage>
+      </>
+    );
+  }
 
   if (isPending || mapPending) return <KidHomeSkeleton />;
 

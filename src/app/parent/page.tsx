@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { SectionTitle, Stage } from "@/components/app-shell/stage";
 import { Button } from "@/components/ui/button";
+import { ErrorState } from "@/components/ui/error-state";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScoreDial } from "@/components/domain/score-dial";
@@ -32,8 +33,14 @@ import { withJosa } from "@/lib/utils";
  */
 export default function ParentHomePage() {
   const router = useRouter();
-  const { familyId, profile, isPending } = useSession();
-  const { data: map, isPending: mapPending } = useFitnessMap(familyId);
+  const { familyId, profile, isPending, error: sessionError } = useSession();
+  const {
+    data: map,
+    isPending: mapPending,
+    error: mapError,
+    refetch: refetchMap,
+    isRefetching,
+  } = useFitnessMap(familyId);
   const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
 
   // 이번 주 제안이 승인을 기다리고 있으면 여기서 먼저 말한다.
@@ -49,6 +56,23 @@ export default function ParentHomePage() {
   // 고른 적이 없으면 첫째로 본다. 기본값을 저장해 두지 않는다 —
   // effect 안에서 상태를 쓰면 렌더가 한 번 더 돌고, 여기서는 굳이 저장할 것도 없다
   const child = children.find((c) => c.profileId === childProfileId) ?? children[0];
+
+  /*
+    실패를 기다림보다 먼저 본다.
+    /me 가 실패하면 familyId 가 없어서 가족 지도 조회는 시작도 못 하고,
+    그 상태는 영원히 "불러오는 중" 이다 — 화면이 통째로 빈칸이 된다.
+  */
+  const failure = sessionError ?? mapError;
+  if (failure) {
+    return (
+      <>
+        <AppBar title="우리집" />
+        <Stage>
+          <ErrorState error={failure} onRetry={() => void refetchMap()} retrying={isRefetching} />
+        </Stage>
+      </>
+    );
+  }
 
   if (isPending || mapPending) return <ParentHomeSkeleton />;
 

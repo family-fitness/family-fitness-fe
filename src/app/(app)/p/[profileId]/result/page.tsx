@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
 import { BandChip, GradeBadge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorRadar } from "@/components/domain/factor-radar";
@@ -36,9 +37,20 @@ export default function ResultPage() {
   const { data: family } = useFamilyProfiles(familyId);
   const profile = family?.profiles?.find((p) => p.profileId === profileId);
 
-  const { data: test, isPending } = useLatestFitnessTest(profileId);
+  const { data: test, isPending, error, refetch, isRefetching } = useLatestFitnessTest(profileId);
 
   if (isPending) return <ResultSkeleton />;
+
+  if (error) {
+    return (
+      <>
+        <PageHeader title="측정 결과" back />
+        <Screen>
+          <ErrorState error={error} onRetry={() => void refetch()} retrying={isRefetching} />
+        </Screen>
+      </>
+    );
+  }
 
   // 이력이 없어도 404 가 아니다. fitnessTestId 가 null 로 온다
   if (!test || test.fitnessTestId == null) {
