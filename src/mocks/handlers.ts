@@ -283,6 +283,15 @@ function syncMapMember(profile: Profile) {
   member.consentGiven = profile.consentGiven;
 }
 
+/** 연령대 → 만 나이 범위. 영상 연령 필터가 이 범위와 겹치는지 본다 */
+const AGE_RANGE: Record<string, [number, number]> = {
+  유아기: [0, 6],
+  유소년: [7, 12],
+  청소년: [13, 18],
+  성인: [19, 64],
+  어르신: [65, 99],
+};
+
 /* ─── 측정 ─────────────────────────────────────────────────── */
 
 const fitness = [
@@ -594,11 +603,15 @@ const videos = [
     let result = db.videos;
     if (list === "FAVORITES") result = result.filter((v) => v.favorited);
     if (list === "RECENT") result = result.filter((v) => v.maxProgress !== null);
-    // 연령 안전 필터. 라벨 없는 영상은 아이 연령대에 나가지 않는다
-    if (ageGroup === "유소년") {
-      result = result.filter(
-        (v) => v.label?.ageFrom != null && v.label.ageFrom <= 12 && (v.label.ageTo ?? 99) >= 7,
-      );
+    // 연령 안전 필터. 라벨 연령 범위와 겹치는 영상만 나간다.
+    // 라벨이 없는 영상은 아이 연령대에 아예 나가지 않는다 — 무엇이 나올지 모르기 때문이다
+    if (ageGroup) {
+      const [from, to] = AGE_RANGE[ageGroup] ?? [0, 99];
+      result = result.filter((v) => {
+        const label = v.label;
+        if (label?.ageFrom == null && label?.ageTo == null) return false;
+        return (label.ageFrom ?? 0) <= to && (label.ageTo ?? 99) >= from;
+      });
     }
     return HttpResponse.json({ videos: result, nextCursor: null });
   }),
