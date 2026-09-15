@@ -11,10 +11,11 @@ import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScoreDial } from "@/components/domain/score-dial";
 import { ChildSwitch } from "@/components/domain/child-switch";
+import { MyNudge, MyRow } from "@/components/domain/my-row";
 import { PeerCompare } from "@/components/domain/peer-compare";
 import { TodayBoard } from "@/components/domain/today-board";
 import { UpdateNudge } from "@/components/domain/update-nudge";
-import { useCoachRun, useFitnessMap, useMissions } from "@/lib/api/queries";
+import { useCoachRun, useFitnessMap, useLatestFitnessTest, useMissions } from "@/lib/api/queries";
 import { useCoachRunId } from "@/stores/coach-store";
 import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
@@ -44,6 +45,7 @@ export default function ParentHomePage() {
   const setChild = useRoleStore((s) => s.setChild);
 
   const children = (map?.members ?? []).filter((m) => m.role === "CHILD");
+  const myMember = map?.members?.find((m) => m.profileId === profile?.profileId);
   // 고른 적이 없으면 첫째로 본다. 기본값을 저장해 두지 않는다 —
   // effect 안에서 상태를 쓰면 렌더가 한 번 더 돌고, 여기서는 굳이 저장할 것도 없다
   const child = children.find((c) => c.profileId === childProfileId) ?? children[0];
@@ -97,6 +99,7 @@ export default function ParentHomePage() {
         {/* 1. 지금 어디쯤인가 */}
         <section className="pt-1">
           <ScoreDial score={score} size={196} label={`${child.name} 신체 점수`} />
+          <ScoreBasis profileId={child.profileId} />
         </section>
 
         {/* 2. 또래와 견주면 */}
@@ -190,6 +193,10 @@ export default function ParentHomePage() {
         <section>
           <SectionTitle>나도 함께</SectionTitle>
           <ul className="divide-rows">
+            {/* 기획서 ① 가족 체력 지도 — 아이만 있고 부모가 없으면 잔소리 도구가 된다 */}
+            <li>
+              <MyRow me={myMember} />
+            </li>
             <HomeLink
               href="/settings/support-mode"
               art="item/item-shoes"
@@ -209,9 +216,28 @@ export default function ParentHomePage() {
               description="누가 얼마나 움직였는지"
             />
           </ul>
+          <MyNudge me={myMember} />
         </section>
       </Stage>
     </>
+  );
+}
+
+/**
+ * 이 점수가 몇 개 항목으로 나온 건지.
+ *
+ * 항목 하나로 낸 점수를 그냥 「신체 점수」라고 부르면 과장이 된다.
+ * 적게 쟀을 때만 말한다 — 충분히 쟀는데도 매번 토를 달면 잔소리가 된다.
+ */
+function ScoreBasis({ profileId }: { profileId: string | undefined }) {
+  const { data } = useLatestFitnessTest(profileId);
+  const count = data?.items?.length ?? 0;
+  if (count === 0 || count >= 3) return null;
+
+  return (
+    <p className="text-faint mt-1.5 text-center text-[0.7rem] leading-relaxed">
+      지금은 {count}개 항목으로 낸 점수예요. 더 재면 또래 비교가 정확해져요.
+    </p>
   );
 }
 
