@@ -16,6 +16,7 @@ import { ApiError } from "@/lib/api/client";
 import {
   useApproveCoachRun,
   useCoachRun,
+  useFamilyProfiles,
   useRejectCoachRun,
   useStartCoachRun,
 } from "@/lib/api/queries";
@@ -35,7 +36,11 @@ import { formatDate } from "@/lib/utils";
  */
 export default function WeeklyCoachPage() {
   const router = useRouter();
-  const { profile, familyId, profiles, isPending: sessionPending } = useSession();
+  const { profile, familyId, isPending: sessionPending } = useSession();
+
+  // 제안에는 가족 전체가 들어간다. useSession().profiles 는 이 계정이 관리하는
+  // 프로필만이라 자녀 이름이 빠진다 — 이름은 가족 프로필 조회에서 찾는다
+  const { data: family } = useFamilyProfiles(familyId);
 
   const runId = useCoachRunId(familyId);
   const setRunId = useCoachStore((s) => s.setRunId);
@@ -55,7 +60,7 @@ export default function WeeklyCoachPage() {
   }, [approve.isSuccess, router]);
 
   const nameOf = (profileId: string | undefined) =>
-    profiles.find((p) => p.profileId === profileId)?.name ?? "가족";
+    family?.profiles.find((p) => p.profileId === profileId)?.name ?? "가족";
 
   if (sessionPending) return <WeeklySkeleton />;
 
@@ -119,6 +124,16 @@ export default function WeeklyCoachPage() {
       />
 
       <Screen className="space-y-7">
+        {/* 이건 아직 미션이 아니다. 한 번은 분명히 말하고 넘어간다 */}
+        {run.status === "AWAITING_APPROVAL" && (
+          <div className="flex items-start gap-3">
+            <Illustration name="scene/scene-waiting-approval" size={56} />
+            <p className="text-ink-soft pt-1 text-sm leading-relaxed">
+              아직 미션이 아니에요. 보호자가 승인하면 이번 주 미션으로 시작돼요.
+            </p>
+          </div>
+        )}
+
         {/* 코치가 뭘 하고 있는지. 스피너 하나로 때우면 아무것도 설명되지 않는다 */}
         {(run.status === "RUNNING" || run.status === "FAILED") && (
           <section>
@@ -217,7 +232,8 @@ export default function WeeklyCoachPage() {
             <div className="section-head">
               <h2>{proposals.length}개 제안</h2>
             </div>
-            {run.summary && (
+            {/* 제안이 하나면 요약과 이유가 같은 문장으로 온다. 두 번 읽히게 두지 않는다 */}
+            {run.summary && !proposals.some((p) => p.rationale === run.summary) && (
               <p className="text-ink-soft mb-1 text-sm leading-relaxed">{run.summary}</p>
             )}
             <ul className="divide-rows">
