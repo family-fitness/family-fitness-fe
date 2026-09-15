@@ -1,13 +1,142 @@
-import { PageHeader } from "@/components/app-shell/page-header";
-import { PlainScreen } from "@/components/app-shell/screen";
+"use client";
 
-export default function Page() {
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+
+import { PlainScreen } from "@/components/app-shell/screen";
+import { Button } from "@/components/ui/button";
+import { Illustration } from "@/components/ui/illustration";
+import { ApiError } from "@/lib/api/client";
+import { useDevLogin, useGoogleLogin } from "@/lib/api/queries";
+import { useAuthStore } from "@/stores/auth-store";
+
+/**
+ * 로그인.
+ *
+ * 로그인은 **계정**이 한다. 측정과 미션은 그 뒤에 붙는 **프로필**에 달린다 —
+ * 부모 계정 하나로 온 가족의 프로필을 관리하는 게 기본 모양이다.
+ *
+ * 구글 인가코드 교환은 백엔드가 한다. 프론트는 코드를 받아 넘기기만 한다.
+ * 로컬에서는 시드 계정으로 바로 들어가는 길을 둔다 — 구글 설정 없이
+ * 화면을 확인할 수 있어야 한다.
+ */
+const DEV_ACCOUNTS = [
+  { id: "demo-parent", label: "데모네 부모 (가족 3명)" },
+  { id: "demo-parent-2", label: "초대받는 계정 (프로필 없음)" },
+];
+
+/** 구글이 돌아올 자리. 인가코드는 이 주소로 붙어서 온다 */
+const REDIRECT_PATH = "/onboarding/login";
+
+export default function LoginPage() {
   return (
-    <>
-      <PageHeader eyebrow="START" title="로그인" back />
-      <PlainScreen>
-        <p className="text-ink-soft py-10 text-center text-sm">카카오 로그인으로 시작합니다.</p>
-      </PlainScreen>
-    </>
+    <Suspense fallback={null}>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const signIn = useAuthStore((s) => s.signIn);
+  const devLogin = useDevLogin();
+  const googleLogin = useGoogleLogin();
+  const [error, setError] = useState<string | null>(null);
+
+  const code = params.get("code");
+  // 초대 링크로 들어왔다가 로그인한 경우. 코드를 같이 넘겨야 바로 프로필에 붙는다
+  const claimCode = params.get("claimCode") ?? undefined;
+
+  // 구글에서 돌아왔다. 인가코드를 백엔드에 넘겨 토큰으로 바꾼다
+  useEffect(() => {
+    if (!code || googleLogin.isPending || googleLogin.isSuccess) return;
+    googleLogin
+      .mutateAsync({
+        authorizationCode: code,
+        redirectUri: `${window.location.origin}${REDIRECT_PATH}`,
+        claimCode,
+      })
+      .then((auth) => {
+        signIn(auth);
+        router.replace("/");
+      })
+      .catch((e) =>
+        setError(
+          e instanceof ApiError ? e.userMessage : "로그인하지 못했어요. 다시 시도해 주세요.",
+        ),
+      );
+    // googleLogin 은 매 렌더 새 객체다. 코드가 바뀔 때만 돈다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, claimCode]);
+
+  const enter = async (providerUserId: string) => {
+    setError(null);
+    try {
+      const auth = await devLogin.mutateAsync(providerUserId);
+      signIn(auth);
+      router.replace("/");
+    } catch (e) {
+      setError(
+        e instanceof ApiError ? e.userMessage : "들어가지 못했어요. 잠시 후 다시 시도해 주세요.",
+      );
+    }
+  };
+
+  return (
+    <PlainScreen className="flex min-h-dvh flex-col justify-center gap-8">
+      <div className="flex flex-col items-center text-center">
+        <Illustration name="move/move-jump-rope" size={150} />
+        <h1 className="page-title mt-4">우리가족 체력키움</h1>
+        <p className="text-ink-soft mt-2 text-sm leading-relaxed">
+          국민체력100 측정 기록으로 가족이 함께할 한 주를 짜 드려요.
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        <Button
+          size="block"
+          onClick={() => {
+            // 구글 인가코드 교환은 백엔드가 한다. 여기서는 구글로 보내기만 한다
+            const redirectUri = `${window.location.origin}/onboarding/login`;
+            router.push(`/api/v1/auth/google/start?redirectUri=${encodeURIComponent(redirectUri)}`);
+          }}
+        >
+          구글로 시작하기
+        </Button>
+
+        {process.env.NODE_ENV === "development" && (
+          <div className="border-line space-y-2 rounded-xl border p-3">
+            <p className="text-faint text-[0.7rem] font-bold">개발용 · 구글 없이 들어가기</p>
+            {DEV_ACCOUNTS.map((account) => (
+              <Button
+                key={account.id}
+                size="md"
+                variant="outline"
+                className="w-full"
+                loading={devLogin.isPending}
+                onClick={() => enter(account.id)}
+              >
+                {account.label}
+              </Button>
+            ))}
+          </div>
+        )}
+
+        {error && (
+          <p
+            role="alert"
+            className="bg-signal-soft text-signal-deep rounded-xl px-4 py-3 text-sm font-semibold"
+          >
+            {error}
+          </p>
+        )}
+      </div>
+
+      <p className="text-faint text-center text-[0.7rem] leading-relaxed">
+        국민체력100 측정 데이터를 바탕으로 한 참고 정보입니다. 질병의 진단·치료를 위한 것이
+        아닙니다.
+      </p>
+    </PlainScreen>
   );
 }
