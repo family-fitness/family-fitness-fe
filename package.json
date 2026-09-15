@@ -11,13 +11,14 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "next typegen && tsc --noEmit",
-    "verify": "npm run format:check && npm run lint && npm run typecheck",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run check:assets",
     "prepare": "husky",
     "check:mocks": "tsx scripts/check-mocks.mts",
     "shot": "node scripts/screenshot.mjs",
     "assets": "node scripts/prepare-assets.mjs",
     "api:types": "openapi-typescript http://localhost:8080/v3/api-docs -o src/lib/api/schema.ts",
-    "api:fixtures": "node scripts/capture-fixtures.mjs"
+    "api:fixtures": "node scripts/capture-fixtures.mjs",
+    "check:assets": "node scripts/check-assets.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
