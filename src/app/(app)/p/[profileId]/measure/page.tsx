@@ -79,7 +79,7 @@ export default function MeasurePage() {
         <PageHeader eyebrow="MEASURE" title="체력 측정" back />
         <Screen>
           <EmptyState
-            scene="empty-family"
+            scene="invite"
             title="프로필을 먼저 만들어 주세요"
             description="측정 기록은 계정이 아니라 프로필에 쌓여요."
           />
