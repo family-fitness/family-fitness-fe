@@ -449,11 +449,15 @@ const coaching = [
   }),
 
   http.post(`${BASE}/coach/chat`, async ({ request }) => {
-    const { question } = (await request.json()) as { question: string };
+    const { question, conversationId } = (await request.json()) as {
+      question: string;
+      conversationId?: string;
+    };
     // RAG 검색과 생성에 걸리는 시간. 스켈레톤이 실제로 보이게 하려고 넣었다
     await new Promise((r) => setTimeout(r, 900));
     return HttpResponse.json({
-      conversationId: uuid(),
+      // 이어지는 대화는 같은 id 를 돌려준다. 매번 새로 주면 대화가 끊긴다
+      conversationId: conversationId ?? uuid(),
       messageId: uuid(),
       answer: `${question.slice(0, 20)}… 에 대해, 아이 연령대에 맞춰 정적 스트레칭부터 시작하는 편이 좋습니다. 하루 5분, 주 4회 정도가 적당합니다.`,
       // 근거 없는 답변은 버그로 본다. 목에서도 항상 채운다
