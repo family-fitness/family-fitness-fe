@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
@@ -49,9 +49,15 @@ export default function FuturePage() {
 
   const hasTest = Boolean(latest?.fitnessTestId);
 
-  // 조회 엔드포인트가 없다. 들어오면 한 번 만든다
+  /*
+    조회 엔드포인트가 없어서 들어오면 만든다(POST). **한 번만 만들어야 한다.**
+    isPending 으로만 막으면 StrictMode 가 effect 를 두 번 돌릴 때 둘 다 통과해
+    예측이 두 건 저장된다. 상태가 아니라 ref 로 막는다 — 같은 렌더에서도 보인다.
+  */
+  const requested = useRef(false);
   useEffect(() => {
-    if (!hasTest || result || create.isPending) return;
+    if (!hasTest || requested.current) return;
+    requested.current = true;
     let cancelled = false;
     create
       .mutateAsync({})
