@@ -52,8 +52,8 @@ export default function KidHomePage() {
   const { data: family } = useFamilyProfiles(familyId);
   const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
   /*
-    가족의 도장·알림을 한 번에 받아 두 갈래로 쓴다.
-      받은 도장 = 나에게 온 것
+    가족의 칭찬·알림을 한 번에 받아 두 갈래로 쓴다.
+      받은 칭찬 = 나에게 온 것
       움직인 날 = 내가 보낸 것("다 했어요")
     받는 쪽만 불러오면 이번 주 달력이 늘 비어 있다.
   */
@@ -176,7 +176,7 @@ export default function KidHomePage() {
           )}
         </section>
 
-        {/* 받은 도장 */}
+        {/* 받은 칭찬 */}
         <section>
           <SectionTitle
             action={
@@ -187,15 +187,13 @@ export default function KidHomePage() {
               ) : undefined
             }
           >
-            받은 말
+            칭찬
           </SectionTitle>
 
           {praises.length === 0 ? (
             <div className="border-line flex items-center gap-3 rounded-2xl border border-dashed p-4">
               <Illustration name="scene/scene-waiting-stamp" size={52} />
-              <p className="text-ink-soft text-sm leading-relaxed">
-                운동을 마치면 부모님이 한마디 보내 주실 거예요.
-              </p>
+              <p className="text-ink-soft text-sm leading-relaxed">부모님의 칭찬 한마디</p>
             </div>
           ) : (
             <ul className="space-y-2">

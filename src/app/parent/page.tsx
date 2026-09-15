@@ -137,7 +137,7 @@ export default function ParentHomePage() {
         {/* 3. 몸이 자랐다면 다시 재기 */}
         <UpdateNudge child={child} />
 
-        {/* 4. 오늘 뭘 했나 — 도장은 여기서 찍는다 */}
+        {/* 4. 오늘 뭘 했나 — 칭찬은 여기서 보낸다 */}
         <section>
           <SectionTitle
             action={

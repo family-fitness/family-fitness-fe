@@ -11,7 +11,7 @@ import { useRoleStore } from "@/stores/role-store";
 import { formatDate } from "@/lib/utils";
 
 /**
- * 받은 말.
+ * 받은 칭찬.
  *
  * 아이가 다시 열어 보는 화면이다. 부모가 적어 준 말이 쌓여 보여야 다음에도 한다.
  *
@@ -26,7 +26,7 @@ export default function KidPraisePage() {
   if (isPending) {
     return (
       <>
-        <AppBar back title="받은 말" />
+        <AppBar back title="칭찬" />
         <Stage wide className="space-y-3">
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-20 w-full rounded-2xl" />
@@ -41,13 +41,11 @@ export default function KidPraisePage() {
   if (cheers.length === 0) {
     return (
       <>
-        <AppBar back title="받은 말" />
+        <AppBar back title="칭찬" />
         <Stage wide className="flex flex-col items-center pt-8 text-center">
           <Illustration name="scene/scene-waiting-stamp" size={150} />
-          <p className="mt-4 text-xl font-extrabold">아직 받은 말이 없어요</p>
-          <p className="text-ink-soft mt-2 text-sm leading-relaxed">
-            오늘 운동을 마치고 알리면 부모님이 한마디 보내 주실 거예요.
-          </p>
+          <p className="mt-4 text-xl font-extrabold">아직 칭찬이 없어요</p>
+          <p className="text-ink-soft mt-2 text-sm leading-relaxed">부모님의 칭찬 한마디</p>
         </Stage>
       </>
     );
@@ -55,12 +53,12 @@ export default function KidPraisePage() {
 
   return (
     <>
-      <AppBar back title="받은 말" />
+      <AppBar back title="칭찬" />
       <Stage wide className="space-y-5">
         <div className="flex items-center gap-3">
           <KidCharacter motion="cheer" size={84} />
           <p className="text-[1.4rem] leading-tight font-extrabold">
-            {cheers.length}개
+            칭찬 {cheers.length}개
             <span className="text-ink-soft block text-sm font-bold">모으는 중이에요</span>
           </p>
         </div>

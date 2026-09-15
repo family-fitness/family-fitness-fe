@@ -51,34 +51,16 @@
   --width-phone: 30rem;
 }
 
-/* 다크 모드.
-   Tailwind v4 의 @theme 는 최상위에서만 쓸 수 있다. @media 안에 중첩하면
-   다크 값이 항상 적용돼 라이트 모드가 사라진다. 변수를 :root 에서 덮어쓴다.
-
-   밝기를 뒤집되 파랑은 어두운 바탕에서 눈이 아프지 않게 조금 밝히고 채도를 낮춘다. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-paper: #14181d;
-    --color-sub: #1c2229;
-    --color-ink: #e9edf1;
-    --color-ink-soft: #9aa5b0;
-    --color-faint: #6d7883;
-    --color-line: #2a323b;
-    --color-rule: #9db8dd;
-
-    --color-signal: #5aa4ee;
-    --color-signal-deep: #a7c8f0;
-    --color-signal-soft: #16283c;
-
-    --color-mark: #ffc633;
-    --color-mark-soft: #2e2513;
-
-    --color-done: #4bb389;
-    --color-done-soft: #14291f;
-  }
-}
-
 html {
+  /*
+    **흰 화면 하나로 간다.** 다크 모드를 따로 두지 않는다.
+
+    이걸 적지 않으면 기기가 다크 모드일 때 브라우저가 입력칸·스크롤바·달력
+    같은 기본 UI 를 제멋대로 어둡게 칠한다. 화면은 흰데 입력칸만 검은
+    어중간한 상태가 된다.
+  */
+  color-scheme: light;
+
   /* 데스크톱 거터. 앱 화면과 대비되게 한 단계 어둡게만 둔다 */
   background-color: #dfe4ea;
   background-attachment: fixed;
@@ -196,10 +178,11 @@ body {
   white-space: nowrap;
   background: transparent;
 }
+/* 고른 칩. 검정으로 채우면 흑백 앱처럼 보인다 — 국민체력100 파랑을 쓴다 */
 .chip-on {
-  background: var(--color-ink);
-  border-color: var(--color-ink);
-  color: var(--color-paper);
+  background: var(--color-signal);
+  border-color: var(--color-signal);
+  color: #ffffff;
 }
 
 /* ── 카드 ── */

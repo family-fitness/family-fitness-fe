@@ -45,7 +45,7 @@ export function Sheet({
           <motion.button
             type="button"
             aria-label="닫기"
-            className="absolute inset-0 bg-black/40"
+            className="bg-signal-deep/35 absolute inset-0"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

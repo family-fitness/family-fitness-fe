@@ -83,13 +83,13 @@ function VideoRow({ video }: { video: Video }) {
             </span>
           )}
           {video.durationSec != null && (
-            <span className="absolute right-1 bottom-1 rounded bg-black/70 px-1 py-0.5 text-[0.6rem] font-bold text-white tabular-nums">
+            <span className="bg-signal-deep/85 absolute right-1 bottom-1 rounded px-1 py-0.5 text-[0.6rem] font-bold text-white tabular-nums">
               {formatDuration(video.durationSec)}
             </span>
           )}
           {/* 어디까지 봤는지. 다시 켤지 말지를 여기서 정한다 */}
           {watched > 0 && (
-            <span className="absolute inset-x-0 bottom-0 h-1 bg-black/25" aria-hidden>
+            <span className="bg-signal-deep/25 absolute inset-x-0 bottom-0 h-1" aria-hidden>
               <span
                 className={cn("block h-full", done ? "bg-done" : "bg-mark")}
                 style={{ width: `${watched}%` }}

@@ -17,8 +17,8 @@ export function DesktopDecor() {
         >
           {[1, 2, 3, 4, 5, 6].map((lane) => (
             <div key={lane} className="flex items-center gap-3 px-10">
-              <span className="board-num text-lg text-white/25">{lane}</span>
-              <span className="h-px flex-1 bg-white/20" />
+              <span className="board-num text-signal-deep/20 text-lg">{lane}</span>
+              <span className="bg-signal-deep/12 h-px flex-1" />
             </div>
           ))}
         </div>
