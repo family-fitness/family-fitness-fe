@@ -341,3 +341,21 @@ body {
     }
   }
 }
+
+/* 입력 한 줄. 온보딩에서 같은 모양이 여러 번 나온다 */
+.field {
+  height: 3rem;
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-line);
+  background: transparent;
+  padding-inline: 1rem;
+  font-size: 1rem;
+}
+.field::placeholder {
+  color: var(--color-faint);
+}
+.field:focus {
+  outline: none;
+  border-color: var(--color-signal);
+}
