@@ -65,6 +65,8 @@ export default function ResultPage() {
   const radar = test.radar ?? [];
   const strongest = test.strongest;
   const weakest = test.weakest;
+  // 항목 하나만 쟀으면 강한 영역과 약한 영역이 같은 것으로 온다
+  const onlyOneFactor = Boolean(strongest && weakest && strongest.factor === weakest.factor);
 
   return (
     <>
@@ -83,28 +85,47 @@ export default function ResultPage() {
       <Screen className="space-y-8">
         {radar.length >= 3 && <FactorRadar points={radar} />}
 
-        {/* 잘하는 것을 먼저 말한다. 약한 것부터 들이밀면 아이가 화면을 닫는다 */}
-        {(strongest || weakest) && (
-          <section className="divide-rows">
-            {strongest && (
-              <div className="flex items-center gap-3 py-3">
-                <Illustration name={factorPose(strongest.factor)} size={48} />
-                <div className="min-w-0">
-                  <p className="text-faint text-[0.7rem] font-bold">잘하고 있는 영역</p>
-                  <p className="text-[0.95rem] font-bold">{strongest.factor}</p>
-                </div>
-              </div>
-            )}
-            {weakest && (
-              <div className="flex items-center gap-3 py-3">
-                <Illustration name={factorPose(weakest.factor)} size={48} />
-                <div className="min-w-0">
-                  <p className="text-faint text-[0.7rem] font-bold">지금 키우기 좋은 영역</p>
-                  <p className="text-[0.95rem] font-bold">{weakest.factor}</p>
-                </div>
-              </div>
-            )}
+        {/*
+          잘하는 것을 먼저 말한다. 약한 것부터 들이밀면 아이가 화면을 닫는다.
+
+          항목이 하나뿐이면 weakest 와 strongest 가 같은 요인으로 온다. 그대로 그리면
+          "잘하고 있는 영역: 유연성 / 지금 키우기 좋은 영역: 유연성" 이 나란히 서서
+          앞뒤가 안 맞는 화면이 된다.
+        */}
+        {onlyOneFactor ? (
+          <section className="flex items-center gap-3">
+            <Illustration name={factorPose(strongest?.factor)} size={48} />
+            <div className="min-w-0">
+              <p className="text-faint text-[0.7rem] font-bold">지금 재 본 영역</p>
+              <p className="text-[0.95rem] font-bold">{strongest?.factor}</p>
+              <p className="text-ink-soft mt-0.5 text-xs">
+                항목을 더 재면 강한 영역과 키울 영역이 갈려요
+              </p>
+            </div>
           </section>
+        ) : (
+          (strongest || weakest) && (
+            <section className="divide-rows">
+              {strongest && (
+                <div className="flex items-center gap-3 py-3">
+                  <Illustration name={factorPose(strongest.factor)} size={48} />
+                  <div className="min-w-0">
+                    <p className="text-faint text-[0.7rem] font-bold">잘하고 있는 영역</p>
+                    <p className="text-[0.95rem] font-bold">{strongest.factor}</p>
+                  </div>
+                </div>
+              )}
+              {weakest && (
+                <div className="flex items-center gap-3 py-3">
+                  <Illustration name={factorPose(weakest.factor)} size={48} />
+                  <div className="min-w-0">
+                    <p className="text-faint text-[0.7rem] font-bold">지금 키우기 좋은 영역</p>
+                    <p className="text-[0.95rem] font-bold">{weakest.factor}</p>
+                  </div>
+                </div>
+              )}
+            </section>
+          )
         )}
 
         <section className="space-y-5">
@@ -139,11 +160,13 @@ export default function ResultPage() {
         {/* 다음에 뭘 할지. 서버가 정한 방향을 그대로 따른다 */}
         <div className="bg-signal-soft rounded-2xl p-4">
           <p className="text-signal-deep text-sm font-bold">
-            {test.coachDirection === "STRENGTHEN"
-              ? "잘하는 영역을 더 키울 때예요"
-              : weakest
-                ? `${withJosa(weakest.factor ?? "", "을를")} 키우기 좋은 때예요`
-                : "이번 주 운동을 찾아볼까요"}
+            {onlyOneFactor
+              ? "항목을 더 재면 더 잘 맞는 운동을 찾아요"
+              : test.coachDirection === "STRENGTHEN"
+                ? "잘하는 영역을 더 키울 때예요"
+                : weakest
+                  ? `${withJosa(weakest.factor ?? "", "을를")} 키우기 좋은 때예요`
+                  : "이번 주 운동을 찾아볼까요"}
           </p>
           <p className="text-ink-soft mt-1 text-sm leading-relaxed">
             코치가 이 결과에 맞는 운동을 찾아 제안해요. 보호자가 승인하면 이번 주 미션이 돼요.
