@@ -2,116 +2,107 @@
 
 import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
-import { Section } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { MemberRowSkeleton, Skeleton } from "@/components/ui/skeleton";
 import { KidHome } from "@/components/domain/kid-home";
 import { MemberRow } from "@/components/domain/member-row";
 import { NextAction } from "@/components/domain/next-action";
 import { ProfileSwitcher } from "@/components/domain/profile-switcher";
-import { useFitnessMap, useLatestCoachRun, useMissions } from "@/lib/api/queries";
-import { useProfileStore } from "@/stores/profile-store";
-import { FAMILY_ID } from "@/mocks/data";
+import { useCoachRun, useFitnessMap, useMissions } from "@/lib/api/queries";
+import { useSession } from "@/lib/session";
+import { useCoachRunId } from "@/stores/coach-store";
 
 /**
  * 가족 체력 지도 — 앱의 메인 화면.
  *
- * 화면 전체가 GET /families/{id}/fitness-map 호출 하나로 온다.
+ * GET /families/{id}/fitness-map 한 번으로 화면 전체가 온다.
  *
- * 위계
- *   1. 지금 할 일 한 줄 — 사람이 행동으로 넘어가는 자리
- *   2. 구성원 목록 — 기록이 주인공이라 숫자를 크게 띄운다
+ * **구성원 사이 순위 · 비교를 그리지 않는다.** 서버가 그런 값을 주지 않고,
+ * 화면도 비교표가 되면 안 된다. 구성원마다 서버가 만든 headline 한 줄만 보여준다.
  */
 export default function HomePage() {
-  // TODO 인증이 붙으면 로그인한 계정의 가족 id 로 바꾼다
-  const familyId = FAMILY_ID;
-
+  const { profile, profiles, familyId, isChild, isPending: sessionPending } = useSession();
   const { data, isPending, error } = useFitnessMap(familyId);
-  const { data: coachRun } = useLatestCoachRun(familyId);
-  const { data: missions } = useMissions(familyId);
-  const currentProfileId = useProfileStore((s) => s.currentProfileId);
+  const { data: missionList } = useMissions(familyId);
+  const runId = useCoachRunId(familyId);
+  const { data: coachRun } = useCoachRun(runId);
 
-  if (isPending) return <HomeSkeleton />;
+  if (sessionPending || isPending) return <HomeSkeleton />;
 
-  if (error) {
+  if (error || !data) {
     return (
       <>
         <PageHeader eyebrow="FAMILY" title="우리 가족" />
         <Screen>
-          <EmptyState scene="error" title="기록을 불러오지 못했어요" description={error.message} />
+          <EmptyState
+            scene="error"
+            title="기록을 불러오지 못했어요"
+            description="잠시 후 다시 시도해 주세요."
+          />
         </Screen>
       </>
     );
   }
 
-  const { family, members } = data;
-  const profiles = members.map((m) => m.profile);
-
-  // 자녀 프로필을 보고 있으면 화면을 통째로 바꾼다.
-  // 부모가 보는 정보(백분위 · 등급 · 약점)를 아이에게 그대로 보여주지 않는다.
-  const current = profiles.find((p) => p.id === currentProfileId);
-  if (current?.role === "CHILD") {
+  // 자녀 프로필을 보고 있으면 화면을 통째로 바꾼다
+  if (isChild && profile) {
     return (
       <>
         <div className="flex justify-end px-4 pt-3">
-          <ProfileSwitcher profiles={profiles} />
+          <ProfileSwitcher profiles={profiles} current={profile} />
         </div>
-        <KidHome profile={current} missions={missions} />
+        <KidHome profile={profile} missions={missionList?.missions} />
       </>
     );
   }
 
-  const measurable = members.filter((m) => m.profile.measurable);
-  const measured = measurable.filter((m) => m.overallPercentile !== null);
-  const aboveAverage = measured.filter((m) => (m.overallPercentile ?? 0) >= 50).length;
+  const members = data.members ?? [];
+  const measurable = members.filter((m) => m.measurable);
+  const measured = measurable.filter((m) => m.latest);
 
   return (
     <>
       <PageHeader
         eyebrow="FAMILY"
-        title={family.name}
-        action={<ProfileSwitcher profiles={profiles} />}
+        title={data.familyName ?? "우리 가족"}
+        action={<ProfileSwitcher profiles={profiles} current={profile} />}
         meta={
           <>
             <span>
               {measurable.length}명 중 {measured.length}명 측정
             </span>
             <span className="text-faint">
-              {measured.length === 0
-                ? "아직 기록 없음"
-                : aboveAverage === measured.length
-                  ? "모두 또래 평균 위"
-                  : `${aboveAverage}명이 또래 평균 위`}
+              {measured.length === 0 ? "아직 기록 없음" : "각자 또래와 비교한 값이에요"}
             </span>
           </>
         }
       />
 
       <Screen className="space-y-6">
-        <NextAction coachRun={coachRun} missions={missions} members={members} />
+        <NextAction
+          coachRun={coachRun}
+          missions={missionList?.missions}
+          members={members}
+          canApprove={profile?.role === "PARENT"}
+        />
 
-        {measured.length === 0 ? (
-          <EmptyState
-            scene="first-measure"
-            title="첫 측정을 등록해 보세요"
-            description="집에서 잴 수 있는 항목부터 시작하면 됩니다. 몇 개만 넣어도 또래 중 어디쯤인지 알 수 있어요."
-          />
-        ) : (
-          <Section title="구성원">
-            <ul className="divide-rows">
-              {members.map((member, index) => (
-                <li key={member.profile.id}>
-                  <MemberRow member={member} delay={index * 0.06} />
-                </li>
-              ))}
-            </ul>
-          </Section>
+        <section className="space-y-1">
+          <div className="section-head">
+            <h2>구성원</h2>
+          </div>
+          <ul className="divide-rows">
+            {members.map((member) => (
+              <li key={member.profileId}>
+                <MemberRow member={member} />
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* 서버가 주는 고지 문구를 그대로 쓴다. 고쳐 쓰지 않는다 */}
+        {data.disclaimer && (
+          <p className="text-faint px-1 text-[0.7rem] leading-relaxed">{data.disclaimer}</p>
         )}
-
-        <p className="text-faint px-1 text-[0.7rem] leading-relaxed">
-          숫자는 또래 100명 중 자기 자리예요. 국민체력100 규준에 따라 나이와 성별이 같은 사람들과
-          비교합니다.
-        </p>
       </Screen>
     </>
   );
