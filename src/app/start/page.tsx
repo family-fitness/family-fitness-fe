@@ -70,7 +70,7 @@ export default function StartPage() {
 
       <RoleCard
         art="anim/wave-1"
-        fallbackArt="char/body-child-m"
+        fallbackArt="move/move-jump-rope"
         title="아이"
         description="오늘 할 운동을 보고 바로 시작해요"
         tone="kid"
@@ -79,7 +79,7 @@ export default function StartPage() {
 
       <RoleCard
         art="char/face-parent-1"
-        fallbackArt="char/body-adult-f"
+        fallbackArt="move/move-walk"
         title="부모"
         description="아이 체력을 보고 칭찬을 보내요"
         tone="parent"

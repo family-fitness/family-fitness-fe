@@ -34,10 +34,14 @@ export function Illustration({
   className?: string;
   priority?: boolean;
 }) {
-  const [failed, setFailed] = useState(false);
-  const src = failed && fallback ? fallback : name;
-  // 대체 그림까지 없으면 조용히 숨는다
-  if (failed && !fallback) return null;
+  /*
+    0 = 원본을 보는 중, 1 = 대체 그림을 보는 중, 2 = 둘 다 없어서 숨김.
+    단계를 안 세면 대체 그림까지 없을 때 깨진 이미지 아이콘이 그대로 남는다.
+  */
+  const [stage, setStage] = useState(0);
+  if (stage >= 2) return null;
+  const src = stage === 0 ? name : fallback;
+  if (!src) return null;
 
   // 정사각 상자에 비율을 지켜 앉힌다.
   // 너비만 고정하고 높이를 auto 로 두면 세로로 긴 그림(서 있는 자세)이 폭주한다.
@@ -53,7 +57,7 @@ export function Illustration({
         fill
         sizes={`${size}px`}
         priority={priority}
-        onError={() => setFailed(true)}
+        onError={() => setStage((v) => (v === 0 && fallback ? 1 : 2))}
         className="object-contain"
       />
     </span>

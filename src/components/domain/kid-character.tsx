@@ -16,8 +16,13 @@ import { cn } from "@/lib/utils";
  *
  * `prefers-reduced-motion` 이면 첫 프레임에서 멈춘다.
  */
+/*
+  대체 그림은 **전신 자세**여야 한다.
+  1차 에셋의 `char/body-*` 는 아바타를 겹쳐 만들 때 쓰는 부품이라
+  단독으로 쓰면 머리 없는 사람이 나온다.
+*/
 const SEQUENCE = {
-  idle: { frames: ["anim/idle-1", "anim/idle-2", "anim/idle-3"], fallback: "char/body-child-m" },
+  idle: { frames: ["anim/idle-1", "anim/idle-2", "anim/idle-3"], fallback: "move/move-walk" },
   jump: { frames: ["anim/jump-1", "anim/jump-2", "anim/jump-3"], fallback: "move/move-long-jump" },
   run: { frames: ["anim/run-1", "anim/run-2", "anim/run-3"], fallback: "move/move-shuttle-run" },
   stretch: {
@@ -27,7 +32,7 @@ const SEQUENCE = {
   squat: { frames: ["anim/squat-1", "anim/squat-2", "anim/squat-3"], fallback: "move/move-squat" },
   cheer: { frames: ["anim/cheer-1", "anim/cheer-2", "anim/cheer-3"], fallback: "scene/scene-done" },
   tired: { frames: ["anim/tired-1", "anim/tired-2", "anim/tired-3"], fallback: "move/move-walk" },
-  wave: { frames: ["anim/wave-1", "anim/wave-2", "anim/wave-3"], fallback: "char/body-child-m" },
+  wave: { frames: ["anim/wave-1", "anim/wave-2", "anim/wave-3"], fallback: "move/move-walk" },
 } as const;
 
 export type Motion = keyof typeof SEQUENCE;

@@ -83,6 +83,7 @@ type MapMember = Concrete<FitnessMap>["members"][number];
 type MissionRow = Concrete<Mission>;
 
 const BASE = "/api/v1";
+const CHEER_KEY = "ff-mock-cheers";
 
 export const DEMO = {
   familyId: "00000000-0000-4000-8000-000000000010",
@@ -102,11 +103,36 @@ const db = {
   /** 승인 전에는 비어 있다. 승인 핸들러가 채운다 */
   missions: [] as MissionRow[],
   videos: structuredClone(fixtures.videos.videos),
-  /** 부모가 찍어 준 도장. 받은 쪽에서 볼 수 있어야 한다 */
-  cheers: [] as CheerLog[],
+  /**
+   * 주고받은 도장 · 알림.
+   *
+   * 이것만 탭 저장소에 남긴다. 아이가 아이 화면에서 알리고 부모가 부모 화면에서
+   * 도장을 찍으려면 **화면을 옮겨도 남아 있어야** 한다. 다른 상태처럼 새로고침마다
+   * 지워지면 목으로는 이 흐름을 한 번도 확인할 수 없다.
+   *
+   * 탭을 닫으면 사라진다 — 시연을 처음부터 다시 하기 쉽게.
+   */
+  cheers: loadCheers(),
   /** 지금 로그인해서 보고 있는 사람. 승인 권한 테스트를 위해 바꿀 수 있다 */
   actingProfileId: DEMO.mom as string,
 };
+
+/** 탭 저장소에서 되살린다. 브라우저가 아닌 곳(검사 스크립트)에서는 빈 배열이다 */
+function loadCheers(): CheerLog[] {
+  try {
+    return JSON.parse(sessionStorage.getItem(CHEER_KEY) ?? "[]") as CheerLog[];
+  } catch {
+    return [];
+  }
+}
+
+function saveCheers(cheers: CheerLog[]) {
+  try {
+    sessionStorage.setItem(CHEER_KEY, JSON.stringify(cheers));
+  } catch {
+    // 저장이 안 돼도 화면은 돌아야 한다
+  }
+}
 
 export function setActingProfile(profileId: string) {
   db.actingProfileId = profileId;
@@ -268,6 +294,7 @@ const identity = [
       missionId: body.missionId ?? null,
       createdAt: cheer.createdAt,
     });
+    saveCheers(db.cheers);
     return HttpResponse.json(cheer, { status: 201 });
   }),
 

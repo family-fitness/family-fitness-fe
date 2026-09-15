@@ -144,7 +144,7 @@ export default function ParentHomePage() {
             />
             <HomeLink
               href="/coach/chat"
-              art="char/face-cheer"
+              art="item/item-whistle"
               title="코치에게 묻기"
               description="답에는 어디서 찾았는지가 같이 붙어요"
             />

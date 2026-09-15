@@ -204,8 +204,8 @@ function BigAction({
       <div className="flex items-center gap-3">
         <KidCharacter motion={motion} size={96} />
         <div className="min-w-0 flex-1">
-          <p className="text-[1.35rem] leading-snug font-extrabold">{title}</p>
-          <p className="mt-1 text-sm opacity-90">{hint}</p>
+          <p className="line-clamp-2 text-[1.35rem] leading-snug font-extrabold">{title}</p>
+          <p className="mt-1 line-clamp-2 text-sm opacity-90">{hint}</p>
         </div>
       </div>
       <span className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-white/20 py-3.5 text-xl font-extrabold">
