@@ -40,6 +40,8 @@ export default function WeeklyReportPage() {
   const members = report.members ?? [];
   const stats = report.missionStats;
   const totalMinutes = members.reduce((sum, m) => sum + (m.activeMinutes ?? 0), 0);
+  // 이번 주 미션을 전부 끝냈을 때만 트로피로 바꾼다. 늘 트로피면 아무 뜻이 없다
+  const allDone = (stats?.total ?? 0) > 0 && stats?.completed === stats?.total;
   const maxMinutes = Math.max(1, ...members.map((m) => m.activeMinutes ?? 0));
 
   return (
@@ -60,7 +62,7 @@ export default function WeeklyReportPage() {
       <Screen className="space-y-8">
         {/* 가족 전체 한 줄 */}
         <div className="flex items-center gap-4">
-          <Illustration name="item/item-calendar" size={72} />
+          <Illustration name={allDone ? "item/item-trophy" : "item/item-calendar"} size={72} />
           <div className="min-w-0">
             <p className="text-ink-soft text-sm font-semibold">가족이 함께 움직인 시간</p>
             <p className="board-num text-[3.2rem] leading-none">
@@ -71,6 +73,9 @@ export default function WeeklyReportPage() {
               미션 {stats?.completed ?? 0}／{stats?.total ?? 0}개 완료 · 응원{" "}
               {report.cheerCount ?? 0}번
             </p>
+            {allDone && (
+              <p className="text-done mt-1 text-xs font-bold">이번 주 미션을 다 끝냈어요</p>
+            )}
           </div>
         </div>
 

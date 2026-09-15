@@ -1,4 +1,4 @@
-import type { Band, FitnessFactor, FitnessItem } from "./api/types";
+import type { FitnessFactor, FitnessItem } from "./api/types";
 
 /**
  * 측정 항목에 관한 화면 쪽 정보.
@@ -70,20 +70,4 @@ export function equipmentArt(itemCode: string | undefined): string | undefined {
 /** 요인 → 그림. 레이더 · 결과 화면에서 쓴다 */
 export function factorPose(factor: FitnessFactor | string | undefined): string {
   return POSE_BY_FACTOR[factor ?? ""] ?? "move/move-situp";
-}
-
-/**
- * band 를 도장 그림으로.
- * 등급 도장 5장을 3단계에 나눠 쓴다. 색으로 좋고 나쁨을 가르지 않는다.
- */
-export function bandSeal(band: Band | null | undefined): string {
-  if (band === "strength") return "item/grade-1";
-  if (band === "steady") return "item/grade-3";
-  return "item/grade-5";
-}
-
-/** 등급 문자열("1등급"·"참가")을 도장으로 */
-export function gradeSeal(grade: string | null | undefined): string {
-  const n = grade?.match(/^(\d)등급$/)?.[1];
-  return n ? `item/grade-${n}` : "item/grade-4";
 }
