@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { Illustration } from "@/components/ui/illustration";
 import { withJosa } from "@/lib/utils";
 
@@ -16,22 +18,40 @@ export function PeerCompare({
   name,
   score,
   headline,
+  profileId,
 }: {
   name: string;
   score: number | null;
   headline: string | null | undefined;
+  /** 아직 안 쟀을 때 재러 가는 곳 */
+  profileId: string | undefined;
 }) {
+  /*
+    첫 실행에 가장 오래 머무는 상태다.
+    글만 두면 "뭘 해야 하지" 로 끝난다 — 바로 누를 것을 같이 둔다.
+  */
   if (score == null) {
     return (
-      <section className="border-line flex items-center gap-3 rounded-2xl border border-dashed p-4">
-        <Illustration
-          name="scene/scene-first-body"
-          fallback="scene/scene-first-measure"
-          size={56}
-        />
-        <p className="text-ink-soft text-sm leading-relaxed">
-          첫 측정을 넣으면 {withJosa(name, "이가")} 또래 중 어디쯤인지 바로 보여요.
-        </p>
+      <section className="border-line rounded-2xl border border-dashed p-4">
+        <div className="flex items-center gap-3">
+          <Illustration
+            name="scene/scene-first-body"
+            fallback="scene/scene-first-measure"
+            size={56}
+          />
+          <p className="text-ink-soft text-sm leading-relaxed">
+            한 가지만 재도 {withJosa(name, "이가")} 또래 중 어디쯤인지 바로 보여요. 자 하나면 집에서
+            됩니다.
+          </p>
+        </div>
+        {profileId && (
+          <Link
+            href={`/p/${profileId}/measure`}
+            className="press bg-signal mt-3 block rounded-xl py-3 text-center text-sm font-extrabold text-white"
+          >
+            {withJosa(name, "은는")} 지금 재기
+          </Link>
+        )}
       </section>
     );
   }

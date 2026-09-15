@@ -84,6 +84,7 @@ type MissionRow = Concrete<Mission>;
 
 const BASE = "/api/v1";
 const CHEER_KEY = "ff-mock-cheers";
+const ACTING_KEY = "ff-mock-acting";
 
 export const DEMO = {
   familyId: "00000000-0000-4000-8000-000000000010",
@@ -113,9 +114,20 @@ const db = {
    * 탭을 닫으면 사라진다 — 시연을 처음부터 다시 하기 쉽게.
    */
   cheers: loadCheers(),
-  /** 지금 로그인해서 보고 있는 사람. 승인 권한 테스트를 위해 바꿀 수 있다 */
-  actingProfileId: DEMO.mom as string,
+  /**
+   * 지금 로그인해서 보고 있는 사람.
+   * 새로고침해도 남아야 한다 — 바꾸자마자 되돌아가면 자녀 계정 화면을 볼 수 없다.
+   */
+  actingProfileId: loadActing(),
 };
+
+function loadActing(): string {
+  try {
+    return sessionStorage.getItem(ACTING_KEY) ?? DEMO.mom;
+  } catch {
+    return DEMO.mom;
+  }
+}
 
 /** 탭 저장소에서 되살린다. 브라우저가 아닌 곳(검사 스크립트)에서는 빈 배열이다 */
 function loadCheers(): CheerLog[] {
@@ -136,6 +148,11 @@ function saveCheers(cheers: CheerLog[]) {
 
 export function setActingProfile(profileId: string) {
   db.actingProfileId = profileId;
+  try {
+    sessionStorage.setItem(ACTING_KEY, profileId);
+  } catch {
+    // 브라우저가 아니면 그냥 넘어간다
+  }
 }
 
 function acting(): Profile | undefined {
@@ -160,7 +177,22 @@ function bandOf(percentile: number): Band {
 /* ─── 인증 · 가족 ──────────────────────────────────────────── */
 
 const identity = [
-  http.get(`${BASE}/me`, () => HttpResponse.json(fixtures.me)),
+  /**
+   * 지금 로그인한 계정이 관리하는 프로필.
+   *
+   * `setActingProfile` 로 바꾼 사람을 따른다. 자녀 계정으로 들어온 화면을
+   * 확인하려면 이게 아이 프로필 하나만 돌려줘야 한다 — 부모 프로필까지 주면
+   * 아이 계정인데 부모 화면을 볼 수 있는 것처럼 보인다.
+   */
+  http.get(`${BASE}/me`, () => {
+    const me = acting();
+    if (!me || me.profileId === DEMO.mom) return HttpResponse.json(fixtures.me);
+    return HttpResponse.json({
+      userId: fixtures.me.userId,
+      nextStep: "HOME",
+      profiles: [me],
+    });
+  }),
 
   http.post(`${BASE}/auth/dev-login`, () =>
     HttpResponse.json({

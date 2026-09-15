@@ -100,7 +100,12 @@ export default function ParentHomePage() {
         </section>
 
         {/* 2. 또래와 견주면 */}
-        <PeerCompare name={child.name ?? "아이"} score={score} headline={child.headline} />
+        <PeerCompare
+          name={child.name ?? "아이"}
+          score={score}
+          headline={child.headline}
+          profileId={child.profileId}
+        />
 
         {/* 3. 몸이 자랐다면 다시 재기 */}
         <UpdateNudge child={child} />

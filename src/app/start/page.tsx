@@ -20,7 +20,7 @@ import { useRoleStore } from "@/stores/role-store";
  */
 export default function StartPage() {
   const router = useRouter();
-  const { familyId, nextStep, isPending } = useSession();
+  const { profile, familyId, nextStep, isPending } = useSession();
   const { data: family } = useFamilyProfiles(familyId);
 
   const setMode = useRoleStore((s) => s.setMode);
@@ -28,6 +28,13 @@ export default function StartPage() {
 
   const children = (family?.profiles ?? []).filter((p) => p.role === "CHILD");
   const hasFamily = Boolean(familyId) && nextStep !== "CREATE_FAMILY";
+
+  /*
+    자녀 계정에는 부모 모드를 내주지 않는다.
+    부모 화면은 백분위·약한 항목처럼 아이에게 보여주지 않기로 한 것을 그대로 띄운다
+    (AGENTS.md 아이 모드 규칙). 고를 수 있게 두면 한 번 눌러 보는 것으로 새어 나간다.
+  */
+  const childAccount = profile?.role === "CHILD";
 
   const goParent = () => {
     setMode("parent");
@@ -37,6 +44,12 @@ export default function StartPage() {
 
   const goKid = () => {
     setMode("kid");
+    // 자녀 계정은 자기 프로필로 고정된다. 형제를 고르게 하지 않는다
+    if (childAccount && profile?.profileId) {
+      setChild(profile.profileId);
+      router.push("/kid");
+      return;
+    }
     if (!hasFamily) {
       // 아이 계정은 부모가 만들어 둔 프로필에 붙는다. 스스로 가족을 만들 수 없다
       router.push("/claim");
@@ -77,14 +90,20 @@ export default function StartPage() {
         onClick={goKid}
       />
 
-      <RoleCard
-        art="char/face-parent-1"
-        fallbackArt="move/move-walk"
-        title="부모"
-        description="아이 체력을 보고 칭찬을 보내요"
-        tone="parent"
-        onClick={goParent}
-      />
+      {childAccount ? (
+        <p className="text-faint text-center text-xs leading-relaxed">
+          이 계정은 아이 계정이에요. 부모 화면은 보호자 계정에서 볼 수 있어요.
+        </p>
+      ) : (
+        <RoleCard
+          art="char/face-parent-1"
+          fallbackArt="move/move-walk"
+          title="부모"
+          description="아이 체력을 보고 칭찬을 보내요"
+          tone="parent"
+          onClick={goParent}
+        />
+      )}
     </Stage>
   );
 }
