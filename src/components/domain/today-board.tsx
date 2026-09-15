@@ -6,8 +6,7 @@ import { useState } from "react";
 
 import type { CheerLog, Mission } from "@/lib/api/types";
 import { Illustration } from "@/components/ui/illustration";
-import { StampPicker } from "@/components/domain/stamp-picker";
-import { StampMark } from "@/components/domain/stamp-mark";
+import { PraisePicker } from "@/components/domain/praise-picker";
 import { progressPercent, targetCopy } from "@/lib/mission";
 import { useCheers } from "@/lib/api/queries";
 import { cn, withJosa } from "@/lib/utils";
@@ -39,7 +38,7 @@ export function TodayBoard({
   parentProfileId: string;
   missions: Mission[] | undefined;
 }) {
-  // 아이가 나에게 보낸 알림 · 내가 아이에게 찍어 준 도장
+  // 아이가 나에게 보낸 알림 · 내가 아이에게 보낸 칭찬
   const { data: inbox } = useCheers(familyId, parentProfileId);
   const { data: given } = useCheers(familyId, childProfileId);
   const [picking, setPicking] = useState<{ mission: Mission | null } | null>(null);
@@ -50,7 +49,7 @@ export function TodayBoard({
   const told = (inbox?.cheers ?? [])
     .filter((c) => c.fromProfileId === childProfileId && isToday(c))
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
-  const stamps = (given?.cheers ?? [])
+  const praises = (given?.cheers ?? [])
     .filter((c) => c.fromProfileId === parentProfileId && isToday(c))
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
@@ -59,7 +58,7 @@ export function TodayBoard({
     "앞의 n개는 답했다" 로 본다. 새로고침해도 결과가 같다.
     ▲ 백엔드에 답장을 잇는 칸(replyToCheerId)을 요청해 뒀다.
   */
-  const answeredCount = stamps.length;
+  const answeredCount = praises.length;
 
   const mine = (missions ?? []).filter((m) =>
     m.participants?.some((p) => p.profileId === childProfileId),
@@ -85,7 +84,7 @@ export function TodayBoard({
         <ul className="divide-rows mb-2">
           {told.map((cheer, index) => {
             const answered = index < answeredCount;
-            const stamp = answered ? (stamps[index]?.stamp ?? null) : null;
+            const reply = answered ? (praises[index]?.message ?? null) : null;
             return (
               <li key={cheer.cheerId} className="flex items-start gap-3 py-4">
                 <span
@@ -98,18 +97,16 @@ export function TodayBoard({
                   <p className="text-[0.95rem] leading-snug font-bold">{cheer.message}</p>
                   <p
                     className={cn(
-                      "mt-0.5 text-xs",
+                      "mt-0.5 text-xs leading-relaxed",
                       answered ? "text-faint" : "text-signal-deep font-bold",
                     )}
                   >
                     {answered
-                      ? "도장을 찍어 줬어요"
-                      : `${withJosa(childName, "이가")} 도장을 기다리고 있어요`}
+                      ? `“${reply}” 라고 보냈어요`
+                      : `${withJosa(childName, "이가")} 기다리고 있어요`}
                   </p>
                 </div>
-                {answered ? (
-                  <StampMark stamp={stamp} size={44} />
-                ) : (
+                {!answered && (
                   <button
                     type="button"
                     onClick={() =>
@@ -119,7 +116,7 @@ export function TodayBoard({
                     }
                     className="press bg-signal shrink-0 rounded-xl px-3 py-2 text-xs font-extrabold text-white"
                   >
-                    도장 찍기
+                    칭찬하기
                   </button>
                 )}
               </li>
@@ -187,7 +184,7 @@ export function TodayBoard({
         </ul>
       )}
 
-      <StampPicker
+      <PraisePicker
         open={Boolean(picking)}
         onClose={() => setPicking(null)}
         familyId={familyId}

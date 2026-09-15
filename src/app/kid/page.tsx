@@ -11,7 +11,6 @@ import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KidCharacter } from "@/components/domain/kid-character";
 import { ScoreDial } from "@/components/domain/score-dial";
-import { StampMark } from "@/components/domain/stamp-mark";
 import { WeekDots } from "@/components/domain/week-dots";
 import { SpriteField } from "@/components/scene/sprite-field";
 import {
@@ -106,7 +105,7 @@ export default function KidHomePage() {
   );
   const suggestion = videos?.videos?.[0];
   const allCheers = cheerLog?.cheers ?? [];
-  const stamps = allCheers.filter((c) => c.toProfileId === childProfileId);
+  const praises = allCheers.filter((c) => c.toProfileId === childProfileId && c.message);
 
   return (
     <>
@@ -179,35 +178,31 @@ export default function KidHomePage() {
         <section>
           <SectionTitle
             action={
-              stamps.length > 0 ? (
-                <Link href="/kid/stamps" className="text-signal text-sm font-bold">
+              praises.length > 0 ? (
+                <Link href="/kid/praise" className="text-signal text-sm font-bold">
                   모두 보기
                 </Link>
               ) : undefined
             }
           >
-            받은 도장
+            받은 말
           </SectionTitle>
 
-          {stamps.length === 0 ? (
+          {praises.length === 0 ? (
             <div className="border-line flex items-center gap-3 rounded-2xl border border-dashed p-4">
-              <Illustration
-                name="scene/scene-waiting-stamp"
-                fallback="scene/scene-waiting-approval"
-                size={52}
-              />
+              <Illustration name="scene/scene-waiting-stamp" size={52} />
               <p className="text-ink-soft text-sm leading-relaxed">
-                운동을 마치면 부모님이 도장을 찍어 줘요.
+                운동을 마치면 부모님이 한마디 보내 주실 거예요.
               </p>
             </div>
           ) : (
-            <ul className="flex flex-wrap gap-2.5">
-              {stamps.slice(0, 8).map((c) => (
-                <li
-                  key={c.cheerId}
-                  className="bg-mark-soft grid size-16 place-items-center rounded-2xl"
-                >
-                  <StampMark stamp={c.stamp} size={46} />
+            <ul className="space-y-2">
+              {praises.slice(0, 2).map((c) => (
+                <li key={c.cheerId}>
+                  <p className="bg-signal-soft text-signal-deep rounded-2xl rounded-bl-md px-4 py-3 text-[0.95rem] leading-relaxed font-bold">
+                    {c.message}
+                  </p>
+                  <p className="text-faint mt-1 ml-1 text-[0.68rem]">{c.fromName}</p>
                 </li>
               ))}
             </ul>

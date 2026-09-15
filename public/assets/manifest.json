@@ -1,6 +1,150 @@
 {
-  "generatedAt": "2026-09-09T03:20:38.078Z",
+  "generatedAt": "2026-09-15T11:37:41.595Z",
   "assets": [
+    {
+      "file": "anim/cheer-1.png",
+      "width": 241,
+      "height": 384,
+      "bytes": 30905
+    },
+    {
+      "file": "anim/cheer-2.png",
+      "width": 241,
+      "height": 384,
+      "bytes": 31796
+    },
+    {
+      "file": "anim/cheer-3.png",
+      "width": 241,
+      "height": 384,
+      "bytes": 28649
+    },
+    {
+      "file": "anim/idle-1.png",
+      "width": 151,
+      "height": 384,
+      "bytes": 27589
+    },
+    {
+      "file": "anim/idle-2.png",
+      "width": 151,
+      "height": 384,
+      "bytes": 30621
+    },
+    {
+      "file": "anim/idle-3.png",
+      "width": 151,
+      "height": 384,
+      "bytes": 27547
+    },
+    {
+      "file": "anim/jump-1.png",
+      "width": 231,
+      "height": 384,
+      "bytes": 28201
+    },
+    {
+      "file": "anim/jump-2.png",
+      "width": 231,
+      "height": 384,
+      "bytes": 31430
+    },
+    {
+      "file": "anim/jump-3.png",
+      "width": 231,
+      "height": 384,
+      "bytes": 30799
+    },
+    {
+      "file": "anim/run-1.png",
+      "width": 168,
+      "height": 384,
+      "bytes": 27270
+    },
+    {
+      "file": "anim/run-2.png",
+      "width": 168,
+      "height": 384,
+      "bytes": 27335
+    },
+    {
+      "file": "anim/run-3.png",
+      "width": 168,
+      "height": 384,
+      "bytes": 28062
+    },
+    {
+      "file": "anim/squat-1.png",
+      "width": 161,
+      "height": 384,
+      "bytes": 29582
+    },
+    {
+      "file": "anim/squat-2.png",
+      "width": 161,
+      "height": 384,
+      "bytes": 26835
+    },
+    {
+      "file": "anim/squat-3.png",
+      "width": 161,
+      "height": 384,
+      "bytes": 27342
+    },
+    {
+      "file": "anim/stretch-1.png",
+      "width": 201,
+      "height": 384,
+      "bytes": 30507
+    },
+    {
+      "file": "anim/stretch-2.png",
+      "width": 201,
+      "height": 384,
+      "bytes": 24975
+    },
+    {
+      "file": "anim/stretch-3.png",
+      "width": 201,
+      "height": 384,
+      "bytes": 30079
+    },
+    {
+      "file": "anim/tired-1.png",
+      "width": 185,
+      "height": 384,
+      "bytes": 29185
+    },
+    {
+      "file": "anim/tired-2.png",
+      "width": 185,
+      "height": 384,
+      "bytes": 29159
+    },
+    {
+      "file": "anim/tired-3.png",
+      "width": 185,
+      "height": 384,
+      "bytes": 29566
+    },
+    {
+      "file": "anim/wave-1.png",
+      "width": 189,
+      "height": 384,
+      "bytes": 29536
+    },
+    {
+      "file": "anim/wave-2.png",
+      "width": 189,
+      "height": 384,
+      "bytes": 29943
+    },
+    {
+      "file": "anim/wave-3.png",
+      "width": 189,
+      "height": 384,
+      "bytes": 27857
+    },
     {
       "file": "char/body-adult-f.png",
       "width": 113,
@@ -56,6 +200,24 @@
       "bytes": 12067
     },
     {
+      "file": "char/face-parent-1.png",
+      "width": 256,
+      "height": 177,
+      "bytes": 10097
+    },
+    {
+      "file": "char/face-parent-2.png",
+      "width": 256,
+      "height": 203,
+      "bytes": 13414
+    },
+    {
+      "file": "char/face-parent-3.png",
+      "width": 256,
+      "height": 207,
+      "bytes": 15298
+    },
+    {
       "file": "char/face-proud.png",
       "width": 256,
       "height": 134,
@@ -80,6 +242,12 @@
       "bytes": 23979
     },
     {
+      "file": "char/hair-cap-blue.png",
+      "width": 256,
+      "height": 212,
+      "bytes": 31697
+    },
+    {
       "file": "char/hair-cap.png",
       "width": 203,
       "height": 256,
@@ -96,6 +264,18 @@
       "width": 232,
       "height": 256,
       "bytes": 29956
+    },
+    {
+      "file": "char/hair-dad-short.png",
+      "width": 182,
+      "height": 256,
+      "bytes": 26637
+    },
+    {
+      "file": "char/hair-mom-long.png",
+      "width": 213,
+      "height": 256,
+      "bytes": 31443
     },
     {
       "file": "char/hair-ponytail.png",
@@ -272,6 +452,12 @@
       "bytes": 32140
     },
     {
+      "file": "item/item-battery.png",
+      "width": 256,
+      "height": 106,
+      "bytes": 17121
+    },
+    {
       "file": "item/item-bottle.png",
       "width": 110,
       "height": 256,
@@ -290,6 +476,12 @@
       "bytes": 21193
     },
     {
+      "file": "item/item-compare.png",
+      "width": 189,
+      "height": 256,
+      "bytes": 27334
+    },
+    {
       "file": "item/item-cone.png",
       "width": 207,
       "height": 256,
@@ -300,6 +492,18 @@
       "width": 180,
       "height": 256,
       "bytes": 22562
+    },
+    {
+      "file": "item/item-growth-tree.png",
+      "width": 153,
+      "height": 256,
+      "bytes": 16696
+    },
+    {
+      "file": "item/item-growth-up.png",
+      "width": 256,
+      "height": 237,
+      "bytes": 24800
     },
     {
       "file": "item/item-mat.png",
@@ -314,6 +518,18 @@
       "bytes": 19916
     },
     {
+      "file": "item/item-ruler-tall.png",
+      "width": 70,
+      "height": 256,
+      "bytes": 9578
+    },
+    {
+      "file": "item/item-scale.png",
+      "width": 236,
+      "height": 256,
+      "bytes": 33469
+    },
+    {
       "file": "item/item-shoes.png",
       "width": 256,
       "height": 198,
@@ -326,10 +542,22 @@
       "bytes": 27046
     },
     {
+      "file": "item/item-streak.png",
+      "width": 241,
+      "height": 256,
+      "bytes": 33028
+    },
+    {
       "file": "item/item-tape.png",
       "width": 256,
       "height": 225,
       "bytes": 21740
+    },
+    {
+      "file": "item/item-target.png",
+      "width": 256,
+      "height": 253,
+      "bytes": 32051
     },
     {
       "file": "item/item-trophy.png",
@@ -342,6 +570,30 @@
       "width": 256,
       "height": 236,
       "bytes": 26774
+    },
+    {
+      "file": "item/part-arm.png",
+      "width": 72,
+      "height": 256,
+      "bytes": 11565
+    },
+    {
+      "file": "item/part-core.png",
+      "width": 191,
+      "height": 256,
+      "bytes": 29258
+    },
+    {
+      "file": "item/part-heart.png",
+      "width": 190,
+      "height": 256,
+      "bytes": 24748
+    },
+    {
+      "file": "item/part-leg.png",
+      "width": 75,
+      "height": 256,
+      "bytes": 11416
     },
     {
       "file": "move/move-grip.png",
@@ -428,16 +680,34 @@
       "bytes": 36582
     },
     {
+      "file": "scene/scene-first-body.png",
+      "width": 211,
+      "height": 384,
+      "bytes": 36010
+    },
+    {
       "file": "scene/scene-first-measure.png",
       "width": 223,
       "height": 384,
       "bytes": 30028
     },
     {
+      "file": "scene/scene-got-stamp.png",
+      "width": 222,
+      "height": 384,
+      "bytes": 39397
+    },
+    {
       "file": "scene/scene-invite.png",
       "width": 370,
       "height": 384,
       "bytes": 66717
+    },
+    {
+      "file": "scene/scene-need-update.png",
+      "width": 201,
+      "height": 384,
+      "bytes": 32638
     },
     {
       "file": "scene/scene-no-cheer.png",
@@ -460,8 +730,26 @@
     {
       "file": "scene/scene-no-video.png",
       "width": 384,
-      "height": 162,
-      "bytes": 32124
+      "height": 270,
+      "bytes": 42433
+    },
+    {
+      "file": "scene/scene-pick-role.png",
+      "width": 247,
+      "height": 384,
+      "bytes": 36472
+    },
+    {
+      "file": "scene/scene-rest-day.png",
+      "width": 384,
+      "height": 294,
+      "bytes": 50292
+    },
+    {
+      "file": "scene/scene-together.png",
+      "width": 384,
+      "height": 286,
+      "bytes": 36633
     },
     {
       "file": "scene/scene-too-young.png",
@@ -474,6 +762,84 @@
       "width": 299,
       "height": 384,
       "bytes": 51899
+    },
+    {
+      "file": "scene/scene-waiting-stamp.png",
+      "width": 229,
+      "height": 384,
+      "bytes": 41916
+    },
+    {
+      "file": "stamp/stamp-clap.png",
+      "width": 249,
+      "height": 256,
+      "bytes": 25485
+    },
+    {
+      "file": "stamp/stamp-crown.png",
+      "width": 253,
+      "height": 256,
+      "bytes": 21726
+    },
+    {
+      "file": "stamp/stamp-empty.png",
+      "width": 253,
+      "height": 256,
+      "bytes": 11959
+    },
+    {
+      "file": "stamp/stamp-fire.png",
+      "width": 250,
+      "height": 256,
+      "bytes": 21180
+    },
+    {
+      "file": "stamp/stamp-flower.png",
+      "width": 251,
+      "height": 256,
+      "bytes": 28597
+    },
+    {
+      "file": "stamp/stamp-great.png",
+      "width": 250,
+      "height": 256,
+      "bytes": 25767
+    },
+    {
+      "file": "stamp/stamp-heart.png",
+      "width": 251,
+      "height": 256,
+      "bytes": 20631
+    },
+    {
+      "file": "stamp/stamp-medal.png",
+      "width": 252,
+      "height": 256,
+      "bytes": 23715
+    },
+    {
+      "file": "stamp/stamp-muscle.png",
+      "width": 252,
+      "height": 256,
+      "bytes": 27283
+    },
+    {
+      "file": "stamp/stamp-rocket.png",
+      "width": 249,
+      "height": 256,
+      "bytes": 23524
+    },
+    {
+      "file": "stamp/stamp-smile.png",
+      "width": 249,
+      "height": 256,
+      "bytes": 30106
+    },
+    {
+      "file": "stamp/stamp-star.png",
+      "width": 253,
+      "height": 256,
+      "bytes": 22051
     }
   ]
 }

@@ -421,8 +421,6 @@ export function useSendCheer(familyId: Uuid) {
       fromProfileId: string;
       toProfileId: string;
       message?: string;
-      /** 도장 종류 키(「stamp-star」). 서버의 emoji 칸에 싣는다 — 이모지 문자는 쓰지 않는다 */
-      emoji?: string;
       missionId?: string;
     }) => api.post<Cheer>(`/families/${familyId}/cheers`, body),
     onSuccess: () => {
@@ -433,7 +431,7 @@ export function useSendCheer(familyId: Uuid) {
 }
 
 /**
- * 받은 도장 · 칭찬.
+ * 받은 칭찬.
  *
  * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
  *   백엔드에 `GET /families/{familyId}/cheers` 를 요청해 뒀다.

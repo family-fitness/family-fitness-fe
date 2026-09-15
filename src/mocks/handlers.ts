@@ -105,10 +105,10 @@ const db = {
   missions: [] as MissionRow[],
   videos: structuredClone(fixtures.videos.videos),
   /**
-   * 주고받은 도장 · 알림.
+   * 주고받은 칭찬 · 알림.
    *
    * 이것만 탭 저장소에 남긴다. 아이가 아이 화면에서 알리고 부모가 부모 화면에서
-   * 도장을 찍으려면 **화면을 옮겨도 남아 있어야** 한다. 다른 상태처럼 새로고침마다
+   * 칭찬을 보내려면 **화면을 옮겨도 남아 있어야** 한다. 다른 상태처럼 새로고침마다
    * 지워지면 목으로는 이 흐름을 한 번도 확인할 수 없다.
    *
    * 탭을 닫으면 사라진다 — 시연을 처음부터 다시 하기 쉽게.
@@ -322,7 +322,6 @@ const identity = [
         db.profiles.profiles.find((p) => p.profileId === body.fromProfileId)?.name ?? "가족",
       toProfileId: body.toProfileId,
       message: body.message ?? null,
-      stamp: body.emoji ?? null,
       missionId: body.missionId ?? null,
       createdAt: cheer.createdAt,
     });
@@ -332,7 +331,7 @@ const identity = [
 
   /**
    * ▲ 서버에 아직 없다. 제안 모양으로 답한다.
-   * 도장을 보내는 길은 있는데 받은 걸 보는 길이 없어서 기능이 성립하지 않는다.
+   * 칭찬을 보내는 길은 있는데 받은 걸 보는 길이 없어서 기능이 성립하지 않는다.
    */
   http.get(`${BASE}/families/:familyId/cheers`, ({ request }) => {
     const to = new URL(request.url).searchParams.get("toProfileId");

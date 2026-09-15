@@ -91,31 +91,12 @@ full body, front view, standing on invisible ground line
 
 ---
 
-## 2. 도장 — `stamp/` (12장) ★ 부모가 아이에게 찍어 주는 것
+## 2. 도장 — 이번엔 쓰지 않습니다
 
-부모가 아이의 운동 기록에 찍어 주는 도장입니다.
-**아이가 기다리는 보상이라 이 세트가 가장 예뻐야 합니다.**
+`stamp/` 12장은 받아 뒀지만 **지금 화면에서 쓰지 않습니다.**
+부모가 아이에게 보내는 것을 도장 대신 **칭찬 한마디**로 정리했습니다.
 
-원형 도장 모양(잉크로 찍은 듯한 살짝 거친 테두리)으로, **안쪽에 그림만** 넣습니다.
-글자는 넣지 마세요 — 코드가 얹습니다.
-
-| 파일                 | 프롬프트에 넣을 그림 설명                                          |
-| -------------------- | ------------------------------------------------------------------ |
-| `stamp/stamp-great`  | round ink stamp, inside: a big thumbs up hand                      |
-| `stamp/stamp-star`   | round ink stamp, inside: a five pointed star                       |
-| `stamp/stamp-heart`  | round ink stamp, inside: a heart shape                             |
-| `stamp/stamp-medal`  | round ink stamp, inside: a medal with a ribbon                     |
-| `stamp/stamp-fire`   | round ink stamp, inside: a flame shape                             |
-| `stamp/stamp-muscle` | round ink stamp, inside: a flexed arm showing a bicep              |
-| `stamp/stamp-clap`   | round ink stamp, inside: two hands clapping                        |
-| `stamp/stamp-crown`  | round ink stamp, inside: a simple crown                            |
-| `stamp/stamp-rocket` | round ink stamp, inside: a rocket pointing up                      |
-| `stamp/stamp-smile`  | round ink stamp, inside: a smiling face, dot eyes and curved mouth |
-| `stamp/stamp-flower` | round ink stamp, inside: a simple flower with five petals          |
-| `stamp/stamp-empty`  | round ink stamp outline only, inside empty (아직 못 받은 자리)     |
-
-**색 지정**: 도장은 남색(#1B2574) 테두리에 하늘색(#2784E6) 또는
-노란색(#FFB800) 한 가지로만 채워 주세요. `stamp-empty` 는 옅은 회색(#E8EBF0) 테두리만.
+파일은 지우지 않고 그대로 뒀습니다 — 나중에 뱃지나 보상으로 되살릴 수 있습니다.
 
 ---
 

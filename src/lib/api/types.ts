@@ -130,8 +130,8 @@ export type WeeklyReport = S["WeeklyReportView"];
  * 백엔드에 아직 없는 엔드포인트의 제안 모양이다. 손으로 썼고, 목 서버가 이 모양으로
  * 응답한다. 서버에 올라오면 지우고 `schema.ts` 에서 가져온다.
  *
- * 왜 먼저 만드는가 — 도장을 보내는 길(POST cheers)은 있는데 **받은 걸 보는 길이 없다.**
- * 부모가 찍은 도장을 아이가 못 보면 도장 기능 자체가 성립하지 않는다.
+ * 왜 먼저 만드는가 — 칭찬을 보내는 길(POST cheers)은 있는데 **받은 걸 보는 길이 없다.**
+ * 부모가 보낸 말을 아이가 못 보면 이 기능 자체가 성립하지 않는다.
  * 화면을 다 만들어 두고 요청해야 무엇이 필요한지 정확히 말할 수 있다.
  *
  * ▲ 요청: `GET /families/{familyId}/cheers?toProfileId=&size=`
@@ -142,8 +142,6 @@ export interface CheerLog {
   fromName: string;
   toProfileId: Uuid;
   message: string | null;
-  /** 도장 종류 키. 「stamp-star」처럼 우리 그림 이름이다. 이모지가 아니다 */
-  stamp: string | null;
   missionId: Uuid | null;
   createdAt: IsoDateTime;
 }
