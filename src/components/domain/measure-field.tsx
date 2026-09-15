@@ -2,63 +2,68 @@
 
 import type { UseFormRegisterReturn } from "react-hook-form";
 
-import type { FitnessItemMeta } from "@/lib/api/types";
-import { ITEM_EQUIPMENT, ITEM_POSE } from "@/lib/fitness-items";
+import type { FitnessItem } from "@/lib/api/types";
+import { equipmentArt, itemPose } from "@/lib/fitness-items";
 import { Illustration } from "@/components/ui/illustration";
 import { cn } from "@/lib/utils";
 
 /**
  * 측정 항목 하나.
  *
- * 자세 그림을 왼쪽에 두고 입력을 오른쪽에 둔다. 그림이 없으면
- * "윗몸말아올리기 (회)" 라는 글만 남아서, 부모가 자세가 맞는지 확인할 방법이 없다.
+ * 자세 그림을 왼쪽에, 입력을 오른쪽에 둔다. 그림이 없으면
+ * "앉아윗몸앞으로굽히기 (cm)" 라는 글만 남아서 자세가 맞는지 확인할 방법이 없다.
  *
- * 장비가 필요한 항목에는 그 장비 그림을 작게 붙인다.
- * 악력계가 뭔지 모르는 사람이 많다.
+ * 항목 이름은 `itemLabel` 을 쓴다 — 왕복오래달리기는 연령대마다 거리가 달라서
+ * ("15m 왕복오래달리기") 서버가 라벨을 따로 준다.
  */
 export function MeasureField({
   item,
   register,
   error,
 }: {
-  item: FitnessItemMeta;
+  item: FitnessItem;
   register: UseFormRegisterReturn;
   error?: string;
 }) {
-  const equipment = ITEM_EQUIPMENT[item.code];
+  const equipment = equipmentArt(item.itemCode);
+  const range = item.range;
 
   return (
     <div className="flex items-start gap-3 py-4">
-      <Illustration
-        name={ITEM_POSE[item.code]}
-        size={72}
-        className="mt-0.5"
-        alt={`${item.label} 자세`}
-      />
+      <Illustration name={itemPose(item)} size={72} className="mt-0.5" />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-1.5">
-          <label htmlFor={item.code} className="text-[0.95rem] font-bold">
-            {item.label}
+          <label htmlFor={item.itemCode} className="text-[0.95rem] font-bold">
+            {item.itemLabel ?? item.itemName}
           </label>
-          {equipment && (
+          {item.equipment && (
             <span className="text-faint inline-flex items-center gap-1 text-[0.7rem]">
-              <Illustration name={equipment} size={16} />
-              장비 필요
+              {equipment && <Illustration name={equipment} size={16} />}
+              {item.equipment}
             </span>
           )}
         </div>
 
-        {item.hint && <p className="text-ink-soft mt-0.5 text-xs">{item.hint}</p>}
+        <p className="text-ink-soft mt-0.5 text-xs">
+          {item.factor}
+          {range && (
+            <span className="text-faint">
+              {" · "}
+              {range.min}~{range.max}
+              {item.unit}
+            </span>
+          )}
+        </p>
 
         <div className="relative mt-2">
           <input
-            id={item.code}
+            id={item.itemCode}
             type="number"
             inputMode="decimal"
             step="any"
             placeholder="숫자만"
-            aria-describedby={error ? `${item.code}-error` : undefined}
+            aria-describedby={error ? `${item.itemCode}-error` : undefined}
             aria-invalid={error ? true : undefined}
             className={cn(
               "border-line h-12 w-full rounded-xl border bg-transparent pr-14 pl-4 text-base",
@@ -73,7 +78,7 @@ export function MeasureField({
         </div>
 
         {error && (
-          <p id={`${item.code}-error`} className="text-signal-deep mt-1 text-xs font-semibold">
+          <p id={`${item.itemCode}-error`} className="text-signal-deep mt-1 text-xs font-semibold">
             {error}
           </p>
         )}
