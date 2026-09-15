@@ -474,9 +474,32 @@ const coaching = [
 /* ─── 미션 · 활동 · 영상 · 리포트 ──────────────────────────── */
 
 const missions = [
-  http.get(`${BASE}/families/:familyId/missions`, () =>
-    HttpResponse.json({ missions: db.missions }),
-  ),
+  /**
+   * scope 와 status 를 실제로 거른다.
+   * 고정 목록만 돌려주면 탭을 눌러도 아무 일이 없고, 화면이 맞는지 알 수 없다.
+   */
+  http.get(`${BASE}/families/:familyId/missions`, ({ request }) => {
+    const params = new URL(request.url).searchParams;
+    const scope = params.get("scope") ?? "ALL";
+    const status = params.get("status");
+    const today = new Date().toISOString().slice(0, 10);
+
+    const missions = db.missions.filter((m) => {
+      const parts = m.participants ?? [];
+      const allDone = parts.length > 0 && parts.every((p) => p.completed);
+
+      // MINE = 내 계정의 프로필이 참여자, FAMILY = 참여자 2명 이상
+      if (scope === "MINE" && !parts.some((p) => p.profileId === db.actingProfileId)) return false;
+      if (scope === "FAMILY" && parts.length < 2) return false;
+
+      if (status === "DONE") return allDone;
+      if (status === "EXPIRED") return m.endDate < today && !allDone;
+      if (status === "ACTIVE") return m.endDate >= today && !allDone;
+      return true;
+    });
+
+    return HttpResponse.json({ missions });
+  }),
 
   http.post(`${BASE}/families/:familyId/missions`, async ({ request }) => {
     const me = acting();
