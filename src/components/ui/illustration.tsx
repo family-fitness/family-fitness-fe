@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -20,6 +20,7 @@ export function Illustration({
   alt = "",
   size = 96,
   className,
+  style,
   priority,
 }: {
   /** "scene/scene-no-record" 처럼 분류/이름 */
@@ -32,6 +33,8 @@ export function Illustration({
   alt?: string;
   size?: number;
   className?: string;
+  /** 프레임 애니메이션처럼 바깥에서 타이밍을 줘야 할 때 */
+  style?: CSSProperties;
   priority?: boolean;
 }) {
   /*
@@ -48,7 +51,7 @@ export function Illustration({
   return (
     <span
       className={cn("relative inline-block shrink-0 select-none", className)}
-      style={{ width: size, height: size }}
+      style={{ width: size, height: size, ...style }}
     >
       <Image
         key={src}

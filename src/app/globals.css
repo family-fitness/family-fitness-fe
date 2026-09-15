@@ -361,3 +361,106 @@ body {
     animation: none;
   }
 }
+
+/* ── 캐릭터 프레임 애니메이션 ──
+   프레임이 3장뿐이라 그냥 갈아 끼우면 뚝뚝 끊긴다.
+   두 가지를 겹쳐서 이어 붙인다.
+     1) 프레임끼리 겹쳐 두고 서서히 바꾼다(크로스페이드)
+     2) 몸 전체를 CSS 로 움직인다 — 이건 60fps 라 끊기지 않는다
+   결과는 3장으로 만든 것처럼 보이지 않는다. */
+/*
+  프레임끼리는 CSS 전환으로 겹쳐 넘긴다.
+  키프레임 위치에는 변수를 못 쓰기 때문에, 보이는 프레임만 불투명도를 1로 두고
+  나머지를 0으로 둔 뒤 transition 에 맡긴다 — 프레임이 3장이든 8장이든 같다.
+*/
+.char-frame {
+  transition: opacity var(--char-cross) linear;
+}
+
+/* 뛰어오르는 몸짓. 가운데 프레임이 공중이라 그때 가장 높이 뜬다 */
+@keyframes char-jump {
+  0%,
+  30% {
+    transform: translateY(0) scaleY(1);
+  }
+  50% {
+    transform: translateY(-13%) scaleY(1.03);
+  }
+  70%,
+  100% {
+    transform: translateY(0) scaleY(1);
+  }
+}
+
+/* 숨 쉬는 정도. 가만히 있을 때 완전히 멈춰 있으면 그림처럼 보인다 */
+@keyframes char-breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-1.5%) scale(1.012);
+  }
+}
+
+/* 앉았다 일어서기 */
+@keyframes char-squat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  55% {
+    transform: translateY(4%);
+  }
+}
+
+/* 달릴 때 위아래로 조금 튄다 */
+@keyframes char-run {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-1deg);
+  }
+  50% {
+    transform: translateY(-4%) rotate(1deg);
+  }
+}
+
+/* 만세. 기뻐서 통통 */
+@keyframes char-cheer {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-8%);
+  }
+}
+
+.char-move-jump {
+  animation: char-jump var(--char-dur) ease-in-out infinite both;
+}
+.char-move-breathe {
+  animation: char-breathe calc(var(--char-dur) * 1.4) ease-in-out infinite both;
+}
+.char-move-squat {
+  animation: char-squat var(--char-dur) ease-in-out infinite both;
+}
+.char-move-run {
+  animation: char-run calc(var(--char-dur) / 1.5) ease-in-out infinite both;
+}
+.char-move-cheer {
+  animation: char-cheer var(--char-dur) ease-in-out infinite both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .char-move-jump,
+  .char-move-breathe,
+  .char-move-squat,
+  .char-move-run,
+  .char-move-cheer {
+    animation: none;
+  }
+  .char-frame {
+    transition: none;
+  }
+}

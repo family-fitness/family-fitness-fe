@@ -140,6 +140,38 @@ for (const group of await readdir(SRC, { withFileTypes: true })) {
   }
 }
 
+/*
+  애니메이션 프레임 수를 코드가 알 수 있게 적어 둔다.
+
+  프레임을 3장에서 6장으로 늘리면 코드도 같이 고쳐야 하는데, 그걸 잊으면
+  4~6번 프레임이 조용히 안 나온다. 에셋을 넣을 때 여기서 세어 두면
+  화면은 있는 만큼 알아서 쓴다.
+*/
+const animFrames = {};
+for (const item of report) {
+  const match = item.file.match(/^anim\/(.+)-(\d+)\.png$/);
+  if (!match) continue;
+  const [, motion, frame] = match;
+  animFrames[motion] = Math.max(animFrames[motion] ?? 0, Number(frame));
+}
+
+await writeFile(
+  "src/lib/anim-frames.ts",
+  `/**
+ * 동작별 프레임 수. **손으로 고치지 않는다** —
+ * \`node scripts/prepare-assets.mjs\` 가 에셋을 넣을 때 다시 쓴다.
+ *
+ * 프레임을 늘리면 이 숫자가 따라 오르고 화면이 알아서 부드러워진다.
+ */
+export const ANIM_FRAMES: Record<string, number> = {
+${Object.entries(animFrames)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([motion, count]) => `  ${motion}: ${count},`)
+  .join("\n")}
+};
+`,
+);
+
 await writeFile(
   path.join(OUT, "manifest.json"),
   JSON.stringify({ generatedAt: new Date().toISOString(), assets: report }, null, 2) + "\n",

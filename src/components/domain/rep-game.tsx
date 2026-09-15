@@ -175,7 +175,7 @@ export function RepGame({
               className="pointer-events-none absolute inset-0"
             />
             <span className="pointer-events-none absolute inset-0 grid place-content-center">
-              <KidCharacter motion={motion.key} size={170} speed={260} />
+              <KidCharacter motion={motion.key} size={170} cycle={800} />
               <span className="text-signal-deep mt-1 text-lg font-extrabold">눌러요!</span>
             </span>
           </button>
