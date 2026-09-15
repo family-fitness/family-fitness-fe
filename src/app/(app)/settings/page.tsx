@@ -10,13 +10,22 @@ import { useSession } from "@/lib/session";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRoleStore } from "@/stores/role-store";
 
-/** 설정 허브 */
+/**
+ * 설정.
+ *
+ * **계정의 역할만 보면 안 된다.** 부모 계정으로 로그인한 폰을 아이가 아이 모드로
+ * 쓰고 있을 수 있다. 그때 보호자 동의나 참여 방식을 열어 두면, 앞서 부모 화면에서
+ * 막은 것을 여기로 돌아 들어오게 된다.
+ *
+ * 그래서 **계정이 부모이고 지금 부모 모드일 때만** 부모 설정을 낸다.
+ */
 export default function SettingsPage() {
   const router = useRouter();
   const { profile } = useSession();
   const signOut = useAuthStore((s) => s.signOut);
   const resetRole = useRoleStore((s) => s.reset);
-  const isParent = profile?.role === "PARENT";
+  const mode = useRoleStore((s) => s.mode);
+  const parentView = profile?.role === "PARENT" && mode !== "kid";
 
   return (
     <>
@@ -30,14 +39,16 @@ export default function SettingsPage() {
             title="누가 쓰는지 바꾸기"
             description="부모 화면과 아이 화면을 오갑니다"
           />
-          <LinkRow
-            href="/parent/family"
-            art="scene/scene-invite"
-            title="가족 더하기 · 초대"
-            description="아이를 등록하고 초대코드를 보내요"
-          />
+          {parentView && (
+            <LinkRow
+              href="/parent/family"
+              art="scene/scene-invite"
+              title="가족 더하기 · 초대"
+              description="아이를 등록하고 초대코드를 보내요"
+            />
+          )}
           {/* 자녀 프로필에는 없는 설정들이라 줄 자체를 내지 않는다 */}
-          {isParent && (
+          {parentView && (
             <LinkRow
               href="/settings/support-mode"
               art="item/item-shoes"
@@ -45,7 +56,7 @@ export default function SettingsPage() {
               description="얼마나 같이 뛸지 정해요"
             />
           )}
-          {isParent && (
+          {parentView && (
             <LinkRow
               href="/settings/consent"
               art="item/item-clipboard"
@@ -56,17 +67,20 @@ export default function SettingsPage() {
           <LinkRow href="/videos/favorites" art="item/item-medal" title="즐겨찾기한 영상" />
         </ul>
 
-        <Button
-          size="block"
-          variant="danger"
-          onClick={() => {
-            signOut();
-            resetRole();
-            router.replace("/login");
-          }}
-        >
-          로그아웃
-        </Button>
+        {/* 아이 모드에서는 로그아웃을 내지 않는다. 부모 폰을 빌려 쓰다 눌러 버리면 곤란하다 */}
+        {parentView && (
+          <Button
+            size="block"
+            variant="danger"
+            onClick={() => {
+              signOut();
+              resetRole();
+              router.replace("/login");
+            }}
+          >
+            로그아웃
+          </Button>
+        )}
 
         <p className="text-faint text-[0.7rem] leading-relaxed">
           국민체력100 측정 데이터를 바탕으로 한 참고 정보입니다. 질병의 진단·치료를 위한 것이

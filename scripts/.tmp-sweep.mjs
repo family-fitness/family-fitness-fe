@@ -25,16 +25,19 @@ const ctx = await browser.newContext({
   deviceScaleFactor: 2,
   colorScheme: SCHEME,
 });
-// 아이 모드로 보게 역할 저장소를 미리 채운다
+// 경로마다 맞는 모드로 본다. 부모 구역은 아이 모드면 아이 홈으로 돌려보낸다
+const modeFor = (route) => (route.startsWith("/kid") ? "kid" : "parent");
 await ctx.addInitScript(
   ([kid]) => {
+    const mode = location.pathname.startsWith("/kid") ? "kid" : "parent";
     localStorage.setItem(
       "ff-role",
-      JSON.stringify({ state: { mode: "kid", childProfileId: kid }, version: 0 }),
+      JSON.stringify({ state: { mode, childProfileId: kid }, version: 0 }),
     );
   },
   [KID],
 );
+void modeFor;
 
 const problems = [];
 for (const route of ROUTES) {

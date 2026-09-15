@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
 import { useSession } from "@/lib/session";
+import { useRoleStore } from "@/stores/role-store";
 
 /**
  * 부모 구역 문지기.
@@ -18,13 +19,21 @@ import { useSession } from "@/lib/session";
 export default function ParentAreaLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { profile, isPending } = useSession();
-  const isChildAccount = profile?.role === "CHILD";
+  const mode = useRoleStore((s) => s.mode);
+
+  /*
+    두 가지를 함께 본다.
+      계정이 자녀면 부모 화면은 아예 없다
+      부모 계정이어도 **지금 아이 모드**면 부모 화면을 열지 않는다 —
+      부모 폰을 아이가 빌려 쓰는 동안 주소로 돌아 들어오는 길을 막는다
+  */
+  const blocked = profile?.role === "CHILD" || mode === "kid";
 
   useEffect(() => {
-    if (!isPending && isChildAccount) router.replace("/kid");
-  }, [isPending, isChildAccount, router]);
+    if (!isPending && blocked) router.replace("/kid");
+  }, [isPending, blocked, router]);
 
   // 잠깐이라도 비치면 안 된다
-  if (isChildAccount) return null;
+  if (blocked) return null;
   return <>{children}</>;
 }

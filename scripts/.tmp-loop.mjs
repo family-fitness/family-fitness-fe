@@ -39,8 +39,12 @@ if (await play.count()) {
   console.log("  (오늘 할 운동이 없어 건너뜀)");
 }
 
-console.log("6) 부모 화면으로");
-await p.goto("http://localhost:3001/parent", { waitUntil: "load" });
+console.log("6) 역할을 부모로 바꿔서 부모 화면으로");
+// 아이 모드에서는 부모 화면이 막힌다. 실제 사용자와 같은 길로 간다
+await p.goto("http://localhost:3001/start", { waitUntil: "load" });
+await p.waitForTimeout(900);
+await p.getByRole("button", { name: /부모/ }).first().click();
+await p.waitForTimeout(1500);
 await step("6-parent");
 
 console.log("7) 도장 찍기");
