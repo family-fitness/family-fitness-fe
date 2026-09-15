@@ -223,7 +223,7 @@ export default function ParentHomePage() {
             </li>
             <HomeLink
               href="/settings/support-mode"
-              art="item/item-shoes"
+              art="scene/scene-together"
               title="얼마나 같이 뛸지"
               description={SUPPORT_COPY[profile?.supportMode ?? "none"]}
             />

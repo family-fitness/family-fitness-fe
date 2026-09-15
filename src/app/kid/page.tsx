@@ -150,7 +150,9 @@ export default function KidHomePage() {
 
         {/* 오늘 할 일 하나. 여러 개를 늘어놓지 않는다 */}
         <section>
-          <SectionTitle>오늘 할 운동</SectionTitle>
+          <SectionTitle action={<Illustration name="item/item-target" size={26} />}>
+            오늘 할 운동
+          </SectionTitle>
           {todo ? (
             <BigAction
               href={`/kid/play/${todo.missionId}`}

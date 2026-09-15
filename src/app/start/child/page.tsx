@@ -7,6 +7,7 @@ import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
+import { Illustration } from "@/components/ui/illustration";
 import { KidCharacter } from "@/components/domain/kid-character";
 import { ApiError } from "@/lib/api/client";
 import { useCreateProfile } from "@/lib/api/queries";
@@ -165,7 +166,8 @@ export default function AddChildPage() {
             </div>
 
             <Field label="키" hint="30 ~ 230 cm">
-              <div className="relative">
+              <div className="relative flex items-center gap-3">
+                <Illustration name="item/item-ruler-tall" size={44} />
                 <input
                   type="number"
                   inputMode="decimal"
@@ -182,7 +184,8 @@ export default function AddChildPage() {
             </Field>
 
             <Field label="몸무게" hint="5 ~ 250 kg">
-              <div className="relative">
+              <div className="relative flex items-center gap-3">
+                <Illustration name="item/item-scale" size={44} />
                 <input
                   type="number"
                   inputMode="decimal"

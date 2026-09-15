@@ -1,6 +1,7 @@
 "use client";
 
 import type { CheerLog } from "@/lib/api/types";
+import { Illustration } from "@/components/ui/illustration";
 import { cn } from "@/lib/utils";
 
 /**
@@ -52,7 +53,8 @@ export function WeekDots({
         0일일 때 "0일 움직였어요" 라고 쓰지 않는다. 첫 화면에 늘 0이 뜨는데
         그건 시작하기도 전에 기죽이는 말이다.
       */}
-      <p className="text-sm font-bold">
+      <p className="flex items-center gap-1.5 text-sm font-bold">
+        <Illustration name="item/item-streak" size={22} />
         {count === 0 ? (
           "움직인 날을 여기 칠해요"
         ) : (

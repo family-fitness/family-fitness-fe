@@ -79,7 +79,9 @@ export default function ChildDetailPage() {
 
         {/* 지금 몸 */}
         <section>
-          <SectionTitle>지금 몸</SectionTitle>
+          <SectionTitle action={<Illustration name="item/item-growth-tree" size={30} />}>
+            지금 몸
+          </SectionTitle>
           <dl className="divide-rows">
             <BodyRow label="나이대" value={profile.ageGroup ?? "-"} />
             <BodyRow label="키" value={body ? `${body.heightCm}cm` : "아직 안 적었어요"} />
