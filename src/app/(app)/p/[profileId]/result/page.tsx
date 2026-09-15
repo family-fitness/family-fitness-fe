@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FactorRadar } from "@/components/domain/factor-radar";
 import { RecordRow } from "@/components/domain/record-bar";
 import { factorPose, itemPose } from "@/lib/fitness-items";
-import { useLatestFitnessTest } from "@/lib/api/queries";
+import { useFamilyProfiles, useLatestFitnessTest } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { formatDate, withJosa } from "@/lib/utils";
 
@@ -30,8 +30,11 @@ import { formatDate, withJosa } from "@/lib/utils";
  */
 export default function ResultPage() {
   const { profileId } = useParams<{ profileId: string }>();
-  const { profiles, isChild } = useSession();
-  const profile = profiles.find((p) => p.profileId === profileId);
+  const { familyId, isChild } = useSession();
+  // 가족 전체에서 찾는다. useSession().profiles 는 이 계정이 관리하는 프로필만이라
+  // 자녀가 자기 계정을 가지면 거기서 빠진다
+  const { data: family } = useFamilyProfiles(familyId);
+  const profile = family?.profiles?.find((p) => p.profileId === profileId);
 
   const { data: test, isPending } = useLatestFitnessTest(profileId);
 

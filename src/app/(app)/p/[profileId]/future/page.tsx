@@ -11,7 +11,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TrajectoryChart } from "@/components/domain/trajectory-chart";
 import { ApiError } from "@/lib/api/client";
 import type { PredictionResult } from "@/lib/api/types";
-import { useCreatePrediction, useFitnessItems, useLatestFitnessTest } from "@/lib/api/queries";
+import {
+  useCreatePrediction,
+  useFamilyProfiles,
+  useFitnessItems,
+  useLatestFitnessTest,
+} from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 
 /**
@@ -29,8 +34,10 @@ import { useSession } from "@/lib/session";
 export default function FuturePage() {
   const router = useRouter();
   const { profileId } = useParams<{ profileId: string }>();
-  const { profiles } = useSession();
-  const profile = profiles.find((p) => p.profileId === profileId);
+  const { familyId } = useSession();
+  // 가족 전체에서 찾는다 — 연령대를 알아야 항목 이름과 단위를 붙일 수 있다
+  const { data: family } = useFamilyProfiles(familyId);
+  const profile = family?.profiles?.find((p) => p.profileId === profileId);
 
   const { data: latest, isPending: latestPending } = useLatestFitnessTest(profileId);
   // 예측 응답에는 항목 코드만 있다. "50" 만 있으면 무슨 수치인지 알 수 없다
