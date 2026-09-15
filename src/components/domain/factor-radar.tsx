@@ -29,10 +29,13 @@ export function FactorRadar({
   const n = points.length;
   if (n < 3) return null;
 
-  const cx = size / 2;
+  // 축 이름은 도형 밖에 눕는다. 정사각 안에 넣으면 "순발력" 이 "·발력" 으로 잘린다.
+  // 가로를 넓힌 뷰박스를 쓰고 도형만 가운데 둔다
+  const LABEL_ROOM = 46;
+  const boardW = size + LABEL_ROOM * 2;
+  const cx = boardW / 2;
   const cy = size / 2;
-  // 축 이름이 바깥에 들어갈 자리를 남긴다
-  const r = size / 2 - 34;
+  const r = size / 2 - 30;
 
   /** 백분위(0~100) 를 화면 좌표로. 12시부터 시계방향 */
   const at = (index: number, value: number) => {
@@ -58,9 +61,10 @@ export function FactorRadar({
   return (
     <div className="flex flex-col items-center">
       <svg
-        viewBox={`0 0 ${size} ${size}`}
-        width={size}
+        viewBox={`0 0 ${boardW} ${size}`}
+        width="100%"
         height={size}
+        className="max-w-full"
         role="img"
         aria-label={`체력 요인별 또래 백분위. ${points
           .map((p) => `${p.factor} ${p.percentile == null ? "기준 없음" : `${p.percentile}`}`)
@@ -136,7 +140,7 @@ export function FactorRadar({
 
         {/* 축 이름 */}
         {points.map((p, i) => {
-          const [x, y] = at(i, 122);
+          const [x, y] = at(i, 100 + (13 / r) * 100);
           const anchor = Math.abs(x - cx) < 6 ? "middle" : x > cx ? "start" : "end";
           return (
             <text
