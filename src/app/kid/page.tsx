@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { KidCharacter } from "@/components/domain/kid-character";
 import { ScoreDial } from "@/components/domain/score-dial";
 import { StampMark } from "@/components/domain/stamp-mark";
+import { WeekDots } from "@/components/domain/week-dots";
 import { SpriteField } from "@/components/scene/sprite-field";
 import {
   useCheers,
@@ -44,7 +45,13 @@ export default function KidHomePage() {
   const { data: map, isPending: mapPending } = useFitnessMap(familyId);
   const { data: family } = useFamilyProfiles(familyId);
   const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
-  const { data: cheers } = useCheers(familyId, childProfileId ?? undefined);
+  /*
+    가족의 도장·알림을 한 번에 받아 두 갈래로 쓴다.
+      받은 도장 = 나에게 온 것
+      움직인 날 = 내가 보낸 것("다 했어요")
+    받는 쪽만 불러오면 이번 주 달력이 늘 비어 있다.
+  */
+  const { data: cheerLog } = useCheers(familyId);
 
   const me = map?.members?.find((m) => m.profileId === childProfileId);
   const profile = family?.profiles?.find((p) => p.profileId === childProfileId);
@@ -78,7 +85,8 @@ export default function KidHomePage() {
     m.participants?.some((p) => p.profileId === childProfileId && !p.completed),
   );
   const suggestion = videos?.videos?.[0];
-  const stamps = cheers?.cheers ?? [];
+  const allCheers = cheerLog?.cheers ?? [];
+  const stamps = allCheers.filter((c) => c.toProfileId === childProfileId);
 
   return (
     <>
@@ -117,6 +125,9 @@ export default function KidHomePage() {
 
         {/* 내 점수 */}
         <ScoreDial score={score} size={210} tone="kid" label="또래 100명 중 내 자리" />
+
+        {/* 이번 주에 한 날. 연속 기록으로 세지 않는다 — 빠진 날이 벌이 되면 안 된다 */}
+        <WeekDots cheers={allCheers} fromProfileId={childProfileId ?? ""} />
 
         {/* 오늘 할 일 하나. 여러 개를 늘어놓지 않는다 */}
         <section>
