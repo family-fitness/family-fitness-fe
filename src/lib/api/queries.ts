@@ -17,9 +17,11 @@ import type {
   LatestFitnessTest,
   MeResponse,
   Mission,
+  NextStep,
   MissionList,
   PredictionResult,
   ProfileSummary,
+  Role,
   SupportMode,
   Uuid,
   VideoList,
@@ -135,10 +137,15 @@ export function useOpenInvite() {
   });
 }
 
+/** 다음에 갈 곳은 서버가 정한다 — 부모면 SUPPORT_MODE, 자녀면 HOME */
 export function useClaimProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (claimCode: string) => api.post("/profiles/claim", { claimCode }),
+    mutationFn: (claimCode: string) =>
+      api.post<{ profileId: Uuid; familyId: Uuid; role: Role; nextStep: NextStep }>(
+        "/profiles/claim",
+        { claimCode },
+      ),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.me() }),
   });
 }
