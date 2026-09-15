@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { KidCharacter } from "@/components/domain/kid-character";
 import { MissionTimer } from "@/components/domain/mission-timer";
+import { DiceGame } from "@/components/domain/dice-game";
 import { RepGame } from "@/components/domain/rep-game";
 import { YouTubePlayer } from "@/components/domain/youtube-player";
 import { DoneCard } from "@/components/domain/done-card";
@@ -67,7 +68,7 @@ export default function PlayPage() {
     영상은 따라 하기 좋고, 놀이는 셀 수 있어서 더 오래 한다 —
     페르소나 서준(초4)은 끝까지 보는 것보다 세는 쪽에 반응한다.
   */
-  const [how, setHow] = useState<"video" | "game">("video");
+  const [how, setHow] = useState<"video" | "count" | "dice">("video");
 
   if (missionPending || videoPending) return <PlaySkeleton />;
 
@@ -88,6 +89,31 @@ export default function PlayPage() {
 
   const title = mission?.title ?? video?.title ?? "오늘의 운동";
   const isTimer = mission?.targetMetric === "TIMER_MINUTES";
+
+  /*
+    놀이를 마쳤을 때.
+    **횟수는 보내지 않는다** — 아이가 센 값이라 서버가 아는 게 아니다.
+    1분을 넘겼고 미션이 걸려 있으면 그 시간만 타이머로 기록한다.
+  */
+  const finishGame = async ({ seconds }: { seconds: number }) => {
+    setError(null);
+    const minutes = Math.floor(seconds / 60);
+    if (mission?.missionId && minutes >= 1) {
+      const endedAt = new Date();
+      const startedAt = new Date(endedAt.getTime() - seconds * 1000);
+      try {
+        await recordTimer.mutateAsync({
+          profileId: childProfileId ?? "",
+          startedAt: startedAt.toISOString(),
+          endedAt: endedAt.toISOString(),
+          activeMinutes: minutes,
+        });
+      } catch (e) {
+        setError(e instanceof ApiError ? e.userMessage : "기록하지 못했어요. 다시 해 볼까요?");
+      }
+    }
+    setDone(true);
+  };
 
   if (done) {
     return (
@@ -113,8 +139,9 @@ export default function PlayPage() {
         <div className="flex gap-2" role="tablist" aria-label="어떻게 할까요">
           {(
             [
-              ["video", "영상 보기"],
-              ["game", "놀이로 하기"],
+              ["video", "영상"],
+              ["count", "세기"],
+              ["dice", "주사위"],
             ] as const
           ).map(([value, label]) => (
             <button
@@ -130,33 +157,10 @@ export default function PlayPage() {
           ))}
         </div>
 
-        {how === "game" ? (
-          <RepGame
-            pending={recordTimer.isPending}
-            onFinish={async ({ seconds }) => {
-              setError(null);
-              // 1분을 채웠고 미션이 있으면 서버에 시간으로 기록한다.
-              // 횟수는 아이가 센 값이라 보내지 않는다
-              const minutes = Math.floor(seconds / 60);
-              if (mission?.missionId && minutes >= 1) {
-                const endedAt = new Date();
-                const startedAt = new Date(endedAt.getTime() - seconds * 1000);
-                try {
-                  await recordTimer.mutateAsync({
-                    profileId: childProfileId ?? "",
-                    startedAt: startedAt.toISOString(),
-                    endedAt: endedAt.toISOString(),
-                    activeMinutes: minutes,
-                  });
-                } catch (e) {
-                  setError(
-                    e instanceof ApiError ? e.userMessage : "기록하지 못했어요. 다시 해 볼까요?",
-                  );
-                }
-              }
-              setDone(true);
-            }}
-          />
+        {how === "count" ? (
+          <RepGame pending={recordTimer.isPending} onFinish={finishGame} />
+        ) : how === "dice" ? (
+          <DiceGame pending={recordTimer.isPending} onFinish={finishGame} />
         ) : video?.videoId ? (
           <YouTubePlayer
             videoId={video.videoId}
@@ -177,7 +181,7 @@ export default function PlayPage() {
         )}
 
         {/* 놀이 중에는 제목을 다시 쓰지 않는다. 위 막대에 이미 있고, 화면이 좁다 */}
-        <div className={cn(how === "game" && "hidden")}>
+        <div className={cn(how !== "video" && "hidden")}>
           <h1 className="text-xl leading-snug font-extrabold">{title}</h1>
           {mission && (
             <p className="text-ink-soft mt-1 text-sm">

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { SectionTitle, Stage } from "@/components/app-shell/stage";
 import { ErrorState } from "@/components/ui/error-state";
+import { Backdrop } from "@/components/ui/backdrop";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KidCharacter } from "@/components/domain/kid-character";
@@ -60,6 +61,8 @@ export default function KidHomePage() {
 
   // 미션이 없어도 할 게 있어야 한다. 연령대에 맞는 영상을 하나 권한다
   const { data: videos } = useVideos({ list: "ALL", ageGroup: profile?.ageGroup });
+  // 몇 개를 해냈는지. 서버가 아는 값이라 기기를 바꿔도 따라온다
+  const { data: watched } = useVideos({ list: "RECENT", profileId: childProfileId ?? undefined });
 
   // /me 가 실패하면 가족 지도는 시작도 못 한다. 실패를 기다림보다 먼저 본다
   const failure = sessionError ?? mapError;
@@ -100,6 +103,7 @@ export default function KidHomePage() {
     m.participants?.some((p) => p.profileId === childProfileId && !p.completed),
   );
   const suggestion = videos?.videos?.[0];
+  const doneCount = (watched?.videos ?? []).filter((v) => (v.maxProgress ?? 0) >= 0.9).length;
   const allCheers = cheerLog?.cheers ?? [];
   const praises = allCheers.filter((c) => c.toProfileId === childProfileId && c.message);
 
@@ -119,6 +123,8 @@ export default function KidHomePage() {
       />
 
       <Stage wide className="relative space-y-7">
+        {/* 조각을 흩뿌리는 대신 하늘 한 장을 깐다. 없으면 조용히 사라진다 */}
+        <Backdrop name="bg/bg-sky" height={230} />
         {/* 이름을 크게. 아이는 자기 이름을 먼저 찾는다 */}
         <div className="flex items-center gap-2">
           <KidCharacter motion="wave" size={84} />
@@ -136,9 +142,7 @@ export default function KidHomePage() {
 
         {/* 오늘 할 일 하나. 여러 개를 늘어놓지 않는다 */}
         <section>
-          <SectionTitle action={<Illustration name="item/item-target" size={26} />}>
-            오늘 할 운동
-          </SectionTitle>
+          <SectionTitle>오늘 할 운동</SectionTitle>
           {todo ? (
             <BigAction
               href={`/kid/play/${todo.missionId}`}
@@ -157,42 +161,36 @@ export default function KidHomePage() {
             <div className="border-line rounded-3xl border-2 border-dashed p-6 text-center">
               <KidCharacter motion="tired" size={110} className="mx-auto" />
               <p className="mt-3 text-xl font-extrabold">오늘은 쉬는 날이에요</p>
-              <p className="text-ink-soft mt-1 text-sm">새 운동이 생기면 여기에 나와요</p>
+              <p className="text-ink-soft mt-1 text-sm">쉬는 것도 하는 일이에요</p>
             </div>
           )}
+
+          {/* 권한 것 하나만 걸려 있으면, 그게 하기 싫은 날은 그냥 안 한다 */}
+          <Link
+            href="/kid/pick"
+            className="press border-line mt-3 flex items-center justify-center gap-2 rounded-2xl border py-3.5 text-base font-extrabold"
+          >
+            <Illustration name="item/item-dice" fallback="item/item-target" size={24} />
+            다른 운동 고르기
+          </Link>
         </section>
 
-        {/* 받은 칭찬 */}
-        <section>
-          <SectionTitle
-            action={
-              praises.length > 0 ? (
-                <Link href="/kid/praise" className="text-signal text-sm font-bold">
-                  모두 보기
-                </Link>
-              ) : undefined
-            }
-          >
-            칭찬
-          </SectionTitle>
-
-          {praises.length === 0 ? (
-            <div className="border-line flex items-center gap-3 rounded-2xl border border-dashed p-4">
-              <Illustration name="scene/scene-waiting-stamp" size={52} />
-              <p className="text-ink-soft text-sm leading-relaxed">부모님의 칭찬 한마디</p>
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {praises.slice(0, 2).map((c) => (
-                <li key={c.cheerId}>
-                  <p className="bg-signal-soft text-signal-deep rounded-2xl rounded-bl-md px-4 py-3 text-[0.95rem] leading-relaxed font-bold">
-                    {c.message}
-                  </p>
-                  <p className="text-faint mt-1 ml-1 text-[0.68rem]">{c.fromName}</p>
-                </li>
-              ))}
-            </ul>
-          )}
+        {/* 아이가 다시 열어 볼 것 둘. 이게 없으면 운동 한 번 하고 닫는 앱이 된다 */}
+        <section className="grid grid-cols-2 gap-3">
+          <KidTile
+            href="/kid/done"
+            art="item/item-check-big"
+            fallback="item/item-medal"
+            label="내가 한 운동"
+            count={doneCount}
+          />
+          <KidTile
+            href="/kid/praise"
+            art="item/item-book"
+            fallback="item/item-clipboard"
+            label="칭찬"
+            count={praises.length}
+          />
         </section>
       </Stage>
     </>
@@ -203,6 +201,32 @@ export default function KidHomePage() {
  * 아이가 누를 가장 큰 것.
  * 화면에 이만큼 큰 것이 둘 있으면 아이는 어느 쪽도 고르지 못한다.
  */
+/** 아이가 다시 열어 보는 자리. 큰 숫자 하나와 이름만 둔다 */
+function KidTile({
+  href,
+  art,
+  fallback,
+  label,
+  count,
+}: {
+  href: string;
+  art: string;
+  fallback: string;
+  label: string;
+  count: number;
+}) {
+  return (
+    <Link
+      href={href}
+      className="press border-line flex flex-col items-center gap-1 rounded-3xl border-2 py-5"
+    >
+      <Illustration name={art} fallback={fallback} size={40} />
+      <span className="board-num text-signal-deep text-2xl leading-none">{count}</span>
+      <span className="text-sm font-extrabold">{label}</span>
+    </Link>
+  );
+}
+
 function BigAction({
   href,
   title,

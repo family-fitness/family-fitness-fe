@@ -26,7 +26,25 @@ const ALPHA_THRESHOLD = 24;
  * 원본은 1024 인데 화면에서 가장 크게 쓰는 곳이 140px 다. 2배 화면을 감안해도
  * 280px 면 충분하다. 원본 그대로 두면 79장에 27MB 라 폰에서 느리고 저장소도 무겁다.
  */
-const MAX_EDGE = { char: 256, item: 256, deco: 256, move: 384, scene: 384, anim: 384, stamp: 256 };
+const MAX_EDGE = {
+  char: 256,
+  item: 256,
+  deco: 256,
+  move: 384,
+  scene: 384,
+  anim: 384,
+  stamp: 256,
+  // 배경은 화면 폭을 채운다. 2배 화면까지 감안해 가로를 넉넉히 둔다
+  bg: 1024,
+};
+
+/**
+ * 여백을 잘라내지 않는 분류.
+ *
+ * 배경은 가로로 긴 띠라서 여백째로 구도가 완성돼 있다. 잘라내면 구름만 남아
+ * 화면 폭에 맞춰 늘어나면서 뭉개진다.
+ */
+const KEEP_MARGIN = new Set(["bg"]);
 
 /**
  * 프레임을 **한 장씩 잘라내면 안 되는** 분류.
@@ -125,8 +143,9 @@ for (const group of await readdir(SRC, { withFileTypes: true })) {
 
     const src = path.join(from, entry);
     const maxEdge = MAX_EDGE[group.name] ?? 320;
-    const info = await sharp(src)
-      .extract(box)
+    const pipeline = sharp(src);
+    if (!KEEP_MARGIN.has(group.name)) pipeline.extract(box);
+    const info = await pipeline
       .resize(maxEdge, maxEdge, { fit: "inside", withoutEnlargement: true })
       .png({ palette: true, colours: PALETTE_COLOURS, compressionLevel: 9 })
       .toFile(path.join(to, entry));

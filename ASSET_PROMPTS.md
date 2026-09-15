@@ -5,9 +5,10 @@
 2차에서 받은 3프레임은 화면에서 뚝뚝 끊깁니다. 코드에서 겹쳐 넘기고 몸 전체를
 CSS 로 움직여 많이 나아졌지만, 프레임 자체가 적어서 한계가 분명합니다.
 
-- 새로 필요한 것 : **72장**
+- 새로 필요한 것 : **82장**
   - 캐릭터 동작 8종 × 8프레임 = **64장** (기존 24장을 **대체**합니다)
   - 새 기능용 그림 **8장**
+  - **배경 10장** (새 분류 `bg/`, 규칙이 다릅니다 — 3절을 꼭 읽어 주세요)
 
 기존 1·2차 에셋은 그대로 씁니다. `stamp/` 12장은 지금 화면에서 쓰지 않지만
 지우지 마세요 — 나중에 뱃지로 되살립니다.
@@ -176,21 +177,69 @@ full body, front view, standing on invisible ground line
 
 아이가 할 수 있는 것을 늘리면서 필요해진 그림들입니다.
 
-| 파일                     | 그림 설명                                                                |
-| ------------------------ | ------------------------------------------------------------------------ |
-| `item/item-dice`         | a single six sided die showing five pips, tilted slightly                |
-| `item/item-book`         | an open book with a bookmark ribbon, seen from the front                 |
-| `scene/scene-collection` | a wall of small framed picture cards, some filled and some empty         |
-| `scene/scene-pick`       | a child standing in front of three large cards, choosing one             |
-| `item/item-check-big`    | a thick check mark inside a rounded square                               |
-| `item/item-lock`         | a simple closed padlock (아직 못 연 운동 표시용)                         |
-| `deco/deco-ground`       | a simple horizontal ground line with a few small grass tufts, wide shape |
-| `deco/deco-sky-band`     | a very wide, very shallow soft cloud band, meant to sit behind a header  |
+| 파일                     | 그림 설명                                                        |
+| ------------------------ | ---------------------------------------------------------------- |
+| `item/item-dice`         | a single six sided die showing five pips, tilted slightly        |
+| `item/item-book`         | an open book with a bookmark ribbon, seen from the front         |
+| `scene/scene-collection` | a wall of small framed picture cards, some filled and some empty |
+| `scene/scene-pick`       | a child standing in front of three large cards, choosing one     |
+| `item/item-check-big`    | a thick check mark inside a rounded square                       |
+| `item/item-lock`         | a simple closed padlock (아직 못 연 운동 표시용)                 |
 
-> `deco-ground` 와 `deco-sky-band` 는 **가로로 아주 긴 모양**으로 뽑아 주세요.
-> 정사각형 안에 넣지 말고 가로 1024 × 세로 256 정도가 좋습니다.
-> 조각을 흩뿌리는 대신 **바닥선과 하늘띠**로 장면을 만들려는 것입니다 —
-> 떠다니는 구름 조각은 이모지처럼 보여서 뺐습니다.
+---
+
+## 3. 배경 — `bg/` (10장) ★ 새 분류
+
+### 왜 따로 만드는가
+
+떠다니던 구름·별 조각을 뺐습니다. **흰 배경에 조각이 흩어져 있으면 이모지를
+뿌려 놓은 것처럼 보입니다.** 대신 **가로로 긴 장면 한 장**을 화면 위나 아래에
+깔아서, 아이가 어떤 장소에 있는 것처럼 만들려고 합니다.
+
+### 이 분류만 공통 규칙이 다릅니다
+
+배경은 글 뒤에 깔립니다. 앞의 공통 문장 대신 **아래 문장**을 붙여 주세요.
+
+```
+flat 2D vector illustration, very pale and low contrast, thin light outline only
+(no thick outlines), solid fill colors only, no gradients, no drop shadows, no texture,
+pale palette: white #FFFFFF, very light sky blue #EAF3FD, light grey #F4F4F4,
+pale yellow #FFF5DC, soft green #EAF5EE, transparent background,
+wide horizontal banner composition, PNG with alpha channel, 1536x512,
+empty space in the middle so text can sit on top,
+friendly public-service illustration style, no text, no letters, no numbers, no watermark
+```
+
+**중요** — 굵은 남색 외곽선을 쓰지 마세요. 배경이 캐릭터보다 진하면 캐릭터가 묻힙니다.
+가운데는 비워 주세요. 그 위에 글자가 올라갑니다.
+
+### 목록
+
+| 파일                | 그림 설명                                                                       |
+| ------------------- | ------------------------------------------------------------------------------- |
+| `bg/bg-sky`         | wide sky band with three or four very pale soft clouds, nothing else            |
+| `bg/bg-ground`      | wide ground strip with short grass tufts along the top edge, pale green         |
+| `bg/bg-park`        | wide park scene: two simple trees on the left, a bench on the right, pale       |
+| `bg/bg-living-room` | wide living room: a sofa on the left, a rug in the middle, a lamp on the right  |
+| `bg/bg-gym`         | wide indoor gym: wall bars on the left, a mat on the floor, a ball on the right |
+| `bg/bg-track`       | wide running track: three curved lane lines, pale, seen from a low angle        |
+| `bg/bg-playground`  | wide playground: a slide on the left, a swing set on the right                  |
+| `bg/bg-night`       | wide night sky band with a few small pale stars and a thin crescent moon        |
+| `bg/bg-confetti`    | wide band of pale confetti pieces scattered along the top edge only             |
+| `bg/bg-hill`        | wide gently rolling hill line, two soft green mounds                            |
+
+### 어디에 쓸지
+
+| 배경                 | 쓰는 곳                      |
+| -------------------- | ---------------------------- |
+| `bg-sky` `bg-hill`   | 아이 홈 머리 뒤              |
+| `bg-living-room`     | 운동 화면 — 집에서 하는 운동 |
+| `bg-park` `bg-track` | 운동 고르기 화면             |
+| `bg-playground`      | 놀이(게임) 화면              |
+| `bg-confetti`        | 다 했어요 화면               |
+| `bg-gym`             | 내가 한 운동                 |
+| `bg-night`           | 저녁에 여는 화면 (나중에)    |
+| `bg-ground`          | 캐릭터가 서 있는 자리 아래   |
 
 ---
 
@@ -203,4 +252,4 @@ full body, front view, standing on invisible ground line
    코드는 안 고쳐도 8장을 쓰게 됩니다
 4. `npm run check:assets` 가 빠진 이름을 잡아 줍니다
 
-**`anim/` 64장이 먼저입니다.** 나머지 8장은 늦어도 됩니다.
+**`anim/` 64장이 먼저입니다.** 배경 10장이 그다음이고, 나머지 8장은 늦어도 됩니다.

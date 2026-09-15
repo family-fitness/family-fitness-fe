@@ -75,7 +75,7 @@ for (const file of walk(SRC_DIR)) {
   }
   // "move/move-x" 처럼 따옴표 안에 직접 적힌 것 (fitness-items.ts 의 매핑표)
   for (const [, name] of text.matchAll(
-    /["']((?:anim|char|deco|item|move|scene|stamp)\/[a-z0-9-]+)["']/g,
+    /["']((?:anim|bg|char|deco|item|move|scene|stamp)\/[a-z0-9-]+)["']/g,
   )) {
     note(relative(ROOT, file), name);
   }
