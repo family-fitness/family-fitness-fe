@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Bebas_Neue, IBM_Plex_Mono } from "next/font/google";
 
-import { BottomTabBar } from "@/components/app-shell/bottom-tab-bar";
 import { DesktopDecor } from "@/components/app-shell/desktop-decor";
 import { MswProvider } from "@/providers/msw-provider";
 import { QueryProvider } from "@/providers/query-provider";
@@ -44,10 +43,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <MswProvider>
           <QueryProvider>
             <DesktopDecor />
-            <div className="app-frame relative z-[1]">
-              <div className="app-main">{children}</div>
-            </div>
-            <BottomTabBar />
+            <div className="app-frame relative z-[1]">{children}</div>
           </QueryProvider>
         </MswProvider>
       </body>

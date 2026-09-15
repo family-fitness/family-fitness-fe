@@ -48,7 +48,6 @@
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 
   --radius-card: 16px;
-  --spacing-tabbar: 4.25rem;
   --width-phone: 30rem;
 }
 
@@ -111,7 +110,7 @@ body {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(var(--spacing-tabbar) + env(safe-area-inset-bottom));
+  bottom: 0;
   z-index: 30;
   display: flex;
   justify-content: center;
@@ -125,8 +124,9 @@ body {
   border-top: 1px solid var(--color-line);
 }
 
+/* 탭바를 없앴다. 아래 여백은 홈 인디케이터만큼만 남긴다 */
 .app-main {
-  padding-bottom: calc(var(--spacing-tabbar) + env(safe-area-inset-bottom) + 1.25rem);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 1.5rem);
 }
 
 /* ── 타이포 ── */

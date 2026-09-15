@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
  */
 export function Illustration({
   name,
+  fallback,
   alt = "",
   size = 96,
   className,
@@ -23,13 +24,20 @@ export function Illustration({
 }: {
   /** "scene/scene-no-record" 처럼 분류/이름 */
   name: string;
+  /**
+   * `name` 이 아직 없을 때 대신 쓸 그림.
+   * 2차 에셋을 기다리는 동안 1차 그림으로 버티려고 둔다 — 화면이 비지 않는다.
+   */
+  fallback?: string;
   alt?: string;
   size?: number;
   className?: string;
   priority?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
-  if (failed) return null;
+  const src = failed && fallback ? fallback : name;
+  // 대체 그림까지 없으면 조용히 숨는다
+  if (failed && !fallback) return null;
 
   // 정사각 상자에 비율을 지켜 앉힌다.
   // 너비만 고정하고 높이를 auto 로 두면 세로로 긴 그림(서 있는 자세)이 폭주한다.
@@ -39,7 +47,8 @@ export function Illustration({
       style={{ width: size, height: size }}
     >
       <Image
-        src={`/assets/${name}.png`}
+        key={src}
+        src={`/assets/${src}.png`}
         alt={alt}
         fill
         sizes={`${size}px`}
