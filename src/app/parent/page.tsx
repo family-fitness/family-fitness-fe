@@ -11,7 +11,7 @@ import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScoreDial } from "@/components/domain/score-dial";
 import { ChildSwitch } from "@/components/domain/child-switch";
-import { MyNudge, MyRow } from "@/components/domain/my-row";
+import { MyRow } from "@/components/domain/my-row";
 import { PeerCompare } from "@/components/domain/peer-compare";
 import { TodayBoard } from "@/components/domain/today-board";
 import { UpdateNudge } from "@/components/domain/update-nudge";
@@ -204,19 +204,12 @@ export default function ParentHomePage() {
               description={SUPPORT_COPY[profile?.supportMode ?? "none"]}
             />
             <HomeLink
-              href={`/p/${profile?.profileId}/measure`}
-              art="item/item-tape"
-              title="내 체력도 재보기"
-              description="아이와 같은 기준으로 또래 중 어디인지"
-            />
-            <HomeLink
               href="/family/report"
               art="item/item-calendar"
               title="이번 주 우리 가족"
               description="누가 얼마나 움직였는지"
             />
           </ul>
-          <MyNudge me={myMember} />
         </section>
       </Stage>
     </>
