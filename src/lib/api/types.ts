@@ -45,6 +45,14 @@ export type FitnessFactor =
  */
 export type Band = "strength" | "steady" | "growth";
 
+/**
+ * 국민체력100 등급. **1·2·3 과 「참가」뿐이다.** 4·5등급은 없다.
+ * 규준에 못 미쳐도 「참가」다 — 「미달」이나 「하위」라는 말이 서버에서 오지 않는다.
+ * 측정했지만 규준이 없는 연령(만 7~10세 일부)이면 null 이다.
+ */
+export type Grade = NonNullable<S["ItemResult"]["grade"]>;
+export type ValueRange = S["ValueRange"];
+
 export type TargetMetric = "VIDEO_DONE" | "TIMER_MINUTES" | "STEPS";
 export type ActivitySource = "MANUAL" | "TIMER" | "VIDEO";
 export type VerifiedBy = "VIDEO_PROGRESS" | "TIMER" | "SELF_REPORT";
