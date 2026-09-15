@@ -56,7 +56,7 @@ export default function WeeklyCoachPage() {
 
   // 승인하면 미션이 생긴다. 그 순간 미션 목록으로 보낸다
   useEffect(() => {
-    if (approve.isSuccess) router.push("/missions");
+    if (approve.isSuccess) router.push("/parent");
   }, [approve.isSuccess, router]);
 
   const nameOf = (profileId: string | undefined) =>
@@ -217,7 +217,7 @@ export default function WeeklyCoachPage() {
               </p>
               <button
                 type="button"
-                onClick={() => router.push("/missions")}
+                onClick={() => router.push("/parent")}
                 className="text-signal mt-2 text-sm font-bold"
               >
                 미션 보러 가기

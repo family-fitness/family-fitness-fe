@@ -16,6 +16,7 @@ import { ApiError } from "@/lib/api/client";
 import type { FitnessItem, FitnessTestSource } from "@/lib/api/types";
 import { useCreateFitnessTest, useFamilyProfiles, useFitnessItems } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
+import { useBodyStore } from "@/stores/body-store";
 import { cn, withJosa } from "@/lib/utils";
 
 /**
@@ -56,6 +57,17 @@ export default function MeasurePage() {
 
   const today = new Date().toISOString().slice(0, 10);
   const [testedOn, setTestedOn] = useState(today);
+
+  /*
+    키와 몸무게.
+    서버는 이 둘을 **측정 회차에 얹어서만** 받는다. 아이를 등록할 때 받아 둔 값이
+    있으면 채워 두고, 없으면 여기서 처음 받는다. 아이 몸은 한 계절이면 달라져서
+    측정할 때마다 다시 묻는 게 맞다.
+  */
+  const pendingBody = useBodyStore((st) => (profileId ? st.byProfile[profileId] : undefined));
+  const clearBody = useBodyStore((st) => st.clear);
+  const [heightCm, setHeightCm] = useState(() => String(pendingBody?.heightCm ?? ""));
+  const [weightKg, setWeightKg] = useState(() => String(pendingBody?.weightKg ?? ""));
 
   const {
     register,
@@ -109,7 +121,7 @@ export default function MeasurePage() {
             title="만 4세부터 측정할 수 있어요"
             description={`${withJosa(profile.name ?? "", "은는")} 아직 국민체력100 기준이 없어요. 지금은 가족 미션에 함께 참여할 수 있어요.`}
             action={
-              <Button size="md" variant="soft" onClick={() => router.push("/missions")}>
+              <Button size="md" variant="soft" onClick={() => router.push("/parent")}>
                 가족 미션 보기
               </Button>
             }
@@ -170,7 +182,17 @@ export default function MeasurePage() {
     }
 
     try {
-      await create.mutateAsync({ testedOn, source, items });
+      const height = Number(heightCm);
+      const weight = Number(weightKg);
+      await create.mutateAsync({
+        testedOn,
+        source,
+        items,
+        ...(Number.isFinite(height) && height > 0 ? { heightCm: height } : {}),
+        ...(Number.isFinite(weight) && weight > 0 ? { weightKg: weight } : {}),
+      });
+      // 서버에 실려 갔으니 임시로 들고 있던 값은 버린다
+      clearBody(profileId);
       router.replace(`/p/${profileId}/result`);
     } catch (error) {
       // 코드마다 고쳐야 할 게 다르다. 한 문구로 뭉뚱그리면 뭘 바꿔야 할지 알 수 없다
@@ -225,6 +247,50 @@ export default function MeasurePage() {
               ))}
             </div>
           </fieldset>
+
+          {/* 몸이 자란 만큼 기준도 달라진다. 잴 때마다 다시 묻는다 */}
+          <section>
+            <div className="section-head">
+              <h2>지금 키와 몸무게</h2>
+            </div>
+            <div className="flex gap-3 pt-3">
+              <label className="flex-1">
+                <span className="text-ink-soft block text-xs font-bold">키</span>
+                <span className="relative mt-1.5 block">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.1"
+                    value={heightCm}
+                    onChange={(e) => setHeightCm(e.target.value)}
+                    placeholder="138"
+                    className="field pr-11"
+                  />
+                  <span className="text-ink-soft absolute top-1/2 right-4 -translate-y-1/2 text-sm font-bold">
+                    cm
+                  </span>
+                </span>
+              </label>
+              <label className="flex-1">
+                <span className="text-ink-soft block text-xs font-bold">몸무게</span>
+                <span className="relative mt-1.5 block">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.1"
+                    value={weightKg}
+                    onChange={(e) => setWeightKg(e.target.value)}
+                    placeholder="34"
+                    className="field pr-11"
+                  />
+                  <span className="text-ink-soft absolute top-1/2 right-4 -translate-y-1/2 text-sm font-bold">
+                    kg
+                  </span>
+                </span>
+              </label>
+            </div>
+            <p className="text-faint mt-2 text-xs">비워 둬도 측정은 저장돼요.</p>
+          </section>
 
           {easy.length > 0 && (
             <section>

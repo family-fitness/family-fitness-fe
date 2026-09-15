@@ -52,7 +52,7 @@ function ClaimContent() {
     setError(null);
     try {
       const res = await claim.mutateAsync(code.trim().toUpperCase());
-      router.replace(res.nextStep === "SUPPORT_MODE" ? "/settings/support-mode" : "/home");
+      router.replace(res.nextStep === "SUPPORT_MODE" ? "/settings/support-mode" : "/start");
     } catch (e) {
       setError(claimMessage(e));
     }

@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button";
 import { LinkRow } from "@/components/domain/link-row";
 import { useSession } from "@/lib/session";
 import { useAuthStore } from "@/stores/auth-store";
+import { useRoleStore } from "@/stores/role-store";
 
 /** 설정 허브 */
 export default function SettingsPage() {
   const router = useRouter();
   const { profile } = useSession();
   const signOut = useAuthStore((s) => s.signOut);
+  const resetRole = useRoleStore((s) => s.reset);
   const isParent = profile?.role === "PARENT";
 
   return (
@@ -21,6 +23,19 @@ export default function SettingsPage() {
       <PageHeader eyebrow="SETTINGS" title="설정" back />
       <Screen className="space-y-6">
         <ul className="divide-rows">
+          {/* 탭바를 없앴으니 역할을 바꾸는 길이 여기뿐이다 */}
+          <LinkRow
+            href="/start"
+            art="scene/scene-pick-role"
+            title="누가 쓰는지 바꾸기"
+            description="부모 화면과 아이 화면을 오갑니다"
+          />
+          <LinkRow
+            href="/parent/family"
+            art="scene/scene-invite"
+            title="가족 더하기 · 초대"
+            description="아이를 등록하고 초대코드를 보내요"
+          />
           {/* 자녀 프로필에는 없는 설정들이라 줄 자체를 내지 않는다 */}
           {isParent && (
             <LinkRow
@@ -46,6 +61,7 @@ export default function SettingsPage() {
           variant="danger"
           onClick={() => {
             signOut();
+            resetRole();
             router.replace("/login");
           }}
         >

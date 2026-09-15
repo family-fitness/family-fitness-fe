@@ -62,7 +62,7 @@ export default function MembersPage() {
         <span className="text-sm font-bold">가족 더하기</span>
       </button>
 
-      <Button size="block" onClick={() => router.replace("/home")}>
+      <Button size="block" onClick={() => router.replace("/parent")}>
         {profiles.length > 1 ? "시작하기" : "나중에 더하고 시작하기"}
       </Button>
 
