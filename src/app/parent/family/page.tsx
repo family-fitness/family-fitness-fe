@@ -4,6 +4,7 @@ import { Check, Copy, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { AppBar } from "@/components/app-shell/app-bar";
 import { PlainScreen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
@@ -38,36 +39,39 @@ export default function MembersPage() {
   const profiles = family?.profiles ?? [];
 
   return (
-    <PlainScreen className="space-y-6 pt-4">
-      <div>
-        <h1 className="page-title">{family?.familyName ?? "우리집"}</h1>
-        <p className="text-ink-soft mt-2 text-sm leading-relaxed">
-          같이 할 가족을 더해요. 아이가 폰이 없어도 괜찮아요 — 프로필만 있으면 측정과 미션이
-          굴러가요.
-        </p>
-      </div>
+    <>
+      <AppBar back title="가족" />
+      <PlainScreen className="space-y-6 pt-1">
+        <div>
+          <h1 className="page-title">{family?.familyName ?? "우리집"}</h1>
+          <p className="text-ink-soft mt-2 text-sm leading-relaxed">
+            같이 할 가족을 더해요. 아이가 폰이 없어도 괜찮아요 — 프로필만 있으면 측정과 미션이
+            굴러가요.
+          </p>
+        </div>
 
-      <ul className="divide-rows">
-        {profiles.map((p) => (
-          <MemberRow key={p.profileId} profile={p} />
-        ))}
-      </ul>
+        <ul className="divide-rows">
+          {profiles.map((p) => (
+            <MemberRow key={p.profileId} profile={p} />
+          ))}
+        </ul>
 
-      <button
-        type="button"
-        onClick={() => setAdding(true)}
-        className="press border-line flex w-full items-center gap-2 rounded-xl border border-dashed px-4 py-4"
-      >
-        <Plus className="text-signal size-4" aria-hidden />
-        <span className="text-sm font-bold">가족 더하기</span>
-      </button>
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="press border-line flex w-full items-center gap-2 rounded-xl border border-dashed px-4 py-4"
+        >
+          <Plus className="text-signal size-4" aria-hidden />
+          <span className="text-sm font-bold">가족 더하기</span>
+        </button>
 
-      <Button size="block" onClick={() => router.replace("/parent")}>
-        {profiles.length > 1 ? "시작하기" : "나중에 더하고 시작하기"}
-      </Button>
+        <Button size="block" onClick={() => router.replace("/parent")}>
+          {profiles.length > 1 ? "시작하기" : "나중에 더하고 시작하기"}
+        </Button>
 
-      <AddMemberSheet open={adding} onClose={() => setAdding(false)} familyId={familyId ?? ""} />
-    </PlainScreen>
+        <AddMemberSheet open={adding} onClose={() => setAdding(false)} familyId={familyId ?? ""} />
+      </PlainScreen>
+    </>
   );
 }
 
@@ -306,17 +310,20 @@ function AddMemberSheet({
 
 function MembersSkeleton() {
   return (
-    <PlainScreen className="space-y-6 pt-4">
-      <Skeleton className="h-9 w-40" />
-      {[0, 1].map((i) => (
-        <div key={i} className="flex items-center gap-3 py-2">
-          <Skeleton className="size-11 rounded-full" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-4 w-24" />
-            <Skeleton className="h-3 w-32" />
+    <>
+      <AppBar back title="가족" />
+      <PlainScreen className="space-y-6 pt-1">
+        <Skeleton className="h-9 w-40" />
+        {[0, 1].map((i) => (
+          <div key={i} className="flex items-center gap-3 py-2">
+            <Skeleton className="size-11 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-3 w-32" />
+            </div>
           </div>
-        </div>
-      ))}
-    </PlainScreen>
+        ))}
+      </PlainScreen>
+    </>
   );
 }
