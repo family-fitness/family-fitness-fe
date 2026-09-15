@@ -1,6 +1,7 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import type { CheerLog, Mission } from "@/lib/api/types";
@@ -127,7 +128,7 @@ export function TodayBoard({
         </ul>
       )}
 
-      {/* 미션 진행 — 서버가 아는 값 */}
+      {/* 미션 진행 — 서버가 아는 값. 눌러서 부모가 같이 해도 된다 */}
       {mine.length > 0 && (
         <ul className="divide-rows">
           {mine.map((mission) => {
@@ -136,8 +137,16 @@ export function TodayBoard({
             const done = me?.completed ?? false;
 
             return (
-              <li key={mission.missionId} className="py-4">
-                <div className="flex items-start gap-3">
+              <li key={mission.missionId}>
+                {/*
+                  누가 눌러도 같은 화면으로 간다.
+                  아이가 자기 폰에서 하든 부모가 옆에서 같이 하든 기록은 한 곳에 쌓인다 —
+                  "누가 기록했는지" 를 따지기 시작하면 아무도 기록하지 않는다.
+                */}
+                <Link
+                  href={`/kid/play/${mission.missionId}`}
+                  className="press flex items-start gap-3 py-4"
+                >
                   <span
                     className={cn(
                       "mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg",
@@ -157,16 +166,21 @@ export function TodayBoard({
                       <span className="record-fill" style={{ width: `${percent}%` }} aria-hidden />
                     </div>
                   </div>
-                  {me?.needsGuardianCheck && (
+                  {me?.needsGuardianCheck ? (
                     <button
                       type="button"
-                      onClick={() => setPicking({ mission })}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setPicking({ mission });
+                      }}
                       className="press bg-signal shrink-0 rounded-xl px-3 py-2 text-xs font-extrabold text-white"
                     >
                       확인해 주기
                     </button>
+                  ) : (
+                    <ChevronRight className="text-faint mt-1.5 size-4 shrink-0" aria-hidden />
                   )}
-                </div>
+                </Link>
               </li>
             );
           })}
