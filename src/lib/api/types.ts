@@ -101,6 +101,8 @@ export type ItemResult = S["ItemResult"];
 export type RadarPoint = S["RadarPointResponse"];
 export type FactorPoint = S["FactorPoint"];
 export type PredictionResult = S["PredictionResponse"];
+/** 한 시점의 분포. p50 만 그리면 확정된 미래처럼 보인다 — p10·p90 을 같이 쓴다 */
+export type PredictionPoint = S["Point"];
 
 export type CoachRun = S["CoachRunView"];
 export type CoachProposal = S["ProposalView"];
