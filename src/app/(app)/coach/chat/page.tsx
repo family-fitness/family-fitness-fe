@@ -84,7 +84,7 @@ export default function CoachChatPage() {
 
   return (
     <>
-      <PageHeader eyebrow="COACH" title="코치에게 묻기" back />
+      <PageHeader title="코치에게 묻기" back />
 
       <Screen className="pb-20">
         {turns.length === 0 ? (

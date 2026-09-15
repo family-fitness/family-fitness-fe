@@ -35,7 +35,7 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <>
-        <PageHeader eyebrow="PROFILE" title="프로필" back />
+        <PageHeader title="프로필" back />
         <Screen>
           <EmptyState
             scene="no-record"
@@ -52,7 +52,7 @@ export default function ProfilePage() {
 
   return (
     <>
-      <PageHeader eyebrow="PROFILE" title={profile.name ?? "프로필"} back />
+      <PageHeader title={profile.name ?? "프로필"} back />
 
       <Screen className="space-y-6">
         <div className="flex items-center gap-4">
@@ -116,7 +116,7 @@ export default function ProfilePage() {
 function ProfileSkeleton() {
   return (
     <>
-      <PageHeader eyebrow="PROFILE" title="프로필" back />
+      <PageHeader title="프로필" back />
       <Screen className="space-y-6">
         <div className="flex items-center gap-4">
           <Skeleton className="size-18 rounded-full" />

@@ -20,7 +20,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <PageHeader eyebrow="SETTINGS" title="설정" back />
+      <PageHeader title="설정" back />
       <Screen className="space-y-6">
         <ul className="divide-rows">
           {/* 탭바를 없앴으니 역할을 바꾸는 길이 여기뿐이다 */}

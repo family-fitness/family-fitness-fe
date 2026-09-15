@@ -98,7 +98,7 @@ export default function MeasurePage() {
   if (!profile) {
     return (
       <>
-        <PageHeader eyebrow="MEASURE" title="체력 측정" back />
+        <PageHeader title="체력 측정" back />
         <Screen>
           <EmptyState
             scene="invite"
@@ -114,7 +114,7 @@ export default function MeasurePage() {
   if (!profile.measurable) {
     return (
       <>
-        <PageHeader eyebrow="MEASURE" title="체력 측정" back />
+        <PageHeader title="체력 측정" back />
         <Screen>
           <EmptyState
             scene="too-young"
@@ -135,7 +135,7 @@ export default function MeasurePage() {
   if (profile.consentRequired && !profile.consentGiven) {
     return (
       <>
-        <PageHeader eyebrow="MEASURE" title="체력 측정" back />
+        <PageHeader title="체력 측정" back />
         <Screen>
           <EmptyState
             scene="waiting-approval"
@@ -156,7 +156,7 @@ export default function MeasurePage() {
   if (easy.length === 0 && equipment.length === 0) {
     return (
       <>
-        <PageHeader eyebrow="MEASURE" title="체력 측정" back />
+        <PageHeader title="체력 측정" back />
         <Screen>
           <EmptyState
             scene="no-record"
@@ -203,7 +203,6 @@ export default function MeasurePage() {
   return (
     <>
       <PageHeader
-        eyebrow="MEASURE"
         title={`${profile.name} 측정`}
         back
         meta={
@@ -416,7 +415,7 @@ function messageFor(error: unknown): string {
 function MeasureSkeleton() {
   return (
     <>
-      <PageHeader eyebrow="MEASURE" title="체력 측정" back />
+      <PageHeader title="체력 측정" back />
       <Screen className="space-y-6">
         <Skeleton className="h-12 w-full rounded-xl" />
         <Skeleton className="h-9 w-48 rounded-full" />

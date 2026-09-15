@@ -44,7 +44,7 @@ export default function ResultPage() {
   if (!test || test.fitnessTestId == null) {
     return (
       <>
-        <PageHeader eyebrow="RESULT" title="측정 결과" back />
+        <PageHeader title="측정 결과" back />
         <Screen>
           <EmptyState
             scene="no-record"
@@ -74,7 +74,6 @@ export default function ResultPage() {
   return (
     <>
       <PageHeader
-        eyebrow="RESULT"
         title={profile ? `${profile.name} 결과` : "측정 결과"}
         back
         meta={
@@ -208,7 +207,7 @@ export default function ResultPage() {
 function ResultSkeleton() {
   return (
     <>
-      <PageHeader eyebrow="RESULT" title="측정 결과" back />
+      <PageHeader title="측정 결과" back />
       <Screen className="space-y-8">
         <div className="flex justify-center">
           <Skeleton className="size-60 rounded-full" />

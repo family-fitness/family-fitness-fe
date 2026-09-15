@@ -59,7 +59,7 @@ export default function SupportModePage() {
   if (profile?.role === "CHILD") {
     return (
       <>
-        <PageHeader eyebrow="SETTINGS" title="참여 방식" back />
+        <PageHeader title="참여 방식" back />
         <Screen>
           <EmptyState
             scene="no-mission"
@@ -75,7 +75,7 @@ export default function SupportModePage() {
 
   return (
     <>
-      <PageHeader eyebrow="SETTINGS" title="참여 방식" back />
+      <PageHeader title="참여 방식" back />
 
       <Screen className="space-y-5">
         <p className="text-ink-soft text-sm leading-relaxed">
@@ -152,7 +152,7 @@ export default function SupportModePage() {
 function SupportSkeleton() {
   return (
     <>
-      <PageHeader eyebrow="SETTINGS" title="참여 방식" back />
+      <PageHeader title="참여 방식" back />
       <Screen className="space-y-5">
         <Skeleton className="h-10 w-full" />
         {[0, 1, 2].map((i) => (

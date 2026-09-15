@@ -52,7 +52,7 @@ export default function CheerPage() {
   if (others.length === 0) {
     return (
       <>
-        <PageHeader eyebrow="CHEER" title="응원 보내기" back />
+        <PageHeader title="응원 보내기" back />
         <Screen>
           <EmptyState
             scene="no-cheer"
@@ -66,7 +66,7 @@ export default function CheerPage() {
 
   return (
     <>
-      <PageHeader eyebrow="CHEER" title="응원 보내기" back />
+      <PageHeader title="응원 보내기" back />
 
       <Screen className="space-y-7">
         <section>
@@ -200,7 +200,7 @@ function cheerMessage(error: unknown): string {
 function CheerSkeleton() {
   return (
     <>
-      <PageHeader eyebrow="CHEER" title="응원 보내기" back />
+      <PageHeader title="응원 보내기" back />
       <Screen className="space-y-7">
         <div className="flex gap-3">
           {[0, 1].map((i) => (

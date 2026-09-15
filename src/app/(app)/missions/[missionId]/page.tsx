@@ -71,7 +71,7 @@ export default function MissionDetailPage() {
   if (!mission) {
     return (
       <>
-        <PageHeader eyebrow="MISSION" title="미션" back />
+        <PageHeader title="미션" back />
         <Screen>
           <EmptyState
             scene="no-mission"
@@ -92,7 +92,6 @@ export default function MissionDetailPage() {
     <>
       <Celebrate show={celebrating} />
       <PageHeader
-        eyebrow="MISSION"
         title={mission.title ?? "미션"}
         back
         meta={
@@ -299,7 +298,7 @@ function activityMessage(error: unknown): string {
 function DetailSkeleton() {
   return (
     <>
-      <PageHeader eyebrow="MISSION" title="미션" back />
+      <PageHeader title="미션" back />
       <Screen className="space-y-6">
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-40 w-full rounded-xl" />

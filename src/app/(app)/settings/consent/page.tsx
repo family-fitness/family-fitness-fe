@@ -36,7 +36,7 @@ export default function ConsentPage() {
   if (profile?.role === "CHILD") {
     return (
       <>
-        <PageHeader eyebrow="SETTINGS" title="보호자 동의" back />
+        <PageHeader title="보호자 동의" back />
         <Screen>
           <EmptyState
             scene="waiting-approval"
@@ -52,7 +52,7 @@ export default function ConsentPage() {
 
   return (
     <>
-      <PageHeader eyebrow="SETTINGS" title="보호자 동의" back />
+      <PageHeader title="보호자 동의" back />
 
       <Screen className="space-y-6">
         <p className="text-ink-soft text-sm leading-relaxed">
@@ -174,7 +174,7 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
 function ConsentSkeleton() {
   return (
     <>
-      <PageHeader eyebrow="SETTINGS" title="보호자 동의" back />
+      <PageHeader title="보호자 동의" back />
       <Screen className="space-y-6">
         <Skeleton className="h-12 w-full" />
         {[0, 1].map((i) => (

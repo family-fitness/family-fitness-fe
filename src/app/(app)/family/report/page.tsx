@@ -25,7 +25,7 @@ export default function WeeklyReportPage() {
   if (!report) {
     return (
       <>
-        <PageHeader eyebrow="REPORT" title="이번 주 기록" back />
+        <PageHeader title="이번 주 기록" back />
         <Screen>
           <EmptyState
             scene="no-record"
@@ -47,7 +47,6 @@ export default function WeeklyReportPage() {
   return (
     <>
       <PageHeader
-        eyebrow="REPORT"
         title="이번 주 기록"
         back
         meta={
@@ -142,7 +141,7 @@ export default function WeeklyReportPage() {
 function ReportSkeleton() {
   return (
     <>
-      <PageHeader eyebrow="REPORT" title="이번 주 기록" back />
+      <PageHeader title="이번 주 기록" back />
       <Screen className="space-y-8">
         <div className="flex items-center gap-4">
           <Skeleton className="size-18 rounded-xl" />

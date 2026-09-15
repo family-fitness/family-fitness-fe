@@ -75,7 +75,7 @@ export default function FuturePage() {
   if (!hasTest) {
     return (
       <>
-        <PageHeader eyebrow="FUTURE" title="10년 뒤" back />
+        <PageHeader title="10년 뒤" back />
         <Screen>
           <EmptyState
             scene="first-measure"
@@ -102,7 +102,6 @@ export default function FuturePage() {
   return (
     <>
       <PageHeader
-        eyebrow="FUTURE"
         title={profile ? `${profile.name}의 10년 뒤` : "10년 뒤"}
         back
         meta={<span className="text-faint">국민체력100 집단 분포</span>}
@@ -210,7 +209,7 @@ function predictMessage(error: unknown): string {
 function FutureSkeleton() {
   return (
     <>
-      <PageHeader eyebrow="FUTURE" title="10년 뒤" back />
+      <PageHeader title="10년 뒤" back />
       <Screen className="space-y-6">
         <Skeleton className="h-5 w-64" />
         <Skeleton className="h-50 w-full rounded-xl" />

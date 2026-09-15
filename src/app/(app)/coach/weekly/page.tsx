@@ -68,7 +68,7 @@ export default function WeeklyCoachPage() {
   if (!runId) {
     return (
       <>
-        <PageHeader eyebrow="COACH" title="이번 주 제안" back />
+        <PageHeader title="이번 주 제안" back />
         <Screen>
           <EmptyState
             scene="waiting-approval"
@@ -112,7 +112,6 @@ export default function WeeklyCoachPage() {
   return (
     <>
       <PageHeader
-        eyebrow="COACH"
         title="이번 주 제안"
         back
         meta={
@@ -377,7 +376,7 @@ function approveMessage(error: unknown): string {
 function WeeklySkeleton() {
   return (
     <>
-      <PageHeader eyebrow="COACH" title="이번 주 제안" back />
+      <PageHeader title="이번 주 제안" back />
       <Screen className="space-y-6">
         <Skeleton className="h-6 w-32" />
         {[0, 1].map((i) => (

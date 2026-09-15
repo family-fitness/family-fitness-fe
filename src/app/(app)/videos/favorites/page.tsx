@@ -9,7 +9,7 @@ import { VideoTabs } from "@/components/domain/video-tabs";
 export default function Page() {
   return (
     <>
-      <PageHeader eyebrow="VIDEO" title="운동 영상" back />
+      <PageHeader title="운동 영상" back />
       <Screen className="space-y-4">
         <VideoTabs />
         <VideoList
