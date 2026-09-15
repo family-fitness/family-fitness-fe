@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MeasureField } from "@/components/domain/measure-field";
 import { ApiError } from "@/lib/api/client";
 import type { FitnessItem, FitnessTestSource } from "@/lib/api/types";
-import { useCreateFitnessTest, useFitnessItems } from "@/lib/api/queries";
+import { useCreateFitnessTest, useFamilyProfiles, useFitnessItems } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { cn, withJosa } from "@/lib/utils";
 
@@ -36,8 +36,18 @@ const field = (itemCode: string) => `item_${itemCode}`;
 
 export default function MeasurePage() {
   const router = useRouter();
-  const { profile, familyId, isPending: sessionPending } = useSession();
+  const { profileId } = useParams<{ profileId: string }>();
+  const { familyId, isPending: sessionPending } = useSession();
 
+  /*
+    측정은 **주소의 프로필**에 저장한다. 로그인한 사람이 아니다.
+    부모 계정 하나로 온 가족을 관리하는 게 기본 모양이라, 로그인한 프로필을 쓰면
+    아이 측정을 넣었는데 부모 기록으로 들어간다.
+  */
+  const { data: family, isPending: familyPending } = useFamilyProfiles(familyId);
+  const profile = family?.profiles?.find((p) => p.profileId === profileId);
+
+  // 항목은 연령대마다 다르다. 재는 사람의 연령대로 받는다
   const { data: itemsData, isPending: itemsPending } = useFitnessItems(profile?.ageGroup);
 
   const [showEquipment, setShowEquipment] = useState(false);
@@ -57,7 +67,7 @@ export default function MeasurePage() {
   // 이 화면 전체의 메모이제이션을 포기한다
   const values = useWatch({ control });
 
-  const create = useCreateFitnessTest(profile?.profileId ?? "", familyId ?? "");
+  const create = useCreateFitnessTest(profileId, familyId ?? "");
 
   const { easy, equipment } = useMemo(() => {
     const list: FitnessItem[] = itemsData?.items ?? [];
@@ -71,7 +81,7 @@ export default function MeasurePage() {
     ([key, v]) => key.startsWith("item_") && v !== "" && v !== undefined,
   ).length;
 
-  if (sessionPending || itemsPending) return <MeasureSkeleton />;
+  if (sessionPending || familyPending || itemsPending) return <MeasureSkeleton />;
 
   if (!profile) {
     return (
@@ -80,8 +90,8 @@ export default function MeasurePage() {
         <Screen>
           <EmptyState
             scene="invite"
-            title="프로필을 먼저 만들어 주세요"
-            description="측정 기록은 계정이 아니라 프로필에 쌓여요."
+            title="찾을 수 없는 프로필이에요"
+            description="다른 가족의 프로필이거나 지워진 프로필일 수 있어요. 측정 기록은 계정이 아니라 프로필에 쌓여요."
           />
         </Screen>
       </>
@@ -161,7 +171,7 @@ export default function MeasurePage() {
 
     try {
       await create.mutateAsync({ testedOn, source, items });
-      router.replace(`/p/${profile.profileId}/result`);
+      router.replace(`/p/${profileId}/result`);
     } catch (error) {
       // 코드마다 고쳐야 할 게 다르다. 한 문구로 뭉뚱그리면 뭘 바꿔야 할지 알 수 없다
       setServerError(messageFor(error));
