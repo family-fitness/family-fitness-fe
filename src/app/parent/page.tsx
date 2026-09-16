@@ -11,7 +11,6 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Backdrop } from "@/components/ui/backdrop";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScoreDial } from "@/components/domain/score-dial";
 import { ChildSwitch } from "@/components/domain/child-switch";
 import { MyRow } from "@/components/domain/my-row";
 import { PeerCompare } from "@/components/domain/peer-compare";
@@ -110,19 +109,16 @@ export default function ParentHomePage() {
           <ChildSwitch kids={children} selectedId={child.profileId} onSelect={setChild} />
         )}
 
-        {/* 1. 지금 어디쯤인가 */}
+        {/* 1. 지금 어디쯤인가. 링과 막대로 같은 숫자를 두 번 말하던 것을 하나로 합쳤다 */}
         <section className="pt-1">
-          <ScoreDial score={score} size={196} label={`${child.name} 신체 점수`} />
+          <PeerCompare
+            name={child.name ?? "아이"}
+            score={score}
+            headline={child.headline}
+            profileId={child.profileId}
+          />
           <ScoreBasis profileId={child.profileId} />
         </section>
-
-        {/* 2. 또래와 견주면 */}
-        <PeerCompare
-          name={child.name ?? "아이"}
-          score={score}
-          headline={child.headline}
-          profileId={child.profileId}
-        />
 
         {/* 3. 몸이 자랐다면 다시 재기 */}
         <UpdateNudge child={child} />

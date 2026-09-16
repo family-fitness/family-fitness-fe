@@ -11,7 +11,7 @@ import { Backdrop } from "@/components/ui/backdrop";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KidCharacter } from "@/components/domain/kid-character";
-import { ScoreDial } from "@/components/domain/score-dial";
+import { PeerCloud } from "@/components/domain/peer-cloud";
 import { WeekDots } from "@/components/domain/week-dots";
 import {
   useCheers,
@@ -121,7 +121,7 @@ export default function KidHomePage() {
         </div>
 
         {/* 내 점수 */}
-        <ScoreDial score={score} size={210} tone="kid" label="또래 100명 중 내 자리" />
+        <PeerCloud score={score} tone="kid" label="또래 100명 중 내 자리" />
 
         {/* 이번 주에 한 날. 연속 기록으로 세지 않는다 — 빠진 날이 벌이 되면 안 된다 */}
         <WeekDots cheers={allCheers} fromProfileId={childProfileId ?? ""} />

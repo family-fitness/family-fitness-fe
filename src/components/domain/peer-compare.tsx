@@ -2,10 +2,16 @@
 
 import Link from "next/link";
 
+import { PeerCloud } from "@/components/domain/peer-cloud";
 import { Illustration } from "@/components/ui/illustration";
 import { withJosa } from "@/lib/utils";
 
-/** 또래와 견주면 어디인가. */
+/**
+ * 또래와 견주면 어디인가.
+ *
+ * 그리는 일은 PeerCloud 가 한다. 여기 남은 건 **아직 안 쟀을 때**를 어떻게
+ * 말할지와, 서버가 준 한 줄(headline)을 어디에 붙일지다.
+ */
 export function PeerCompare({
   name,
   score,
@@ -48,38 +54,15 @@ export function PeerCompare({
     );
   }
 
-  const average = 50;
-  const gap = score - average;
+  const gap = score - 50;
 
   return (
     <section>
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-sm font-bold">{name}</span>
-        <span className="text-ink-soft text-sm font-bold">또래 평균</span>
-      </div>
+      <PeerCloud score={score} label={`${name} 신체 점수`} />
 
-      {/* 같은 축 위에 둘을 얹는다. 막대 두 개를 따로 그리면 비교가 안 된다 */}
-      <div className="relative mt-2 h-11">
-        <div className="bg-sub absolute inset-x-0 top-1/2 h-2.5 -translate-y-1/2 rounded-full" />
-        <div
-          className="bg-signal absolute top-1/2 left-0 h-2.5 -translate-y-1/2 rounded-full"
-          style={{ width: `${score}%` }}
-        />
-        {/* 또래 평균 눈금 */}
-        <div
-          className="bg-ink-soft absolute top-1/2 h-6 w-0.5 -translate-x-1/2 -translate-y-1/2"
-          style={{ left: `${average}%` }}
-          aria-hidden
-        />
-        <span
-          className="border-signal bg-paper absolute top-1/2 grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2"
-          style={{ left: `${score}%` }}
-        >
-          <span className="text-signal-deep text-caption font-extrabold tabular-nums">{score}</span>
-        </span>
-      </div>
-
-      <p className="mt-1.5 text-sm leading-relaxed">
+      <p className="mt-2 text-sm leading-relaxed">
+        {/* 서버가 준 문구는 그대로 내보낸다. 백분위를 다시 계산하면
+            반올림 기준이 달라져 두 화면이 서로 다른 말을 한다 */}
         {headline ? (
           <span className="font-bold">{headline}</span>
         ) : (
