@@ -13,7 +13,7 @@ import { Backdrop } from "@/components/ui/backdrop";
 import { errorMessage } from "@/lib/errors";
 import { useCreateProfile } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
-import { today } from "@/lib/today";
+import { ageOf, today } from "@/lib/today";
 import { useBodyStore } from "@/stores/body-store";
 import { useRoleStore } from "@/stores/role-store";
 import { cn, withJosa } from "@/lib/utils";
@@ -36,7 +36,7 @@ export default function AddChildPage() {
   const [heightCm, setHeightCm] = useState("");
   const [weightKg, setWeightKg] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const age = birthDate ? new Date().getFullYear() - new Date(birthDate).getFullYear() : null;
+  const age = ageOf(birthDate);
   const needsConsent = age != null && age < 14;
 
   const step1Ok = name.trim() !== "" && birthDate !== "" && birthDate <= today();
@@ -140,6 +140,9 @@ export default function AddChildPage() {
             <Button size="block" disabled={!step1Ok} onClick={() => setStep(1)}>
               다음
             </Button>
+            {!step1Ok && (
+              <p className="text-faint text-caption text-center">이름과 생일을 넣어 주세요.</p>
+            )}
           </section>
         )}
 
@@ -220,6 +223,11 @@ export default function AddChildPage() {
                 등록하기
               </Button>
             </div>
+            {!step2Ok && (
+              <p className="text-faint text-caption text-center">
+                키와 몸무게를 넣어 주세요. 대략이어도 괜찮아요.
+              </p>
+            )}
           </section>
         )}
 

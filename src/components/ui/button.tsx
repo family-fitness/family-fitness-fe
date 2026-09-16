@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
  * kid 는 아이가 직접 누르는 버튼이다. 조사한 권장치(6~8세 50~60pt)에 맞춰 64px 로 뒀다.
  */
 const button = cva(
-  "press inline-flex items-center justify-center gap-2 font-bold disabled:pointer-events-none disabled:opacity-40",
+  "press inline-flex items-center justify-center gap-2 font-bold disabled:pointer-events-none disabled:opacity-55",
   {
     variants: {
       variant: {

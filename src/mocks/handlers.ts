@@ -23,6 +23,8 @@ import type {
   WeeklyReport,
 } from "@/lib/api/types";
 
+import { ageOf } from "@/lib/today";
+
 import fixturesJson from "./fixtures.json";
 
 /** 픽스처의 모양. */
@@ -218,7 +220,7 @@ const identity = [
   http.post(`${BASE}/families/:familyId/profiles`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
     const birthDate = String(body.birthDate ?? "2020-01-01");
-    const age = new Date().getFullYear() - new Date(birthDate).getFullYear();
+    const age = ageOf(birthDate) ?? 0;
     const consentRequired = age < 14;
 
     const consent = body.guardianConsent as
