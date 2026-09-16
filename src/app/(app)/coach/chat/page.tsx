@@ -41,6 +41,15 @@ export default function CoachChatPage() {
     bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [turns, ask.isPending]);
 
+  // 긴 질문이 한 줄에 갇히지 않게 내용만큼 키운다. 최대 높이는 CSS 가 잡는다
+  const box = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [draft]);
+
   const send = async (question: string) => {
     const trimmed = question.trim().slice(0, 500);
     if (!trimmed || ask.isPending) return;
@@ -64,6 +73,10 @@ export default function CoachChatPage() {
         },
       ]);
     } catch (e) {
+      // 답이 없는 질문만 남겨 두면 다시 물어볼 때 같은 말이 두 번 쌓인다.
+      // 물음을 거둬들이고 적던 자리로 돌려놓는다
+      setTurns((t) => t.slice(0, -1));
+      setDraft(trimmed);
       setError(
         errorMessage(
           e,
@@ -157,6 +170,7 @@ export default function CoachChatPage() {
           className="flex items-end gap-2 px-5 py-3"
         >
           <textarea
+            ref={box}
             value={draft}
             onChange={(e) => setDraft(e.target.value.slice(0, 500))}
             onKeyDown={(e) => {
@@ -166,7 +180,7 @@ export default function CoachChatPage() {
               }
             }}
             rows={1}
-            placeholder="무엇이든 물어보세요"
+            placeholder={isChild ? "뭐든 물어봐" : "무엇이든 물어보세요"}
             aria-label="질문"
             className="border-line focus:border-signal placeholder:text-faint text-body max-h-28 min-h-11 flex-1 resize-none rounded-xl border bg-transparent px-4 py-2.5 focus:outline-none"
           />
@@ -174,7 +188,7 @@ export default function CoachChatPage() {
             type="submit"
             disabled={!draft.trim() || ask.isPending}
             aria-label="보내기"
-            className="press bg-signal grid size-11 shrink-0 place-items-center rounded-xl text-white disabled:opacity-40"
+            className="press bg-signal grid size-11 shrink-0 place-items-center rounded-xl text-white disabled:opacity-55"
           >
             <ArrowUp className="size-5" strokeWidth={2.5} aria-hidden />
           </button>
