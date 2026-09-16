@@ -73,8 +73,8 @@ html {
   */
   color-scheme: light;
 
-  /* 데스크톱 거터. 앱 화면과 대비되게 한 단계 어둡게만 둔다 */
-  background-color: #dfe4ea;
+  /* 데스크톱 거터. 흰 앱 화면이 기기처럼 떠 보이게 한 단계만 어둡게 */
+  background-color: #eef1f5;
   background-attachment: fixed;
   overflow-x: hidden;
   overscroll-behavior-y: none;
@@ -82,7 +82,7 @@ html {
 }
 
 body {
-  background: var(--color-paper);
+  /* 흰색은 .app-frame 이 칠한다. 여기서 칠하면 데스크톱 거터까지 하얘진다 */
   color: var(--color-ink);
   font-family: var(--font-sans);
 }
@@ -93,7 +93,9 @@ body {
   margin: 0 auto;
   min-height: 100dvh;
   background: var(--color-paper);
-  box-shadow: 0 0 40px -14px rgba(27, 37, 116, 0.25);
+  box-shadow:
+    0 0 0 1px rgba(27, 37, 116, 0.06),
+    0 18px 50px -20px rgba(27, 37, 116, 0.22);
   padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);

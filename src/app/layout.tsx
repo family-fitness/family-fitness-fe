@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka } from "next/font/google";
 
-import { DesktopDecor } from "@/components/app-shell/desktop-decor";
 import { MswProvider } from "@/providers/msw-provider";
 import { QueryProvider } from "@/providers/query-provider";
 
@@ -42,7 +41,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full antialiased">
         <MswProvider>
           <QueryProvider>
-            <DesktopDecor />
             <div className="app-frame relative z-[1]">{children}</div>
           </QueryProvider>
         </MswProvider>
