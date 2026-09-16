@@ -4,6 +4,7 @@ import { Play } from "lucide-react";
 
 import type { CoachProposal } from "@/lib/api/types";
 import { Illustration } from "@/components/ui/illustration";
+import { safeUrl } from "@/lib/safe-url";
 import { Citations } from "@/components/domain/citations";
 import { targetCopy } from "@/lib/mission";
 
@@ -54,7 +55,7 @@ export function ProposalRow({
 
       {video && (
         <a
-          href={video.url}
+          href={safeUrl(video.url) ?? "#"}
           target="_blank"
           rel="noreferrer noopener"
           className="press border-line mt-3 ml-10 flex items-start gap-2.5 rounded-xl border p-3"

@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { Video } from "@/lib/api/types";
 import { useToggleFavorite, useVideos } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
+import { safeUrl } from "@/lib/safe-url";
 import { cn } from "@/lib/utils";
 
 /** 영상 목록. */
@@ -55,7 +56,7 @@ function VideoRow({ video }: { video: Video }) {
     <li className="py-3.5">
       <div className="flex gap-3">
         <Link
-          href={video.url ?? "#"}
+          href={safeUrl(video.url) ?? "#"}
           target="_blank"
           rel="noreferrer noopener"
           className="press relative block w-30 shrink-0 overflow-hidden rounded-xl"
@@ -92,7 +93,7 @@ function VideoRow({ video }: { video: Video }) {
 
         <div className="min-w-0 flex-1">
           <Link
-            href={video.url ?? "#"}
+            href={safeUrl(video.url) ?? "#"}
             target="_blank"
             rel="noreferrer noopener"
             className="text-body leading-snug font-bold"

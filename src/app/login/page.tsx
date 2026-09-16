@@ -87,10 +87,22 @@ function LoginContent() {
       <div className="space-y-3">
         <Button
           size="block"
+          loading={googleLogin.isPending}
           onClick={() => {
-            // 구글 인가코드 교환은 백엔드가 한다. 여기서는 구글로 보내기만 한다
-            const redirectUri = `${window.location.origin}/login`;
-            router.push(`/api/v1/auth/google/start?redirectUri=${encodeURIComponent(redirectUri)}`);
+            const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+            if (!clientId) {
+              setError("구글 로그인이 아직 설정되지 않았어요.");
+              return;
+            }
+            // 인가 요청은 프론트가 하고 코드 교환은 백엔드가 한다.
+            // 클라이언트 시크릿이 브라우저에 오면 안 된다
+            const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+            url.searchParams.set("client_id", clientId);
+            url.searchParams.set("redirect_uri", `${window.location.origin}${REDIRECT_PATH}`);
+            url.searchParams.set("response_type", "code");
+            url.searchParams.set("scope", "openid email profile");
+            if (claimCode) url.searchParams.set("state", claimCode);
+            window.location.assign(url.toString());
           }}
         >
           구글로 시작하기

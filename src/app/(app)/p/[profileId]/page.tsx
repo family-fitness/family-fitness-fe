@@ -94,7 +94,7 @@ export default function ProfilePage() {
               description="지금과 같은 조건의 10년 위 연령대"
             />
           )}
-          <LinkRow href={`/missions?scope=MINE`} art="item/item-medal" title="참여 중인 미션" />
+          <LinkRow href="/parent/history" art="item/item-medal" title="지난 기록" />
         </ul>
 
         {profile.consentRequired && !profile.consentGiven && (

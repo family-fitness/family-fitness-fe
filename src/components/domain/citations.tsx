@@ -2,6 +2,8 @@
 
 import { ExternalLink } from "lucide-react";
 
+import { safeUrl } from "@/lib/safe-url";
+
 /** AI 가 답한 근거. */
 /** 인용의 라벨 이름이 두 곳에서 다르다. */
 interface CitationLike {
@@ -33,15 +35,16 @@ export function Citations({
     <ol className={className}>
       {items.map((c, i) => {
         const label = c.sourceLabel ?? c.label ?? "출처";
+        const href = safeUrl(c.url);
         return (
           <li key={c.index ?? i} className="flex gap-1.5 py-1">
             <span className="text-signal text-caption shrink-0 font-extrabold tabular-nums">
               [{c.index ?? i + 1}]
             </span>
             <span className="min-w-0">
-              {c.url ? (
+              {href ? (
                 <a
-                  href={c.url}
+                  href={href}
                   target="_blank"
                   rel="noreferrer noopener"
                   className="text-ink-soft text-caption inline-flex items-start gap-1 leading-relaxed underline underline-offset-2"
