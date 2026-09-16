@@ -634,12 +634,12 @@
           {
             "profileId": "00000000-0000-4000-8000-000000000012",
             "role": "CHILD",
-            "coachRole": "주행자"
+            "coachRole": "주인공"
           },
           {
             "profileId": "00000000-0000-4000-8000-000000000011",
             "role": "PARENT",
-            "coachRole": "동반자"
+            "coachRole": "같이 하는 사람"
           }
         ],
         "video": {

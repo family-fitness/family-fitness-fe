@@ -157,13 +157,19 @@ export default function ParentHomePage() {
             <HomeLink
               href="/coach/weekly"
               art="item/item-clipboard"
-              title="이번 주 운동 짜기"
+              /* 이미 승인한 주에 "짜 드릴까요" 라고 다시 물으면
+                 방금 한 일이 없던 일이 된다 */
+              title={run?.status === "APPROVED" ? "이번 주 제안" : "이번 주 운동 짜기"}
               description={
                 run?.status === "AWAITING_APPROVAL"
                   ? "제안이 승인을 기다리고 있어요"
                   : run?.status === "RUNNING"
                     ? "코치가 만드는 중이에요"
-                    : "가족 기록을 보고 코치가 한 주를 짜요"
+                    : run?.status === "APPROVED"
+                      ? "승인한 제안이 이번 주 미션으로 돌고 있어요"
+                      : run?.status === "REJECTED"
+                        ? "거절한 제안이에요. 다시 짜 볼 수 있어요"
+                        : "가족 기록을 보고 코치가 한 주를 짜요"
               }
               badge={run?.status === "AWAITING_APPROVAL" ? "승인 기다림" : undefined}
             />
