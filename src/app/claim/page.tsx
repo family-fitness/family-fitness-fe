@@ -82,7 +82,7 @@ function ClaimContent() {
           inputMode="text"
           autoCapitalize="characters"
           aria-label="초대코드 여섯 자리"
-          className="border-line focus:border-signal placeholder:text-faint board-num h-16 w-full rounded-xl border bg-transparent text-center text-2xl tracking-[0.35em] focus:outline-none"
+          className="border-line focus:border-signal placeholder:text-faint board-num field-focus h-16 w-full rounded-xl border bg-transparent text-center text-2xl tracking-[0.35em]"
         />
 
         {error && (

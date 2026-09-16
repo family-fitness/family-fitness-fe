@@ -308,7 +308,7 @@ export default function WeeklyCoachPage() {
             onChange={(e) => setReason(e.target.value.slice(0, 300))}
             rows={3}
             placeholder="예) 이번 주는 시험 기간이라 시간이 없어요"
-            className="border-line focus:border-signal placeholder:text-faint w-full rounded-xl border bg-transparent p-3.5 text-sm focus:outline-none"
+            className="border-line focus:border-signal placeholder:text-faint field-focus w-full rounded-xl border bg-transparent p-3.5 text-sm"
           />
           <Button
             size="block"

@@ -182,7 +182,7 @@ export default function CoachChatPage() {
             rows={1}
             placeholder={isChild ? "뭐든 물어봐" : "무엇이든 물어보세요"}
             aria-label="질문"
-            className="border-line focus:border-signal placeholder:text-faint text-body max-h-28 min-h-11 flex-1 resize-none rounded-xl border bg-transparent px-4 py-2.5 focus:outline-none"
+            className="border-line focus:border-signal placeholder:text-faint text-body field-focus max-h-28 min-h-11 flex-1 resize-none rounded-xl border bg-transparent px-4 py-2.5"
           />
           <button
             type="submit"

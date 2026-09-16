@@ -59,7 +59,7 @@ export function MeasureField({
             aria-invalid={error ? true : undefined}
             className={cn(
               "border-line h-12 w-full rounded-xl border bg-transparent pr-14 pl-4 text-base",
-              "placeholder:text-faint focus:border-signal focus:outline-none",
+              "placeholder:text-faint focus:border-signal field-focus",
               error && "border-signal-deep",
             )}
             {...register}

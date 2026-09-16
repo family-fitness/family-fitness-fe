@@ -249,7 +249,7 @@ function StepsForm({
           onChange={(e) => setValue(e.target.value)}
           placeholder="오늘 걸은 수"
           aria-label="오늘 걸음수"
-          className="border-line focus:border-signal placeholder:text-faint h-13 w-full rounded-xl border bg-transparent pr-14 pl-4 text-base focus:outline-none"
+          className="border-line focus:border-signal placeholder:text-faint field-focus h-13 w-full rounded-xl border bg-transparent pr-14 pl-4 text-base"
         />
         <span className="text-ink-soft absolute top-1/2 right-4 -translate-y-1/2 text-sm font-semibold">
           걸음

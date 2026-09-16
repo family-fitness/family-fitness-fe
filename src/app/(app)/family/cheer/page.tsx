@@ -127,7 +127,7 @@ export default function CheerPage() {
             }}
             placeholder="직접 쓰기"
             aria-label="직접 쓴 응원"
-            className="border-line focus:border-signal placeholder:text-faint text-body mt-2 h-12 w-full rounded-xl border bg-transparent px-4 focus:outline-none"
+            className="border-line focus:border-signal placeholder:text-faint text-body field-focus mt-2 h-12 w-full rounded-xl border bg-transparent px-4"
           />
         </section>
 

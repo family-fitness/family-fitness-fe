@@ -233,7 +233,7 @@ export default function MeasurePage() {
               max={today()}
               onChange={(e) => setTestedOn(e.target.value)}
               aria-label="측정한 날짜"
-              className="border-line focus:border-signal h-12 w-full rounded-xl border bg-transparent px-4 text-base focus:outline-none"
+              className="border-line focus:border-signal field-focus h-12 w-full rounded-xl border bg-transparent px-4 text-base"
             />
 
             <div className="flex gap-2">
