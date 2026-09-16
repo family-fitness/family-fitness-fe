@@ -78,8 +78,16 @@ export default function ChildDetailPage() {
           </SectionTitle>
           <dl className="divide-rows">
             <BodyRow label="나이대" value={profile.ageGroup ?? "-"} />
-            <BodyRow label="키" value={body ? `${body.heightCm}cm` : "아직 안 적었어요"} />
-            <BodyRow label="몸무게" value={body ? `${body.weightKg}kg` : "아직 안 적었어요"} />
+            <BodyRow
+              label="키"
+              value={body ? `${body.heightCm}cm` : "아직 안 적었어요"}
+              note={body && formatDate(body.measuredOn)}
+            />
+            <BodyRow
+              label="몸무게"
+              value={body ? `${body.weightKg}kg` : "아직 안 적었어요"}
+              note={body && formatDate(body.measuredOn)}
+            />
             <BodyRow
               label="마지막으로 잰 날"
               value={
@@ -136,11 +144,14 @@ export default function ChildDetailPage() {
   );
 }
 
-function BodyRow({ label, value }: { label: string; value: string }) {
+function BodyRow({ label, value, note }: { label: string; value: string; note?: string | false }) {
   return (
     <div className="flex items-baseline justify-between gap-3 py-3.5">
       <dt className="text-sm font-bold">{label}</dt>
-      <dd className="text-ink-soft text-sm">{value}</dd>
+      <dd className="text-ink-soft text-right text-sm">
+        {value}
+        {note && <span className="text-faint text-caption ml-1.5">{note}</span>}
+      </dd>
     </div>
   );
 }

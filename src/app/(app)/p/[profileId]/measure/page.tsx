@@ -44,7 +44,8 @@ export default function MeasurePage() {
 
   /** 키와 몸무게. */
   const pendingBody = useBodyStore((st) => (profileId ? st.byProfile[profileId] : undefined));
-  const clearBody = useBodyStore((st) => st.clear);
+  const rememberBody = useBodyStore((st) => st.set);
+  const forgetBody = useBodyStore((st) => st.clear);
   const [heightCm, setHeightCm] = useState(() => String(pendingBody?.heightCm ?? ""));
   const [weightKg, setWeightKg] = useState(() => String(pendingBody?.weightKg ?? ""));
 
@@ -170,8 +171,12 @@ export default function MeasurePage() {
         ...(Number.isFinite(height) && height > 0 ? { heightCm: height } : {}),
         ...(Number.isFinite(weight) && weight > 0 ? { weightKg: weight } : {}),
       });
-      // 서버에 실려 갔으니 임시로 들고 있던 값은 버린다
-      clearBody(profileId);
+      // 서버는 받아 두고도 돌려주지 않는다. 방금 적은 값이 사라지지 않게 남긴다
+      if (Number.isFinite(height) && height > 0 && Number.isFinite(weight) && weight > 0) {
+        rememberBody(profileId, { heightCm: height, weightKg: weight, measuredOn: testedOn });
+      } else {
+        forgetBody(profileId);
+      }
       router.replace(`/p/${profileId}/result`);
     } catch (error) {
       // 코드마다 고쳐야 할 게 다르다. 한 문구로 뭉뚱그리면 뭘 바꿔야 할지 알 수 없다
