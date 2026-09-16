@@ -14,12 +14,15 @@ export function DoneCard({
   childProfileId,
   missionId,
   title,
+  note,
   onHome,
 }: {
   familyId: string;
   childProfileId: string;
   missionId: string | undefined;
   title: string;
+  /** 기록이 남지 않았을 때처럼, 축하와 함께 알려야 할 한 줄 */
+  note?: string;
   onHome: () => void;
 }) {
   const { data: family } = useFamilyProfiles(familyId);
@@ -58,6 +61,9 @@ export function DoneCard({
       {/* 이 카드가 놓이는 화면이 이미 제목을 달고 있다 */}
       <h2 className="mt-3 text-2xl font-extrabold">다 했어요!</h2>
       <p className="text-ink-soft mt-1.5 text-sm leading-relaxed">{title}</p>
+
+      {/* 축하는 축하대로 하고, 기록이 안 남은 건 따로 말해 준다 */}
+      {note && <p className="text-faint mt-2 text-xs leading-relaxed">{note}</p>}
 
       {told ? (
         <>

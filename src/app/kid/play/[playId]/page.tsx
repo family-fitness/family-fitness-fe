@@ -56,6 +56,7 @@ export default function PlayPage() {
   const recordTimer = useRecordTimer(mission?.missionId ?? "", familyId ?? "");
 
   const [done, setDone] = useState(false);
+  const [tooShort, setTooShort] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** 같은 운동을 두 가지 방법으로 할 수 있다. */
   const [how, setHow] = useState<"video" | "count" | "dice">("video");
@@ -84,6 +85,8 @@ export default function PlayPage() {
   const finishGame = async ({ seconds }: { seconds: number }) => {
     setError(null);
     const minutes = Math.floor(seconds / 60);
+    // 서버는 1분부터 받는다. 부풀려 보내는 대신 기록이 안 됐다고 말해 준다
+    setTooShort(minutes < 1);
     if (mission?.missionId && minutes >= 1) {
       const endedAt = new Date();
       const startedAt = new Date(endedAt.getTime() - seconds * 1000);
@@ -112,6 +115,7 @@ export default function PlayPage() {
             childProfileId={childProfileId ?? ""}
             missionId={mission?.missionId}
             title={title}
+            note={tooShort ? "1분이 안 돼서 시간 기록은 안 됐어요. 다음엔 조금만 더!" : undefined}
             onHome={() => router.replace("/kid")}
           />
         </Stage>

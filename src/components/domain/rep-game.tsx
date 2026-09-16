@@ -33,9 +33,6 @@ export function RepGame({
   const [reps, setReps] = useState(0);
 
   const burst = useRef<TapBurstHandle>(null);
-  /** 시작 시각과 실제로 걸린 초를 상태로 둔다. */
-  const [startedAt, setStartedAt] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     if (phase !== "playing") return;
@@ -43,8 +40,6 @@ export function RepGame({
       setLeft((v) => {
         if (v <= 1) {
           clearInterval(id);
-          // 탭이 뒤로 가 있으면 인터벌이 밀린다. 시계로 다시 잰다
-          setElapsed(Math.round((Date.now() - startedAt) / 1000));
           setPhase("done");
           return 0;
         }
@@ -52,7 +47,7 @@ export function RepGame({
       });
     }, 1000);
     return () => clearInterval(id);
-  }, [phase, startedAt]);
+  }, [phase]);
 
   const tap = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (phase !== "playing") return;
@@ -63,10 +58,10 @@ export function RepGame({
 
   if (phase === "done") {
     /*
-      한 판은 60초다. 탭을 뒤로 보내면 인터벌이 밀려 시계로 잰 값이 60초를
-      넘는데, 그 시간을 운동한 시간으로 올리면 안 된다. 짧은 쪽을 쓴다.
+      한 판은 60초다 — 초를 60번 세야 여기에 닿는다.
+      시계로 다시 재면 탭을 뒤로 보낸 동안까지 얹히니 그러지 않는다.
     */
-    const seconds = Math.min(elapsed || ROUND_SEC, ROUND_SEC);
+    const seconds = ROUND_SEC;
     return (
       <div className="flex flex-col items-center py-6 text-center">
         <KidCharacter motion="cheer" size={150} animate />
@@ -124,13 +119,7 @@ export function RepGame({
             <p className="mt-2 text-lg font-extrabold">{motion.hint}</p>
             <p className="text-ink-soft mt-1 text-sm">1분 동안 할 때마다 화면을 눌러요</p>
           </div>
-          <Button
-            size="kid"
-            onClick={() => {
-              setStartedAt(Date.now());
-              setPhase("playing");
-            }}
-          >
+          <Button size="kid" onClick={() => setPhase("playing")}>
             시작!
           </Button>
         </>
