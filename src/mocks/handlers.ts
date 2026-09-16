@@ -140,6 +140,22 @@ function bandOf(percentile: number): Band {
 
 /* ─── 인증 · 가족 ──────────────────────────────────────────── */
 
+/**
+ * 토큰 없이 들어온 요청은 진짜 서버처럼 401 로 돌려보낸다.
+ *
+ * 이게 없으면 목 서버가 아무에게나 답해서 로그인 화면이 한 번도 뜨지 않는다.
+ * 발표 자리에서 "로그인부터 한다"는 첫 화면을 보여줄 수 없다.
+ * 아무것도 돌려주지 않으면 MSW 가 다음 핸들러로 넘긴다.
+ */
+const authGate = [
+  http.all(`${BASE}/*`, ({ request }) => {
+    const url = new URL(request.url);
+    if (url.pathname.includes("/auth/")) return;
+    if (request.headers.get("authorization")) return;
+    return fail(401, "UNAUTHORIZED", "로그인이 필요합니다");
+  }),
+];
+
 const identity = [
   /** 지금 로그인한 계정이 관리하는 프로필. */
   http.get(`${BASE}/me`, () => {
@@ -687,4 +703,4 @@ const videos = [
   }),
 ];
 
-export const handlers = [...identity, ...fitness, ...coaching, ...missions, ...videos];
+export const handlers = [...authGate, ...identity, ...fitness, ...coaching, ...missions, ...videos];

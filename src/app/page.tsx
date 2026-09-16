@@ -16,15 +16,14 @@ export default function SplashPage() {
   const { data, error } = useMe();
 
   useEffect(() => {
-    // /me 가 답하면 그쪽이 먼저다. 토큰이 없어도 답하는 환경(목 서버)이 있다
-    if (data || token) return;
+    if (token) return;
     // persist 가 되살아나기 전에는 토큰이 null 이다. 한 틱 기다린다
     const id = setTimeout(() => {
       if (useAuthStore.getState().accessToken) return;
       router.replace("/login");
     }, 600);
     return () => clearTimeout(id);
-  }, [token, data, router]);
+  }, [token, router]);
 
   useEffect(() => {
     if (error) router.replace("/login");

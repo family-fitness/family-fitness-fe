@@ -10,6 +10,13 @@ import { errorMessage } from "@/lib/errors";
 import { useClaimProfile } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
 
+/** 0/O · 1/I 를 뺀 대문자와 숫자 여섯 자리. 링크로 온 코드도 같은 손질을 거친다 */
+const normalizeCode = (raw: string) =>
+  raw
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 6);
+
 /** 초대 수락. */
 export default function ClaimPage() {
   return (
@@ -25,7 +32,7 @@ function ClaimContent() {
   const token = useAuthStore((s) => s.accessToken);
   const claim = useClaimProfile();
 
-  const [code, setCode] = useState(() => (params.get("code") ?? "").toUpperCase());
+  const [code, setCode] = useState(() => normalizeCode(params.get("code") ?? ""));
   const [error, setError] = useState<string | null>(null);
 
   // 로그인부터 해야 프로필을 붙일 수 있다. 코드는 들고 간다
@@ -64,12 +71,7 @@ function ClaimContent() {
           value={code}
           onChange={(e) => {
             // 0/O · 1/I 를 뺀 대문자와 숫자 여섯 자리다
-            setCode(
-              e.target.value
-                .toUpperCase()
-                .replace(/[^A-Z0-9]/g, "")
-                .slice(0, 6),
-            );
+            setCode(normalizeCode(e.target.value));
             setError(null);
           }}
           onKeyDown={(e) => e.key === "Enter" && code.length === 6 && submit()}

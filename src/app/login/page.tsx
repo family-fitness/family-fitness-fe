@@ -19,6 +19,9 @@ const DEV_ACCOUNTS = [
 /** 구글이 돌아올 자리. 인가코드는 이 주소로 붙어서 온다 */
 const REDIRECT_PATH = "/login";
 
+/** 빌드 때 박히는 값이라 렌더마다 다시 볼 필요가 없다 */
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
+
 export default function LoginPage() {
   return (
     <Suspense fallback={null}>
@@ -81,17 +84,14 @@ function LoginContent() {
       <div className="space-y-3">
         <Button
           size="block"
+          variant={GOOGLE_CLIENT_ID ? "primary" : "outline"}
+          disabled={!GOOGLE_CLIENT_ID}
           loading={googleLogin.isPending}
           onClick={() => {
-            const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-            if (!clientId) {
-              setError("구글 로그인이 아직 설정되지 않았어요.");
-              return;
-            }
             // 인가 요청은 프론트가 하고 코드 교환은 백엔드가 한다.
             // 클라이언트 시크릿이 브라우저에 오면 안 된다
             const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-            url.searchParams.set("client_id", clientId);
+            url.searchParams.set("client_id", GOOGLE_CLIENT_ID);
             url.searchParams.set("redirect_uri", `${window.location.origin}${REDIRECT_PATH}`);
             url.searchParams.set("response_type", "code");
             url.searchParams.set("scope", "openid email profile");
@@ -101,6 +101,13 @@ function LoginContent() {
         >
           구글로 시작하기
         </Button>
+
+        {/* 눌러 봐야 아는 것보다 미리 말해 주는 편이 낫다 */}
+        {!GOOGLE_CLIENT_ID && (
+          <p className="text-faint text-caption text-center">
+            구글 로그인 키가 아직 없어요. 아래로 들어가 주세요.
+          </p>
+        )}
 
         {process.env.NODE_ENV === "development" && (
           <div className="border-line space-y-2 rounded-xl border p-3">

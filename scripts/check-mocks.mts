@@ -27,11 +27,15 @@ const server = setupServer(...handlers);
 server.listen({ onUnhandledRequest: "warn" });
 
 const BASE = "http://localhost/api/v1";
-const get = (path: string) => fetch(`${BASE}${path}`);
+
+/** 목 서버도 진짜 서버처럼 토큰을 본다. 화면이 붙이는 것과 같은 머리말이다 */
+const SIGNED_IN = { Authorization: "Bearer mock-access-token" };
+
+const get = (path: string) => fetch(`${BASE}${path}`, { headers: SIGNED_IN });
 const send = (method: string, path: string, body?: unknown) =>
   fetch(`${BASE}${path}`, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...SIGNED_IN },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
 const post = (path: string, body?: unknown) => send("POST", path, body);
@@ -56,6 +60,18 @@ async function missionCount(): Promise<number> {
   };
   return body.missions?.length ?? 0;
 }
+
+/* ─── 0. 로그인부터 한다 ────────────────────────────────────── */
+
+check(
+  "토큰 없이 들어오면 401",
+  (await fetch(`${BASE}/me`)).status === 401,
+  `${(await fetch(`${BASE}/me`)).status}`,
+);
+check(
+  "로그인 자체는 토큰 없이 된다",
+  (await fetch(`${BASE}/auth/dev-login`, { method: "POST" })).ok,
+);
 
 /* ─── 1. 코치 제안은 미션이 아니다 ─────────────────────────── */
 
