@@ -18,6 +18,7 @@ import type { FitnessItem, FitnessTestSource } from "@/lib/api/types";
 import { useCreateFitnessTest, useFamilyProfiles, useFitnessItems } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { today } from "@/lib/today";
+import { bodyError, bodyValue, rangeHint } from "@/lib/body";
 import { useBodyStore } from "@/stores/body-store";
 import { cn, withJosa } from "@/lib/utils";
 
@@ -60,6 +61,9 @@ export default function MeasurePage() {
   const forgetBody = useBodyStore((st) => st.clear);
   const [heightCm, setHeightCm] = useState(() => String(pendingBody?.heightCm ?? ""));
   const [weightKg, setWeightKg] = useState(() => String(pendingBody?.weightKg ?? ""));
+  // 범위를 벗어난 값은 서버가 422 로 돌려보낸다. 다 적고 나서 알면 늦다
+  const heightProblem = bodyError("heightCm", heightCm);
+  const weightProblem = bodyError("weightKg", weightKg);
 
   const {
     register,
@@ -187,17 +191,17 @@ export default function MeasurePage() {
     }
 
     try {
-      const height = Number(heightCm);
-      const weight = Number(weightKg);
+      const height = bodyValue("heightCm", heightCm);
+      const weight = bodyValue("weightKg", weightKg);
       await create.mutateAsync({
         testedOn,
         source,
         items,
-        ...(Number.isFinite(height) && height > 0 ? { heightCm: height } : {}),
-        ...(Number.isFinite(weight) && weight > 0 ? { weightKg: weight } : {}),
+        ...(height != null ? { heightCm: height } : {}),
+        ...(weight != null ? { weightKg: weight } : {}),
       });
       // 서버는 받아 두고도 돌려주지 않는다. 방금 적은 값이 사라지지 않게 남긴다
-      if (Number.isFinite(height) && height > 0 && Number.isFinite(weight) && weight > 0) {
+      if (height != null && weight != null) {
         rememberBody(profileId, { heightCm: height, weightKg: weight, measuredOn: testedOn });
       } else {
         forgetBody(profileId);
@@ -262,40 +266,24 @@ export default function MeasurePage() {
               <h2>지금 키와 몸무게</h2>
             </div>
             <div className="flex gap-3 pt-3">
-              <label className="flex-1">
-                <span className="text-ink-soft block text-xs font-bold">키</span>
-                <span className="relative mt-1.5 block">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.1"
-                    value={heightCm}
-                    onChange={(e) => setHeightCm(e.target.value)}
-                    placeholder="138"
-                    className="field pr-11"
-                  />
-                  <span className="text-ink-soft absolute top-1/2 right-4 -translate-y-1/2 text-sm font-bold">
-                    cm
-                  </span>
-                </span>
-              </label>
-              <label className="flex-1">
-                <span className="text-ink-soft block text-xs font-bold">몸무게</span>
-                <span className="relative mt-1.5 block">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.1"
-                    value={weightKg}
-                    onChange={(e) => setWeightKg(e.target.value)}
-                    placeholder="34"
-                    className="field pr-11"
-                  />
-                  <span className="text-ink-soft absolute top-1/2 right-4 -translate-y-1/2 text-sm font-bold">
-                    kg
-                  </span>
-                </span>
-              </label>
+              <BodyInput
+                label="키"
+                unit="cm"
+                placeholder="138"
+                value={heightCm}
+                onChange={setHeightCm}
+                hint={rangeHint("heightCm")}
+                problem={heightProblem}
+              />
+              <BodyInput
+                label="몸무게"
+                unit="kg"
+                placeholder="34"
+                value={weightKg}
+                onChange={setWeightKg}
+                hint={rangeHint("weightKg")}
+                problem={weightProblem}
+              />
             </div>
             <p className="text-faint mt-2 text-xs">비워 둬도 측정은 저장돼요.</p>
           </section>
@@ -400,6 +388,52 @@ function rules(item: FitnessItem) {
 }
 
 /** 서버 오류 코드 → 사람 말. 계약서 §2 의 목록이 그대로 들어온다 */
+
+/** 키 · 몸무게 한 칸. */
+function BodyInput({
+  label,
+  unit,
+  placeholder,
+  value,
+  onChange,
+  hint,
+  problem,
+}: {
+  label: string;
+  unit: string;
+  placeholder: string;
+  value: string;
+  onChange: (next: string) => void;
+  hint: string;
+  problem: string | null;
+}) {
+  return (
+    <label className="flex-1">
+      <span className="text-ink-soft block text-xs font-bold">{label}</span>
+      <span className="relative mt-1.5 block">
+        <input
+          type="number"
+          inputMode="decimal"
+          step="0.1"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          aria-invalid={problem != null}
+          className="field pr-11"
+        />
+        <span className="text-ink-soft absolute top-1/2 right-4 -translate-y-1/2 text-sm font-bold">
+          {unit}
+        </span>
+      </span>
+      <span
+        className={cn("mt-1 block text-xs", problem ? "text-signal-deep font-bold" : "text-faint")}
+      >
+        {problem ?? hint}
+      </span>
+    </label>
+  );
+}
+
 const messageFor = (error: unknown) =>
   errorMessage(
     error,

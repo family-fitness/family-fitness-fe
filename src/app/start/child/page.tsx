@@ -13,6 +13,7 @@ import { Backdrop } from "@/components/ui/backdrop";
 import { errorMessage } from "@/lib/errors";
 import { useCreateProfile } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
+import { bodyValue, rangeHint } from "@/lib/body";
 import { ageOf, today } from "@/lib/today";
 import { useBodyStore } from "@/stores/body-store";
 import { useRoleStore } from "@/stores/role-store";
@@ -40,15 +41,11 @@ export default function AddChildPage() {
   const needsConsent = age != null && age < 14;
 
   const step1Ok = name.trim() !== "" && birthDate !== "" && birthDate <= today();
-  const height = Number(heightCm);
-  const weight = Number(weightKg);
+  const height = bodyValue("heightCm", heightCm);
+  const weight = bodyValue("weightKg", weightKg);
+  // 여기서는 둘 다 있어야 다음으로 간다 — 첫 등록에 기준이 없으면 점수가 안 나온다
   const step2Ok =
-    Number.isFinite(height) &&
-    height >= 30 &&
-    height <= 230 &&
-    Number.isFinite(weight) &&
-    weight >= 5 &&
-    weight <= 250;
+    height != null && weight != null && heightCm.trim() !== "" && weightKg.trim() !== "";
 
   const submit = async () => {
     setError(null);
@@ -63,7 +60,11 @@ export default function AddChildPage() {
       });
       const profileId = profile.profileId ?? "";
       // 서버가 키·몸무게만 따로 받지 못한다. 첫 측정 때 같이 보낸다
-      setPendingBody(profileId, { heightCm: height, weightKg: weight, measuredOn: today() });
+      setPendingBody(profileId, {
+        heightCm: height ?? 0,
+        weightKg: weight ?? 0,
+        measuredOn: today(),
+      });
       setChild(profileId);
       setStep(2);
     } catch (e) {
@@ -157,7 +158,7 @@ export default function AddChildPage() {
               </p>
             </div>
 
-            <Field label="키" hint="30 ~ 230 cm">
+            <Field label="키" hint={rangeHint("heightCm")}>
               <div className="relative flex items-center gap-3">
                 <Illustration name="item/item-ruler-tall" size={44} />
                 <input
@@ -175,7 +176,7 @@ export default function AddChildPage() {
               </div>
             </Field>
 
-            <Field label="몸무게" hint="5 ~ 250 kg">
+            <Field label="몸무게" hint={rangeHint("weightKg")}>
               <div className="relative flex items-center gap-3">
                 <Illustration name="item/item-scale" size={44} />
                 <input
