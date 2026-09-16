@@ -10,9 +10,10 @@ import { Field } from "@/components/ui/field";
 import { Illustration } from "@/components/ui/illustration";
 import { KidCharacter } from "@/components/domain/kid-character";
 import { Backdrop } from "@/components/ui/backdrop";
-import { ApiError } from "@/lib/api/client";
+import { errorMessage } from "@/lib/errors";
 import { useCreateProfile } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
+import { today } from "@/lib/today";
 import { useBodyStore } from "@/stores/body-store";
 import { useRoleStore } from "@/stores/role-store";
 import { cn, withJosa } from "@/lib/utils";
@@ -35,12 +36,10 @@ export default function AddChildPage() {
   const [heightCm, setHeightCm] = useState("");
   const [weightKg, setWeightKg] = useState("");
   const [error, setError] = useState<string | null>(null);
-
-  const today = new Date().toISOString().slice(0, 10);
   const age = birthDate ? new Date().getFullYear() - new Date(birthDate).getFullYear() : null;
   const needsConsent = age != null && age < 14;
 
-  const step1Ok = name.trim() !== "" && birthDate !== "" && birthDate <= today;
+  const step1Ok = name.trim() !== "" && birthDate !== "" && birthDate <= today();
   const height = Number(heightCm);
   const weight = Number(weightKg);
   const step2Ok =
@@ -64,18 +63,19 @@ export default function AddChildPage() {
       });
       const profileId = profile.profileId ?? "";
       // 서버가 키·몸무게만 따로 받지 못한다. 첫 측정 때 같이 보낸다
-      setPendingBody(profileId, { heightCm: height, weightKg: weight, measuredOn: today });
+      setPendingBody(profileId, { heightCm: height, weightKg: weight, measuredOn: today() });
       setChild(profileId);
       setStep(2);
     } catch (e) {
       setError(
-        e instanceof ApiError && e.code === "CONSENT_REQUIRED"
-          ? "만 14세 미만은 보호자 동의가 있어야 해요."
-          : e instanceof ApiError && e.code === "NOT_A_PARENT"
-            ? "아이 등록은 보호자 계정에서 할 수 있어요."
-            : e instanceof ApiError
-              ? e.userMessage
-              : "등록하지 못했어요. 잠시 후 다시 시도해 주세요.",
+        errorMessage(
+          e,
+          {
+            CONSENT_REQUIRED: "만 14세 미만은 보호자 동의가 있어야 해요.",
+            NOT_A_PARENT: "아이 등록은 보호자 계정에서 할 수 있어요.",
+          },
+          "등록하지 못했어요. 잠시 후 다시 시도해 주세요.",
+        ),
       );
     }
   };
@@ -110,7 +110,7 @@ export default function AddChildPage() {
               <input
                 type="date"
                 value={birthDate}
-                max={today}
+                max={today()}
                 onChange={(e) => setBirthDate(e.target.value)}
                 className="field"
               />

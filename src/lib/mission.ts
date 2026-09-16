@@ -29,6 +29,18 @@ export function serverKnows(verifiedBy: VerifiedBy | null | undefined) {
   return verifiedBy === "VIDEO_PROGRESS" || verifiedBy === "TIMER";
 }
 
+/**
+ * 영상을 끝까지 봤다고 보는 기준.
+ * 서버도 이 값으로 활동을 적립한다 — 화면이 다른 숫자를 쓰면 "완주했는데
+ * 기록이 없어요" 가 된다.
+ */
+export const VIDEO_DONE = 0.9;
+
+/** 이 영상을 완주했는가 */
+export function isVideoDone(maxProgress: number | null | undefined): boolean {
+  return (maxProgress ?? 0) >= VIDEO_DONE;
+}
+
 /** 목표 대비 진행률(0~1) 을 퍼센트 정수로. 서버는 double 로 준다 */
 export function progressPercent(progress: number | null | undefined) {
   return Math.max(0, Math.min(100, Math.round((progress ?? 0) * 100)));

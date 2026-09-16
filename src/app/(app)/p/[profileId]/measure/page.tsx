@@ -16,6 +16,7 @@ import { ApiError } from "@/lib/api/client";
 import type { FitnessItem, FitnessTestSource } from "@/lib/api/types";
 import { useCreateFitnessTest, useFamilyProfiles, useFitnessItems } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
+import { today } from "@/lib/today";
 import { useBodyStore } from "@/stores/body-store";
 import { cn, withJosa } from "@/lib/utils";
 
@@ -39,9 +40,7 @@ export default function MeasurePage() {
   const [showEquipment, setShowEquipment] = useState(false);
   const [source, setSource] = useState<FitnessTestSource>("SELF_INPUT");
   const [serverError, setServerError] = useState<string | null>(null);
-
-  const today = new Date().toISOString().slice(0, 10);
-  const [testedOn, setTestedOn] = useState(today);
+  const [testedOn, setTestedOn] = useState(today());
 
   /** 키와 몸무게. */
   const pendingBody = useBodyStore((st) => (profileId ? st.byProfile[profileId] : undefined));
@@ -201,7 +200,7 @@ export default function MeasurePage() {
             <input
               type="date"
               value={testedOn}
-              max={today}
+              max={today()}
               onChange={(e) => setTestedOn(e.target.value)}
               aria-label="측정한 날짜"
               className="border-line focus:border-signal h-12 w-full rounded-xl border bg-transparent px-4 text-base focus:outline-none"

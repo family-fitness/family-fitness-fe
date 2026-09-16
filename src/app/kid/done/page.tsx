@@ -9,6 +9,7 @@ import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KidCharacter } from "@/components/domain/kid-character";
 import { useVideos } from "@/lib/api/queries";
+import { isVideoDone } from "@/lib/mission";
 import { useRoleStore } from "@/stores/role-store";
 import { cn } from "@/lib/utils";
 
@@ -34,8 +35,8 @@ export default function DonePage() {
   }
 
   const watched = data?.videos ?? [];
-  const finished = watched.filter((v) => (v.maxProgress ?? 0) >= 0.9);
-  const trying = watched.filter((v) => (v.maxProgress ?? 0) < 0.9);
+  const finished = watched.filter((v) => isVideoDone(v.maxProgress));
+  const trying = watched.filter((v) => !isVideoDone(v.maxProgress));
 
   if (watched.length === 0) {
     return (

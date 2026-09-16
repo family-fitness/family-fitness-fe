@@ -16,6 +16,7 @@ import type { ProfileSummary } from "@/lib/api/types";
 import { useCreateProfile, useFamilyProfiles, useOpenInvite } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { avatarFor } from "@/lib/avatar";
+import { today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 
 /** 가족 더하기. */
@@ -167,8 +168,6 @@ function AddMemberSheet({
   const [role, setRole] = useState<"PARENT" | "CHILD">("CHILD");
   const [consent, setConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const today = new Date().toISOString().slice(0, 10);
   // 만 14세 미만이면 보호자 동의가 있어야 저장된다
   const age = birthDate ? new Date().getFullYear() - new Date(birthDate).getFullYear() : null;
   const needsConsent = age != null && age < 14;
@@ -219,7 +218,7 @@ function AddMemberSheet({
           <input
             type="date"
             value={birthDate}
-            max={today}
+            max={today()}
             onChange={(e) => setBirthDate(e.target.value)}
             className="field"
           />

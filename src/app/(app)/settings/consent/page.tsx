@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar } from "@/components/ui/illustration";
-import { ApiError } from "@/lib/api/client";
+import { errorMessage } from "@/lib/errors";
 import type { ProfileSummary } from "@/lib/api/types";
 import { useFamilyProfiles, useUpdateConsent } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
@@ -88,11 +88,11 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
       setConfirming(false);
     } catch (e) {
       setError(
-        e instanceof ApiError && e.code === "NOT_A_PARENT"
-          ? "보호자 계정에서만 바꿀 수 있어요."
-          : e instanceof ApiError
-            ? e.userMessage
-            : "바꾸지 못했어요. 잠시 후 다시 시도해 주세요.",
+        errorMessage(
+          e,
+          { NOT_A_PARENT: "보호자 계정에서만 바꿀 수 있어요." },
+          "바꾸지 못했어요. 잠시 후 다시 시도해 주세요.",
+        ),
       );
     }
   };

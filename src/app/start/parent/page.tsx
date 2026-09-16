@@ -10,6 +10,7 @@ import { Field } from "@/components/ui/field";
 import { Illustration } from "@/components/ui/illustration";
 import { ApiError } from "@/lib/api/client";
 import { useCreateFamily } from "@/lib/api/queries";
+import { today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 
 /** 가족 만들기 — 첫 화면. */
@@ -22,15 +23,13 @@ export default function CreateFamilyPage() {
   const [birthDate, setBirthDate] = useState("");
   const [sex, setSex] = useState<"M" | "F">("F");
   const [error, setError] = useState<string | null>(null);
-
-  const today = new Date().toISOString().slice(0, 10);
   const valid =
     familyName.trim().length >= 1 &&
     familyName.trim().length <= 20 &&
     name.trim().length >= 1 &&
     name.trim().length <= 20 &&
     birthDate !== "" &&
-    birthDate <= today;
+    birthDate <= today();
 
   return (
     <>
@@ -88,7 +87,7 @@ export default function CreateFamilyPage() {
             <input
               type="date"
               value={birthDate}
-              max={today}
+              max={today()}
               onChange={(e) => setBirthDate(e.target.value)}
               className="field"
             />

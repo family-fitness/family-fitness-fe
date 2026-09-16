@@ -21,6 +21,7 @@ import {
   useVideos,
 } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
+import { isVideoDone } from "@/lib/mission";
 import { useRoleStore } from "@/stores/role-store";
 
 /** 아이 홈. */
@@ -88,7 +89,7 @@ export default function KidHomePage() {
     m.participants?.some((p) => p.profileId === childProfileId && !p.completed),
   );
   const suggestion = videos?.videos?.[0];
-  const doneCount = (watched?.videos ?? []).filter((v) => (v.maxProgress ?? 0) >= 0.9).length;
+  const doneCount = (watched?.videos ?? []).filter((v) => isVideoDone(v.maxProgress)).length;
   const allCheers = cheerLog?.cheers ?? [];
   const praises = allCheers.filter((c) => c.toProfileId === childProfileId && c.message);
 

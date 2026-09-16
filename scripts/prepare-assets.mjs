@@ -79,6 +79,45 @@ function unionBox(boxes) {
  */
 const PALETTE_COLOURS = 64;
 
+/**
+ * 한 장 안에 그림이 몇 덩어리로 흩어져 있는지 센다.
+ *
+ * 이미지 생성 AI 가 가끔 캐릭터 한 명 대신 **작은 캐릭터를 격자로 늘어놓은 장**을
+ * 내놓는다. 그게 애니메이션에 섞이면 한 프레임만 확 달라져서 튄다.
+ * 사람 하나면 가로·세로 모두 한 덩어리다.
+ */
+async function blobCount(file) {
+  const image = sharp(file);
+  const { width, height } = await image.metadata();
+  const alpha = await image.ensureAlpha().extractChannel(3).raw().toBuffer();
+
+  const cols = new Array(width).fill(0);
+  const rows = new Array(height).fill(0);
+  for (let y = 0; y < height; y += 2) {
+    for (let x = 0; x < width; x += 2) {
+      if (alpha[y * width + x] > ALPHA_THRESHOLD) {
+        cols[x] = 1;
+        rows[y] = 1;
+      }
+    }
+  }
+
+  const islands = (profile, gap) => {
+    let count = 0;
+    let empty = gap + 1;
+    for (const v of profile) {
+      if (v) {
+        if (empty > gap) count += 1;
+        empty = 0;
+      } else empty += 1;
+    }
+    return count;
+  };
+
+  // 화면 크기에 비례한 틈만 "끊겼다" 로 본다
+  return Math.max(islands(cols, width * 0.02), islands(rows, height * 0.02));
+}
+
 /** 알파 채널을 훑어 그림이 실제로 있는 사각형을 찾는다 */
 async function solidBox(file) {
   const image = sharp(file);
@@ -126,6 +165,45 @@ for (const group of await readdir(SRC, { withFileTypes: true })) {
     boxes.set(entry, box);
   }
 
+  /*
+    격자로 뽑힌 프레임과, 혼자만 장식이 붙어 크기가 확 다른 프레임을 걸러낸다.
+    걸러낸 번호는 anim-frames.ts 에 안 실리므로 화면이 알아서 건너뛴다.
+  */
+  const rejected = [];
+  if (GROUPED.has(group.name)) {
+    for (const entry of [...boxes.keys()]) {
+      if ((await blobCount(path.join(from, entry))) > 1) {
+        rejected.push(entry);
+        boxes.delete(entry);
+      }
+    }
+    /*
+      장식이 덧붙은 장을 걸러낸다.
+
+      같은 사람이 같은 자리에 서 있으므로 팔을 벌려도 폭은 두 배 남짓이다.
+      가장 좁은 장의 2.5배를 넘으면 사람이 커진 게 아니라 뭔가 덧그려진 것이다 —
+      실제로 몇 장에만 파란 물결 고리가 둘려 있었다.
+      중앙값 대신 최솟값과 견준다. 망가진 장이 과반이면 중앙값이 같이 망가진다.
+    */
+    const byBundle = new Map();
+    for (const [entry, box] of boxes) {
+      const key = bundleOf(entry);
+      byBundle.set(key, [...(byBundle.get(key) ?? []), [entry, box.width]]);
+    }
+    for (const [, list] of byBundle) {
+      const narrowest = Math.min(...list.map(([, w]) => w));
+      for (const [entry, w] of list) {
+        if (w > narrowest * 2.5) {
+          rejected.push(entry);
+          boxes.delete(entry);
+        }
+      }
+    }
+    if (rejected.length > 0) {
+      console.warn(`다시 뽑아야 할 프레임: ${rejected.sort().join(", ")}`);
+    }
+  }
+
   if (GROUPED.has(group.name)) {
     const bundles = new Map();
     for (const [entry, box] of boxes) {
@@ -171,21 +249,21 @@ for (const item of report) {
   const match = item.file.match(/^anim\/(.+)-(\d+)\.png$/);
   if (!match) continue;
   const [, motion, frame] = match;
-  animFrames[motion] = Math.max(animFrames[motion] ?? 0, Number(frame));
+  animFrames[motion] = [...(animFrames[motion] ?? []), Number(frame)].sort((a, b) => a - b);
 }
 
 await writeFile(
   "src/lib/anim-frames.ts",
   `/**
- * 동작별 프레임 수. **손으로 고치지 않는다** —
+ * 동작별로 쓸 수 있는 프레임 번호. **손으로 고치지 않는다** —
  * \`node scripts/prepare-assets.mjs\` 가 에셋을 넣을 때 다시 쓴다.
  *
- * 프레임을 늘리면 이 숫자가 따라 오르고 화면이 알아서 부드러워진다.
+ * 격자로 잘못 뽑힌 장은 여기 안 실린다 — 화면이 알아서 건너뛴다.
  */
-export const ANIM_FRAMES: Record<string, number> = {
+export const ANIM_FRAMES: Record<string, number[]> = {
 ${Object.entries(animFrames)
   .sort(([a], [b]) => a.localeCompare(b))
-  .map(([motion, count]) => `  ${motion}: ${count},`)
+  .map(([motion, frames]) => `  ${motion}: [${frames.join(", ")}],`)
   .join("\n")}
 };
 `,

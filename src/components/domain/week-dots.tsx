@@ -2,6 +2,7 @@
 
 import type { CheerLog } from "@/lib/api/types";
 import { Illustration } from "@/components/ui/illustration";
+import { today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 
 /**
@@ -21,9 +22,9 @@ export function WeekDots({
   className?: string;
 }) {
   // 이번 주 일요일부터 7일
-  const today = new Date();
-  const sunday = new Date(today);
-  sunday.setDate(today.getDate() - today.getDay());
+  const now = new Date();
+  const sunday = new Date(now);
+  sunday.setDate(now.getDate() - now.getDay());
 
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(sunday);
@@ -37,7 +38,7 @@ export function WeekDots({
       .map((c) => c.createdAt.slice(0, 10)),
   );
   const count = days.filter((d) => moved.has(d)).length;
-  const todayKey = today.toISOString().slice(0, 10);
+  const todayKey = today();
 
   return (
     <section className={className}>

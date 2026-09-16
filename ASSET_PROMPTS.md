@@ -1,4 +1,33 @@
-# 에셋 생성 명세 — 우리가족 체력키움 (3차)
+# 에셋 생성 명세 — 우리가족 체력키움
+
+## ★ 지금 가장 급한 것 — 다시 뽑아야 할 프레임 13장
+
+3차로 받은 `anim/` 64장 중 **13장이 못 쓰는 상태**입니다. 화면은 이 장들을 자동으로
+건너뛰고 있어서 지금도 돌아가지만, 그만큼 동작이 뚝뚝 끊깁니다.
+
+| 동작      | 다시 뽑을 번호 | 무엇이 잘못됐나                                 |
+| --------- | -------------- | ----------------------------------------------- |
+| `run`     | 1, 3, 4, 7, 8  | 한 명이 아니라 **작은 캐릭터가 격자로** 여러 명 |
+| `squat`   | 1              | 같음                                            |
+| `stretch` | 8              | 같음                                            |
+| `tired`   | 1              | 같음                                            |
+| `wave`    | 3, 4, 5, 6, 7  | 캐릭터 둘레에 **파란 물결 고리**가 덧그려짐     |
+
+지금 남아서 쓰이는 건 `run` 3장, `wave` 3장뿐입니다. 이 둘이 가장 급합니다.
+
+### 다시 뽑을 때 프롬프트에 꼭 넣어 주세요
+
+```
+exactly one single child character in the frame, centered, full body,
+no duplicated figures, no grid, no contact sheet, no multiple poses in one image,
+no decorative circles, no swirls, no water rings, no motion arcs around the character,
+plain transparent background with nothing behind the character
+```
+
+**한 장에 한 명만.** 여러 자세를 한 장에 모아 주시면 안 됩니다 — 저희가 8장을
+따로 받아서 이어 붙입니다.
+
+---
 
 **이번 요청의 핵심은 하나입니다 — 애니메이션 프레임을 3장에서 8장으로 늘리는 것.**
 

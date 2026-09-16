@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { KidCharacter, type Motion } from "@/components/domain/kid-character";
 import { useFamilyProfiles, useVideos } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
+import { isVideoDone } from "@/lib/mission";
 import { useRoleStore } from "@/stores/role-store";
 import { cn } from "@/lib/utils";
 
@@ -69,7 +70,7 @@ export default function PickPage() {
         ) : (
           <ul className="space-y-3">
             {videos.map((video, index) => {
-              const done = (video.maxProgress ?? 0) >= 0.9;
+              const done = isVideoDone(video.maxProgress);
               return (
                 <li key={video.videoId}>
                   <NavLink
@@ -79,11 +80,7 @@ export default function PickPage() {
                       done ? "border-done bg-done-soft" : "border-line",
                     )}
                   >
-                    <KidCharacter
-                      motion={motionFor(video.label?.factors, index)}
-                      size={84}
-                      cycle={1400}
-                    />
+                    <KidCharacter motion={motionFor(video.label?.factors, index)} size={84} />
                     <span className="min-w-0 flex-1">
                       <span className="text-lead line-clamp-2 leading-snug font-extrabold">
                         {video.title}

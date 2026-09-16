@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
 import { Illustration } from "@/components/ui/illustration";
 import { Citations } from "@/components/domain/citations";
-import { ApiError } from "@/lib/api/client";
+import { errorMessage } from "@/lib/errors";
 import type { ChatCitation } from "@/lib/api/types";
 import { useAskCoach } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
@@ -65,11 +65,11 @@ export default function CoachChatPage() {
       ]);
     } catch (e) {
       setError(
-        e instanceof ApiError && e.code === "TEMPORARILY_UNAVAILABLE"
-          ? "코치가 잠시 쉬고 있어요. 조금 뒤에 다시 물어봐 주세요."
-          : e instanceof ApiError
-            ? e.userMessage
-            : "답을 받지 못했어요. 잠시 후 다시 시도해 주세요.",
+        errorMessage(
+          e,
+          { TEMPORARILY_UNAVAILABLE: "코치가 잠시 쉬고 있어요. 조금 뒤에 다시 물어봐 주세요." },
+          "답을 받지 못했어요. 잠시 후 다시 시도해 주세요.",
+        ),
       );
     }
   };

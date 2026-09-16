@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-16T00:19:48.474Z",
+  "generatedAt": "2026-09-16T00:49:48.208Z",
   "assets": [
     {
       "file": "anim/cheer-1.png",
@@ -146,244 +146,166 @@
       "bytes": 23956
     },
     {
-      "file": "anim/run-1.png",
-      "width": 382,
-      "height": 384,
-      "bytes": 60373
-    },
-    {
       "file": "anim/run-2.png",
-      "width": 382,
+      "width": 165,
       "height": 384,
-      "bytes": 27847
-    },
-    {
-      "file": "anim/run-3.png",
-      "width": 382,
-      "height": 384,
-      "bytes": 54369
-    },
-    {
-      "file": "anim/run-4.png",
-      "width": 382,
-      "height": 384,
-      "bytes": 55358
+      "bytes": 28937
     },
     {
       "file": "anim/run-5.png",
-      "width": 382,
+      "width": 165,
       "height": 384,
-      "bytes": 26029
+      "bytes": 27384
     },
     {
       "file": "anim/run-6.png",
-      "width": 382,
+      "width": 165,
       "height": 384,
-      "bytes": 24873
-    },
-    {
-      "file": "anim/run-7.png",
-      "width": 382,
-      "height": 384,
-      "bytes": 58073
-    },
-    {
-      "file": "anim/run-8.png",
-      "width": 382,
-      "height": 384,
-      "bytes": 55319
-    },
-    {
-      "file": "anim/squat-1.png",
-      "width": 372,
-      "height": 384,
-      "bytes": 55436
+      "bytes": 25859
     },
     {
       "file": "anim/squat-2.png",
-      "width": 372,
+      "width": 356,
       "height": 384,
-      "bytes": 28956
+      "bytes": 27726
     },
     {
       "file": "anim/squat-3.png",
-      "width": 372,
+      "width": 356,
       "height": 384,
-      "bytes": 28468
+      "bytes": 28861
     },
     {
       "file": "anim/squat-4.png",
-      "width": 372,
+      "width": 356,
       "height": 384,
-      "bytes": 30651
+      "bytes": 30154
     },
     {
       "file": "anim/squat-5.png",
-      "width": 372,
+      "width": 356,
       "height": 384,
-      "bytes": 31401
+      "bytes": 30866
     },
     {
       "file": "anim/squat-6.png",
-      "width": 372,
+      "width": 356,
       "height": 384,
-      "bytes": 34524
+      "bytes": 33693
     },
     {
       "file": "anim/squat-7.png",
-      "width": 372,
+      "width": 356,
       "height": 384,
-      "bytes": 27078
+      "bytes": 26230
     },
     {
       "file": "anim/squat-8.png",
-      "width": 372,
+      "width": 356,
       "height": 384,
-      "bytes": 38831
+      "bytes": 38328
     },
     {
       "file": "anim/stretch-1.png",
-      "width": 376,
+      "width": 213,
       "height": 384,
-      "bytes": 24243
+      "bytes": 23810
     },
     {
       "file": "anim/stretch-2.png",
-      "width": 376,
+      "width": 213,
       "height": 384,
-      "bytes": 25742
+      "bytes": 24548
     },
     {
       "file": "anim/stretch-3.png",
-      "width": 376,
+      "width": 213,
       "height": 384,
-      "bytes": 26925
+      "bytes": 26321
     },
     {
       "file": "anim/stretch-4.png",
-      "width": 376,
+      "width": 213,
       "height": 384,
-      "bytes": 28116
+      "bytes": 26817
     },
     {
       "file": "anim/stretch-5.png",
-      "width": 376,
+      "width": 213,
       "height": 384,
-      "bytes": 26155
+      "bytes": 26264
     },
     {
       "file": "anim/stretch-6.png",
-      "width": 376,
+      "width": 213,
       "height": 384,
-      "bytes": 27627
+      "bytes": 26805
     },
     {
       "file": "anim/stretch-7.png",
-      "width": 376,
+      "width": 213,
       "height": 384,
-      "bytes": 25774
-    },
-    {
-      "file": "anim/stretch-8.png",
-      "width": 376,
-      "height": 384,
-      "bytes": 55728
-    },
-    {
-      "file": "anim/tired-1.png",
-      "width": 384,
-      "height": 360,
-      "bytes": 55858
+      "bytes": 25280
     },
     {
       "file": "anim/tired-2.png",
-      "width": 384,
-      "height": 360,
-      "bytes": 26039
+      "width": 333,
+      "height": 384,
+      "bytes": 29303
     },
     {
       "file": "anim/tired-3.png",
-      "width": 384,
-      "height": 360,
-      "bytes": 25534
+      "width": 333,
+      "height": 384,
+      "bytes": 27736
     },
     {
       "file": "anim/tired-4.png",
-      "width": 384,
-      "height": 360,
-      "bytes": 26537
+      "width": 333,
+      "height": 384,
+      "bytes": 29821
     },
     {
       "file": "anim/tired-5.png",
-      "width": 384,
-      "height": 360,
-      "bytes": 39987
+      "width": 333,
+      "height": 384,
+      "bytes": 42637
     },
     {
       "file": "anim/tired-6.png",
-      "width": 384,
-      "height": 360,
-      "bytes": 26835
+      "width": 333,
+      "height": 384,
+      "bytes": 29192
     },
     {
       "file": "anim/tired-7.png",
-      "width": 384,
-      "height": 360,
-      "bytes": 27140
+      "width": 333,
+      "height": 384,
+      "bytes": 29822
     },
     {
       "file": "anim/tired-8.png",
-      "width": 384,
-      "height": 360,
-      "bytes": 27393
+      "width": 333,
+      "height": 384,
+      "bytes": 29587
     },
     {
       "file": "anim/wave-1.png",
-      "width": 380,
+      "width": 175,
       "height": 384,
-      "bytes": 24571
+      "bytes": 28532
     },
     {
       "file": "anim/wave-2.png",
-      "width": 380,
+      "width": 175,
       "height": 384,
-      "bytes": 25061
-    },
-    {
-      "file": "anim/wave-3.png",
-      "width": 380,
-      "height": 384,
-      "bytes": 46097
-    },
-    {
-      "file": "anim/wave-4.png",
-      "width": 380,
-      "height": 384,
-      "bytes": 44974
-    },
-    {
-      "file": "anim/wave-5.png",
-      "width": 380,
-      "height": 384,
-      "bytes": 42884
-    },
-    {
-      "file": "anim/wave-6.png",
-      "width": 380,
-      "height": 384,
-      "bytes": 41591
-    },
-    {
-      "file": "anim/wave-7.png",
-      "width": 380,
-      "height": 384,
-      "bytes": 41410
+      "bytes": 29583
     },
     {
       "file": "anim/wave-8.png",
-      "width": 380,
+      "width": 175,
       "height": 384,
-      "bytes": 24158
+      "bytes": 28975
     },
     {
       "file": "bg/bg-confetti.png",

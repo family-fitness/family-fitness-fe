@@ -10,6 +10,7 @@ import type { Video } from "@/lib/api/types";
 import { useToggleFavorite, useVideos } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { safeUrl } from "@/lib/safe-url";
+import { isVideoDone } from "@/lib/mission";
 import { cn } from "@/lib/utils";
 
 /** 영상 목록. */
@@ -50,7 +51,7 @@ function VideoRow({ video }: { video: Video }) {
   const toggle = useToggleFavorite(profile?.profileId ?? "");
 
   const watched = Math.round((video.maxProgress ?? 0) * 100);
-  const done = (video.maxProgress ?? 0) >= 0.9;
+  const done = isVideoDone(video.maxProgress);
 
   return (
     <li className="py-3.5">

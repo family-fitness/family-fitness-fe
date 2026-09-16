@@ -57,8 +57,11 @@ const used = new Set();
 // 캐릭터 프레임은 `anim/${motion}-${n}` 으로 합쳐 만든다. 글자만 훑어서는 안 보인다
 try {
   const src = readFileSync(join(ROOT, "src/lib/anim-frames.ts"), "utf8");
-  for (const [, motion, count] of src.matchAll(/(\w+):\s*(\d+)/g)) {
-    for (let i = 1; i <= Number(count); i += 1) used.add(`anim/${motion}-${i}`);
+  for (const [, motion, list] of src.matchAll(/(\w+):\s*\[([^\]]*)\]/g)) {
+    for (const n of list.split(",")) {
+      const frame = n.trim();
+      if (frame) used.add(`anim/${motion}-${frame}`);
+    }
   }
 } catch {
   // 아직 에셋을 넣지 않았다

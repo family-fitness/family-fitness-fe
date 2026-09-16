@@ -4,17 +4,11 @@ import Link from "next/link";
 
 import type { FitnessMapMember } from "@/lib/api/types";
 import { Illustration } from "@/components/ui/illustration";
+import { daysSince } from "@/lib/today";
 import { withJosa } from "@/lib/utils";
 
 /** 며칠이 지나면 다시 재자고 말할지. 아이 키는 한 계절이면 달라진다 */
 const STALE_DAYS = 90;
-
-export function daysSince(date: string | null | undefined): number | null {
-  if (!date) return null;
-  const then = new Date(`${date}T00:00:00`).getTime();
-  if (Number.isNaN(then)) return null;
-  return Math.floor((Date.now() - then) / 86_400_000);
-}
 
 /** 다시 재자고 말하는 자리. */
 export function UpdateNudge({ child }: { child: FitnessMapMember }) {

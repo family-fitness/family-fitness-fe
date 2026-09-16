@@ -21,6 +21,7 @@ import {
   useRecordVideoProgress,
 } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
+import { today } from "@/lib/today";
 import { progressPercent, targetCopy } from "@/lib/mission";
 import { formatDate } from "@/lib/utils";
 
@@ -150,7 +151,7 @@ export default function MissionDetailPage() {
                   try {
                     await recordSteps.mutateAsync({
                       profileId: me.profileId ?? "",
-                      activityDate: new Date().toISOString().slice(0, 10),
+                      activityDate: today(),
                       steps,
                     });
                   } catch (e) {

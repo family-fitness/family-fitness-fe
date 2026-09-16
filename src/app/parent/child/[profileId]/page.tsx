@@ -10,7 +10,7 @@ import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorRadar } from "@/components/domain/factor-radar";
 import { ScoreDial } from "@/components/domain/score-dial";
-import { daysSince } from "@/components/domain/update-nudge";
+import { daysSince } from "@/lib/today";
 import { useFamilyProfiles, useFitnessMap, useLatestFitnessTest } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { useBodyStore } from "@/stores/body-store";
