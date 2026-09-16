@@ -4,6 +4,7 @@ import { Check } from "lucide-react";
 import { useState } from "react";
 
 import { PageHeader } from "@/components/app-shell/page-header";
+import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Screen } from "@/components/app-shell/screen";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Illustration } from "@/components/ui/illustration";
@@ -36,7 +37,7 @@ const MODES: { value: SupportMode; title: string; description: string; art: stri
   },
 ];
 
-export default function SupportModePage() {
+function SupportModePageContent() {
   const { profile, familyId, isPending } = useSession();
   const update = useUpdateSupportMode(profile?.profileId ?? "", familyId ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -154,5 +155,13 @@ function SupportSkeleton() {
         ))}
       </Screen>
     </>
+  );
+}
+
+export default function SupportModePage() {
+  return (
+    <ParentOnly>
+      <SupportModePageContent />
+    </ParentOnly>
   );
 }

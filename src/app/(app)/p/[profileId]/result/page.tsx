@@ -16,12 +16,15 @@ import { RecordRow } from "@/components/domain/record-bar";
 import { factorPose, itemPose } from "@/lib/fitness-items";
 import { useFamilyProfiles, useLatestFitnessTest } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
+import { useIsKidView } from "@/lib/view-role";
 import { formatDate, withJosa } from "@/lib/utils";
 
 /** 측정 결과. */
 export default function ResultPage() {
   const { profileId } = useParams<{ profileId: string }>();
-  const { familyId, isChild } = useSession();
+  const { familyId } = useSession();
+  // 부모 폰을 아이가 쓰는 동안에도 서열은 감춘다
+  const kidView = useIsKidView();
   // 가족 전체에서 찾는다. useSession().profiles 는 이 계정이 관리하는 프로필만이라
   // 자녀가 자기 계정을 가지면 거기서 빠진다
   const { data: family } = useFamilyProfiles(familyId);
@@ -113,7 +116,8 @@ export default function ResultPage() {
                   </div>
                 </div>
               )}
-              {weakest && (
+              {/* 약한 요인은 아이에게 말하지 않는다 */}
+              {weakest && !kidView && (
                 <div className="flex items-center gap-3 py-3">
                   <Illustration name={factorPose(weakest.factor)} size={48} />
                   <div className="min-w-0">
@@ -147,7 +151,7 @@ export default function ResultPage() {
                 />
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {/* 자녀 화면에서는 서열(등급) 대신 상태(band) 만 보여준다 */}
-                  {!isChild && <GradeBadge grade={entry.grade} />}
+                  {!kidView && <GradeBadge grade={entry.grade} />}
                   <BandChip band={entry.band} />
                 </div>
               </div>

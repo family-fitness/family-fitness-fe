@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { PageHeader } from "@/components/app-shell/page-header";
+import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Screen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -17,7 +18,7 @@ import { avatarFor } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 
 /** 보호자 동의 관리. */
-export default function ConsentPage() {
+function ConsentPageContent() {
   const { profile, familyId, isPending: sessionPending } = useSession();
   const { data: family, isPending: familyPending } = useFamilyProfiles(familyId);
 
@@ -179,5 +180,13 @@ function ConsentSkeleton() {
         ))}
       </Screen>
     </>
+  );
+}
+
+export default function ConsentPage() {
+  return (
+    <ParentOnly>
+      <ConsentPageContent />
+    </ParentOnly>
   );
 }

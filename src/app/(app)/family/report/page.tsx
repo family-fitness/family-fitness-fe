@@ -1,6 +1,7 @@
 "use client";
 
 import { PageHeader } from "@/components/app-shell/page-header";
+import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Screen } from "@/components/app-shell/screen";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Illustration } from "@/components/ui/illustration";
@@ -10,7 +11,7 @@ import { useSession } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
 
 /** 주간 리포트. */
-export default function WeeklyReportPage() {
+function WeeklyReportPageContent() {
   const { familyId, isPending: sessionPending } = useSession();
   const { data: report, isPending } = useWeeklyReport(familyId);
 
@@ -152,5 +153,13 @@ function ReportSkeleton() {
         ))}
       </Screen>
     </>
+  );
+}
+
+export default function WeeklyReportPage() {
+  return (
+    <ParentOnly>
+      <WeeklyReportPageContent />
+    </ParentOnly>
   );
 }
