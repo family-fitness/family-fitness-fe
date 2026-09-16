@@ -115,7 +115,7 @@ export function YouTubePlayer({
   if (failed) {
     return (
       <a
-        href={`https://www.youtube.com/watch?v=${videoId}`}
+        href={`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`}
         target="_blank"
         rel="noreferrer noopener"
         className="border-line text-ink-soft block rounded-xl border p-4 text-center text-sm font-bold"
