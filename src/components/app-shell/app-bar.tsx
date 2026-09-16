@@ -56,7 +56,8 @@ export function AppBar({
     >
       {showBack ? backButton : <span className="w-2" />}
 
-      <span className="text-body min-w-0 flex-1 truncate px-1 font-bold">{title}</span>
+      {/* 이 막대의 제목이 곧 이 화면의 제목이다 */}
+      <h1 className="text-body min-w-0 flex-1 truncate px-1 font-bold">{title}</h1>
 
       {right}
     </header>

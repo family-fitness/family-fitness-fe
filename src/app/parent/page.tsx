@@ -131,7 +131,10 @@ export default function ParentHomePage() {
         <section>
           <SectionTitle
             action={
-              <NavLink href="/parent/history" className="text-signal text-xs font-bold">
+              <NavLink
+                href="/parent/history"
+                className="text-signal -mr-2 inline-flex min-h-11 items-center px-2 text-xs font-bold"
+              >
                 지난 기록
               </NavLink>
             }

@@ -35,7 +35,7 @@ export default function MembersPage() {
       <AppBar backHref="/parent" title="가족" />
       <PlainScreen className="space-y-6 pt-1">
         <div>
-          <h1 className="page-title">{family?.familyName ?? "우리집"}</h1>
+          <h2 className="page-title">{family?.familyName ?? "우리집"}</h2>
           <p className="text-ink-soft mt-2 text-sm leading-relaxed">
             같이 할 가족을 더해요. 아이가 폰이 없어도 괜찮아요 — 프로필만 있으면 측정과 미션이
             굴러가요.
@@ -89,7 +89,7 @@ function MemberRow({ profile }: { profile: ProfileSummary }) {
           <span className="text-done text-xs font-bold">연결됨</span>
         ) : (
           <Button
-            size="sm"
+            size="md"
             variant="outline"
             loading={invite.isPending}
             onClick={async () => {

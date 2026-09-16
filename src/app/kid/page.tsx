@@ -95,7 +95,7 @@ export default function KidHomePage() {
   return (
     <>
       <AppBar
-        title=""
+        title={me.name ?? ""}
         right={
           <NavLink
             href="/settings"

@@ -58,7 +58,7 @@ export default function PickPage() {
       <AppBar backHref="/kid" title="운동 고르기" />
       <Stage wide className="relative space-y-4">
         <Backdrop name="bg/bg-park" height={190} />
-        <h1 className="text-[1.5rem] leading-tight font-extrabold">뭐 하고 싶어?</h1>
+        <h2 className="text-[1.5rem] leading-tight font-extrabold">뭐 하고 싶어?</h2>
 
         {videos.length === 0 ? (
           <EmptyState

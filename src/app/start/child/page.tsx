@@ -89,9 +89,9 @@ export default function AddChildPage() {
         {step === 0 && (
           <section className="space-y-5">
             <div>
-              <h1 className="text-xl leading-snug font-extrabold">
+              <h2 className="text-xl leading-snug font-extrabold">
                 아이 이름과 생일을 알려 주세요
-              </h1>
+              </h2>
               <p className="text-ink-soft mt-1.5 text-sm leading-relaxed">
                 또래 중 어디쯤인지 보려면 나이와 성별이 필요해요.
               </p>
@@ -146,9 +146,9 @@ export default function AddChildPage() {
         {step === 1 && (
           <section className="space-y-5">
             <div>
-              <h1 className="text-xl leading-snug font-extrabold">
+              <h2 className="text-xl leading-snug font-extrabold">
                 {withJosa(name || "아이", "은는")} 지금 얼마나 컸나요?
-              </h1>
+              </h2>
               <p className="text-ink-soft mt-1.5 text-sm leading-relaxed">
                 지금을 적어 두면 나중에 얼마나 자랐는지 보여 드려요.
               </p>
@@ -227,7 +227,7 @@ export default function AddChildPage() {
           <section className="relative flex flex-col items-center py-6 text-center">
             <Backdrop name="bg/bg-confetti" height={200} />
             <KidCharacter motion="cheer" size={170} animate />
-            <h1 className="mt-3 text-2xl font-extrabold">{name} 등록 완료!</h1>
+            <h2 className="mt-3 text-2xl font-extrabold">{name} 등록 완료!</h2>
             <p className="text-ink-soft mt-2 text-sm leading-relaxed">
               이제 오늘 할 운동을 골라 볼까요. 한 가지만 재면 또래 중 어디쯤인지도 보여요.
             </p>

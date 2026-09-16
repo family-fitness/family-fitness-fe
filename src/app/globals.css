@@ -182,13 +182,16 @@ body {
 }
 
 /* ── 칩 ── */
+/* 누르는 것은 44px 아래로 내려가지 않는다. 아이 손가락이 닿아야 한다 */
 .chip {
   display: inline-flex;
+  min-height: 44px;
   align-items: center;
+  justify-content: center;
   gap: 0.25rem;
   border: 1.5px solid var(--color-line);
   border-radius: 999px;
-  padding: 0.35rem 0.85rem;
+  padding: 0.35rem 1rem;
   font-size: 0.8rem;
   font-weight: 700;
   color: var(--color-ink-soft);
