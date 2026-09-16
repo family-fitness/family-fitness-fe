@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { setAccessToken } from "@/lib/api/client";
+import { AUTH_STORAGE_KEY, setAccessToken } from "@/lib/api/client";
 
 /**
  * 로그인 토큰.
@@ -31,7 +31,7 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: "ff-auth",
+      name: AUTH_STORAGE_KEY,
       // 저장소에서 되살아나는 순간 client 에도 다시 붙여 준다.
       // 이게 없으면 새로고침 직후 첫 요청이 401 로 떨어진다
       onRehydrateStorage: () => (state) => {

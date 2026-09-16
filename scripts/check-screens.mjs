@@ -55,13 +55,20 @@ const NOISE = /favicon|ytimg|_next\/image|400 |404 /;
 const browser = await chromium.launch({ channel: "chrome" });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
 
-// 경로에 맞는 역할로 본다. 아이 모드면 부모 화면은 막히는 게 맞다
+// 로그인한 채로, 경로에 맞는 역할로 본다. 아이 모드면 부모 화면은 막히는 게 맞다
 await context.addInitScript(
   ([kid]) => {
     const mode = location.pathname.startsWith("/kid") ? "kid" : "parent";
     localStorage.setItem(
       "ff-role",
       JSON.stringify({ state: { mode, childProfileId: kid }, version: 0 }),
+    );
+    localStorage.setItem(
+      "ff-auth",
+      JSON.stringify({
+        state: { accessToken: "mock-access-token", refreshToken: "mock-refresh-token" },
+        version: 0,
+      }),
     );
   },
   [KID],

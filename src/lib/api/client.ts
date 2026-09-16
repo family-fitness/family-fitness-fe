@@ -31,6 +31,9 @@ const COMMON_MESSAGE: Record<string, string> = {
   TEMPORARILY_UNAVAILABLE: "지금은 연결이 어려워요. 잠시 후 다시 시도해 주세요.",
 };
 
+/** 토큰을 담아 두는 저장소 이름. auth-store 가 이 이름으로 persist 한다 */
+export const AUTH_STORAGE_KEY = "ff-auth";
+
 let accessToken: string | null = null;
 
 /** 로그인 후 받은 토큰을 메모리에 둔다. 새로고침하면 refresh 로 다시 받는다 */
@@ -38,17 +41,39 @@ export function setAccessToken(token: string | null) {
   accessToken = token;
 }
 
+/**
+ * 지금 붙일 토큰.
+ *
+ * 새로고침 직후에는 zustand persist 가 아직 되살아나지 않아 메모리가 비어 있다.
+ * 그 사이에 나간 첫 요청이 머리말 없이 가서 401 을 맞고, 화면은 로그인으로 튕겼다.
+ * 저장소를 직접 한 번 들여다봐서 그 틈을 메운다.
+ */
+function currentToken(): string | null {
+  if (accessToken) return accessToken;
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as { state?: { accessToken?: string | null } };
+    accessToken = saved.state?.accessToken ?? null;
+    return accessToken;
+  } catch {
+    return null;
+  }
+}
+
 type Options = Omit<RequestInit, "body"> & { body?: unknown };
 
 async function request<T>(path: string, options: Options = {}): Promise<T> {
   const { body, headers, ...rest } = options;
+  const token = currentToken();
 
   const res = await fetch(`${BASE}${path}`, {
     ...rest,
     credentials: "include",
     headers: {
       ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
