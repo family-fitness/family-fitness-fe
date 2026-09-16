@@ -20,7 +20,8 @@
     "api:fixtures": "node scripts/capture-fixtures.mjs",
     "check:assets": "node scripts/check-assets.mjs",
     "check:screens": "node scripts/check-screens.mjs",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "check:clicks": "node scripts/check-clicks.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
