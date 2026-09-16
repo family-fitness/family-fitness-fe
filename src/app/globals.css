@@ -503,6 +503,42 @@ body {
   }
 }
 
+/*
+  **이게 없으면 잔상이 남는다.**
+
+  위 규칙들이 `fade` 라는 이름으로 불투명도를 바꾸는데, 그 키프레임이 없으면
+  선언 자체가 무시된다. 옛 화면이 투명해지지 않은 채로 새 화면과 겹쳐 미끄러져서
+  두 장이 동시에 보인다.
+
+  `reverse` 를 붙인 쪽(옛 화면)은 1 → 0 으로 돈다.
+*/
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/*
+  브라우저 기본값이 두 장을 밝게 더해 섞는다(plus-lighter). 기본 페이드와
+  맞물릴 때만 맞는 값이라, 우리처럼 직접 애니메이션을 주면 겹치는 동안
+  색이 들뜨면서 비쳐 보인다. 그냥 위아래로 쌓는다.
+*/
+::view-transition-old(.nav-forward),
+::view-transition-new(.nav-forward),
+::view-transition-old(.nav-back),
+::view-transition-new(.nav-back) {
+  mix-blend-mode: normal;
+}
+
+/* 새 화면이 옛 화면을 덮는다 */
+::view-transition-new(.nav-forward),
+::view-transition-new(.nav-back) {
+  z-index: 1;
+}
+
 /* 위 막대는 따라 움직이지 않는다.
    화면이 미끄러질 때 머리까지 같이 가면 붙잡을 기준점이 사라진다 */
 ::view-transition-group(app-bar) {

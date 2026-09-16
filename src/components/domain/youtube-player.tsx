@@ -63,6 +63,7 @@ export function YouTubePlayer({
   const player = useRef<YtPlayer | null>(null);
   const reported = useRef(0);
   const [failed, setFailed] = useState(false);
+  const [ready, setReady] = useState(false);
 
   // onProgress 가 매 렌더 새 함수여도 플레이어를 다시 만들지 않게 붙들어 둔다
   const report = useRef(onProgress);
@@ -82,6 +83,8 @@ export function YouTubePlayer({
           videoId,
           playerVars: { start: startSec ?? 0, playsinline: 1, rel: 0 },
           events: {
+            // 플레이어가 준비되기 전까지는 빈 상자다. 그동안 뭘 하고 있는지 말해 준다
+            onReady: () => setReady(true),
             onStateChange: (e) => {
               const playing = e.data === window.YT?.PlayerState.PLAYING;
               clearInterval(ticker);
@@ -131,10 +134,21 @@ export function YouTubePlayer({
   }
 
   return (
-    <div className="bg-sub overflow-hidden rounded-xl">
+    <div className="bg-sub relative overflow-hidden rounded-2xl">
       <div className="aspect-video w-full max-w-full">
         <div ref={holder} className="size-full" />
       </div>
+
+      {/*
+        유튜브 스크립트를 받아 오는 동안 화면이 회색 상자로 멈춰 있다.
+        아이는 그걸 "고장" 으로 본다 — 무슨 일이 일어나는 중인지 적어 준다.
+      */}
+      {!ready && (
+        <div className="bg-sub absolute inset-0 grid place-content-center gap-2 text-center">
+          <span className="skeleton mx-auto block size-12 rounded-full" />
+          <span className="text-ink-soft text-sm font-bold">영상을 불러오는 중</span>
+        </div>
+      )}
     </div>
   );
 }
