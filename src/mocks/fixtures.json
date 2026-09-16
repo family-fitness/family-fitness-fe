@@ -1,0 +1,899 @@
+{
+  "me": {
+    "userId": "00000000-0000-4000-8000-000000000001",
+    "nextStep": "HOME",
+    "profiles": [
+      {
+        "profileId": "00000000-0000-4000-8000-000000000011",
+        "familyId": "00000000-0000-4000-8000-000000000010",
+        "name": "은영",
+        "role": "PARENT",
+        "ageGroup": "성인",
+        "hasAccount": true,
+        "inviteStatus": "NONE",
+        "supportMode": "FULL",
+        "measurable": true,
+        "consentRequired": false,
+        "consentGiven": true
+      }
+    ]
+  },
+  "profiles": {
+    "familyId": "00000000-0000-4000-8000-000000000010",
+    "familyName": "서준이네",
+    "profiles": [
+      {
+        "profileId": "00000000-0000-4000-8000-000000000011",
+        "familyId": "00000000-0000-4000-8000-000000000010",
+        "name": "은영",
+        "role": "PARENT",
+        "ageGroup": "성인",
+        "hasAccount": true,
+        "inviteStatus": "NONE",
+        "supportMode": "FULL",
+        "measurable": true,
+        "consentRequired": false,
+        "consentGiven": true
+      },
+      {
+        "profileId": "00000000-0000-4000-8000-000000000012",
+        "familyId": "00000000-0000-4000-8000-000000000010",
+        "name": "서준",
+        "role": "CHILD",
+        "ageGroup": "유소년",
+        "hasAccount": false,
+        "inviteStatus": "NONE",
+        "supportMode": null,
+        "measurable": true,
+        "consentRequired": true,
+        "consentGiven": true
+      },
+      {
+        "profileId": "00000000-0000-4000-8000-000000000013",
+        "familyId": "00000000-0000-4000-8000-000000000010",
+        "name": "도현",
+        "role": "PARENT",
+        "ageGroup": "성인",
+        "hasAccount": false,
+        "inviteStatus": "ISSUED",
+        "supportMode": null,
+        "measurable": true,
+        "consentRequired": false,
+        "consentGiven": true
+      }
+    ]
+  },
+  "fitnessMap": {
+    "familyId": "00000000-0000-4000-8000-000000000010",
+    "familyName": "서준이네",
+    "members": [
+      {
+        "profileId": "00000000-0000-4000-8000-000000000011",
+        "name": "은영",
+        "role": "PARENT",
+        "ageGroup": "성인",
+        "hasAccount": true,
+        "supportMode": "FULL",
+        "measurable": true,
+        "consentRequired": false,
+        "consentGiven": true,
+        "headline": null,
+        "latest": null
+      },
+      {
+        "profileId": "00000000-0000-4000-8000-000000000012",
+        "name": "서준",
+        "role": "CHILD",
+        "ageGroup": "유소년",
+        "hasAccount": false,
+        "supportMode": null,
+        "measurable": true,
+        "consentRequired": true,
+        "consentGiven": true,
+        "headline": "유소년 상위 49%",
+        "latest": {
+          "fitnessTestId": "00000000-0000-4000-8000-000000000021",
+          "testedOn": "2026-09-07",
+          "overallPercentile": 51,
+          "weakest": {
+            "factor": "유연성",
+            "itemCode": "012",
+            "percentile": 24
+          },
+          "strongest": {
+            "factor": "심폐지구력",
+            "itemCode": "020",
+            "percentile": 79
+          },
+          "coachDirection": "GROWTH"
+        }
+      },
+      {
+        "profileId": "00000000-0000-4000-8000-000000000013",
+        "name": "도현",
+        "role": "PARENT",
+        "ageGroup": "성인",
+        "hasAccount": false,
+        "supportMode": null,
+        "measurable": true,
+        "consentRequired": false,
+        "consentGiven": true,
+        "headline": null,
+        "latest": null
+      }
+    ],
+    "disclaimer": "국민체력100 측정 데이터를 바탕으로 한 참고 정보입니다. 질병의 진단·치료를 위한 것이 아니며, 건강에 관한 판단은 전문가와 상담하세요."
+  },
+  "itemsByAgeGroup": {
+    "유아기": {
+      "ageGroup": "유아기",
+      "items": [
+        {
+          "itemCode": "009",
+          "itemName": "윗몸말아올리기",
+          "itemLabel": "윗몸말아올리기",
+          "unit": "회",
+          "factor": "근지구력",
+          "higherIsBetter": true,
+          "inputGroup": "EASY",
+          "optional": false,
+          "equipment": null,
+          "range": {
+            "min": 0,
+            "max": 120
+          }
+        },
+        {
+          "itemCode": "012",
+          "itemName": "앉아윗몸앞으로굽히기",
+          "itemLabel": "앉아윗몸앞으로굽히기",
+          "unit": "cm",
+          "factor": "유연성",
+          "higherIsBetter": true,
+          "inputGroup": "EASY",
+          "optional": false,
+          "equipment": null,
+          "range": {
+            "min": -30,
+            "max": 40
+          }
+        },
+        {
+          "itemCode": "020",
+          "itemName": "왕복오래달리기",
+          "itemLabel": "10m 왕복오래달리기",
+          "unit": "회",
+          "factor": "심폐지구력",
+          "higherIsBetter": true,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "공간",
+          "range": {
+            "min": 0,
+            "max": 150
+          }
+        },
+        {
+          "itemCode": "022",
+          "itemName": "제자리멀리뛰기",
+          "itemLabel": "제자리멀리뛰기",
+          "unit": "cm",
+          "factor": "순발력",
+          "higherIsBetter": true,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "공간",
+          "range": {
+            "min": 0,
+            "max": 350
+          }
+        },
+        {
+          "itemCode": "028",
+          "itemName": "상대악력",
+          "itemLabel": "상대악력",
+          "unit": "%",
+          "factor": "근력",
+          "higherIsBetter": true,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "악력계",
+          "range": {
+            "min": 0,
+            "max": 150
+          }
+        },
+        {
+          "itemCode": "050",
+          "itemName": "5m4회왕복달리기",
+          "itemLabel": "5m4회왕복달리기",
+          "unit": "초",
+          "factor": "민첩성",
+          "higherIsBetter": false,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "공간",
+          "range": {
+            "min": 5,
+            "max": 60
+          }
+        },
+        {
+          "itemCode": "051",
+          "itemName": "3x3버튼누르기",
+          "itemLabel": "3x3버튼누르기",
+          "unit": "초",
+          "factor": "협응력",
+          "higherIsBetter": false,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "장비",
+          "range": {
+            "min": 0,
+            "max": 60
+          }
+        }
+      ]
+    },
+    "유소년": {
+      "ageGroup": "유소년",
+      "items": [
+        {
+          "itemCode": "009",
+          "itemName": "윗몸말아올리기",
+          "itemLabel": "윗몸말아올리기",
+          "unit": "회",
+          "factor": "근지구력",
+          "higherIsBetter": true,
+          "inputGroup": "EASY",
+          "optional": false,
+          "equipment": null,
+          "range": {
+            "min": 0,
+            "max": 120
+          }
+        },
+        {
+          "itemCode": "012",
+          "itemName": "앉아윗몸앞으로굽히기",
+          "itemLabel": "앉아윗몸앞으로굽히기",
+          "unit": "cm",
+          "factor": "유연성",
+          "higherIsBetter": true,
+          "inputGroup": "EASY",
+          "optional": false,
+          "equipment": null,
+          "range": {
+            "min": -30,
+            "max": 40
+          }
+        },
+        {
+          "itemCode": "043",
+          "itemName": "반복옆뛰기",
+          "itemLabel": "반복옆뛰기",
+          "unit": "회",
+          "factor": "민첩성",
+          "higherIsBetter": true,
+          "inputGroup": "EASY",
+          "optional": false,
+          "equipment": null,
+          "range": {
+            "min": 0,
+            "max": 120
+          }
+        },
+        {
+          "itemCode": "020",
+          "itemName": "왕복오래달리기",
+          "itemLabel": "15m 왕복오래달리기",
+          "unit": "회",
+          "factor": "심폐지구력",
+          "higherIsBetter": true,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "공간",
+          "range": {
+            "min": 0,
+            "max": 150
+          }
+        },
+        {
+          "itemCode": "022",
+          "itemName": "제자리멀리뛰기",
+          "itemLabel": "제자리멀리뛰기",
+          "unit": "cm",
+          "factor": "순발력",
+          "higherIsBetter": true,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "공간",
+          "range": {
+            "min": 0,
+            "max": 350
+          }
+        },
+        {
+          "itemCode": "028",
+          "itemName": "상대악력",
+          "itemLabel": "상대악력",
+          "unit": "%",
+          "factor": "근력",
+          "higherIsBetter": true,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "악력계",
+          "range": {
+            "min": 0,
+            "max": 150
+          }
+        }
+      ]
+    },
+    "성인": {
+      "ageGroup": "성인",
+      "items": [
+        {
+          "itemCode": "012",
+          "itemName": "앉아윗몸앞으로굽히기",
+          "itemLabel": "앉아윗몸앞으로굽히기",
+          "unit": "cm",
+          "factor": "유연성",
+          "higherIsBetter": true,
+          "inputGroup": "EASY",
+          "optional": false,
+          "equipment": null,
+          "range": {
+            "min": -30,
+            "max": 40
+          }
+        },
+        {
+          "itemCode": "019",
+          "itemName": "교차윗몸일으키기",
+          "itemLabel": "교차윗몸일으키기",
+          "unit": "회",
+          "factor": "근지구력",
+          "higherIsBetter": true,
+          "inputGroup": "EASY",
+          "optional": false,
+          "equipment": null,
+          "range": {
+            "min": 0,
+            "max": 120
+          }
+        },
+        {
+          "itemCode": "041",
+          "itemName": "성인체공시간",
+          "itemLabel": "성인체공시간",
+          "unit": "초",
+          "factor": "순발력",
+          "higherIsBetter": true,
+          "inputGroup": "EASY",
+          "optional": false,
+          "equipment": null,
+          "range": {
+            "min": 0,
+            "max": 2
+          }
+        },
+        {
+          "itemCode": "020",
+          "itemName": "왕복오래달리기",
+          "itemLabel": "20m 왕복오래달리기",
+          "unit": "회",
+          "factor": "심폐지구력",
+          "higherIsBetter": true,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "공간",
+          "range": {
+            "min": 0,
+            "max": 150
+          }
+        },
+        {
+          "itemCode": "021",
+          "itemName": "10m4회왕복달리기",
+          "itemLabel": "10m4회왕복달리기",
+          "unit": "초",
+          "factor": "민첩성",
+          "higherIsBetter": false,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "공간",
+          "range": {
+            "min": 5,
+            "max": 60
+          }
+        },
+        {
+          "itemCode": "022",
+          "itemName": "제자리멀리뛰기",
+          "itemLabel": "제자리멀리뛰기",
+          "unit": "cm",
+          "factor": "순발력",
+          "higherIsBetter": true,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "공간",
+          "range": {
+            "min": 0,
+            "max": 350
+          }
+        },
+        {
+          "itemCode": "028",
+          "itemName": "상대악력",
+          "itemLabel": "상대악력",
+          "unit": "%",
+          "factor": "근력",
+          "higherIsBetter": true,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "악력계",
+          "range": {
+            "min": 0,
+            "max": 150
+          }
+        },
+        {
+          "itemCode": "035",
+          "itemName": "트레드밀VO2max",
+          "itemLabel": "트레드밀VO2max",
+          "unit": "ml/kg/min",
+          "factor": "심폐지구력",
+          "higherIsBetter": true,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "장비",
+          "range": {
+            "min": 10,
+            "max": 90
+          }
+        },
+        {
+          "itemCode": "037",
+          "itemName": "스텝검사VO2max",
+          "itemLabel": "스텝검사VO2max",
+          "unit": "ml/kg/min",
+          "factor": "심폐지구력",
+          "higherIsBetter": true,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "장비",
+          "range": {
+            "min": 10,
+            "max": 90
+          }
+        },
+        {
+          "itemCode": "040",
+          "itemName": "반응시간",
+          "itemLabel": "반응시간",
+          "unit": "초",
+          "factor": "민첩성",
+          "higherIsBetter": false,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "장비",
+          "range": {
+            "min": 0,
+            "max": 5
+          }
+        }
+      ]
+    }
+  },
+  "latestByProfile": {
+    "00000000-0000-4000-8000-000000000012": {
+      "fitnessTestId": "00000000-0000-4000-8000-000000000021",
+      "testedOn": "2026-09-07",
+      "radar": [
+        {
+          "factor": "근력",
+          "percentile": 50
+        },
+        {
+          "factor": "근지구력",
+          "percentile": null
+        },
+        {
+          "factor": "유연성",
+          "percentile": 24
+        },
+        {
+          "factor": "심폐지구력",
+          "percentile": 79
+        },
+        {
+          "factor": "순발력",
+          "percentile": null
+        }
+      ],
+      "items": [
+        {
+          "itemCode": "012",
+          "itemLabel": "앉아윗몸앞으로굽히기",
+          "unit": "cm",
+          "value": 4,
+          "percentile": 24,
+          "grade": "참가",
+          "band": "growth",
+          "topPercentText": "상위 76%"
+        },
+        {
+          "itemCode": "020",
+          "itemLabel": "15m 왕복오래달리기",
+          "unit": "회",
+          "value": 70,
+          "percentile": 79,
+          "grade": "2등급",
+          "band": "strength",
+          "topPercentText": "상위 21%"
+        },
+        {
+          "itemCode": "028",
+          "itemLabel": "상대악력",
+          "unit": "%",
+          "value": 41.3,
+          "percentile": 50,
+          "grade": "3등급",
+          "band": "steady",
+          "topPercentText": "상위 50%"
+        }
+      ],
+      "weakest": {
+        "factor": "유연성",
+        "itemCode": "012",
+        "percentile": 24
+      },
+      "strongest": {
+        "factor": "심폐지구력",
+        "itemCode": "020",
+        "percentile": 79
+      },
+      "coachDirection": "GROWTH",
+      "disclaimer": "국민체력100 측정 데이터를 바탕으로 한 참고 정보입니다. 질병의 진단·치료를 위한 것이 아니며, 건강에 관한 판단은 전문가와 상담하세요."
+    },
+    "00000000-0000-4000-8000-000000000011": {
+      "fitnessTestId": null,
+      "testedOn": null,
+      "radar": [
+        {
+          "factor": "근력",
+          "percentile": null
+        },
+        {
+          "factor": "근지구력",
+          "percentile": null
+        },
+        {
+          "factor": "유연성",
+          "percentile": null
+        },
+        {
+          "factor": "심폐지구력",
+          "percentile": null
+        },
+        {
+          "factor": "순발력",
+          "percentile": null
+        }
+      ],
+      "items": [],
+      "weakest": null,
+      "strongest": null,
+      "coachDirection": "GROWTH",
+      "disclaimer": "국민체력100 측정 데이터를 바탕으로 한 참고 정보입니다. 질병의 진단·치료를 위한 것이 아니며, 건강에 관한 판단은 전문가와 상담하세요."
+    }
+  },
+  "coachRun": {
+    "coachRunId": "0271ff7b-6e8f-4685-986a-a3a881352cd2",
+    "familyId": "00000000-0000-4000-8000-000000000010",
+    "status": "AWAITING_APPROVAL",
+    "weekStart": "2026-09-14",
+    "summary": "유연성은 매일 조금씩 늘려 가는 영역입니다. 한 주 3회, 회당 15분이면 충분합니다.",
+    "steps": [
+      {
+        "seq": 1,
+        "name": "assess",
+        "status": "ok",
+        "summary": "가족 3명 중 측정값 있는 구성원 1명"
+      },
+      {
+        "seq": 2,
+        "name": "retrieve",
+        "status": "ok",
+        "summary": "또래 운동처방 1건·영상 1편 검색"
+      },
+      {
+        "seq": 3,
+        "name": "compose",
+        "status": "ok",
+        "summary": "주행자 1명에게 유연성 미션 1개 편성"
+      },
+      {
+        "seq": 4,
+        "name": "verify",
+        "status": "ok",
+        "summary": "연령 필터·근거 인용 확인"
+      }
+    ],
+    "proposals": [
+      {
+        "position": 0,
+        "title": "같이 늘이는 한 주",
+        "rationale": "유연성은 매일 조금씩 늘려 가는 영역입니다. 한 주 3회, 회당 15분이면 충분합니다.",
+        "targetMetric": "TIMER_MINUTES",
+        "targetValue": 45,
+        "startDate": "2026-09-14",
+        "endDate": "2026-09-20",
+        "participants": [
+          {
+            "profileId": "00000000-0000-4000-8000-000000000012",
+            "role": "CHILD",
+            "coachRole": "주인공"
+          },
+          {
+            "profileId": "00000000-0000-4000-8000-000000000011",
+            "role": "PARENT",
+            "coachRole": "같이 하는 사람"
+          }
+        ],
+        "video": {
+          "videoId": "IdpXx2gm90o",
+          "title": "초등학생의 기초체력향상과 운동능력발달을 위한 운동",
+          "url": "https://www.youtube.com/watch?v=IdpXx2gm90o",
+          "startSec": 96,
+          "badges": ["조용함", "좁은 공간 OK", "준비물 없음"]
+        },
+        "citations": [
+          {
+            "index": 1,
+            "label": "국민체력100 운동처방 · 유소년 11세",
+            "chunkId": "prescription:유소년-11-F-0142",
+            "url": null
+          },
+          {
+            "index": 2,
+            "label": "국민체력100 · 초등학생의 기초체력향상과 운동능력발달을 위한 운동",
+            "chunkId": "video:IdpXx2gm90o",
+            "url": "https://www.youtube.com/watch?v=IdpXx2gm90o&t=96s"
+          }
+        ]
+      }
+    ],
+    "canApprove": true,
+    "missionCount": 0,
+    "rejectedReason": null
+  },
+  "coachApprove": {
+    "coachRunId": "0271ff7b-6e8f-4685-986a-a3a881352cd2",
+    "status": "APPROVED",
+    "approvedBy": "00000000-0000-4000-8000-000000000011",
+    "approvedAt": "2026-09-14T04:00:23.876609Z",
+    "createdMissions": [
+      {
+        "missionId": "cbdfa07d-64b3-4b5b-9eba-7c23b7dfa65e",
+        "title": "같이 늘이는 한 주",
+        "origin": "COACH"
+      }
+    ]
+  },
+  "missionsAfterApproval": {
+    "missions": [
+      {
+        "missionId": "cbdfa07d-64b3-4b5b-9eba-7c23b7dfa65e",
+        "title": "같이 늘이는 한 주",
+        "origin": "COACH",
+        "coachRunId": "0271ff7b-6e8f-4685-986a-a3a881352cd2",
+        "targetMetric": "TIMER_MINUTES",
+        "targetValue": 45,
+        "serverVerifiable": true,
+        "startDate": "2026-09-14",
+        "endDate": "2026-09-20",
+        "rationale": "유연성은 매일 조금씩 늘려 가는 영역입니다. 한 주 3회, 회당 15분이면 충분합니다.",
+        "video": {
+          "videoId": "IdpXx2gm90o",
+          "title": "초등학생의 기초체력향상과 운동능력발달을 위한 운동",
+          "url": "https://www.youtube.com/watch?v=IdpXx2gm90o",
+          "durationSec": 600,
+          "startSec": 96
+        },
+        "participants": [
+          {
+            "profileId": "00000000-0000-4000-8000-000000000012",
+            "name": "서준",
+            "progress": 0,
+            "completed": false,
+            "verifiedBy": null,
+            "needsGuardianCheck": false
+          },
+          {
+            "profileId": "00000000-0000-4000-8000-000000000011",
+            "name": "은영",
+            "progress": 0,
+            "completed": false,
+            "verifiedBy": null,
+            "needsGuardianCheck": false
+          }
+        ]
+      }
+    ]
+  },
+  "videos": {
+    "videos": [
+      {
+        "videoId": "IdpXx2gm90o",
+        "title": "초등학생의 기초체력향상과 운동능력발달을 위한 운동",
+        "url": "https://www.youtube.com/watch?v=IdpXx2gm90o",
+        "thumbnailUrl": "https://i.ytimg.com/vi/IdpXx2gm90o/hqdefault.jpg",
+        "durationSec": 600,
+        "label": {
+          "ageFrom": 7,
+          "ageTo": 12,
+          "factors": ["유연성", "근지구력"],
+          "intensity": "LOW",
+          "space": "SMALL_ROOM",
+          "noise": "QUIET",
+          "model": null
+        },
+        "badges": ["조용함", "좁은 공간 OK", "준비물 없음"],
+        "favorited": false,
+        "maxProgress": null
+      },
+      {
+        "videoId": "sample00002",
+        "title": "가족이 함께하는 거실 5분 스트레칭",
+        "url": "https://www.youtube.com/watch?v=sample00002",
+        "thumbnailUrl": "https://i.ytimg.com/vi/sample00002/hqdefault.jpg",
+        "durationSec": 300,
+        "label": {
+          "ageFrom": 4,
+          "ageTo": 64,
+          "factors": ["유연성"],
+          "intensity": "LOW",
+          "space": "SMALL_ROOM",
+          "noise": "QUIET",
+          "model": null
+        },
+        "badges": ["조용함", "좁은 공간 OK", "준비물 없음"],
+        "favorited": false,
+        "maxProgress": null
+      },
+      {
+        "videoId": "sample00003",
+        "title": "유소년 심폐지구력 키우기 — 제자리 달리기 루틴",
+        "url": "https://www.youtube.com/watch?v=sample00003",
+        "thumbnailUrl": "https://i.ytimg.com/vi/sample00003/hqdefault.jpg",
+        "durationSec": 480,
+        "label": {
+          "ageFrom": 7,
+          "ageTo": 12,
+          "factors": ["심폐지구력", "순발력"],
+          "intensity": "MID",
+          "space": "SMALL_ROOM",
+          "noise": "NORMAL",
+          "model": null
+        },
+        "badges": ["좁은 공간 OK", "준비물 없음"],
+        "favorited": false,
+        "maxProgress": null
+      },
+      {
+        "videoId": "sample00004",
+        "title": "성인 근력 운동 — 맨몸 스쿼트와 플랭크",
+        "url": "https://www.youtube.com/watch?v=sample00004",
+        "thumbnailUrl": "https://i.ytimg.com/vi/sample00004/hqdefault.jpg",
+        "durationSec": 720,
+        "label": {
+          "ageFrom": 19,
+          "ageTo": 64,
+          "factors": ["근력", "근지구력"],
+          "intensity": "MID",
+          "space": "SMALL_ROOM",
+          "noise": "QUIET",
+          "model": null
+        },
+        "badges": ["조용함", "좁은 공간 OK", "준비물 없음"],
+        "favorited": false,
+        "maxProgress": null
+      },
+      {
+        "videoId": "sample00005",
+        "title": "유아 놀이 체육 — 균형 잡기와 점프",
+        "url": "https://www.youtube.com/watch?v=sample00005",
+        "thumbnailUrl": "https://i.ytimg.com/vi/sample00005/hqdefault.jpg",
+        "durationSec": 420,
+        "label": {
+          "ageFrom": 4,
+          "ageTo": 6,
+          "factors": ["평형성", "순발력"],
+          "intensity": "LOW",
+          "space": "SMALL_ROOM",
+          "noise": "NORMAL",
+          "model": null
+        },
+        "badges": ["좁은 공간 OK", "준비물 없음"],
+        "favorited": false,
+        "maxProgress": null
+      }
+    ],
+    "nextCursor": null
+  },
+  "report": {
+    "weekStart": "2026-09-14",
+    "weekEnd": "2026-09-20",
+    "summary": null,
+    "missionStats": {
+      "total": 0,
+      "completed": 0
+    },
+    "members": [
+      {
+        "profileId": "00000000-0000-4000-8000-000000000011",
+        "name": "은영",
+        "activeMinutes": 0,
+        "verifiedMinutes": 0,
+        "completedMissions": 0
+      },
+      {
+        "profileId": "00000000-0000-4000-8000-000000000012",
+        "name": "서준",
+        "activeMinutes": 0,
+        "verifiedMinutes": 0,
+        "completedMissions": 0
+      },
+      {
+        "profileId": "00000000-0000-4000-8000-000000000013",
+        "name": "도현",
+        "activeMinutes": 0,
+        "verifiedMinutes": 0,
+        "completedMissions": 0
+      }
+    ],
+    "cheerCount": 0
+  },
+  "prediction": {
+    "predictionId": "7c4c4af9-d640-4286-88fa-420a164bf9cf",
+    "modelVersion": "ai-trajectory-v1",
+    "basis": "cross_sectional_group_distribution",
+    "points": [
+      {
+        "scenario": "MAINTAIN",
+        "itemCode": "028",
+        "yearsFromNow": 0,
+        "p10": 40,
+        "p50": 50,
+        "p90": 60
+      },
+      {
+        "scenario": "MAINTAIN",
+        "itemCode": "028",
+        "yearsFromNow": 4,
+        "p10": 43.2,
+        "p50": 54,
+        "p90": 64.8
+      },
+      {
+        "scenario": "MAINTAIN",
+        "itemCode": "028",
+        "yearsFromNow": 8,
+        "p10": 46.4,
+        "p50": 58,
+        "p90": 69.6
+      },
+      {
+        "scenario": "MAINTAIN",
+        "itemCode": "028",
+        "yearsFromNow": 10,
+        "p10": 48,
+        "p50": 60,
+        "p90": 72
+      }
+    ],
+    "notice": "집단 분포를 바탕으로 한 참고 범위입니다. 개인의 변화를 나타내지 않습니다."
+  }
+}

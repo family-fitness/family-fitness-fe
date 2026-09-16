@@ -1,0 +1,25 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useEffect, type ReactNode } from "react";
+
+import { useIsKidView } from "@/lib/view-role";
+
+/**
+ * 부모만 보는 화면.
+ *
+ * 설정 화면에서 링크를 감추는 것만으로는 부족하다 — 주소를 바로 치면 들어와진다.
+ * 서버는 막아 주지 않는다. 가족 조회는 구성원이면 누구나 되고 그건 서버 입장에서
+ * 맞다. 아이에게 무엇을 보여줄지는 화면이 정하는 일이다.
+ */
+export function ParentOnly({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const kidView = useIsKidView();
+
+  useEffect(() => {
+    if (kidView) router.replace("/kid");
+  }, [kidView, router]);
+
+  if (kidView) return null;
+  return <>{children}</>;
+}

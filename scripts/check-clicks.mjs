@@ -1,0 +1,110 @@
+/**
+ * 누를 수 있는 것을 전부 눌러 본다.
+ *
+ *   npm run check:clicks
+ *
+ * 화면이 열리는 것과 그 화면이 쓸 수 있는 것은 다르다. 24개 화면의 버튼과
+ * 링크를 하나씩 눌러 보고 터지는지 · 콘솔이 우는지 · 눌렀더니 빈 화면이
+ * 되는지 본다. 매번 돌리기엔 오래 걸려서 verify 에는 넣지 않았다.
+ */
+import { chromium } from "playwright";
+const B = "http://localhost:3001";
+const KID = "00000000-0000-4000-8000-000000000012";
+const SKIP = /devtools|dev tools|뒤로/i;
+
+const ROUTES = {
+  parent: [
+    "/parent",
+    "/parent/history",
+    "/parent/family",
+    `/parent/child/${KID}`,
+    "/coach/weekly",
+    "/coach/chat",
+    "/videos",
+    "/videos/favorites",
+    "/videos/recent",
+    "/family/cheer",
+    "/family/report",
+    "/settings",
+    "/settings/support-mode",
+    "/settings/consent",
+    `/p/${KID}/measure`,
+    `/p/${KID}/result`,
+    `/p/${KID}/future`,
+    "/start",
+    "/start/child",
+    "/start/who",
+  ],
+  kid: ["/kid", "/kid/pick", "/kid/done", "/kid/praise"],
+};
+
+const browser = await chromium.launch({ channel: "chrome" });
+const found = [];
+
+for (const [mode, routes] of Object.entries(ROUTES)) {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx.addInitScript(
+    ([m, kid]) => {
+      localStorage.setItem(
+        "ff-role",
+        JSON.stringify({ state: { mode: m, childProfileId: kid }, version: 0 }),
+      );
+      localStorage.setItem(
+        "ff-auth",
+        JSON.stringify({
+          state: { accessToken: "mock-access-token", refreshToken: "r" },
+          version: 0,
+        }),
+      );
+    },
+    [mode, KID],
+  );
+
+  for (const route of routes) {
+    const scout = await ctx.newPage();
+    await scout.goto(B + route, { waitUntil: "load" });
+    await scout.waitForTimeout(1400);
+    const count = await scout.locator("button:not([disabled]), a[href], [role=tab]").count();
+    await scout.close();
+
+    for (let i = 0; i < count; i++) {
+      const page = await ctx.newPage();
+      const bad = [];
+      page.on("pageerror", (e) => bad.push("터짐: " + String(e).split("\n")[0].slice(0, 100)));
+      page.on("console", (m) => {
+        if (
+          m.type() === "error" &&
+          !/favicon|ytimg|_next\/image|Failed to load resource/.test(m.text())
+        )
+          bad.push("콘솔: " + m.text().split("\n")[0].slice(0, 100));
+      });
+      let label = `#${i}`;
+      try {
+        await page.goto(B + route, { waitUntil: "load" });
+        await page.waitForTimeout(1300);
+        const el = page.locator("button:not([disabled]), a[href], [role=tab]").nth(i);
+        label = ((await el.getAttribute("aria-label")) || (await el.innerText()) || `#${i}`)
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 34);
+        if (SKIP.test(label)) {
+          await page.close();
+          continue;
+        }
+        await el.click({ timeout: 6000 });
+        await page.waitForTimeout(1500);
+        const text = (await page.locator("body").innerText()).trim();
+        if (text.length < 6) bad.push(`누르니 빈 화면 (${new URL(page.url()).pathname})`);
+      } catch (e) {
+        bad.push("눌리지 않음: " + String(e).split("\n")[0].slice(0, 90));
+      }
+      if (bad.length)
+        found.push(`${mode} ${route} — "${label}"\n    ${[...new Set(bad)].join("\n    ")}`);
+      await page.close();
+    }
+    process.stdout.write(".");
+  }
+  await ctx.close();
+}
+await browser.close();
+console.log("\n" + (found.length ? "문제:\n  " + found.join("\n  ") : "누르는 것 전부 이상 없음"));

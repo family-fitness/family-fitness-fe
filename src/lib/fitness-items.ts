@@ -1,114 +1,66 @@
-import type { FitnessDomain, FitnessGrade, FitnessItemCode, FitnessItemMeta } from "./api/types";
+import type { FitnessFactor, FitnessItem } from "./api/types";
 
-/**
- * 국민체력100 측정 항목 메타데이터.
- *
- * 원본은 백엔드의 Kotlin enum FitnessItem 이고 정식으로는
- * GET /api/v1/fitness/items 로 받는다. 이건 백엔드가 없을 때 쓰는 사본이자
- * 라벨 · 단위처럼 화면에서만 필요한 정보의 출처다.
- */
-export const FITNESS_ITEMS: Record<FitnessItemCode, FitnessItemMeta> = {
-  SIT_UP: {
-    code: "SIT_UP",
-    label: "윗몸말아올리기",
-    unit: "회",
-    domain: "MUSCLE_ENDURANCE",
-    optionalInput: false,
-    ageGroups: ["YOUTH", "ADULT"],
-    higherIsBetter: true,
-    hint: "1분 동안 몇 번 했는지 세어 주세요",
-  },
-  SIT_AND_REACH: {
-    code: "SIT_AND_REACH",
-    label: "앉아윗몸앞으로굽히기",
-    unit: "cm",
-    domain: "FLEXIBILITY",
-    optionalInput: false,
-    ageGroups: ["TODDLER", "YOUTH", "ADULT"],
-    higherIsBetter: true,
-    hint: "발끝을 0으로 두고 손끝이 닿은 위치까지",
-  },
-  SINGLE_LEG_STAND: {
-    code: "SINGLE_LEG_STAND",
-    label: "외발서기",
-    unit: "초",
-    domain: "BALANCE",
-    optionalInput: false,
-    ageGroups: ["TODDLER"],
-    higherIsBetter: true,
-    hint: "눈을 뜨고 한 발로 버틴 시간",
-  },
-  GRIP_STRENGTH: {
-    code: "GRIP_STRENGTH",
-    label: "악력",
-    unit: "kg",
-    domain: "MUSCLE_STRENGTH",
-    // 악력계가 있는 집이 거의 없다. 첫 화면에서 장비를 요구하면 거기서 이탈한다
-    optionalInput: true,
-    ageGroups: ["TODDLER", "YOUTH", "ADULT"],
-    higherIsBetter: true,
-    hint: "악력계가 필요해요",
-  },
-  STANDING_LONG_JUMP: {
-    code: "STANDING_LONG_JUMP",
-    label: "제자리멀리뛰기",
-    unit: "cm",
-    domain: "POWER",
-    optionalInput: true,
-    ageGroups: ["YOUTH", "ADULT"],
-    higherIsBetter: true,
-    hint: "2m 이상 뛸 공간이 필요해요",
-  },
-  SHUTTLE_RUN: {
-    code: "SHUTTLE_RUN",
-    label: "왕복오래달리기",
-    unit: "회",
-    domain: "CARDIO",
-    optionalInput: true,
-    ageGroups: ["YOUTH", "ADULT"],
-    higherIsBetter: true,
-    hint: "20m 왕복 코스가 필요해요",
-  },
+/** 측정 항목에 관한 화면 쪽 정보. */
+
+/** 항목 코드 → 자세 그림. 없는 항목은 요인 그림으로 대체한다 */
+const POSE_BY_CODE: Record<string, string> = {
+  "009": "move/move-situp", // 윗몸말아올리기
+  "010": "move/move-jump-rope", // 반복점프
+  "012": "move/move-sit-and-reach", // 앉아윗몸앞으로굽히기
+  "013": "move/move-shuttle-run", // 일리노이
+  "014": "move/move-long-jump", // 체공시간
+  "017": "move/move-plank", // 눈-손협응력
+  "019": "move/move-situp", // 교차윗몸일으키기
+  "020": "move/move-shuttle-run", // 왕복오래달리기
+  "021": "move/move-shuttle-run", // 10m4회왕복달리기
+  "022": "move/move-long-jump", // 제자리멀리뛰기
+  "028": "move/move-grip", // 상대악력
+  "035": "move/move-walk",
+  "037": "move/move-walk",
+  "040": "move/move-squat", // 반응시간
+  "041": "move/move-long-jump", // 성인체공시간
+  "043": "move/move-jump-rope", // 반복옆뛰기
+  "050": "move/move-shuttle-run", // 5m4회왕복달리기
+  "051": "move/move-plank", // 3x3버튼누르기
 };
 
-export const FITNESS_ITEM_LIST = Object.values(FITNESS_ITEMS);
-
-export const DOMAIN_LABEL: Record<FitnessDomain, string> = {
-  MUSCLE_ENDURANCE: "근지구력",
-  FLEXIBILITY: "유연성",
-  BALANCE: "평형성",
-  MUSCLE_STRENGTH: "근력",
-  POWER: "순발력",
-  CARDIO: "심폐지구력",
+const POSE_BY_FACTOR: Record<string, string> = {
+  심폐지구력: "move/move-shuttle-run",
+  근력: "move/move-grip",
+  근지구력: "move/move-situp",
+  유연성: "move/move-stretch-leg",
+  민첩성: "move/move-jump-rope",
+  순발력: "move/move-long-jump",
+  협응력: "move/move-plank",
+  평형성: "move/move-single-leg",
 };
 
-/** 국민체력100 등급. 1등급이 가장 높다 */
-export const GRADE_LABEL: Record<FitnessGrade, string> = {
-  1: "1등급",
-  2: "2등급",
-  3: "3등급",
-  4: "4등급",
-  5: "5등급",
+export function itemPose(item: Pick<FitnessItem, "itemCode" | "factor">): string {
+  return (
+    POSE_BY_CODE[item.itemCode ?? ""] ?? POSE_BY_FACTOR[item.factor ?? ""] ?? "move/move-situp"
+  );
+}
+
+/** 장비가 필요한 항목에만 그 장비 그림을 붙인다. 악력계가 뭔지 모르는 사람이 많다 */
+const EQUIPMENT_ART: Record<string, string> = {
+  "028": "item/item-grip",
+  "022": "item/item-tape",
+  "020": "item/item-cone",
+  "050": "item/item-cone",
+  "021": "item/item-cone",
+  "013": "item/item-cone",
+  "040": "item/item-stopwatch",
+  "017": "item/item-stopwatch",
+  "051": "item/item-stopwatch",
+  "035": "item/item-shoes",
+  "037": "item/item-shoes",
 };
 
-export function itemLabel(code: FitnessItemCode): string {
-  return FITNESS_ITEMS[code]?.label ?? code;
+export function equipmentArt(itemCode: string | undefined): string | undefined {
+  return itemCode ? EQUIPMENT_ART[itemCode] : undefined;
 }
 
-export function itemUnit(code: FitnessItemCode): string {
-  return FITNESS_ITEMS[code]?.unit ?? "";
-}
-
-/** 백분위를 "상위 30%" 같은 사람 말로 바꾼다 */
-export function percentileText(percentile: number): string {
-  return `상위 ${Math.max(1, Math.round(100 - percentile))}%`;
-}
-
-/** 백분위로 등급을 낸다. 서버가 안 준 경우의 대비책이다 */
-export function gradeFromPercentile(percentile: number): FitnessGrade {
-  if (percentile >= 80) return 1;
-  if (percentile >= 60) return 2;
-  if (percentile >= 40) return 3;
-  if (percentile >= 20) return 4;
-  return 5;
+/** 요인 → 그림. 레이더 · 결과 화면에서 쓴다 */
+export function factorPose(factor: FitnessFactor | string | undefined): string {
+  return POSE_BY_FACTOR[factor ?? ""] ?? "move/move-situp";
 }

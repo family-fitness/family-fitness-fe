@@ -1,12 +1,24 @@
-import { AppHeader } from "@/components/app-shell/app-header";
-import { Screen } from "@/components/app-shell/screen";
+"use client";
 
+import { PageHeader } from "@/components/app-shell/page-header";
+import { Screen } from "@/components/app-shell/screen";
+import { VideoList } from "@/components/domain/video-list";
+import { VideoTabs } from "@/components/domain/video-tabs";
+
+/** 즐겨찾기한 영상. */
 export default function Page() {
   return (
     <>
-      <AppHeader title="찜한 영상" back />
-      <Screen>
-        <p className="text-mute py-10 text-center text-sm">찜한 영상 목록이 들어갑니다.</p>
+      <PageHeader title="운동 영상" back />
+      <Screen className="space-y-4">
+        <VideoTabs />
+        <VideoList
+          list="FAVORITES"
+          empty={{
+            title: "즐겨찾기한 영상이 없어요",
+            description: "마음에 드는 영상에 하트를 누르면 여기 모여요.",
+          }}
+        />
       </Screen>
     </>
   );

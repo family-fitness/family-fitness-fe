@@ -2,33 +2,29 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api } from "./client";
+import { api, query } from "./client";
 import type {
-  ActivitySummary,
+  AgeGroup,
+  AuthResponse,
   Cheer,
-  CoachMessage,
+  CheerLogList,
+  CoachApproveResult,
+  CoachChatResult,
   CoachRun,
-  CreateFamilyRequest,
-  CreateFitnessTestRequest,
-  CreateMissionRequest,
-  CreateProfileRequest,
-  ExerciseVideo,
-  Facility,
-  FacilityQuery,
-  Family,
-  FitnessItemCode,
-  FitnessItemMeta,
+  FitnessItems,
   FitnessMap,
-  FitnessTest,
+  FitnessTestResult,
   InviteCode,
-  Mission,
-  MissionProgressRequest,
-  Prediction,
-  Profile,
-  SendCheerRequest,
+  LatestFitnessTest,
+  MeResponse,
+  NextStep,
+  MissionList,
+  PredictionResult,
+  ProfileSummary,
+  Role,
   SupportMode,
   Uuid,
-  VideoRecommendQuery,
+  VideoList,
   WeeklyReport,
 } from "./types";
 
@@ -37,365 +33,409 @@ import type {
  * 무효화할 때 문자열을 손으로 적으면 오타가 조용히 지나간다.
  */
 export const qk = {
-  me: {
-    profiles: () => ["me", "profiles"] as const,
-  },
+  me: () => ["me"] as const,
   family: {
+    profiles: (familyId: Uuid) => ["family", familyId, "profiles"] as const,
     fitnessMap: (familyId: Uuid) => ["family", familyId, "fitness-map"] as const,
-    activity: (familyId: Uuid) => ["family", familyId, "activity"] as const,
-    missions: (familyId: Uuid) => ["family", familyId, "missions"] as const,
-    report: (familyId: Uuid) => ["family", familyId, "report"] as const,
-    cheers: (familyId: Uuid) => ["family", familyId, "cheers"] as const,
+    missions: (familyId: Uuid, scope?: string, status?: string) =>
+      ["family", familyId, "missions", scope ?? "ALL", status ?? "ALL"] as const,
+    report: (familyId: Uuid, weekStart?: string) =>
+      ["family", familyId, "report", weekStart ?? "current"] as const,
+    cheers: (familyId: Uuid, toProfileId?: Uuid) =>
+      ["family", familyId, "cheers", toProfileId ?? "all"] as const,
   },
   profile: {
-    detail: (profileId: Uuid) => ["profile", profileId] as const,
     latestTest: (profileId: Uuid) => ["profile", profileId, "fitness-tests", "latest"] as const,
-    prediction: (profileId: Uuid, item: string) =>
-      ["profile", profileId, "prediction", item] as const,
-    videos: {
-      recommend: (profileId: Uuid, query?: VideoRecommendQuery) =>
-        ["profile", profileId, "videos", "recommend", query ?? {}] as const,
-      favorites: (profileId: Uuid) => ["profile", profileId, "videos", "favorites"] as const,
-      recent: (profileId: Uuid) => ["profile", profileId, "videos", "recent"] as const,
-    },
   },
   fitness: {
-    items: (ageGroup?: string) => ["fitness", "items", ageGroup ?? "all"] as const,
+    items: (ageGroup: AgeGroup | undefined) => ["fitness", "items", ageGroup ?? "all"] as const,
   },
   coach: {
     run: (runId: Uuid) => ["coach", "runs", runId] as const,
-    latestRun: (familyId: Uuid) => ["coach", "runs", "latest", familyId] as const,
-    chat: (profileId: Uuid) => ["coach", "chat", profileId] as const,
   },
-  mission: {
-    detail: (missionId: Uuid) => ["mission", missionId] as const,
-  },
-  facilities: (query: FacilityQuery) => ["facilities", query] as const,
+  videos: (list: string, profileId?: Uuid, ageGroup?: AgeGroup) =>
+    ["videos", list, profileId ?? "-", ageGroup ?? "-"] as const,
 };
 
-/* ─── identity ─────────────────────────────────────────────── */
+/* ─── 인증 · 계정 ──────────────────────────────────────────── */
 
-/** 내 계정에 딸린 프로필 목록. 부모 계정 하나가 온 가족 프로필을 들고 있을 수 있다 */
-export function useMyProfiles() {
+/**
+ * 앱 진입 시 한 번. `nextStep` 으로 어디로 보낼지 정한다.
+ * CREATE_FAMILY(프로필 0개) · CLAIM(초대코드 있음) · HOME.
+ */
+export function useMe() {
   return useQuery({
-    queryKey: qk.me.profiles(),
-    queryFn: () => api.get<Profile[]>("/me/profiles"),
+    queryKey: qk.me(),
+    queryFn: () => api.get<MeResponse>("/me"),
+    staleTime: 60_000,
+  });
+}
+
+/** 로컬 전용. 구글 없이 시드 계정으로 들어간다 */
+export function useDevLogin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (providerUserId: string) =>
+      api.post<AuthResponse>("/auth/dev-login", { providerUserId }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.me() }),
+  });
+}
+
+export function useGoogleLogin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { authorizationCode: string; redirectUri: string; claimCode?: string }) =>
+      api.post<AuthResponse>("/auth/google", body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.me() }),
+  });
+}
+
+/* ─── 가족 · 프로필 ────────────────────────────────────────── */
+
+/*
+  ▲ 아래 쿼리 여럿은 인자가 없으면 `enabled: false` 로 꺼진다.
+  **꺼진 쿼리의 `isPending` 은 영영 true 다.** 화면이 그걸로 뼈대를 띄우면
+  영영 뼈대만 보인다. 화면에서는 `isLoading`(꺼져 있으면 false) 을 본다.
+*/
+
+export function useFamilyProfiles(familyId: Uuid | undefined) {
+  return useQuery({
+    queryKey: qk.family.profiles(familyId ?? ""),
+    queryFn: () =>
+      api.get<{ familyId: string; familyName: string; profiles: ProfileSummary[] }>(
+        `/families/${familyId}/profiles`,
+      ),
+    enabled: Boolean(familyId),
   });
 }
 
 export function useCreateFamily() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: CreateFamilyRequest) => api.post<Family>("/families", body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.me.profiles() }),
+    mutationFn: (body: {
+      familyName: string;
+      owner: { name: string; birthDate: string; sex: "M" | "F" };
+    }) => api.post("/families", body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.me() }),
   });
 }
 
 export function useCreateProfile(familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: CreateProfileRequest) =>
-      api.post<Profile>(`/families/${familyId}/profiles`, body),
+    mutationFn: (body: {
+      name: string;
+      birthDate: string;
+      sex: "M" | "F";
+      role: "PARENT" | "CHILD";
+      // 만 14세 미만은 이게 없으면 422 CONSENT_REQUIRED. 서버가 자동으로 찍지 않는다
+      guardianConsent?: { personalData: boolean; healthData: boolean };
+    }) => api.post<ProfileSummary>(`/families/${familyId}/profiles`, body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.me.profiles() });
+      qc.invalidateQueries({ queryKey: qk.family.profiles(familyId) });
       qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId) });
     },
   });
 }
 
-/**
- * 특정 프로필로의 초대코드를 연다.
- * 가족 단위 코드가 아니라 항상 특정 프로필로의 초대다 —
- * 코드 하나를 돌리면 받는 사람이 "나 부모야" 라고 주장할 수 있기 때문이다.
- */
+/** 가족 단위가 아니라 프로필 단위 코드. 계정이 안 붙은 프로필에만 발급된다 */
 export function useOpenInvite() {
   return useMutation({
     mutationFn: (profileId: Uuid) => api.post<InviteCode>(`/profiles/${profileId}/invite`),
   });
 }
 
+/** 다음에 갈 곳은 서버가 정한다 — 부모면 SUPPORT_MODE, 자녀면 HOME */
 export function useClaimProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (code: string) => api.post<Profile>("/profiles/claim", { code }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.me.profiles() }),
+    mutationFn: (claimCode: string) =>
+      api.post<{ profileId: Uuid; familyId: Uuid; role: Role; nextStep: NextStep }>(
+        "/profiles/claim",
+        { claimCode },
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.me() }),
   });
 }
 
-export function useUpdateSupportMode(profileId: Uuid) {
+export function useUpdateSupportMode(profileId: Uuid, familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (supportMode: SupportMode) =>
-      api.patch<Profile>(`/profiles/${profileId}/support-mode`, { supportMode }),
-    onSuccess: (profile) => {
-      qc.invalidateQueries({ queryKey: qk.profile.detail(profileId) });
-      qc.invalidateQueries({ queryKey: qk.family.fitnessMap(profile.familyId) });
-      qc.invalidateQueries({ queryKey: qk.me.profiles() });
+      api.patch<ProfileSummary>(`/profiles/${profileId}/support-mode`, { supportMode }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.family.profiles(familyId) });
+      qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId) });
+      qc.invalidateQueries({ queryKey: qk.me() });
     },
   });
 }
 
-/** 동의 철회. 이 시점부터 측정 · 활동 저장이 403 이 된다 */
-export function useWithdrawGuardianConsent(profileId: Uuid) {
+/** 철회하면 그 순간부터 측정 · 예측이 422 가 된다. 과거 기록은 지우지 않는다 */
+export function useUpdateConsent(profileId: Uuid, familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => api.delete<void>(`/profiles/${profileId}/guardian-consent`),
+    mutationFn: (body: { personalData: boolean; healthData: boolean }) =>
+      api.patch<{ consentGiven: boolean; measurable: boolean }>(
+        `/profiles/${profileId}/consent`,
+        body,
+      ),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.profile.detail(profileId) });
-      qc.invalidateQueries({ queryKey: qk.me.profiles() });
+      qc.invalidateQueries({ queryKey: qk.family.profiles(familyId) });
+      qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId) });
     },
   });
 }
 
-/* ─── fitness ──────────────────────────────────────────────── */
+/* ─── 측정 ─────────────────────────────────────────────────── */
 
-/** 측정 항목 목록. optionalInput 플래그로 폼을 두 구역으로 나눈다 */
-export function useFitnessItems(ageGroup?: string) {
+/** 연령대가 폼 자체를 바꾼다. 프론트가 항목을 하드코딩하지 않는다 */
+export function useFitnessItems(ageGroup: AgeGroup | undefined) {
   return useQuery({
     queryKey: qk.fitness.items(ageGroup),
-    queryFn: () =>
-      api.get<FitnessItemMeta[]>(`/fitness/items${ageGroup ? `?ageGroup=${ageGroup}` : ""}`),
-    // 항목 정의는 배포 없이는 안 바뀐다
+    queryFn: () => api.get<FitnessItems>(`/fitness/items${query({ ageGroup })}`),
+    enabled: Boolean(ageGroup),
     staleTime: Infinity,
   });
 }
 
-export function useLatestFitnessTest(profileId: Uuid) {
+/** 이력이 없어도 404 가 아니다. fitnessTestId 가 null 로 온다 */
+export function useLatestFitnessTest(profileId: Uuid | undefined) {
   return useQuery({
-    queryKey: qk.profile.latestTest(profileId),
-    queryFn: () => api.get<FitnessTest | null>(`/profiles/${profileId}/fitness-tests/latest`),
+    queryKey: qk.profile.latestTest(profileId ?? ""),
+    queryFn: () => api.get<LatestFitnessTest>(`/profiles/${profileId}/fitness-tests/latest`),
+    enabled: Boolean(profileId),
   });
 }
 
-export function useCreateFitnessTest(profileId: Uuid) {
+export function useCreateFitnessTest(profileId: Uuid, familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: CreateFitnessTestRequest) =>
-      api.post<FitnessTest>(`/profiles/${profileId}/fitness-tests`, body),
+    mutationFn: (body: {
+      testedOn: string;
+      source: "SELF_INPUT" | "CENTER_SHEET";
+      heightCm?: number;
+      weightKg?: number;
+      items: { itemCode: string; value: number }[];
+    }) => api.post<FitnessTestResult>(`/profiles/${profileId}/fitness-tests`, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.profile.latestTest(profileId) });
-      qc.invalidateQueries({ queryKey: ["family"] });
+      qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId) });
     },
   });
 }
 
-/** 홈 화면 전체가 이 호출 하나로 온다 */
-export function useFitnessMap(familyId: Uuid) {
+/** 홈 화면 한 번의 조회. 구성원 사이 순위 · 비교는 오지 않는다 */
+export function useFitnessMap(familyId: Uuid | undefined) {
   return useQuery({
-    queryKey: qk.family.fitnessMap(familyId),
+    queryKey: qk.family.fitnessMap(familyId ?? ""),
     queryFn: () => api.get<FitnessMap>(`/families/${familyId}/fitness-map`),
+    enabled: Boolean(familyId),
   });
 }
 
-export function usePrediction(profileId: Uuid, item: FitnessItemCode | "OVERALL") {
-  return useQuery({
-    queryKey: qk.profile.prediction(profileId, item),
-    queryFn: () => api.post<Prediction>(`/profiles/${profileId}/predictions`, { item }),
+/** AI 가 MAINTAIN 시나리오 하나만 낸다. 횡단면 자료라 개인의 변화가 아니다 */
+export function useCreatePrediction(profileId: Uuid) {
+  return useMutation({
+    mutationFn: (body: { horizonYears?: number; itemCode?: string } = {}) =>
+      api.post<PredictionResult>(`/profiles/${profileId}/predictions`, body),
   });
 }
 
-/* ─── coaching ─────────────────────────────────────────────── */
+/* ─── 코치 ─────────────────────────────────────────────────── */
 
-export function useLatestCoachRun(familyId: Uuid) {
-  return useQuery({
-    queryKey: qk.coach.latestRun(familyId),
-    queryFn: () => api.get<CoachRun | null>(`/families/${familyId}/coach/runs/latest`),
-  });
-}
-
-export function useRunCoach(familyId: Uuid) {
+/** 비동기다. 202 로 접수만 되고 status 가 RUNNING 으로 시작한다 */
+export function useStartCoachRun(familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => api.post<CoachRun>(`/families/${familyId}/coach/runs`),
-    onSuccess: (run) => {
-      qc.setQueryData(qk.coach.run(run.id), run);
-      qc.invalidateQueries({ queryKey: qk.coach.latestRun(familyId) });
-    },
-  });
-}
-
-/**
- * 보호자 승인. **여기서 처음으로 미션이 생긴다.**
- * 승인 전 미션은 0건이고, 자녀 계정은 PARENT_ROLE_REQUIRED 로 막힌다.
- */
-export function useApproveCoachRun(familyId: Uuid) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (runId: Uuid) => api.post<CoachRun>(`/coach/runs/${runId}/approve`),
-    onSuccess: (run) => {
-      qc.setQueryData(qk.coach.run(run.id), run);
-      qc.invalidateQueries({ queryKey: qk.coach.latestRun(familyId) });
-      // 승인으로 미션이 생성됐다
-      qc.invalidateQueries({ queryKey: qk.family.missions(familyId) });
-    },
-  });
-}
-
-/** 거절도 1급 동작이다. 사유를 남긴다 */
-export function useRejectCoachRun(familyId: Uuid) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ runId, reason }: { runId: Uuid; reason: string }) =>
-      api.post<CoachRun>(`/coach/runs/${runId}/reject`, { reason }),
-    onSuccess: (run) => {
-      qc.setQueryData(qk.coach.run(run.id), run);
-      qc.invalidateQueries({ queryKey: qk.coach.latestRun(familyId) });
-    },
-  });
-}
-
-export function useCoachChat(profileId: Uuid) {
-  return useQuery({
-    queryKey: qk.coach.chat(profileId),
-    queryFn: () => api.get<CoachMessage[]>(`/coach/chat?profileId=${profileId}`),
-  });
-}
-
-export function useSendCoachMessage(profileId: Uuid) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (message: string) => api.post<CoachMessage>("/coach/chat", { profileId, message }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.coach.chat(profileId) }),
-  });
-}
-
-/* ─── missions & activity ──────────────────────────────────── */
-
-export function useMissions(familyId: Uuid) {
-  return useQuery({
-    queryKey: qk.family.missions(familyId),
-    queryFn: () => api.get<Mission[]>(`/families/${familyId}/missions`),
-  });
-}
-
-export function useMission(missionId: Uuid) {
-  return useQuery({
-    queryKey: qk.mission.detail(missionId),
-    queryFn: () => api.get<Mission>(`/missions/${missionId}`),
-  });
-}
-
-export function useCreateMission(familyId: Uuid) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (body: CreateMissionRequest) =>
-      api.post<Mission>(`/families/${familyId}/missions`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.family.missions(familyId) }),
-  });
-}
-
-/**
- * 미션 진행 갱신.
- * 완료 판정은 서버가 한다 — 영상 진행률 90% 이상이거나 타이머 종료일 때.
- * 걸음수는 자기 신고라 서버가 완료로 올리지 않는다.
- */
-export function useUpdateMissionProgress(missionId: Uuid, familyId: Uuid) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (body: MissionProgressRequest) =>
-      api.post<Mission>(`/missions/${missionId}/progress`, body),
-    onSuccess: (mission) => {
-      qc.setQueryData(qk.mission.detail(missionId), mission);
-      qc.invalidateQueries({ queryKey: qk.family.missions(familyId) });
-      qc.invalidateQueries({ queryKey: qk.family.activity(familyId) });
-    },
-  });
-}
-
-export function useFamilyActivity(familyId: Uuid) {
-  return useQuery({
-    queryKey: qk.family.activity(familyId),
-    queryFn: () => api.get<ActivitySummary>(`/families/${familyId}/activity`),
-  });
-}
-
-export function useWeeklyReport(familyId: Uuid) {
-  return useQuery({
-    queryKey: qk.family.report(familyId),
-    queryFn: () => api.get<WeeklyReport>(`/families/${familyId}/report`),
-  });
-}
-
-/* ─── 응원 ─────────────────────────────────────────────────── */
-
-export function useCheers(familyId: Uuid) {
-  return useQuery({
-    queryKey: qk.family.cheers(familyId),
-    queryFn: () => api.get<Cheer[]>(`/families/${familyId}/cheers`),
-  });
-}
-
-export function useSendCheer(familyId: Uuid) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (body: SendCheerRequest) => api.post<Cheer>(`/families/${familyId}/cheers`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.family.cheers(familyId) }),
-  });
-}
-
-/* ─── 운동 영상 ────────────────────────────────────────────── */
-
-export function useRecommendedVideos(profileId: Uuid, query?: VideoRecommendQuery) {
-  const search = new URLSearchParams(
-    Object.entries(query ?? {}).filter(([, v]) => v !== undefined) as [string, string][],
-  ).toString();
-
-  return useQuery({
-    queryKey: qk.profile.videos.recommend(profileId, query),
-    queryFn: () =>
-      api.get<ExerciseVideo[]>(
-        `/profiles/${profileId}/videos/recommend${search ? `?${search}` : ""}`,
+    mutationFn: (body: { daysPerWeek?: number; minutesPerSession?: number } = {}) =>
+      api.post<{ coachRunId: string; status: string; pollAfterMs: number }>(
+        `/families/${familyId}/coach/runs`,
+        body,
       ),
+    onSuccess: (run) => qc.invalidateQueries({ queryKey: qk.coach.run(run.coachRunId) }),
   });
 }
 
-export function useFavoriteVideos(profileId: Uuid) {
+/** RUNNING 인 동안 폴링한다. 서버가 pollAfterMs 를 준다 */
+export function useCoachRun(runId: Uuid | undefined) {
   return useQuery({
-    queryKey: qk.profile.videos.favorites(profileId),
-    queryFn: () => api.get<ExerciseVideo[]>(`/profiles/${profileId}/videos/favorites`),
+    queryKey: qk.coach.run(runId ?? ""),
+    queryFn: () => api.get<CoachRun>(`/coach/runs/${runId}`),
+    enabled: Boolean(runId),
+    refetchInterval: (q) => (q.state.data?.status === "RUNNING" ? 1500 : false),
   });
 }
 
-export function useRecentVideos(profileId: Uuid) {
+/** ★ 미션이 만들어지는 유일한 지점. 승인을 건너뛰는 경로가 없다 */
+export function useApproveCoachRun(runId: Uuid, familyId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<CoachApproveResult>(`/coach/runs/${runId}/approve`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.coach.run(runId) });
+      // 승인으로 미션이 생성됐다
+      qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
+    },
+  });
+}
+
+/** 거절해도 미션은 0건 유지. 사유가 다음 주 편성에 참고로 들어간다 */
+export function useRejectCoachRun(runId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (reason?: string) => api.post<CoachRun>(`/coach/runs/${runId}/reject`, { reason }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.coach.run(runId) }),
+  });
+}
+
+export function useAskCoach(profileId: Uuid) {
+  return useMutation({
+    mutationFn: (body: { question: string; conversationId?: string }) =>
+      api.post<CoachChatResult>("/coach/chat", { profileId, ...body }),
+  });
+}
+
+/* ─── 미션 · 활동 ──────────────────────────────────────────── */
+
+export function useMissions(
+  familyId: Uuid | undefined,
+  options: { scope?: "ALL" | "MINE" | "FAMILY"; status?: "ACTIVE" | "DONE" | "EXPIRED" } = {},
+) {
   return useQuery({
-    queryKey: qk.profile.videos.recent(profileId),
-    queryFn: () => api.get<ExerciseVideo[]>(`/profiles/${profileId}/videos/recent`),
+    queryKey: qk.family.missions(familyId ?? "", options.scope, options.status),
+    queryFn: () => api.get<MissionList>(`/families/${familyId}/missions${query({ ...options })}`),
+    enabled: Boolean(familyId),
+  });
+}
+
+/** 자기 신고다. 목표를 넘겨도 보호자 확인 전에는 완료가 아니다 */
+export function useRecordSteps(missionId: Uuid, familyId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { profileId: string; activityDate: string; steps: number }) =>
+      api.post<{ missionProgress: number; missionCompleted: boolean; needsGuardianCheck: boolean }>(
+        `/missions/${missionId}/activity/steps`,
+        body,
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] }),
+  });
+}
+
+/** 서버가 진짜로 아는 값이라 자동 완료 판정에 쓰인다 */
+export function useRecordTimer(missionId: Uuid, familyId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: {
+      profileId: string;
+      startedAt: string;
+      endedAt: string;
+      activeMinutes: number;
+    }) =>
+      api.post<{ totalActiveMinutes: number; missionProgress: number; missionCompleted: boolean }>(
+        `/missions/${missionId}/activity/timer`,
+        body,
+      ),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] }),
+  });
+}
+
+/** STEPS 미션의 마지막 관문. 보호자만 누를 수 있다 */
+export function useConfirmParticipant(missionId: Uuid, familyId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (profileId: string) =>
+      api.post(`/missions/${missionId}/participants/${profileId}/confirm`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] }),
+  });
+}
+
+/* ─── 영상 ─────────────────────────────────────────────────── */
+
+export function useVideos(options: {
+  list?: "ALL" | "FAVORITES" | "RECENT";
+  profileId?: Uuid;
+  ageGroup?: AgeGroup;
+  factor?: string;
+}) {
+  const list = options.list ?? "ALL";
+  return useQuery({
+    queryKey: qk.videos(list, options.profileId, options.ageGroup),
+    queryFn: () => api.get<VideoList>(`/videos${query({ ...options, list, size: 20 })}`),
+    // FAVORITES · RECENT 는 profileId 가 없으면 400 이다
+    enabled: list === "ALL" || Boolean(options.profileId),
   });
 }
 
 export function useToggleFavorite(profileId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ videoId, favorited }: { videoId: Uuid; favorited: boolean }) =>
-      favorited
-        ? api.post<void>(`/profiles/${profileId}/videos/favorites`, { videoId })
-        : api.delete<void>(`/profiles/${profileId}/videos/favorites/${videoId}`),
+    mutationFn: ({ videoId, favorited }: { videoId: string; favorited: boolean }) =>
+      api.post(`/videos/${videoId}/favorite`, { profileId, favorited }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["videos"] }),
+  });
+}
+
+/**
+ * 최대 진행률만 남는다. 처음으로 0.9 를 넘으면 영상 길이만큼 활동시간이 1회 적립된다.
+ * 두 번 적립되지 않는다.
+ */
+export function useRecordVideoProgress(videoId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: {
+      profileId: string;
+      progress: number;
+      watchedSec: number;
+      missionId?: string;
+    }) =>
+      api.post<{ maxProgress: number; completed: boolean; creditedMinutes: number }>(
+        `/videos/${videoId}/progress`,
+        body,
+      ),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["profile", profileId, "videos"] });
+      qc.invalidateQueries({ queryKey: ["videos"] });
+      qc.invalidateQueries({ queryKey: ["family"] });
     },
   });
 }
 
-/* ─── 공공체육시설 ─────────────────────────────────────────── */
+/* ─── 응원 · 리포트 ────────────────────────────────────────── */
+
+/** 부모→자녀뿐 아니라 자녀→부모도 된다. 대칭이어야 감시가 아니라 응원이 된다 */
+export function useSendCheer(familyId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: {
+      fromProfileId: string;
+      toProfileId: string;
+      message?: string;
+      missionId?: string;
+    }) => api.post<Cheer>(`/families/${familyId}/cheers`, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "cheers"] });
+    },
+  });
+}
 
 /**
- * 근처 공공체육시설 · 가족 강좌.
- * 공공데이터포털 API 는 CORS 를 열어주지 않으므로 Next 의 Route Handler 가 프록시한다.
- * 그래서 이 경로만 /api/v1 이 아니라 /api/facilities 다.
+ * 받은 칭찬.
+ * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
  */
-export function useFacilities(query: FacilityQuery) {
-  const search = new URLSearchParams({
-    latitude: String(query.latitude),
-    longitude: String(query.longitude),
-    ...(query.radiusKm ? { radiusKm: String(query.radiusKm) } : {}),
-  }).toString();
-
+export function useCheers(familyId: Uuid | undefined, toProfileId?: Uuid) {
   return useQuery({
-    queryKey: qk.facilities(query),
-    queryFn: async () => {
-      const res = await fetch(`/api/facilities?${search}`);
-      if (!res.ok) throw new Error("근처 시설을 불러오지 못했어요");
-      return res.json() as Promise<Facility[]>;
-    },
+    queryKey: qk.family.cheers(familyId ?? "", toProfileId),
+    queryFn: () => api.get<CheerLogList>(`/families/${familyId}/cheers${query({ toProfileId })}`),
+    enabled: Boolean(familyId),
+  });
+}
+
+export function useWeeklyReport(familyId: Uuid | undefined, weekStart?: string) {
+  return useQuery({
+    queryKey: qk.family.report(familyId ?? "", weekStart),
+    queryFn: () =>
+      api.get<WeeklyReport>(`/families/${familyId}/report/weekly${query({ weekStart })}`),
+    enabled: Boolean(familyId),
   });
 }

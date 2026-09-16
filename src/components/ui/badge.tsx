@@ -1,53 +1,58 @@
-import { cva, type VariantProps } from "class-variance-authority";
-import type { ReactNode } from "react";
+import { Illustration } from "@/components/ui/illustration";
+import type { Band, Grade } from "@/lib/api/types";
+import { BAND_COPY } from "@/lib/api/types";
 
-import { cn } from "@/lib/utils";
-import { GRADE_LABEL } from "@/lib/fitness-items";
-import type { FitnessGrade } from "@/lib/api/types";
-
-const badge = cva("inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium", {
-  variants: {
-    tone: {
-      neutral: "bg-line text-mute",
-      grow: "bg-grow-50 text-grow",
-      mark: "bg-mark-soft text-mark",
-      outline: "border-line text-mute border",
-    },
-  },
-  defaultVariants: { tone: "neutral" },
-});
-
-export function Badge({
-  tone,
-  className,
-  children,
-}: VariantProps<typeof badge> & { className?: string; children: ReactNode }) {
-  return <span className={cn(badge({ tone }), className)}>{children}</span>;
-}
-
-/**
- * 국민체력100 등급 배지.
- *
- * 낮은 등급을 빨강으로 칠하지 않는다. 아이가 자기 화면에서 자기가 나쁘다는 신호를
- * 보게 되기 때문이다. 같은 초록 계열의 명도 단계로만 구분한다.
- */
-const GRADE_STYLE: Record<FitnessGrade, string> = {
-  1: "bg-grow text-white",
-  2: "bg-grow-300 text-white",
-  3: "bg-grow-200 text-grow-700",
-  4: "bg-grow-100 text-grow-700",
-  5: "bg-grow-50 text-grow",
+/** 국민체력100 등급. */
+const GRADE_SEAL: Record<Grade, string> = {
+  "1등급": "item/grade-1",
+  "2등급": "item/grade-2",
+  "3등급": "item/grade-3",
+  참가: "item/grade-4",
 };
 
-export function GradeBadge({ grade }: { grade: FitnessGrade }) {
+export function GradeBadge({
+  grade,
+  size = 30,
+}: {
+  grade: Grade | null | undefined;
+  size?: number;
+}) {
+  const seal = grade ? GRADE_SEAL[grade] : "item/grade-5";
+  const digit = grade?.match(/^(\d)등급$/)?.[1];
+  // 숫자는 도장 안에 있다. 옆에까지 쓰면 "2 2등급" 으로 읽힌다
+  const label = digit ? "등급" : (grade ?? "기준 없음");
+  const full = grade ?? "기준 없음";
+
   return (
-    <span
-      className={cn(
-        "tabular inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold",
-        GRADE_STYLE[grade],
-      )}
-    >
-      {GRADE_LABEL[grade]}
+    <span className="inline-flex shrink-0 items-center gap-1.5" title={full} aria-label={full}>
+      <span
+        className="relative grid shrink-0 place-items-center"
+        style={{ width: size, height: size }}
+      >
+        <Illustration name={seal} size={size} alt="" />
+        {digit && (
+          <span
+            className="text-signal-deep absolute inset-0 grid place-items-center font-extrabold"
+            style={{ fontSize: size * 0.4 }}
+            aria-hidden
+          >
+            {digit}
+          </span>
+        )}
+      </span>
+      <span className="text-ink-soft text-xs font-bold" aria-hidden>
+        {label}
+      </span>
+    </span>
+  );
+}
+
+/** 백분위 구간. */
+export function BandChip({ band }: { band: Band | null | undefined }) {
+  if (!band) return null;
+  return (
+    <span className="border-line text-ink-soft inline-flex shrink-0 items-center rounded-md border px-2 py-1 text-xs font-bold">
+      {BAND_COPY[band]}
     </span>
   );
 }

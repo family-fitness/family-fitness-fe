@@ -23,6 +23,34 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  /**
+   * 보안 머리말.
+   *
+   * 아이 건강 정보를 다루는 화면이라 기본값에 기대지 않는다.
+   * 내용 유형을 멋대로 추측하지 못하게 하고, 다른 사이트가 이 화면을 액자에
+   * 넣어 그 위에 가짜 버튼을 얹지 못하게 막는다. 카메라·마이크·위치는 쓰지 않는다.
+   *
+   * 스크립트 출처를 제한하는 CSP 는 유튜브 API 와 Next 의 인라인 스크립트를
+   * 같이 봐야 해서 배포 설정이 굳은 뒤에 따로 넣는다.
+   */
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "X-Frame-Options", value: "DENY" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+          },
+        ],
+      },
+    ];
+  },
+
   images: {
     remotePatterns: [
       // 유튜브 썸네일

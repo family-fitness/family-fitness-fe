@@ -6,6 +6,9 @@
  * AGENTS.md 의 "절대 어기면 안 되는 도메인 규칙" 을 실행 가능한 형태로 옮긴 것이다.
  * 목 데이터를 고치다가 규칙을 깨뜨리면 여기서 잡힌다.
  *
+ * 화면이 이 규칙을 지키는지는 별개다 — 그건 브라우저로 눌러 봐야 안다.
+ * 여기서 보는 건 "가짜 서버가 진짜 서버처럼 거절하는가" 뿐이다.
+ *
  * 테스트 프레임워크를 붙이는 PR 에서 정식 테스트로 옮긴다.
  */
 
@@ -18,25 +21,30 @@ Object.defineProperty(globalThis, "location", {
 
 import { setupServer } from "msw/node";
 
-import { FAMILY_ID, PROFILE_IDS } from "@/mocks/data";
-import { handlers, setCurrentProfile } from "@/mocks/handlers";
+import { DEMO, handlers, setActingProfile } from "@/mocks/handlers";
 
 const server = setupServer(...handlers);
 server.listen({ onUnhandledRequest: "warn" });
 
 const BASE = "http://localhost/api/v1";
-const get = (p: string) => fetch(`${BASE}${p}`);
-const post = (p: string, body?: unknown) =>
-  fetch(`${BASE}${p}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+
+/** 목 서버도 진짜 서버처럼 토큰을 본다. 화면이 붙이는 것과 같은 머리말이다 */
+const SIGNED_IN = { Authorization: "Bearer mock-access-token" };
+
+const get = (path: string) => fetch(`${BASE}${path}`, { headers: SIGNED_IN });
+const send = (method: string, path: string, body?: unknown) =>
+  fetch(`${BASE}${path}`, {
+    method,
+    headers: { "Content-Type": "application/json", ...SIGNED_IN },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
+const post = (path: string, body?: unknown) => send("POST", path, body);
 
-type MockMission = {
-  id: string;
-  participants: { profileId: string; status: string; verifiedBy: string | null }[];
-};
+/** 실패 응답은 봉투에 싸여 온다 — {"error":{"code","message"}} */
+async function codeOf(res: Response): Promise<string> {
+  const body = (await res.json()) as { error?: { code?: string } };
+  return body.error?.code ?? "(코드 없음)";
+}
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -44,124 +52,178 @@ function check(name: string, ok: boolean, detail = "") {
   if (!ok) failed += 1;
 }
 
-const RUN_ID = "66666666-6666-4666-8666-666666666601";
+const RUN_ID = "0271ff7b-6e8f-4685-986a-a3a881352cd2";
 
-// 1. 승인 전에는 미션이 0건이다
-let missions = (await (await get(`/families/${FAMILY_ID}/missions`)).json()) as MockMission[];
-check("승인 전 미션 0건", missions.length === 0, `실제 ${missions.length}건`);
+async function missionCount(): Promise<number> {
+  const body = (await (await get(`/families/${DEMO.familyId}/missions`)).json()) as {
+    missions?: unknown[];
+  };
+  return body.missions?.length ?? 0;
+}
 
-// 2. 자녀 계정은 승인할 수 없다
-setCurrentProfile(PROFILE_IDS.hajun);
+/* ─── 0. 로그인부터 한다 ────────────────────────────────────── */
+
+check(
+  "토큰 없이 들어오면 401",
+  (await fetch(`${BASE}/me`)).status === 401,
+  `${(await fetch(`${BASE}/me`)).status}`,
+);
+check(
+  "로그인 자체는 토큰 없이 된다",
+  (await fetch(`${BASE}/auth/dev-login`, { method: "POST" })).ok,
+);
+
+/* ─── 1. 코치 제안은 미션이 아니다 ─────────────────────────── */
+
+check("승인 전 미션 0건", (await missionCount()) === 0, `${await missionCount()}건`);
+
+setActingProfile(DEMO.kid);
 let res = await post(`/coach/runs/${RUN_ID}/approve`);
-let body = (await res.json()) as { code?: string };
-check(
-  "자녀 계정 승인 차단",
-  res.status === 403 && body.code === "PARENT_ROLE_REQUIRED",
-  `${res.status} ${body.code}`,
-);
+check("자녀 계정 승인 차단", res.status === 403, `${res.status} ${await codeOf(res)}`);
 
-// 3. 승인 실패했으니 미션은 여전히 0건이다
-missions = (await (await get(`/families/${FAMILY_ID}/missions`)).json()) as MockMission[];
-check("차단 후에도 미션 0건", missions.length === 0, `실제 ${missions.length}건`);
+check("차단 후에도 미션 0건", (await missionCount()) === 0);
 
-// 4. 보호자가 승인하면 미션이 생긴다
-setCurrentProfile(PROFILE_IDS.mom);
+setActingProfile(DEMO.mom);
 res = await post(`/coach/runs/${RUN_ID}/approve`);
-const run = (await res.json()) as { status?: string };
-check(
-  "보호자 승인 성공",
-  res.status === 200 && run.status === "APPROVED",
-  `${res.status} ${run.status}`,
-);
+check("보호자 승인 성공", res.status === 200, String(res.status));
 
-missions = (await (await get(`/families/${FAMILY_ID}/missions`)).json()) as MockMission[];
-check("승인 후 미션 생성", missions.length === 3, `실제 ${missions.length}건`);
+const created = await missionCount();
+check("승인해야 미션이 생긴다", created > 0, `${created}건`);
 
-// 5. 중복 승인은 막힌다
 res = await post(`/coach/runs/${RUN_ID}/approve`);
-body = (await res.json()) as { code?: string };
-check(
-  "중복 승인 차단",
-  res.status === 409 && body.code === "ALREADY_DECIDED",
-  `${res.status} ${body.code}`,
-);
+check("중복 승인 차단", res.status === 409, `${res.status} ${await codeOf(res)}`);
 
-// 6. 측정 불가 연령은 저장이 막힌다
-res = await post(`/profiles/${PROFILE_IDS.seoa}/fitness-tests`, {
-  measuredOn: "2026-09-08",
-  source: "HOME",
-  items: [{ item: "SIT_AND_REACH", value: 5 }],
-});
-body = (await res.json()) as { code?: string };
-check(
-  "만 4세 미만 측정 차단",
-  res.status === 422 && body.code === "NOT_MEASURABLE_AGE",
-  `${res.status} ${body.code}`,
-);
+/* ─── 2. 측정 거절 규칙 ────────────────────────────────────── */
 
-// 7. 항목 0개면 저장이 막힌다
-res = await post(`/profiles/${PROFILE_IDS.hajun}/fitness-tests`, {
-  measuredOn: "2026-09-08",
-  source: "HOME",
+const today = new Date().toISOString().slice(0, 10);
+
+res = await post(`/profiles/${DEMO.kid}/fitness-tests`, {
+  testedOn: today,
+  source: "SELF_INPUT",
   items: [],
 });
-body = (await res.json()) as { code?: string };
-check(
-  "측정 항목 0개 차단",
-  res.status === 400 && body.code === "NO_MEASURED_ITEM",
-  `${res.status} ${body.code}`,
-);
+check("측정 항목 0개 차단", res.status === 400 && (await codeOf(res)) === "NO_ITEMS");
 
-// 8~10. 미션 진행 판정
-const target: MockMission = missions[0];
-const targetProfile = target.participants[0].profileId;
-
-res = await post(`/missions/${target.id}/progress`, {
-  profileId: targetProfile,
-  verifiedBy: "VIDEO_PROGRESS",
-  progressPercent: 62,
+res = await post(`/profiles/${DEMO.kid}/fitness-tests`, {
+  testedOn: today,
+  source: "SELF_INPUT",
+  // 005 · 006 은 혈압이다. 입력으로 받지 않는다
+  items: [{ itemCode: "005", value: 120 }],
 });
-let mission = (await res.json()) as MockMission;
-let p = mission.participants.find((x) => x.profileId === targetProfile)!;
-check("영상 62퍼센트는 미완료", p.status === "IN_PROGRESS", p.status);
+check("혈압 항목 차단", res.status === 400 && (await codeOf(res)) === "ITEM_NOT_ALLOWED");
 
-res = await post(`/missions/${target.id}/progress`, {
-  profileId: targetProfile,
-  verifiedBy: "VIDEO_PROGRESS",
-  progressPercent: 94,
+// 만 4세 미만은 국민체력100 규준 자체가 없다
+const babyRes = await post(`/families/${DEMO.familyId}/profiles`, {
+  name: "막내",
+  birthDate: `${new Date().getFullYear() - 2}-01-01`,
+  sex: "F",
+  role: "CHILD",
+  guardianConsent: { personalData: true, healthData: true },
 });
-mission = (await res.json()) as MockMission;
-p = mission.participants.find((x) => x.profileId === targetProfile)!;
-check(
-  "영상 94퍼센트는 완료",
-  p.status === "DONE" && p.verifiedBy === "VIDEO_PROGRESS",
-  `${p.status} ${p.verifiedBy}`,
-);
+const baby = (await babyRes.json()) as { profileId?: string; measurable?: boolean };
+check("만 4세 미만도 프로필은 생긴다", babyRes.status === 201, String(babyRes.status));
+check("만 4세 미만은 measurable=false", baby.measurable === false, String(baby.measurable));
 
-const second: MockMission = missions[1];
-res = await post(`/missions/${second.id}/progress`, {
-  profileId: second.participants[0].profileId,
-  verifiedBy: "SELF_REPORT",
-  steps: 9000,
+res = await post(`/profiles/${baby.profileId}/fitness-tests`, {
+  testedOn: today,
+  source: "SELF_INPUT",
+  items: [{ itemCode: "012", value: 5 }],
 });
-mission = (await res.json()) as MockMission;
-p = mission.participants[0];
+check("만 4세 미만 측정 차단", res.status === 422 && (await codeOf(res)) === "NOT_MEASURABLE");
+
+// 서버가 동의를 자동으로 찍지 않는다
+res = await post(`/families/${DEMO.familyId}/profiles`, {
+  name: "동의없는아이",
+  birthDate: `${new Date().getFullYear() - 9}-01-01`,
+  sex: "M",
+  role: "CHILD",
+});
 check(
-  "걸음수 자기신고는 미완료 유지",
-  p.status === "IN_PROGRESS" && p.verifiedBy === "SELF_REPORT",
-  `${p.status} ${p.verifiedBy}`,
+  "동의 없는 미성년 프로필 차단",
+  res.status === 422 && (await codeOf(res)) === "CONSENT_REQUIRED",
 );
 
-// 11. 영상 추천은 연령 라벨로 걸러진다 (유아용 영상이 부모에게 뜨면 안 된다)
-const momVideos = (await (await get(`/profiles/${PROFILE_IDS.mom}/videos/recommend`)).json()) as {
-  minAge: number;
-  maxAge: number;
-}[];
+/* ─── 3. 서버가 아는 것과 사람이 적은 것 ───────────────────── */
+
+const missions = (await (await get(`/families/${DEMO.familyId}/missions`)).json()) as {
+  missions: { missionId: string }[];
+};
+const missionId = missions.missions[0].missionId;
+
+const timer = (await (
+  await post(`/missions/${missionId}/activity/timer`, {
+    profileId: DEMO.kid,
+    startedAt: `${today}T10:00:00Z`,
+    endedAt: `${today}T10:50:00Z`,
+    activeMinutes: 50,
+  })
+).json()) as { serverVerified?: boolean; missionCompleted?: boolean };
+check("타이머는 서버가 확인한다", timer.serverVerified === true);
+check("타이머로 목표 도달 시 완료", timer.missionCompleted === true);
+
+const steps = (await (
+  await post(`/missions/${missionId}/activity/steps`, {
+    profileId: DEMO.kid,
+    activityDate: today,
+    steps: 12000,
+  })
+).json()) as { serverVerified?: boolean; missionCompleted?: boolean; needsGuardianCheck?: boolean };
+check("걸음수는 서버가 확인하지 못한다", steps.serverVerified === false);
+check("걸음수는 목표를 넘겨도 미완료", steps.missionCompleted === false);
+check("걸음수는 보호자 확인이 남는다", steps.needsGuardianCheck === true);
+
+/* ─── 4. 영상 ──────────────────────────────────────────────── */
+
+const VIDEO = "IdpXx2gm90o";
+let progress = (await (
+  await post(`/videos/${VIDEO}/progress`, { profileId: DEMO.kid, progress: 0.5, watchedSec: 300 })
+).json()) as { creditedMinutes?: number; verifiedBy?: string | null };
+check("50퍼센트는 적립하지 않는다", progress.creditedMinutes === 0);
+check("50퍼센트는 확인으로 치지 않는다", progress.verifiedBy === null);
+
+progress = (await (
+  await post(`/videos/${VIDEO}/progress`, { profileId: DEMO.kid, progress: 0.95, watchedSec: 570 })
+).json()) as { creditedMinutes?: number; verifiedBy?: string | null };
+check("처음 90퍼센트를 넘으면 적립", (progress.creditedMinutes ?? 0) > 0);
+check("완주는 영상으로 확인된다", progress.verifiedBy === "VIDEO_PROGRESS");
+
+progress = (await (
+  await post(`/videos/${VIDEO}/progress`, { profileId: DEMO.kid, progress: 1, watchedSec: 600 })
+).json()) as { creditedMinutes?: number };
+check("두 번 적립되지 않는다", progress.creditedMinutes === 0);
+
+// 라벨 연령과 겹치지 않는 영상은 내려오지 않는다
+const kidVideos = (await (
+  await get(`/videos?ageGroup=${encodeURIComponent("유아기")}`)
+).json()) as {
+  videos: { label?: { ageFrom?: number | null; ageTo?: number | null } }[];
+};
 check(
-  "영상 추천 연령 필터",
-  momVideos.every((v) => v.minAge <= 41 && v.maxAge >= 41),
-  `${momVideos.length}건 모두 41세 포함`,
+  "영상 연령 안전 필터",
+  kidVideos.videos.every((v) => (v.label?.ageFrom ?? 99) <= 6),
+  `${kidVideos.videos.length}건`,
 );
+check(
+  "라벨 없는 영상은 아이에게 안 나간다",
+  kidVideos.videos.every((v) => v.label?.ageFrom != null || v.label?.ageTo != null),
+);
+
+/* ─── 5. 동의 철회 ─────────────────────────────────────────── */
+
+const revoked = (await (
+  await send("PATCH", `/profiles/${DEMO.kid}/consent`, {
+    personalData: false,
+    healthData: false,
+  })
+).json()) as { consentGiven?: boolean; measurable?: boolean };
+check("동의를 철회하면 측정할 수 없게 된다", revoked.measurable === false);
+
+res = await post(`/profiles/${DEMO.kid}/fitness-tests`, {
+  testedOn: today,
+  source: "SELF_INPUT",
+  items: [{ itemCode: "012", value: 8 }],
+});
+check("동의 철회 후 측정 차단", res.status === 422 && (await codeOf(res)) === "CONSENT_REQUIRED");
 
 server.close();
 console.log(failed === 0 ? "\n전부 통과" : `\n${failed}건 실패`);
