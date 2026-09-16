@@ -122,6 +122,10 @@ for (const route of ROUTES) {
   try {
     await page.goto(`${BASE}${route}`, { waitUntil: "load", timeout: 30000 });
     await page.waitForTimeout(1100);
+    // 개발 서버는 그 경로를 처음 열 때 컴파일부터 한다. 한 번은 더 기다려 준다
+    await page
+      .waitForFunction(() => document.body.innerText.trim().length >= 6, null, { timeout: 8000 })
+      .catch(() => {});
 
     const found = await page.evaluate((minTap) => {
       const out = [];
