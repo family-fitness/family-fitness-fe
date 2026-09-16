@@ -8,6 +8,7 @@ import { Sheet } from "@/components/ui/sheet";
 import { KidCharacter } from "@/components/domain/kid-character";
 import { Celebrate } from "@/components/scene/celebrate";
 import { ApiError } from "@/lib/api/client";
+import { errorMessage } from "@/lib/errors";
 import { useConfirmParticipant, useSendCheer } from "@/lib/api/queries";
 import { PRAISES } from "@/lib/praise";
 import { cn, withJosa } from "@/lib/utils";
@@ -102,11 +103,11 @@ function PraiseForm({
       onDone();
     } catch (e) {
       setError(
-        e instanceof ApiError && e.code === "NOT_A_PARENT"
-          ? "칭찬은 보호자 계정에서 보낼 수 있어요."
-          : e instanceof ApiError
-            ? e.userMessage
-            : "보내지 못했어요. 잠시 후 다시 시도해 주세요.",
+        errorMessage(
+          e,
+          { NOT_A_PARENT: "칭찬은 보호자 계정에서 보낼 수 있어요." },
+          "보내지 못했어요. 잠시 후 다시 시도해 주세요.",
+        ),
       );
     }
   };

@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MeasureField } from "@/components/domain/measure-field";
-import { ApiError } from "@/lib/api/client";
+import { errorMessage } from "@/lib/errors";
 import type { FitnessItem, FitnessTestSource } from "@/lib/api/types";
 import { useCreateFitnessTest, useFamilyProfiles, useFitnessItems } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
@@ -370,26 +370,21 @@ function rules(item: FitnessItem) {
 }
 
 /** 서버 오류 코드 → 사람 말. 계약서 §2 의 목록이 그대로 들어온다 */
-function messageFor(error: unknown): string {
-  if (!(error instanceof ApiError)) return "저장하지 못했어요. 잠시 후 다시 시도해 주세요.";
-  switch (error.code) {
-    case "NO_ITEMS":
-      return "한 항목이라도 입력해 주세요.";
-    case "NOT_MEASURABLE":
-      return "만 4세부터 측정할 수 있어요.";
-    case "CONSENT_REQUIRED":
-      return "보호자 동의가 필요해요. 설정에서 동의를 켜 주세요.";
-    case "DUPLICATE_DATE":
-      return "그 날짜의 측정이 이미 있어요. 날짜를 바꾸거나 기존 기록을 확인해 주세요.";
-    case "ITEM_NOT_ALLOWED":
-    case "UNKNOWN_ITEM":
-      return "지금 저장할 수 없는 항목이 섞여 있어요. 새로고침 후 다시 시도해 주세요.";
-    case "ITEM_NOT_FOR_AGE_GROUP":
-      return "이 연령대에서 잴 수 없는 항목이 있어요. 새로고침 후 다시 시도해 주세요.";
-    default:
-      return error.userMessage;
-  }
-}
+const messageFor = (error: unknown) =>
+  errorMessage(
+    error,
+    {
+      NO_ITEMS: "한 항목이라도 입력해 주세요.",
+      NOT_MEASURABLE: "만 4세부터 측정할 수 있어요.",
+      CONSENT_REQUIRED: "보호자 동의가 필요해요. 설정에서 동의를 켜 주세요.",
+      DUPLICATE_DATE: "그 날짜의 측정이 이미 있어요. 날짜를 바꾸거나 기존 기록을 확인해 주세요.",
+      ITEM_NOT_ALLOWED: "지금 저장할 수 없는 항목이 섞여 있어요. 새로고침 후 다시 시도해 주세요.",
+      UNKNOWN_ITEM: "지금 저장할 수 없는 항목이 섞여 있어요. 새로고침 후 다시 시도해 주세요.",
+      ITEM_NOT_FOR_AGE_GROUP:
+        "이 연령대에서 잴 수 없는 항목이 있어요. 새로고침 후 다시 시도해 주세요.",
+    },
+    "저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
+  );
 
 function MeasureSkeleton() {
   return (

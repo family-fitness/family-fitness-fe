@@ -8,7 +8,7 @@ import { PlainScreen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Illustration } from "@/components/ui/illustration";
-import { ApiError } from "@/lib/api/client";
+import { errorMessage } from "@/lib/errors";
 import { useCreateFamily } from "@/lib/api/queries";
 import { today } from "@/lib/today";
 import { cn } from "@/lib/utils";
@@ -56,11 +56,11 @@ export default function CreateFamilyPage() {
               router.replace("/start/child");
             } catch (err) {
               setError(
-                err instanceof ApiError && err.code === "ALREADY_IN_FAMILY"
-                  ? "이미 가족에 속해 있어요. 홈으로 가 주세요."
-                  : err instanceof ApiError
-                    ? err.userMessage
-                    : "만들지 못했어요. 잠시 후 다시 시도해 주세요.",
+                errorMessage(
+                  err,
+                  { ALREADY_IN_FAMILY: "이미 가족에 속해 있어요. 홈으로 가 주세요." },
+                  "만들지 못했어요. 잠시 후 다시 시도해 주세요.",
+                ),
               );
             }
           }}

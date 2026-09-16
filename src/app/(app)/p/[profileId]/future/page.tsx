@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrajectoryChart } from "@/components/domain/trajectory-chart";
-import { ApiError } from "@/lib/api/client";
+import { errorMessage } from "@/lib/errors";
 import type { PredictionResult } from "@/lib/api/types";
 import {
   useCreatePrediction,
@@ -177,19 +177,16 @@ export default function FuturePage() {
   );
 }
 
-function predictMessage(error: unknown): string {
-  if (!(error instanceof ApiError)) return "불러오지 못했어요. 잠시 후 다시 시도해 주세요.";
-  switch (error.code) {
-    case "NO_FITNESS_TEST":
-      return "측정 기록이 있어야 볼 수 있어요.";
-    case "CONSENT_REQUIRED":
-      return "보호자 동의가 필요해요. 설정에서 확인해 주세요.";
-    case "TEMPORARILY_UNAVAILABLE":
-      return "지금은 계산할 수 없어요. 잠시 후 다시 시도해 주세요.";
-    default:
-      return error.userMessage;
-  }
-}
+const predictMessage = (error: unknown) =>
+  errorMessage(
+    error,
+    {
+      NO_FITNESS_TEST: "측정 기록이 있어야 볼 수 있어요.",
+      CONSENT_REQUIRED: "보호자 동의가 필요해요. 설정에서 확인해 주세요.",
+      TEMPORARILY_UNAVAILABLE: "지금은 계산할 수 없어요. 잠시 후 다시 시도해 주세요.",
+    },
+    "불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+  );
 
 function FutureSkeleton() {
   return (

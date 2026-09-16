@@ -10,7 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar } from "@/components/ui/illustration";
 import { avatarFor } from "@/lib/avatar";
-import { ApiError } from "@/lib/api/client";
+import { errorMessage } from "@/lib/errors";
 import { useFamilyProfiles, useSendCheer } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { cn, withJosa } from "@/lib/utils";
@@ -175,19 +175,16 @@ export default function CheerPage() {
   );
 }
 
-function cheerMessage(error: unknown): string {
-  if (!(error instanceof ApiError)) return "보내지 못했어요. 잠시 후 다시 시도해 주세요.";
-  switch (error.code) {
-    case "SELF_CHEER":
-      return "자기 자신에게는 보낼 수 없어요.";
-    case "NOT_FAMILY_MEMBER":
-      return "같은 가족에게만 보낼 수 있어요.";
-    case "TOO_MANY":
-      return "조금 쉬었다 보내 주세요. 같은 사람에게는 1분에 다섯 번까지예요.";
-    default:
-      return error.userMessage;
-  }
-}
+const cheerMessage = (error: unknown) =>
+  errorMessage(
+    error,
+    {
+      SELF_CHEER: "자기 자신에게는 보낼 수 없어요.",
+      NOT_FAMILY_MEMBER: "같은 가족에게만 보낼 수 있어요.",
+      TOO_MANY: "조금 쉬었다 보내 주세요. 같은 사람에게는 1분에 다섯 번까지예요.",
+    },
+    "보내지 못했어요. 잠시 후 다시 시도해 주세요.",
+  );
 
 function CheerSkeleton() {
   return (

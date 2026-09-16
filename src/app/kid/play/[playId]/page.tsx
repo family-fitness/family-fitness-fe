@@ -14,7 +14,7 @@ import { DiceGame } from "@/components/domain/dice-game";
 import { RepGame } from "@/components/domain/rep-game";
 import { YouTubePlayer } from "@/components/domain/youtube-player";
 import { DoneCard } from "@/components/domain/done-card";
-import { ApiError } from "@/lib/api/client";
+import { errorMessage } from "@/lib/errors";
 import { useMissions, useRecordTimer, useRecordVideoProgress, useVideos } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
@@ -91,7 +91,7 @@ export default function PlayPage() {
           activeMinutes: minutes,
         });
       } catch (e) {
-        setError(e instanceof ApiError ? e.userMessage : "기록하지 못했어요. 다시 해 볼까요?");
+        setError(errorMessage(e, "기록하지 못했어요. 다시 해 볼까요?"));
       }
     }
     setDone(true);
@@ -187,9 +187,7 @@ export default function PlayPage() {
               try {
                 await recordTimer.mutateAsync({ profileId: childProfileId ?? "", ...body });
               } catch (e) {
-                setError(
-                  e instanceof ApiError ? e.userMessage : "기록하지 못했어요. 다시 해 볼까요?",
-                );
+                setError(errorMessage(e, "기록하지 못했어요. 다시 해 볼까요?"));
               }
             }}
           />

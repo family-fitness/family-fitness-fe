@@ -6,7 +6,7 @@ import { Suspense, useEffect, useState } from "react";
 import { PlainScreen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
 import { Illustration } from "@/components/ui/illustration";
-import { ApiError } from "@/lib/api/client";
+import { errorMessage } from "@/lib/errors";
 import { useClaimProfile } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -106,18 +106,14 @@ function ClaimContent() {
   );
 }
 
-function claimMessage(error: unknown): string {
-  if (!(error instanceof ApiError)) return "들어가지 못했어요. 잠시 후 다시 시도해 주세요.";
-  switch (error.code) {
-    case "CODE_NOT_FOUND":
-      return "없는 코드예요. 다시 확인해 주세요.";
-    case "CODE_EXPIRED":
-      return "기한이 지난 코드예요. 가족에게 새 코드를 받아 주세요.";
-    case "ALREADY_CLAIMED":
-      return "다른 계정이 먼저 연결했어요. 가족에게 새 코드를 받아 주세요.";
-    case "ALREADY_MEMBER":
-      return "이미 이 가족의 구성원이에요.";
-    default:
-      return error.userMessage;
-  }
-}
+const claimMessage = (error: unknown) =>
+  errorMessage(
+    error,
+    {
+      CODE_NOT_FOUND: "없는 코드예요. 다시 확인해 주세요.",
+      CODE_EXPIRED: "기한이 지난 코드예요. 가족에게 새 코드를 받아 주세요.",
+      ALREADY_CLAIMED: "다른 계정이 먼저 연결했어요. 가족에게 새 코드를 받아 주세요.",
+      ALREADY_MEMBER: "이미 이 가족의 구성원이에요.",
+    },
+    "들어가지 못했어요. 잠시 후 다시 시도해 주세요.",
+  );

@@ -6,7 +6,7 @@ import { Suspense, useEffect, useState } from "react";
 import { PlainScreen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
 import { Illustration } from "@/components/ui/illustration";
-import { ApiError } from "@/lib/api/client";
+import { errorMessage } from "@/lib/errors";
 import { useDevLogin, useGoogleLogin } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -52,11 +52,7 @@ function LoginContent() {
         signIn(auth);
         router.replace("/");
       })
-      .catch((e) =>
-        setError(
-          e instanceof ApiError ? e.userMessage : "로그인하지 못했어요. 다시 시도해 주세요.",
-        ),
-      );
+      .catch((e) => setError(errorMessage(e, "로그인하지 못했어요. 다시 시도해 주세요.")));
     // googleLogin 은 매 렌더 새 객체다. 코드가 바뀔 때만 돈다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, claimCode]);
@@ -68,9 +64,7 @@ function LoginContent() {
       signIn(auth);
       router.replace("/");
     } catch (e) {
-      setError(
-        e instanceof ApiError ? e.userMessage : "들어가지 못했어요. 잠시 후 다시 시도해 주세요.",
-      );
+      setError(errorMessage(e, "들어가지 못했어요. 잠시 후 다시 시도해 주세요."));
     }
   };
 

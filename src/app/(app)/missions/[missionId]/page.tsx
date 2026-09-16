@@ -12,7 +12,7 @@ import { Celebrate } from "@/components/scene/celebrate";
 import { MissionTimer } from "@/components/domain/mission-timer";
 import { VerifyLabel } from "@/components/domain/mission-row";
 import { YouTubePlayer } from "@/components/domain/youtube-player";
-import { ApiError } from "@/lib/api/client";
+import { errorMessage } from "@/lib/errors";
 import {
   useConfirmParticipant,
   useMissions,
@@ -266,21 +266,17 @@ function StepsForm({
   );
 }
 
-function activityMessage(error: unknown): string {
-  if (!(error instanceof ApiError)) return "기록하지 못했어요. 잠시 후 다시 시도해 주세요.";
-  switch (error.code) {
-    case "NOT_PARTICIPANT":
-      return "이 미션의 참여자가 아니에요.";
-    case "INVALID_METRIC":
-      return "이 미션은 다른 방식으로 기록해요. 새로고침 후 다시 시도해 주세요.";
-    case "TARGET_NOT_REACHED":
-      return "아직 목표에 닿지 않았어요.";
-    case "NOT_A_PARENT":
-      return "확인은 보호자 계정에서 할 수 있어요.";
-    default:
-      return error.userMessage;
-  }
-}
+const activityMessage = (error: unknown) =>
+  errorMessage(
+    error,
+    {
+      NOT_PARTICIPANT: "이 미션의 참여자가 아니에요.",
+      INVALID_METRIC: "이 미션은 다른 방식으로 기록해요. 새로고침 후 다시 시도해 주세요.",
+      TARGET_NOT_REACHED: "아직 목표에 닿지 않았어요.",
+      NOT_A_PARENT: "확인은 보호자 계정에서 할 수 있어요.",
+    },
+    "기록하지 못했어요. 잠시 후 다시 시도해 주세요.",
+  );
 
 function DetailSkeleton() {
   return (

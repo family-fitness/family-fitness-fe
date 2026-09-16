@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { KidCharacter } from "@/components/domain/kid-character";
 import { Celebrate } from "@/components/scene/celebrate";
-import { ApiError } from "@/lib/api/client";
+import { errorMessage } from "@/lib/errors";
 import { useFamilyProfiles, useSendCheer } from "@/lib/api/queries";
 
 /** 다 했을 때. */
@@ -46,7 +46,7 @@ export function DoneCard({
       );
       setTold(true);
     } catch (e) {
-      setError(e instanceof ApiError ? e.userMessage : "알리지 못했어요. 다시 해 볼까요?");
+      setError(errorMessage(e, "알리지 못했어요. 다시 해 볼까요?"));
     }
   };
 

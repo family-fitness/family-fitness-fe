@@ -11,7 +11,7 @@ import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar } from "@/components/ui/illustration";
 import { Field } from "@/components/ui/field";
-import { ApiError } from "@/lib/api/client";
+import { errorMessage } from "@/lib/errors";
 import type { ProfileSummary } from "@/lib/api/types";
 import { useCreateProfile, useFamilyProfiles, useOpenInvite } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
@@ -100,11 +100,11 @@ function MemberRow({ profile }: { profile: ProfileSummary }) {
                 setCode(res.claimCode ?? null);
               } catch (e) {
                 setError(
-                  e instanceof ApiError && e.code === "ALREADY_CLAIMED"
-                    ? "이미 계정이 연결됐어요."
-                    : e instanceof ApiError
-                      ? e.userMessage
-                      : "초대코드를 만들지 못했어요.",
+                  errorMessage(
+                    e,
+                    { ALREADY_CLAIMED: "이미 계정이 연결됐어요." },
+                    "초대코드를 만들지 못했어요.",
+                  ),
                 );
               }
             }}
@@ -196,11 +196,11 @@ function AddMemberSheet({
             onClose();
           } catch (err) {
             setError(
-              err instanceof ApiError && err.code === "CONSENT_REQUIRED"
-                ? "만 14세 미만은 보호자 동의가 있어야 해요."
-                : err instanceof ApiError
-                  ? err.userMessage
-                  : "더하지 못했어요. 잠시 후 다시 시도해 주세요.",
+              errorMessage(
+                err,
+                { CONSENT_REQUIRED: "만 14세 미만은 보호자 동의가 있어야 해요." },
+                "더하지 못했어요. 잠시 후 다시 시도해 주세요.",
+              ),
             );
           }
         }}

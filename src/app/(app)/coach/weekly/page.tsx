@@ -12,7 +12,7 @@ import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CoachSteps } from "@/components/domain/coach-steps";
 import { ProposalEmpty, ProposalRow } from "@/components/domain/proposal-row";
-import { ApiError } from "@/lib/api/client";
+import { errorMessage } from "@/lib/errors";
 import {
   useApproveCoachRun,
   useCoachRun,
@@ -336,33 +336,27 @@ function statusCopy(status: string | undefined) {
   }
 }
 
-function startMessage(error: unknown): string {
-  if (!(error instanceof ApiError)) return "제안을 만들지 못했어요. 잠시 후 다시 시도해 주세요.";
-  switch (error.code) {
-    case "RUN_IN_PROGRESS":
-      return "이미 만드는 중이에요. 잠시만 기다려 주세요.";
-    case "ALREADY_RUN_THIS_WEEK":
-      return "이번 주 제안이 이미 있어요. 아래에서 확인해 주세요.";
-    case "NO_MEASURED_MEMBER":
-      return "측정 기록이 있는 구성원이 없어요. 한 명이라도 측정을 등록해 주세요.";
-    default:
-      return error.userMessage;
-  }
-}
+const startMessage = (error: unknown) =>
+  errorMessage(
+    error,
+    {
+      RUN_IN_PROGRESS: "이미 만드는 중이에요. 잠시만 기다려 주세요.",
+      ALREADY_RUN_THIS_WEEK: "이번 주 제안이 이미 있어요. 아래에서 확인해 주세요.",
+      NO_MEASURED_MEMBER: "측정 기록이 있는 구성원이 없어요. 한 명이라도 측정을 등록해 주세요.",
+    },
+    "제안을 만들지 못했어요. 잠시 후 다시 시도해 주세요.",
+  );
 
-function approveMessage(error: unknown): string {
-  if (!(error instanceof ApiError)) return "처리하지 못했어요. 잠시 후 다시 시도해 주세요.";
-  switch (error.code) {
-    case "NOT_A_PARENT":
-      return "승인은 보호자 계정에서 할 수 있어요.";
-    case "ALREADY_APPROVED":
-      return "이미 승인된 제안이에요.";
-    case "INVALID_STATE":
-      return "이미 처리된 제안이에요.";
-    default:
-      return error.userMessage;
-  }
-}
+const approveMessage = (error: unknown) =>
+  errorMessage(
+    error,
+    {
+      NOT_A_PARENT: "승인은 보호자 계정에서 할 수 있어요.",
+      ALREADY_APPROVED: "이미 승인된 제안이에요.",
+      INVALID_STATE: "이미 처리된 제안이에요.",
+    },
+    "처리하지 못했어요. 잠시 후 다시 시도해 주세요.",
+  );
 
 function WeeklySkeleton() {
   return (
