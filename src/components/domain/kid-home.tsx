@@ -7,18 +7,7 @@ import { avatarFor } from "@/lib/avatar";
 import { Avatar, Illustration } from "@/components/ui/illustration";
 import { SpriteField } from "@/components/scene/sprite-field";
 
-/**
- * 아이 화면.
- *
- * 부모와 아이를 한 화면으로 만족시킬 수 없어서 따로 만든다.
- *
- * 여기서 **보여주지 않는 것** (api-contract §0: 아이 화면에서 parent_scope 를 읽지 않는다)
- *   - 백분위 · 등급 · 순위
- *   - 약한 항목. "너는 유연성이 약해" 를 아이에게 말하지 않는다
- *   - 가족 구성원 비교
- *
- * 보여주는 것 — 오늘 할 일 하나, 해낸 것.
- */
+/** 아이 화면. */
 export function KidHome({
   profile,
   missions,

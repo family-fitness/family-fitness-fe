@@ -5,13 +5,7 @@ import { Avatar } from "@/components/ui/illustration";
 import { avatarFor } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 
-/**
- * 형제가 여럿일 때 누구를 볼지.
- *
- * 한 명뿐이면 아예 그리지 않는다. 고를 게 없는데 고르는 칸을 두면 자리만 먹는다.
- * **여기서 아이들을 나란히 놓고 점수를 비교하지 않는다.** 형제 사이 순위는
- * 이 앱이 하려는 말이 아니다 — 이름과 얼굴만 보여준다.
- */
+/** 형제가 여럿일 때 누구를 볼지. */
 export function ChildSwitch({
   kids,
   selectedId,

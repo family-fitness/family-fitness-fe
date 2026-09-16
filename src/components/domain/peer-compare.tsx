@@ -5,15 +5,7 @@ import Link from "next/link";
 import { Illustration } from "@/components/ui/illustration";
 import { withJosa } from "@/lib/utils";
 
-/**
- * 또래와 견주면 어디인가.
- *
- * 점수만 크게 띄우면 62가 좋은 건지 알 수 없다. **또래 평균(50)을 같은 축 위에**
- * 놓아야 비로소 뜻이 생긴다. 이게 부모가 이 앱을 여는 이유다.
- *
- * 문구는 서버가 준 `headline` 을 그대로 쓴다. 백분위에서 "상위 N%" 를 프론트가
- * 다시 만들면 반올림이 서버와 달라져 화면마다 다른 말을 한다.
- */
+/** 또래와 견주면 어디인가. */
 export function PeerCompare({
   name,
   score,

@@ -8,17 +8,7 @@ import { useMe } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRoleStore } from "@/stores/role-store";
 
-/**
- * 스플래시.
- *
- * 어디로 보낼지는 **서버가 정한다** — `/me` 의 `nextStep`.
- * 프론트가 "프로필이 0개면 가족 만들기" 같은 판정을 따로 하면 서버와 어긋난다.
- *
- *   CREATE_FAMILY  가족을 아직 안 만듦
- *   CLAIM          초대코드로 들어와야 함
- *   SUPPORT_MODE   초대를 받은 부모 — 참여 방식부터 고른다
- *   HOME           평소
- */
+/** 스플래시. */
 export default function SplashPage() {
   const router = useRouter();
   const token = useAuthStore((s) => s.accessToken);

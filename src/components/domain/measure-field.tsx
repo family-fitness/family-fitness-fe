@@ -7,15 +7,7 @@ import { equipmentArt, itemPose } from "@/lib/fitness-items";
 import { Illustration } from "@/components/ui/illustration";
 import { cn } from "@/lib/utils";
 
-/**
- * 측정 항목 하나.
- *
- * 자세 그림을 왼쪽에, 입력을 오른쪽에 둔다. 그림이 없으면
- * "앉아윗몸앞으로굽히기 (cm)" 라는 글만 남아서 자세가 맞는지 확인할 방법이 없다.
- *
- * 항목 이름은 `itemLabel` 을 쓴다 — 왕복오래달리기는 연령대마다 거리가 달라서
- * ("15m 왕복오래달리기") 서버가 라벨을 따로 준다.
- */
+/** 측정 항목 하나. */
 export function MeasureField({
   item,
   register,

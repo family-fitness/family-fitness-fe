@@ -26,18 +26,7 @@ export function Badge({
   return <span className={cn(badge({ tone }), className)}>{children}</span>;
 }
 
-/**
- * 국민체력100 등급.
- *
- * 서버가 주는 값은 1·2·3등급과 「참가」뿐이다. 규준에 못 미쳐도 「참가」다 —
- * 「미달」·「하위」 같은 말을 프론트에서 만들어 붙이지 않는다.
- *
- * 도장 그림은 **테두리 겹수만 다르고 색은 같다.** 낮은 등급을 빨강으로 칠하면
- * 아이가 자기 화면에서 자기가 나쁘다는 신호를 본다.
- *
- * 규준이 없는 연령(만 7~10세 일부)은 등급이 null 로 온다. 그때는 비어 있는
- * 도장을 두고 「기준 없음」이라고 적는다 — 빈칸으로 두면 빠뜨린 것처럼 보인다.
- */
+/** 국민체력100 등급. */
 const GRADE_SEAL: Record<Grade, string> = {
   "1등급": "item/grade-1",
   "2등급": "item/grade-2",
@@ -82,12 +71,7 @@ export function GradeBadge({
   );
 }
 
-/**
- * 백분위 구간.
- *
- * 등급이 서열이라면 band 는 상태다. 아이에게 보여도 낙인이 되지 않아서
- * 자녀 화면에서는 등급 대신 이걸 쓴다. 코드값(strength)을 그대로 쓰지 않는다.
- */
+/** 백분위 구간. */
 export function BandChip({ band }: { band: Band | null | undefined }) {
   if (!band) return null;
   return (

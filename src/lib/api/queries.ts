@@ -432,9 +432,7 @@ export function useSendCheer(familyId: Uuid) {
 
 /**
  * 받은 칭찬.
- *
  * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
- *   백엔드에 `GET /families/{familyId}/cheers` 를 요청해 뒀다.
  */
 export function useCheers(familyId: Uuid | undefined, toProfileId?: Uuid) {
   return useQuery({

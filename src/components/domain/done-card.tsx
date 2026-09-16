@@ -8,15 +8,7 @@ import { Celebrate } from "@/components/scene/celebrate";
 import { ApiError } from "@/lib/api/client";
 import { useFamilyProfiles, useSendCheer } from "@/lib/api/queries";
 
-/**
- * 다 했을 때.
- *
- * **아이가 부모에게 알리는 자리다.** 아이는 알리고, 부모가 칭찬을 보낸다.
- * 아이가 자기에게 칭찬할 수 없다 — 그래야 받은 말에 값이 생긴다(규칙 12).
- *
- * 알린 뒤에는 재촉하지 않는다. "아직 안 봤어요" 같은 말을 띄우면 아이가 부모를
- * 기다리는 게 아니라 조르게 된다.
- */
+/** 다 했을 때. */
 export function DoneCard({
   familyId,
   childProfileId,

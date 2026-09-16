@@ -23,17 +23,7 @@ import {
 import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 
-/**
- * 아이 홈.
- *
- * **누를 것이 하나여야 한다.** 아이는 화면을 읽지 않고 제일 큰 것을 누른다.
- * 그래서 오늘의 운동 하나만 크게 두고, 나머지는 그 아래로 내린다.
- *
- * 여기서 보여주지 않는 것(AGENTS.md 규칙 10 · 아이 모드)
- *   - 등급, 순위, 형제 비교
- *   - 약한 항목. "너는 유연성이 약해" 를 아이에게 말하지 않는다
- *   - 못 한 날에 대한 지적
- */
+/** 아이 홈. */
 export default function KidHomePage() {
   const router = useRouter();
   const { familyId, isPending, error: sessionError } = useSession();
@@ -48,12 +38,7 @@ export default function KidHomePage() {
   } = useFitnessMap(familyId);
   const { data: family } = useFamilyProfiles(familyId);
   const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
-  /*
-    가족의 칭찬·알림을 한 번에 받아 두 갈래로 쓴다.
-      받은 칭찬 = 나에게 온 것
-      움직인 날 = 내가 보낸 것("다 했어요")
-    받는 쪽만 불러오면 이번 주 달력이 늘 비어 있다.
-  */
+  /** 가족의 칭찬·알림을 한 번에 받아 두 갈래로 쓴다. */
   const { data: cheerLog } = useCheers(familyId);
 
   const me = map?.members?.find((m) => m.profileId === childProfileId);

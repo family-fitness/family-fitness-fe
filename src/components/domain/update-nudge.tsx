@@ -16,14 +16,7 @@ export function daysSince(date: string | null | undefined): number | null {
   return Math.floor((Date.now() - then) / 86_400_000);
 }
 
-/**
- * 다시 재자고 말하는 자리.
- *
- * 아이 키와 몸무게는 한 계절이면 달라진다. 지난 기록으로 계속 비교하면 점수가 틀어진다.
- *
- * **막지 않는다.** 그냥 말만 한다 — 측정을 강제하면 그날로 앱을 닫는다.
- * "오래됐어요" 라고 쓰지 않는다. 부모를 탓하는 말이다.
- */
+/** 다시 재자고 말하는 자리. */
 export function UpdateNudge({ child }: { child: FitnessMapMember }) {
   const days = daysSince(child.latest?.testedOn);
   if (days == null || days < STALE_DAYS) return null;

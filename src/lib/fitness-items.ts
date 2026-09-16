@@ -1,13 +1,6 @@
 import type { FitnessFactor, FitnessItem } from "./api/types";
 
-/**
- * 측정 항목에 관한 화면 쪽 정보.
- *
- * **항목 목록 자체는 서버가 준다** — 연령대가 폼을 바꾸므로 프론트가 하드코딩하지 않는다
- * (GET /fitness/items?ageGroup=). 여기 있는 건 그림 매핑처럼 화면에만 필요한 것이다.
- *
- * 항목 식별자는 이름이 아니라 3자리 코드다.
- */
+/** 측정 항목에 관한 화면 쪽 정보. */
 
 /** 항목 코드 → 자세 그림. 없는 항목은 요인 그림으로 대체한다 */
 const POSE_BY_CODE: Record<string, string> = {

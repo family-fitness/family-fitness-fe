@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
+import { Backdrop } from "@/components/ui/backdrop";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { KidCharacter } from "@/components/domain/kid-character";
@@ -20,18 +21,7 @@ import { useRoleStore } from "@/stores/role-store";
 import { targetCopy } from "@/lib/mission";
 import { cn } from "@/lib/utils";
 
-/**
- * 운동하기.
- *
- * 주소가 두 갈래다.
- *   `/kid/play/{missionId}`      부모가 승인한 미션
- *   `/kid/play/video-{videoId}`  미션이 없을 때 권한 영상
- *
- * 미션이 없어도 할 게 있어야 한다. 아이가 앱을 열었는데 "오늘은 할 게 없어요" 만
- * 나오면 다음부터 안 연다.
- *
- * 영상은 **공식 임베드로만** 재생한다(기획서). 내려받거나 다시 만들지 않는다.
- */
+/** 운동하기. */
 export default function PlayPage() {
   const router = useRouter();
   const { playId } = useParams<{ playId: string }>();
@@ -63,11 +53,7 @@ export default function PlayPage() {
 
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  /*
-    같은 운동을 두 가지 방법으로 할 수 있다.
-    영상은 따라 하기 좋고, 놀이는 셀 수 있어서 더 오래 한다 —
-    페르소나 서준(초4)은 끝까지 보는 것보다 세는 쪽에 반응한다.
-  */
+  /** 같은 운동을 두 가지 방법으로 할 수 있다. */
   const [how, setHow] = useState<"video" | "count" | "dice">("video");
 
   if (missionPending || videoPending) return <PlaySkeleton />;
@@ -90,11 +76,7 @@ export default function PlayPage() {
   const title = mission?.title ?? video?.title ?? "오늘의 운동";
   const isTimer = mission?.targetMetric === "TIMER_MINUTES";
 
-  /*
-    놀이를 마쳤을 때.
-    **횟수는 보내지 않는다** — 아이가 센 값이라 서버가 아는 게 아니다.
-    1분을 넘겼고 미션이 걸려 있으면 그 시간만 타이머로 기록한다.
-  */
+  /** 놀이를 마쳤을 때. */
   const finishGame = async ({ seconds }: { seconds: number }) => {
     setError(null);
     const minutes = Math.floor(seconds / 60);
@@ -119,7 +101,8 @@ export default function PlayPage() {
     return (
       <>
         <AppBar back title="다 했어요" />
-        <Stage wide>
+        <Stage wide className="relative">
+          <Backdrop name="bg/bg-confetti" height={220} />
           <DoneCard
             familyId={familyId ?? ""}
             childProfileId={childProfileId ?? ""}
@@ -135,7 +118,8 @@ export default function PlayPage() {
   return (
     <>
       <AppBar back title={title} />
-      <Stage wide className="space-y-5">
+      <Stage wide className="relative space-y-5">
+        <Backdrop name={how === "video" ? "bg/bg-living-room" : "bg/bg-playground"} height={180} />
         <div className="flex gap-2" role="tablist" aria-label="어떻게 할까요">
           {(
             [

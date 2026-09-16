@@ -9,13 +9,7 @@ import { useWeeklyReport } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
 
-/**
- * 주간 리포트.
- *
- * **`activeMinutes` 와 `verifiedMinutes` 를 나눠 보여준다.** 전자는 기록된 전부,
- * 후자는 서버가 실제로 확인한 만큼이다. 두 수를 하나로 합치면 자기 신고가
- * 실측인 척하게 된다 — 이 서비스가 하지 않기로 한 일이다.
- */
+/** 주간 리포트. */
 export default function WeeklyReportPage() {
   const { familyId, isPending: sessionPending } = useSession();
   const { data: report, isPending } = useWeeklyReport(familyId);

@@ -8,15 +8,7 @@ import { avatarFor } from "@/lib/avatar";
 import { formatDate } from "@/lib/utils";
 import { Avatar } from "@/components/ui/illustration";
 
-/**
- * 구성원 한 줄.
- *
- * **백분위 숫자를 나란히 늘어놓지 않는다.** fitness-map 의 핵심 규칙이
- * "구성원 사이 순위 · 비교를 내보내지 않는다" 라서, 화면도 비교표가 되면 안 된다.
- * 서버가 준 `headline`("유소년 상위 49%") 한 줄만 그대로 보여준다.
- *
- * 상태가 넷으로 갈린다 — 기록 있음 · 기록 없음 · 계정 없는 구성원 · 측정 불가.
- */
+/** 구성원 한 줄. */
 export function MemberRow({ member }: { member: FitnessMapMember }) {
   const { profileId, name, role, ageGroup, headline, latest, measurable, hasAccount } = member;
 

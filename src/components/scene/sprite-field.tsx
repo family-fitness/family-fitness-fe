@@ -3,23 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { Sprite, Texture } from "three";
 
-/**
- * 우리 2D 에셋을 WebGL 스프라이트로 띄워 천천히 움직인다.
- *
- * 왜 three.js 인가
- *   CSS 로도 몇 개는 띄울 수 있지만, 조각 수십~수백 개를 동시에 움직이면
- *   레이아웃이 흔들리고 프레임이 떨어진다. WebGL 은 같은 그림을 한 번만 올려두고
- *   위치만 바꾸므로 개수가 늘어도 값이 거의 안 오른다.
- *
- * 왜 3D 모델이 아닌가
- *   에셋이 플랫 2D 벡터다. 여기에 입체를 섞으면 두 개의 다른 앱처럼 보인다.
- *   카메라를 정사영으로 두고 스프라이트만 쓴다 — 원근도 그림자도 없다.
- *
- * 지키는 것
- *   - 배경은 투명. 화면 색은 CSS 가 정한다
- *   - prefers-reduced-motion 이면 아예 그리지 않는다
- *   - 화면에서 벗어나면 멈춘다. 배터리를 계속 먹으면 안 된다
- */
+/** 우리 2D 에셋을 WebGL 스프라이트로 띄워 천천히 움직인다. */
 export function SpriteField({
   assets,
   count = 12,

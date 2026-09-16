@@ -7,15 +7,7 @@ import { Illustration } from "@/components/ui/illustration";
 import { Citations } from "@/components/domain/citations";
 import { targetCopy } from "@/lib/mission";
 
-/**
- * 코치가 낸 제안 하나.
- *
- * **이건 아직 미션이 아니다.** 보호자가 승인해야 미션이 된다. 그래서 이 화면
- * 어디에도 "미션" 이라는 말을 쓰지 않는다 — "제안" 이다.
- *
- * 편성 역할(주행자 · 동반자 · 응원)을 같이 보여준다. 응원 모드인 부모가
- * 자기 이름이 왜 여기 있는지 알아야 하기 때문이다.
- */
+/** 코치가 낸 제안 하나. */
 export function ProposalRow({
   proposal,
   index,

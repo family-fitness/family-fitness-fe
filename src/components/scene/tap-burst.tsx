@@ -3,17 +3,7 @@
 import { useEffect, useImperativeHandle, useRef, type RefObject } from "react";
 import type { Sprite, Texture } from "three";
 
-/**
- * 누를 때마다 튀어오르는 조각.
- *
- * **왜 three.js 인가** — 아이가 1분에 40번 누른다. 한 번에 조각 8개면 320개가
- * 겹쳐 떠 있게 된다. DOM 으로 하면 그만큼 노드가 생겼다 사라지면서 레이아웃이
- * 흔들린다. WebGL 은 그림을 한 번만 올려두고 위치만 바꾸므로 개수가 늘어도
- * 값이 거의 안 오른다.
- *
- * 3D 모델이 아니다. 정사영 카메라에 2D 스프라이트뿐이라 우리 그림과 같은 세계다.
- * `prefers-reduced-motion` 이면 아예 그리지 않는다.
- */
+/** 누를 때마다 튀어오르는 조각. */
 export interface TapBurstHandle {
   /** 화면 좌표(0~1)에서 터뜨린다 */
   fire: (x: number, y: number) => void;

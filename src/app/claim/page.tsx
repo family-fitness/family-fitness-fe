@@ -10,16 +10,7 @@ import { ApiError } from "@/lib/api/client";
 import { useClaimProfile } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
 
-/**
- * 초대 수락.
- *
- * 부모가 만들어 둔 **프로필에 내 계정을 붙이는** 일이다. 새 프로필이 생기는 게
- * 아니라서, 그동안 쌓인 측정과 미션이 그대로 따라온다.
- *
- * 다음에 갈 곳은 서버가 정한다 — 부모면 참여 방식부터(SUPPORT_MODE), 자녀면 홈.
- *
- * 로그인 전에 링크를 열 수도 있다. 그때는 코드를 들고 로그인 화면으로 보낸다.
- */
+/** 초대 수락. */
 export default function ClaimPage() {
   return (
     <Suspense fallback={null}>

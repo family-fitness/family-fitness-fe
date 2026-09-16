@@ -4,6 +4,7 @@ import { NavLink } from "@/components/ui/nav-link";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
+import { Backdrop } from "@/components/ui/backdrop";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KidCharacter, type Motion } from "@/components/domain/kid-character";
@@ -12,15 +13,7 @@ import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 import { cn } from "@/lib/utils";
 
-/**
- * 오늘 할 운동 고르기.
- *
- * 홈은 하나만 권하지만, **아이에게 고를 자유가 없으면 금방 질린다.**
- * 오늘 하기 싫은 운동이 딱 하나 걸려 있으면 그날은 안 한다.
- *
- * 연령 안전 필터는 서버가 건다 — 내 나이대에 맞는 것만 내려온다.
- * 카드마다 캐릭터가 그 동작을 하고 있어서, 글을 안 읽어도 무슨 운동인지 보인다.
- */
+/** 오늘 할 운동 고르기. */
 
 /** 영상이 어떤 요인을 다루는지에 따라 캐릭터 동작을 고른다 */
 function motionFor(factors: string[] | undefined, index: number): Motion {
@@ -63,7 +56,8 @@ export default function PickPage() {
   return (
     <>
       <AppBar backHref="/kid" title="운동 고르기" />
-      <Stage wide className="space-y-4">
+      <Stage wide className="relative space-y-4">
+        <Backdrop name="bg/bg-park" height={190} />
         <h1 className="text-[1.5rem] leading-tight font-extrabold">뭐 하고 싶어?</h1>
 
         {videos.length === 0 ? (

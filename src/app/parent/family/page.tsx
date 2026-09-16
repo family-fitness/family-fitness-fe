@@ -18,15 +18,7 @@ import { useSession } from "@/lib/session";
 import { avatarFor } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 
-/**
- * 가족 더하기.
- *
- * 프로필과 계정은 다르다. 여기서 만드는 건 **프로필**이고, 그 사람이 자기 폰에서
- * 쓰려면 **초대코드**로 자기 계정을 붙여야 한다. 아이가 폰이 없어도 프로필만으로
- * 측정과 미션이 굴러간다 — 그래서 초대는 선택이다.
- *
- * 만 14세 미만은 보호자 동의를 여기서 받는다. 서버가 자동으로 찍지 않는다.
- */
+/** 가족 더하기. */
 export default function MembersPage() {
   const router = useRouter();
   const { familyId, isPending: sessionPending } = useSession();

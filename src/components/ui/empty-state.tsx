@@ -2,12 +2,7 @@ import type { ReactNode } from "react";
 
 import { Illustration } from "./illustration";
 
-/**
- * 빈 화면.
- *
- * 분위기용이 아니라 다음 행동을 알려주는 자리다.
- * 글만 있으면 오류난 화면처럼 보이므로 그림을 함께 둔다.
- */
+/** 빈 화면. */
 export function EmptyState({
   scene,
   title,

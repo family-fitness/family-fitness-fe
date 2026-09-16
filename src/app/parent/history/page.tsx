@@ -8,14 +8,7 @@ import { MissionRow } from "@/components/domain/mission-row";
 import { useMissions } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 
-/**
- * 지난 기록.
- *
- * 부모 홈의 「오늘」은 오늘만 본다. 지난 한 주에 뭘 했는지는 여기서 본다.
- *
- * **못 한 것을 세지 않는다.** 끝낸 것만 모아 보여준다 — 지난 기록을 여는 이유는
- * 잘한 걸 다시 보려는 것이지 빠뜨린 걸 확인하려는 게 아니다.
- */
+/** 지난 기록. */
 export default function HistoryPage() {
   const { familyId, isPending } = useSession();
   const { data: done, isPending: donePending } = useMissions(familyId, {

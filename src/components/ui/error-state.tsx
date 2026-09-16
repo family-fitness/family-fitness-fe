@@ -7,15 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Illustration } from "@/components/ui/illustration";
 import { ApiError } from "@/lib/api/client";
 
-/**
- * 불러오지 못했을 때.
- *
- * 이게 없으면 화면이 **통째로 빈칸**이 된다. 스켈레톤은 기다리는 동안만 맞고,
- * 실패한 뒤에는 아무 말도 하지 않는 흰 화면이 남는다 — 사용자는 앱이 고장 난 건지
- * 자기가 뭘 잘못한 건지 알 수 없다.
- *
- * 문구는 **무엇을 하면 되는지**로 쓴다. "오류가 발생했습니다" 는 할 일을 알려주지 않는다.
- */
+/** 불러오지 못했을 때. */
 export function ErrorState({
   error,
   onRetry,

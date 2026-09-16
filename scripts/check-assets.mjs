@@ -54,6 +54,16 @@ const missing = [];
 const pending = new Set();
 const used = new Set();
 
+// 캐릭터 프레임은 `anim/${motion}-${n}` 으로 합쳐 만든다. 글자만 훑어서는 안 보인다
+try {
+  const src = readFileSync(join(ROOT, "src/lib/anim-frames.ts"), "utf8");
+  for (const [, motion, count] of src.matchAll(/(\w+):\s*(\d+)/g)) {
+    for (let i = 1; i <= Number(count); i += 1) used.add(`anim/${motion}-${i}`);
+  }
+} catch {
+  // 아직 에셋을 넣지 않았다
+}
+
 /** 쓰고 있는데 파일이 없다 — 주문했으면 대기, 아니면 오타다 */
 function note(file, name) {
   used.add(name);

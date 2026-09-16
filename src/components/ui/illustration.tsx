@@ -5,15 +5,7 @@ import { useState, type CSSProperties } from "react";
 
 import { cn } from "@/lib/utils";
 
-/**
- * 에셋 그림.
- *
- * 파일이 아직 없어도 화면이 깨지지 않게 조용히 숨는다.
- * 에셋은 `node scripts/prepare-assets.mjs` 로 여백을 잘라낸 뒤
- * public/assets/<분류>/<이름>.png 에 놓인다.
- *
- * 그림은 장식이 아니라 상태를 말하는 자리다. 뜻 없는 그림은 넣지 않는다.
- */
+/** 에셋 그림. 파일이 없으면 조용히 숨는다 */
 export function Illustration({
   name,
   fallback,
@@ -25,29 +17,21 @@ export function Illustration({
 }: {
   /** "scene/scene-no-record" 처럼 분류/이름 */
   name: string;
-  /**
-   * `name` 이 아직 없을 때 대신 쓸 그림.
-   * 2차 에셋을 기다리는 동안 1차 그림으로 버티려고 둔다 — 화면이 비지 않는다.
-   */
+  /** `name` 이 없을 때 대신 쓸 그림 */
   fallback?: string;
   alt?: string;
   size?: number;
   className?: string;
-  /** 프레임 애니메이션처럼 바깥에서 타이밍을 줘야 할 때 */
   style?: CSSProperties;
   priority?: boolean;
 }) {
-  /*
-    0 = 원본을 보는 중, 1 = 대체 그림을 보는 중, 2 = 둘 다 없어서 숨김.
-    단계를 안 세면 대체 그림까지 없을 때 깨진 이미지 아이콘이 그대로 남는다.
-  */
+  // 0 = 원본, 1 = 대체 그림, 2 = 둘 다 없음
   const [stage, setStage] = useState(0);
   if (stage >= 2) return null;
   const src = stage === 0 ? name : fallback;
   if (!src) return null;
 
-  // 정사각 상자에 비율을 지켜 앉힌다.
-  // 너비만 고정하고 높이를 auto 로 두면 세로로 긴 그림(서 있는 자세)이 폭주한다.
+  // 정사각 상자에 비율을 지켜 앉힌다. 높이를 auto 로 두면 세로로 긴 그림이 폭주한다
   return (
     <span
       className={cn("relative inline-block shrink-0 select-none", className)}
@@ -67,15 +51,7 @@ export function Illustration({
   );
 }
 
-/**
- * 캐릭터 아바타.
- *
- * 몸통 · 옷 · 머리 · 표정을 겹쳐 한 사람을 만든다.
- * 사람마다 그림을 따로 뽑으면 구성원이 늘 때마다 다시 뽑아야 한다.
- *
- * 체형마다 비율이 다르다. 성인과 유아에 같은 머리 크기를 쓰면
- * 41세 엄마가 2등신이 된다. 성인은 약 5등신, 아동은 4등신, 유아는 3등신으로 잡았다.
- */
+/** 몸통·옷·머리·표정을 겹쳐 한 사람을 만든다. 체형마다 등신 비율이 다르다 */
 const PROPORTION = {
   adult: { headW: 30, headTop: 1.5, headH: 23.5, bodyTop: 20.5, topTop: 25.5, topW: 42, topH: 26 },
   child: { headW: 36, headTop: 1, headH: 28.5, bodyTop: 24.5, topTop: 30, topW: 46, topH: 27 },

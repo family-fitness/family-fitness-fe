@@ -16,17 +16,7 @@ import { useSession } from "@/lib/session";
 import { avatarFor } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 
-/**
- * 보호자 동의 관리.
- *
- * 만 14세 미만 프로필은 개인정보·건강정보 동의가 둘 다 있어야 측정을 저장할 수 있다.
- * **서버가 동의를 자동으로 찍지 않는다** — 보호자가 직접 켠다.
- *
- * 철회는 되돌리기 어려운 동작이라 한 번 묻는다. 무슨 일이 생기는지 미리 적는다 —
- * "동의 철회" 다섯 글자만 두면 무엇이 멈추는지 알 수 없다.
- *
- * 과거 기록은 지우지 않는다. 그 사실도 화면에 적는다.
- */
+/** 보호자 동의 관리. */
 export default function ConsentPage() {
   const { profile, familyId, isPending: sessionPending } = useSession();
   const { data: family, isPending: familyPending } = useFamilyProfiles(familyId);

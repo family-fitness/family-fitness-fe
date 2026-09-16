@@ -26,15 +26,6 @@ import { formatDate } from "@/lib/utils";
 
 /**
  * 미션 하나 — 기록하는 곳.
- *
- * 목표 종류마다 기록하는 방법이 다르고, **무엇으로 확인되는지도 다르다.**
- *   TIMER_MINUTES  앱 타이머      → 서버가 안다
- *   VIDEO_DONE     영상 재생률    → 서버가 안다
- *   STEPS          직접 입력      → 사람이 적은 값. 보호자 확인이 남는다
- *
- * 걸음수에 "자동 인증" 이라고 쓰지 않는다. 웹에서 걸음수를 실측할 방법이 없다.
- *
- * 단건 조회 엔드포인트가 없어서 목록에서 찾는다.
  * ▲ 백엔드에 GET /missions/{missionId} 를 요청해 뒀다.
  */
 export default function MissionDetailPage() {
@@ -235,12 +226,7 @@ export default function MissionDetailPage() {
   );
 }
 
-/**
- * 걸음수 입력.
- *
- * 그날 총량을 덮어쓴다 — 누적이 아니다. 두 번 넣으면 더해질 거라고 기대하는
- * 사람이 있어서 입력 옆에 적어 둔다.
- */
+/** 걸음수 입력. */
 function StepsForm({
   onSubmit,
   pending,

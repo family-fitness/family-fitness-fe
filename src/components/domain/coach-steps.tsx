@@ -5,13 +5,7 @@ import { Check, Loader2, X } from "lucide-react";
 import type { CoachStep } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
-/**
- * 코치가 거쳐 간 단계.
- *
- * 돌아가는 동안 스피너 하나만 두면 "AI 가 뭔가 하고 있다" 로 끝난다.
- * 실제로는 네 단계다 — 측정 확인 · 자료 검색 · 편성 · 검증. 그걸 그대로 보여준다.
- * 검색 단계가 무엇을 찾았는지 적혀 있어야 제안이 어디서 나왔는지 설명된다.
- */
+/** 코치가 거쳐 간 단계. */
 const STEP_LABEL: Record<string, string> = {
   assess: "가족 측정 기록 확인",
   retrieve: "또래 운동처방 · 영상 검색",

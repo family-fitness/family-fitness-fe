@@ -12,15 +12,7 @@ import { useConfirmParticipant, useSendCheer } from "@/lib/api/queries";
 import { PRAISES } from "@/lib/praise";
 import { cn, withJosa } from "@/lib/utils";
 
-/**
- * 칭찬 보내기.
- *
- * 정해진 문구를 고르기만 해도 보내진다. 퇴근하고 지친 부모에게 글쓰기를 시키면
- * 그날로 안 보낸다 — 빈 칸만 있는 화면은 닫힌다.
- *
- * 걸음수처럼 아이가 직접 적은 기록은 **칭찬이 곧 보호자 확인**이다.
- * 서버의 confirm 을 같이 부른다. 영상·타이머는 서버가 이미 아니까 확인만 건너뛴다.
- */
+/** 칭찬 보내기. */
 export function PraisePicker({
   open,
   onClose,

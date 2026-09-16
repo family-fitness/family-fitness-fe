@@ -11,20 +11,7 @@ import { progressPercent, targetCopy } from "@/lib/mission";
 import { useCheers } from "@/lib/api/queries";
 import { cn, withJosa } from "@/lib/utils";
 
-/**
- * 아이가 오늘 한 일 — **칭찬을 보내는 자리**.
- *
- * 두 갈래가 섞인다.
- *   1. 아이가 직접 알린 것   "다 했어요!" 를 누르면 여기로 온다
- *   2. 미션 진행            서버가 아는 값(영상 재생률 · 타이머)
- *
- * 처음엔 미션만 보고 있었는데, 아이가 미션 없이 권한 영상을 했을 때
- * 부모 화면에 아무것도 안 떴다. 아이는 알렸는데 부모는 못 보는 상태 —
- * 칭찬이 오지 않으니 아이는 다음부터 안 알린다.
- *
- * 아무것도 안 했을 때 "오늘 아무것도 안 했습니다" 라고 쓰지 않는다.
- * 그 말은 부모가 아이에게 옮기는 말이 된다.
- */
+/** 아이가 오늘 한 일 — **칭찬을 보내는 자리**. */
 export function TodayBoard({
   familyId,
   childProfileId,
@@ -53,11 +40,10 @@ export function TodayBoard({
     .filter((c) => c.fromProfileId === parentProfileId && isToday(c))
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
-  /*
-    어느 알림에 답했는지 서버가 알려주지 않는다. 오래된 것부터 하나씩 짝지어
-    "앞의 n개는 답했다" 로 본다. 새로고침해도 결과가 같다.
-    ▲ 백엔드에 답장을 잇는 칸(replyToCheerId)을 요청해 뒀다.
-  */
+  /**
+   * 어느 알림에 답했는지 서버가 모른다. 오래된 것부터 하나씩 짝지어 센다.
+   * ▲ 백엔드에 replyToCheerId 를 요청해 뒀다.
+   */
   const answeredCount = praises.length;
 
   const mine = (missions ?? []).filter((m) =>
@@ -135,11 +121,7 @@ export function TodayBoard({
 
             return (
               <li key={mission.missionId}>
-                {/*
-                  누가 눌러도 같은 화면으로 간다.
-                  아이가 자기 폰에서 하든 부모가 옆에서 같이 하든 기록은 한 곳에 쌓인다 —
-                  "누가 기록했는지" 를 따지기 시작하면 아무도 기록하지 않는다.
-                */}
+                {/** 누가 눌러도 같은 화면으로 간다. */}
                 <Link
                   href={`/kid/play/${mission.missionId}`}
                   className="press flex items-start gap-3 py-4"

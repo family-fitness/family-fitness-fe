@@ -10,12 +10,7 @@ import { Avatar } from "@/components/ui/illustration";
 import { Sheet } from "@/components/ui/sheet";
 import { useSessionStore } from "@/stores/session-store";
 
-/**
- * 지금 누구 화면을 보고 있는지 고른다.
- *
- * 계정과 사람이 다르기 때문에 필요하다. 부모 계정 하나가 온 가족 프로필을 관리한다.
- * 자녀를 고르면 화면이 통째로 아이 모드로 바뀐다.
- */
+/** 지금 누구 화면을 보고 있는지 고른다. */
 export function ProfileSwitcher({
   profiles,
   current,

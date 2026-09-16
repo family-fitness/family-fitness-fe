@@ -4,6 +4,7 @@ import { NavLink } from "@/components/ui/nav-link";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
+import { Backdrop } from "@/components/ui/backdrop";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KidCharacter } from "@/components/domain/kid-character";
@@ -11,16 +12,7 @@ import { useVideos } from "@/lib/api/queries";
 import { useRoleStore } from "@/stores/role-store";
 import { cn } from "@/lib/utils";
 
-/**
- * 내가 한 운동.
- *
- * **모은 게 보여야 다음에도 한다.** 아이가 다시 열어 보는 화면이다.
- *
- * 무엇을 했는지는 서버가 안다 — 영상 최대 재생률(`maxProgress`)이 남아 있다.
- * 프론트에서 따로 세지 않는다. 기기를 바꿔도 기록이 그대로 따라온다.
- *
- * 개수를 목표로 만들지 않는다. "10개 채우면" 을 붙이면 못 채운 날이 실패가 된다.
- */
+/** 내가 한 운동. */
 export default function DonePage() {
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const { data, isPending } = useVideos({
@@ -69,7 +61,8 @@ export default function DonePage() {
   return (
     <>
       <AppBar backHref="/kid" title="내가 한 운동" />
-      <Stage wide className="space-y-6">
+      <Stage wide className="relative space-y-6">
+        <Backdrop name="bg/bg-gym" height={190} />
         <div className="flex items-center gap-3">
           <KidCharacter motion="cheer" size={84} />
           <p className="text-[1.4rem] leading-tight font-extrabold">

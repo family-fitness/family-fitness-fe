@@ -1,21 +1,9 @@
 import type { ApiErrorBody } from "./types";
 
-/**
- * 백엔드 호출 규칙을 한 군데로 모은다.
- *
- * 경로는 "/api/v1/..." 상대 경로로 둔다. next.config.ts 의 rewrites 가 백엔드로 넘긴다.
- * 백엔드가 CORS 를 전부 열어두긴 했지만, 같은 출처로 두면 토큰을 쿠키로 옮길 때도
- * 그대로 쓸 수 있다.
- */
+/** 백엔드 호출 규칙을 한 군데로 모은다. */
 const BASE = "/api/v1";
 
-/**
- * 오류.
- *
- * 서버는 봉투를 씌워 보낸다 — {"error": {"code", "message"}}.
- * `message` 는 개발자용이라 **화면에 그대로 노출하지 않는다**(api-contract §0).
- * 화면 문구는 code 로 갈라서 우리가 쓴다. `userMessage` 가 그 자리다.
- */
+/** 오류. */
 export class ApiError extends Error {
   constructor(
     readonly status: number,

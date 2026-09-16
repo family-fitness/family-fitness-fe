@@ -4,14 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 const MOCKING_ENABLED = process.env.NEXT_PUBLIC_API_MOCKING === "enabled";
 
-/**
- * 목 서버가 켜져 있으면 서비스워커가 붙을 때까지 렌더를 미룬다.
- * 안 그러면 첫 요청이 워커를 지나쳐 실제 백엔드(아직 없음)로 가서 실패한다.
- *
- * 시작은 모듈 수준에서 한 번만 한다. React 는 개발 모드(StrictMode)에서 effect 를
- * 두 번 실행하는데, worker.start() 를 두 번 부르면
- * "cannot configure an already enabled network" 로 터진다.
- */
+/** 목 서버가 켜져 있으면 서비스워커가 붙을 때까지 렌더를 미룬다. */
 let startPromise: Promise<void> | null = null;
 
 function startWorker() {

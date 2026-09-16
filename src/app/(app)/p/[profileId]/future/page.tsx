@@ -19,18 +19,7 @@ import {
 } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 
-/**
- * 10년 뒤 — **예언이 아니다.**
- *
- * 국민체력100은 횡단면 조사다. 같은 사람을 10년 따라간 자료가 아니라
- * 지금 10년 위 연령대가 어디 있는지를 본 것이다. 그래서 이 화면은
- * "당신은 10년 뒤 이렇게 됩니다" 라고 말하지 않는다.
- *
- * 서버가 준 `notice` 는 **제거하거나 접을 수 없다.** 항상 보이게 둔다.
- * p10~p90 음영을 반드시 같이 그린다 — 중앙값만 그리면 확정된 미래처럼 보인다.
- *
- * 시나리오는 MAINTAIN 하나뿐이다. 횡단면 자료라 "더 노력하면" 을 낼 근거가 없다.
- */
+/** 10년 뒤 — **예언이 아니다.** */
 export default function FuturePage() {
   const router = useRouter();
   const { profileId } = useParams<{ profileId: string }>();
@@ -49,11 +38,7 @@ export default function FuturePage() {
 
   const hasTest = Boolean(latest?.fitnessTestId);
 
-  /*
-    조회 엔드포인트가 없어서 들어오면 만든다(POST). **한 번만 만들어야 한다.**
-    isPending 으로만 막으면 StrictMode 가 effect 를 두 번 돌릴 때 둘 다 통과해
-    예측이 두 건 저장된다. 상태가 아니라 ref 로 막는다 — 같은 렌더에서도 보인다.
-  */
+  /** 조회 엔드포인트가 없어서 들어오면 만든다(POST). **한 번만 만들어야 한다.** */
   const requested = useRef(false);
   useEffect(() => {
     if (!hasTest || requested.current) return;

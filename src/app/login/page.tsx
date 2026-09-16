@@ -10,16 +10,7 @@ import { ApiError } from "@/lib/api/client";
 import { useDevLogin, useGoogleLogin } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
 
-/**
- * 로그인.
- *
- * 로그인은 **계정**이 한다. 측정과 미션은 그 뒤에 붙는 **프로필**에 달린다 —
- * 부모 계정 하나로 온 가족의 프로필을 관리하는 게 기본 모양이다.
- *
- * 구글 인가코드 교환은 백엔드가 한다. 프론트는 코드를 받아 넘기기만 한다.
- * 로컬에서는 시드 계정으로 바로 들어가는 길을 둔다 — 구글 설정 없이
- * 화면을 확인할 수 있어야 한다.
- */
+/** 로그인. */
 const DEV_ACCOUNTS = [
   { id: "demo-parent", label: "데모네 부모 (가족 3명)" },
   { id: "demo-parent-2", label: "초대받는 계정 (프로필 없음)" },

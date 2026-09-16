@@ -13,15 +13,7 @@ const METRIC_ICON = {
   STEPS: Footprints,
 } as const;
 
-/**
- * 미션 하나.
- *
- * 구성원마다 진행도를 따로 보여준다. 미션은 가족이 같이 하는 것이라
- * 하나의 막대로 합치면 누가 하고 누가 안 했는지가 사라진다.
- *
- * **무엇으로 확인된 값인지 항상 붙인다.** 걸음수는 사람이 적은 값이다.
- * 거기에 "자동 인증" 이라고 쓰면 사실이 아니고, 심사에서 무너진다.
- */
+/** 미션 하나. */
 export function MissionRow({ mission }: { mission: Mission }) {
   const Icon = METRIC_ICON[mission.targetMetric ?? "TIMER_MINUTES"] ?? Timer;
   const participants = mission.participants ?? [];
@@ -79,12 +71,7 @@ export function ParticipantProgress({ participant }: { participant: MissionParti
   );
 }
 
-/**
- * 무엇으로 확인됐는지 한 줄.
- *
- * 서버가 아는 것(영상 재생률 · 타이머)과 사람이 적은 것(걸음수)을 같은 말로
- * 쓰지 않는다. 이 구분이 이 서비스가 정직하다는 유일한 증거다.
- */
+/** 무엇으로 확인됐는지 한 줄. */
 export function VerifyLabel({ participant }: { participant: MissionParticipant }) {
   if (participant.needsGuardianCheck) {
     return (

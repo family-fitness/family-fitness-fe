@@ -13,15 +13,7 @@ import { useAskCoach } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
-/**
- * 코치에게 묻기.
- *
- * **근거 없는 답변은 버그다.** 답 아래에 인용이 항상 붙는다. 서버도 인용이 0건이면
- * 거부로 바꿔 저장한다 — 화면이 그걸 숨기면 서버가 애써 지킨 규칙이 사라진다.
- *
- * 대화 기록 조회 엔드포인트가 없어서 이번 화면에 머무는 동안만 남는다.
- * conversationId 를 이어 보내면 서버 쪽 대화는 계속된다.
- */
+/** 코치에게 묻기. */
 interface Turn {
   role: "USER" | "ASSISTANT";
   text: string;

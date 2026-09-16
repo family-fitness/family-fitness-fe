@@ -14,13 +14,7 @@ import { useSession } from "@/lib/session";
 import { avatarFor } from "@/lib/avatar";
 import { formatDate } from "@/lib/utils";
 
-/**
- * 구성원 한 명.
- *
- * **측정할 수 없는 사람이 있다.** `measurable === false`(만 4세 미만)면 측정으로
- * 가는 줄을 비활성화하지 않고 **아예 내지 않는다.** 흐릿한 버튼은 "언젠가 되는
- * 건가" 하고 계속 누르게 만든다.
- */
+/** 구성원 한 명. */
 export default function ProfilePage() {
   const { profileId } = useParams<{ profileId: string }>();
   const { familyId, isPending: sessionPending } = useSession();

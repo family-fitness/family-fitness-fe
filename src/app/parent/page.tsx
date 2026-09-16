@@ -8,6 +8,7 @@ import { AppBar } from "@/components/app-shell/app-bar";
 import { SectionTitle, Stage } from "@/components/app-shell/stage";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/error-state";
+import { Backdrop } from "@/components/ui/backdrop";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScoreDial } from "@/components/domain/score-dial";
@@ -22,15 +23,7 @@ import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 import { withJosa } from "@/lib/utils";
 
-/**
- * 부모 홈.
- *
- * 부모가 알고 싶은 건 하나다 — **우리 아이가 또래 중 어디쯤이고, 오늘 뭘 했는가.**
- * 그래서 화면 맨 위가 점수이고, 그 아래가 또래 비교이고, 그 아래가 오늘이다.
- *
- * 여기서 하지 않는 것: 아이를 다그치는 말, 구성원끼리 순위 매기기,
- * "이번 주 목표를 못 채웠습니다" 같은 성적표.
- */
+/** 부모 홈. */
 export default function ParentHomePage() {
   const router = useRouter();
   const { familyId, profile, isPending, error: sessionError } = useSession();
@@ -57,11 +50,7 @@ export default function ParentHomePage() {
   // effect 안에서 상태를 쓰면 렌더가 한 번 더 돌고, 여기서는 굳이 저장할 것도 없다
   const child = children.find((c) => c.profileId === childProfileId) ?? children[0];
 
-  /*
-    실패를 기다림보다 먼저 본다.
-    /me 가 실패하면 familyId 가 없어서 가족 지도 조회는 시작도 못 하고,
-    그 상태는 영원히 "불러오는 중" 이다 — 화면이 통째로 빈칸이 된다.
-  */
+  /** 실패를 기다림보다 먼저 본다. */
   const failure = sessionError ?? mapError;
   if (failure) {
     return (
@@ -115,7 +104,8 @@ export default function ParentHomePage() {
   return (
     <>
       {bar}
-      <Stage className="space-y-8">
+      <Stage className="relative space-y-8">
+        <Backdrop name="bg/bg-hill" height={210} />
         {children.length > 1 && (
           <ChildSwitch kids={children} selectedId={child.profileId} onSelect={setChild} />
         )}
@@ -209,11 +199,7 @@ export default function ParentHomePage() {
           </ul>
         </section>
 
-        {/*
-          7. 부모 자신.
-          기획서의 출발점이 「부모가 움직이지 않으면 아이도 움직이지 않는다」다.
-          아이 화면만 있고 부모가 할 일이 없으면 이 앱은 잔소리 도구가 된다.
-        */}
+        {/** 7. 부모 자신. */}
         <section>
           <SectionTitle>나도 함께</SectionTitle>
           <ul className="divide-rows">
@@ -240,12 +226,7 @@ export default function ParentHomePage() {
   );
 }
 
-/**
- * 이 점수가 몇 개 항목으로 나온 건지.
- *
- * 항목 하나로 낸 점수를 그냥 「신체 점수」라고 부르면 과장이 된다.
- * 적게 쟀을 때만 말한다 — 충분히 쟀는데도 매번 토를 달면 잔소리가 된다.
- */
+/** 이 점수가 몇 개 항목으로 나온 건지. */
 function ScoreBasis({ profileId }: { profileId: string | undefined }) {
   const { data } = useLatestFitnessTest(profileId);
   const count = data?.items?.length ?? 0;

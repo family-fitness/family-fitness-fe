@@ -15,15 +15,7 @@ import { useFamilyProfiles, useSendCheer } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { cn, withJosa } from "@/lib/utils";
 
-/**
- * 응원 보내기.
- *
- * 응원 모드(CHEER_ONLY)인 부모가 편성에서 빠지는 대신 하는 일이다.
- * 같이 못 뛰어도 가족 화면에 남는 게 있어야 한다.
- *
- * **이모지를 쓰지 않는다.** 서버에 emoji 칸이 있지만 우리 화면은 문구로 보낸다 —
- * 정해진 문구가 아이에게 더 잘 읽히고, 무엇보다 이 앱의 규칙이다.
- */
+/** 응원 보내기. */
 const PRESETS = [
   "오늘도 잘했어!",
   "같이 해서 좋았어",

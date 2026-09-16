@@ -1,18 +1,4 @@
-/**
- * MSW 목 서버 — 백엔드가 안 떠 있을 때 쓴다.
- *
- * 응답은 **실제 백엔드에서 받아온 것**이다(`fixtures.json`).
- * 손으로 지어내면 필드명이 어긋나고, 그 어긋남은 화면을 다 만든 뒤에야 드러난다.
- *
- * 새로 받으려면 백엔드를 띄우고:
- *   npm run api:types      # 타입
- *   (fixtures 는 scripts/capture-fixtures.mjs)
- *
- * 고정 JSON 만 돌려주지 않는다. 화면이 마주칠 **규칙**을 구현한다.
- *   - 승인 전에는 미션이 0건이다
- *   - 자녀 계정은 승인할 수 없다
- *   - 측정 항목 0개 · 만 4세 미만 · 동의 없음은 각각 다른 코드로 거절한다
- */
+/** MSW 목 서버 — 백엔드가 안 떠 있을 때 쓴다. */
 import { HttpResponse, http, type PathParams } from "msw";
 
 import type {
@@ -39,22 +25,8 @@ import type {
 
 import fixturesJson from "./fixtures.json";
 
-/**
- * 픽스처의 모양.
- *
- * fixtures.json 은 실제 응답이라 TypeScript 가 값에서 타입을 지나치게 좁게 추론한다
- * (`rejectedReason: null` 이면 타입이 `null` 이 된다). 목 서버는 그 값을 바꿔 가며 쓰므로
- * 계약 타입으로 다시 붙여 준다. 백엔드가 필드를 바꾸면 여기서 타입 에러가 난다.
- */
-/**
- * 선택 표시(`?`)만 걷어낸다.
- *
- * 백엔드 springdoc 이 `required` 를 내보내지 않아서 생성된 스키마는 **모든 필드가
- * 선택**이다. 실제 응답에는 다 들어 있는데도 목 서버 코드마다 `?.` 와 `?? []` 가 붙는다.
- * 픽스처는 진짜 응답이므로 여기서만 "다 있다" 고 못박는다.
- *
- * `null` 은 그대로 둔다 — `rejectedReason: null` 처럼 의미가 있는 null 이 있다.
- */
+/** 픽스처의 모양. */
+/** 선택 표시(`?`)만 걷어낸다. */
 type Concrete<T> = T extends (infer U)[]
   ? Concrete<U>[]
   : T extends object
@@ -104,15 +76,7 @@ const db = {
   /** 승인 전에는 비어 있다. 승인 핸들러가 채운다 */
   missions: [] as MissionRow[],
   videos: structuredClone(fixtures.videos.videos),
-  /**
-   * 주고받은 칭찬 · 알림.
-   *
-   * 이것만 탭 저장소에 남긴다. 아이가 아이 화면에서 알리고 부모가 부모 화면에서
-   * 칭찬을 보내려면 **화면을 옮겨도 남아 있어야** 한다. 다른 상태처럼 새로고침마다
-   * 지워지면 목으로는 이 흐름을 한 번도 확인할 수 없다.
-   *
-   * 탭을 닫으면 사라진다 — 시연을 처음부터 다시 하기 쉽게.
-   */
+  /** 주고받은 칭찬 · 알림. */
   cheers: loadCheers(),
   /**
    * 지금 로그인해서 보고 있는 사람.
@@ -177,13 +141,7 @@ function bandOf(percentile: number): Band {
 /* ─── 인증 · 가족 ──────────────────────────────────────────── */
 
 const identity = [
-  /**
-   * 지금 로그인한 계정이 관리하는 프로필.
-   *
-   * `setActingProfile` 로 바꾼 사람을 따른다. 자녀 계정으로 들어온 화면을
-   * 확인하려면 이게 아이 프로필 하나만 돌려줘야 한다 — 부모 프로필까지 주면
-   * 아이 계정인데 부모 화면을 볼 수 있는 것처럼 보인다.
-   */
+  /** 지금 로그인한 계정이 관리하는 프로필. */
   http.get(`${BASE}/me`, () => {
     const me = acting();
     if (!me || me.profileId === DEMO.mom) return HttpResponse.json(fixtures.me);

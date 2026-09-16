@@ -2,6 +2,7 @@
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
+import { Backdrop } from "@/components/ui/backdrop";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KidCharacter } from "@/components/domain/kid-character";
@@ -10,14 +11,7 @@ import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 import { formatDate } from "@/lib/utils";
 
-/**
- * 받은 칭찬.
- *
- * 아이가 다시 열어 보는 화면이다. 부모가 적어 준 말이 쌓여 보여야 다음에도 한다.
- *
- * 개수를 목표로 만들지 않는다 — "10개 모으면" 같은 말을 붙이면 못 채운 날이
- * 실패가 된다. 그냥 받은 걸 보여준다.
- */
+/** 받은 칭찬. */
 export default function KidPraisePage() {
   const { familyId } = useSession();
   const childProfileId = useRoleStore((s) => s.childProfileId);
@@ -54,7 +48,8 @@ export default function KidPraisePage() {
   return (
     <>
       <AppBar backHref="/kid" title="칭찬" />
-      <Stage wide className="space-y-5">
+      <Stage wide className="relative space-y-5">
+        <Backdrop name="bg/bg-hill" height={190} />
         <div className="flex items-center gap-3">
           <KidCharacter motion="cheer" size={84} />
           <p className="text-[1.4rem] leading-tight font-extrabold">

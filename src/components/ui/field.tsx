@@ -1,11 +1,6 @@
 import type { ReactNode } from "react";
 
-/**
- * 라벨 + 설명 + 입력 한 묶음.
- *
- * 설명을 placeholder 로 대신하지 않는다. 입력을 시작하면 사라져서,
- * 왜 이걸 묻는지 확인할 방법이 없어진다.
- */
+/** 라벨 + 설명 + 입력 한 묶음. */
 export function Field({
   label,
   hint,

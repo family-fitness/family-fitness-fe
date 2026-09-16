@@ -11,15 +11,7 @@ import { useFamilyProfiles } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 
-/**
- * 부모인가 아이인가.
- *
- * **앱이 여기서 둘로 갈린다.** 계정은 하나인데 쓰는 사람이 둘이라, 이건 계정
- * 속성이 아니라 이 기기의 지금 상태다(`role-store`). 부모 폰을 아이가 잠깐
- * 빌려 쓰는 일이 실제로 일어난다.
- *
- * 고르는 화면이라 설명을 길게 쓰지 않는다. 그림 두 개가 설명이다.
- */
+/** 부모인가 아이인가. */
 export default function StartPage() {
   const router = useRouter();
   const { profile, familyId, nextStep, isPending } = useSession();
@@ -31,11 +23,7 @@ export default function StartPage() {
   const children = (family?.profiles ?? []).filter((p) => p.role === "CHILD");
   const hasFamily = Boolean(familyId) && nextStep !== "CREATE_FAMILY";
 
-  /*
-    자녀 계정에는 부모 모드를 내주지 않는다.
-    부모 화면은 백분위·약한 항목처럼 아이에게 보여주지 않기로 한 것을 그대로 띄운다
-    (AGENTS.md 아이 모드 규칙). 고를 수 있게 두면 한 번 눌러 보는 것으로 새어 나간다.
-  */
+  /** 자녀 계정에는 부모 모드를 내주지 않는다. */
   const childAccount = profile?.role === "CHILD";
 
   const goParent = () => {
@@ -119,12 +107,7 @@ const PARENT_AVATAR = {
   top: "top-tshirt-yellow",
 };
 
-/**
- * 고르는 칸.
- *
- * 같은 크기 카드 두 장을 나열하지 않는다 — 아이 쪽을 크게 만든다.
- * 이 앱을 실제로 매일 여는 사람은 아이이고, 아이는 작은 것을 잘 못 누른다.
- */
+/** 고르는 칸. */
 function RoleCard({
   art,
   title,

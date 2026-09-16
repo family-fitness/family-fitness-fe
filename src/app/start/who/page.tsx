@@ -11,14 +11,7 @@ import { useSession } from "@/lib/session";
 import { avatarFor } from "@/lib/avatar";
 import { useRoleStore } from "@/stores/role-store";
 
-/**
- * 형제 중 누구인지.
- *
- * 아이가 한 명이면 이 화면을 거치지 않는다. 고를 게 없는데 고르게 하면
- * 한 번 더 누르는 일만 는다.
- *
- * 누르는 칸을 크게 만든다. 여기를 누르는 손은 아이 손이다.
- */
+/** 형제 중 누구인지. */
 export default function WhoPage() {
   const router = useRouter();
   const { familyId } = useSession();

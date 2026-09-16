@@ -19,18 +19,7 @@ import { useSession } from "@/lib/session";
 import { useBodyStore } from "@/stores/body-store";
 import { cn, withJosa } from "@/lib/utils";
 
-/**
- * 체력 측정 입력.
- *
- * **항목은 서버가 준다.** 연령대마다 항목이 달라서 프론트가 목록을 갖고 있으면
- * 유아기 화면에 성인 항목이 뜬다 (GET /fitness/items?ageGroup=).
- *
- * 폼을 두 구역으로 나눈다 — `inputGroup` 이 기준이다.
- *   EASY       집에서 잴 수 있는 항목
- *   EQUIPMENT  악력계 · 넓은 공간이 필요한 항목. 접은 채로 시작한다
- *
- * 악력계가 있는 집이 거의 없어서, 첫 화면에서 장비를 요구하면 거기서 이탈한다.
- */
+/** 체력 측정 입력. */
 
 /** RHF 필드 이름. 항목 코드가 "012" 라 그대로 쓰면 경로 파서가 숫자로 본다 */
 const field = (itemCode: string) => `item_${itemCode}`;
@@ -40,11 +29,7 @@ export default function MeasurePage() {
   const { profileId } = useParams<{ profileId: string }>();
   const { familyId, isPending: sessionPending } = useSession();
 
-  /*
-    측정은 **주소의 프로필**에 저장한다. 로그인한 사람이 아니다.
-    부모 계정 하나로 온 가족을 관리하는 게 기본 모양이라, 로그인한 프로필을 쓰면
-    아이 측정을 넣었는데 부모 기록으로 들어간다.
-  */
+  /** 측정은 **주소의 프로필**에 저장한다. 로그인한 사람이 아니다. */
   const { data: family, isPending: familyPending } = useFamilyProfiles(familyId);
   const profile = family?.profiles?.find((p) => p.profileId === profileId);
 
@@ -58,12 +43,7 @@ export default function MeasurePage() {
   const today = new Date().toISOString().slice(0, 10);
   const [testedOn, setTestedOn] = useState(today);
 
-  /*
-    키와 몸무게.
-    서버는 이 둘을 **측정 회차에 얹어서만** 받는다. 아이를 등록할 때 받아 둔 값이
-    있으면 채워 두고, 없으면 여기서 처음 받는다. 아이 몸은 한 계절이면 달라져서
-    측정할 때마다 다시 묻는 게 맞다.
-  */
+  /** 키와 몸무게. */
   const pendingBody = useBodyStore((st) => (profileId ? st.byProfile[profileId] : undefined));
   const clearBody = useBodyStore((st) => st.clear);
   const [heightCm, setHeightCm] = useState(() => String(pendingBody?.heightCm ?? ""));

@@ -7,16 +7,7 @@ import { Illustration } from "@/components/ui/illustration";
 import { KidCharacter, type Motion } from "@/components/domain/kid-character";
 import { cn } from "@/lib/utils";
 
-/**
- * 주사위 운동.
- *
- * 주사위를 굴려 나온 동작을 나온 수만큼 한다. 세 번 굴리면 끝난다.
- *
- * **왜 주사위인가** — 아이는 정해진 것을 시키면 안 하고, 자기가 굴려서 나온 것은
- * 한다. 같은 운동이라도 "오늘은 이거 해" 와 "굴렸더니 이게 나왔네" 는 다르다.
- *
- * 횟수는 아이가 세는 것이고 앱이 본 게 아니다. 화면에 그렇게 적는다.
- */
+/** 주사위 운동. */
 const MOVES: { motion: Motion; label: string }[] = [
   { motion: "jump", label: "점프" },
   { motion: "squat", label: "앉았다 일어서기" },

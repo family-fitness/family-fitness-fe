@@ -14,19 +14,7 @@ import { useUpdateSupportMode } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
-/**
- * 참여 방식.
- *
- * 부모가 얼마나 같이 뛸지를 정한다. **다음 주 코치 편성이 여기서 갈린다.**
- *   CHEER_ONLY → 편성에서 빠지고 응원 역할
- *   WEEKEND    → 주말에 동반자
- *   FULL       → 매번 동반자
- *
- * 같이 못 뛰는 게 미안한 일이 되지 않게 쓴다. 야근하는 부모가 이 앱을 지우는
- * 가장 빠른 길은 "당신이 참여하지 않았습니다" 라고 말하는 것이다.
- *
- * CHILD 프로필에는 없는 개념이라 화면 자체를 보여주지 않는다.
- */
+/** 참여 방식. */
 const MODES: { value: SupportMode; title: string; description: string; art: string }[] = [
   {
     value: "CHEER_ONLY",

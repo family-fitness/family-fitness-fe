@@ -1,12 +1,6 @@
 /**
- * 백엔드 계약.
- *
- * 스키마는 `src/lib/api/schema.ts` 에 서버의 /v3/api-docs 에서 자동 생성한다.
- * 손으로 쓰지 않는다 — 백엔드가 DTO 를 바꾸면 여기서 타입 에러로 드러나야 한다.
- *
- *   npm run api:types      # 서버가 켜져 있을 때
- *
- * 이 파일은 생성된 스키마에 사람이 부르기 쉬운 이름을 붙이는 곳이다.
+ * 백엔드 계약. 타입은 손으로 쓰지 않는다 — `npm run api:types` 가 서버의
+ * /v3/api-docs 에서 `schema.ts` 를 만든다. 여기는 이름만 붙이는 곳이다.
  */
 import type { components } from "./schema";
 
@@ -37,19 +31,12 @@ export type FitnessFactor =
   "심폐지구력" | "근력" | "근지구력" | "유연성" | "민첩성" | "순발력" | "협응력" | "평형성";
 
 /**
- * 백분위 구간.
- *
- * 등급(1·2·3·참가)과 별개다. 화면에서는 band 를 쓴다 —
- * 등급은 서열이고 band 는 상태라서, 아이에게 보여도 낙인이 되지 않는다.
- * 코드값(strength 등)을 화면에 그대로 쓰지 않는다. BAND_COPY 를 쓴다.
+ * 백분위 구간. 등급은 서열이고 band 는 상태다 — 아이 화면에는 band 를 쓴다.
+ * 코드값(strength)을 그대로 쓰지 않고 `BAND_COPY` 를 거친다.
  */
 export type Band = "strength" | "steady" | "growth";
 
-/**
- * 국민체력100 등급. **1·2·3 과 「참가」뿐이다.** 4·5등급은 없다.
- * 규준에 못 미쳐도 「참가」다 — 「미달」이나 「하위」라는 말이 서버에서 오지 않는다.
- * 측정했지만 규준이 없는 연령(만 7~10세 일부)이면 null 이다.
- */
+/** 국민체력100 등급. **1·2·3 과 「참가」뿐이다.** 4·5등급은 없다. */
 export type Grade = NonNullable<S["ItemResult"]["grade"]>;
 export type ValueRange = S["ValueRange"];
 
@@ -126,14 +113,6 @@ export type WeeklyReport = S["WeeklyReportView"];
 
 /**
  * **주의 — 이 아래는 생성된 스키마가 아니다.**
- *
- * 백엔드에 아직 없는 엔드포인트의 제안 모양이다. 손으로 썼고, 목 서버가 이 모양으로
- * 응답한다. 서버에 올라오면 지우고 `schema.ts` 에서 가져온다.
- *
- * 왜 먼저 만드는가 — 칭찬을 보내는 길(POST cheers)은 있는데 **받은 걸 보는 길이 없다.**
- * 부모가 보낸 말을 아이가 못 보면 이 기능 자체가 성립하지 않는다.
- * 화면을 다 만들어 두고 요청해야 무엇이 필요한지 정확히 말할 수 있다.
- *
  * ▲ 요청: `GET /families/{familyId}/cheers?toProfileId=&size=`
  */
 export interface CheerLog {
@@ -152,12 +131,7 @@ export interface CheerLogList {
 
 /* ─── 오류 ─────────────────────────────────────────────────── */
 
-/**
- * 실패는 한 형태다. **봉투가 있다.**
- *   {"error": {"code": "...", "message": "..."}}
- *
- * message 는 개발자용이라 화면에 그대로 노출하지 않는다(api-contract §0).
- */
+/** 실패는 한 형태다. **봉투가 있다.** */
 export interface ApiErrorBody {
   error: { code: string; message: string };
 }

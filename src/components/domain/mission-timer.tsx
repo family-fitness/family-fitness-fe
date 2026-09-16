@@ -6,15 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useTimerStore } from "@/stores/timer-store";
 
-/**
- * 앱 안에서 도는 타이머.
- *
- * **서버가 진짜로 아는 두 값 중 하나다.** 시작과 끝 시각을 서버에 보내고,
- * 서버가 그 간격을 넘는 분은 잘라낸다. 그래서 "타이머로 확인됨" 이라고 쓸 수 있다.
- *
- * 남은 시간을 저장하지 않고 시작 시각만 저장한다 — 화면을 벗어나도, 앱이 꺼졌다
- * 켜져도 경과 시간이 맞는다.
- */
+/** 앱 안에서 도는 타이머. */
 export function MissionTimer({
   missionId,
   onFinish,

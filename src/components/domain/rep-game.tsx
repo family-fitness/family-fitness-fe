@@ -7,27 +7,10 @@ import { KidCharacter, type Motion } from "@/components/domain/kid-character";
 import { TapBurst, type TapBurstHandle } from "@/components/scene/tap-burst";
 import { cn } from "@/lib/utils";
 
-/**
- * 1분 운동 놀이.
- *
- * 기획서의 "게임처럼 재미있고" 를 실제 기능으로 옮긴 것이다. 페르소나 서준(초4)은
- * 영상을 끝까지 보는 것보다 **셀 수 있는 것**에 반응한다.
- *
- * 규칙은 하나다 — 1분 동안 동작을 하고 한 번 할 때마다 화면을 누른다.
- *
- * **정직하게 말한다.** 누른 횟수는 아이가 센 것이고 앱이 본 게 아니다.
- * 화면에 그렇게 적는다. 대신 **1분이라는 시간은 서버가 안다** — 끝나면
- * 타이머로 기록한다.
- *
- * 못 채워도 실패라고 하지 않는다. 몇 번 했든 "했다" 로 끝낸다.
- */
+/** 1분 운동 놀이. */
 const ROUND_SEC = 60;
 
-/*
-  배열을 컴포넌트 밖에 둔다.
-  안에서 만들면 누를 때마다 새 배열이 되고, TapBurst 의 effect 가 그걸 보고
-  WebGL 을 통째로 다시 만든다 — 누르는 족족 캔버스가 날아간다.
-*/
+/** 배열을 컴포넌트 밖에 둔다. */
 const BURST_ASSETS = ["deco/deco-star", "deco/deco-sparkle", "deco/deco-confetti"];
 
 const MOTIONS: { key: Motion; label: string; hint: string }[] = [
@@ -50,11 +33,7 @@ export function RepGame({
   const [reps, setReps] = useState(0);
 
   const burst = useRef<TapBurstHandle>(null);
-  /*
-    시작 시각과 실제로 걸린 초를 상태로 둔다.
-    렌더 중에 Date.now() 를 부르거나 ref 를 읽으면 같은 입력에 다른 결과가 나온다 —
-    React 19 가 그걸 막는다.
-  */
+  /** 시작 시각과 실제로 걸린 초를 상태로 둔다. */
   const [startedAt, setStartedAt] = useState(0);
   const [elapsed, setElapsed] = useState(0);
 

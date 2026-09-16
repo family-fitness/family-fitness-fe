@@ -18,17 +18,7 @@ import { useFamilyProfiles, useLatestFitnessTest } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { formatDate, withJosa } from "@/lib/utils";
 
-/**
- * 측정 결과.
- *
- * 화면의 주인공은 **레이더**다. 항목 하나의 등급보다 "어느 요인이 비어 있는가" 가
- * 다음 한 주를 정하기 때문이다.
- *
- * 문구는 서버가 준 것을 그대로 쓴다 — `topPercentText`, `disclaimer`.
- * 백분위에서 "상위 N%" 를 프론트가 다시 만들면 반올림이 서버와 달라진다.
- *
- * 등급은 1·2·3등급과 「참가」뿐이다. 「미달」·「하위」 같은 말을 만들어 붙이지 않는다.
- */
+/** 측정 결과. */
 export default function ResultPage() {
   const { profileId } = useParams<{ profileId: string }>();
   const { familyId, isChild } = useSession();
@@ -99,13 +89,7 @@ export default function ResultPage() {
       <Screen className="space-y-8">
         {radar.length >= 3 && <FactorRadar points={radar} />}
 
-        {/*
-          잘하는 것을 먼저 말한다. 약한 것부터 들이밀면 아이가 화면을 닫는다.
-
-          항목이 하나뿐이면 weakest 와 strongest 가 같은 요인으로 온다. 그대로 그리면
-          "잘하고 있는 영역: 유연성 / 지금 키우기 좋은 영역: 유연성" 이 나란히 서서
-          앞뒤가 안 맞는 화면이 된다.
-        */}
+        {/** 잘하는 것을 먼저 말한다. 약한 것부터 들이밀면 아이가 화면을 닫는다. */}
         {onlyOneFactor ? (
           <section className="flex items-center gap-3">
             <Illustration name={factorPose(strongest?.factor)} size={48} />

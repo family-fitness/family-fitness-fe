@@ -12,15 +12,7 @@ import { ApiError } from "@/lib/api/client";
 import { useCreateFamily } from "@/lib/api/queries";
 import { cn } from "@/lib/utils";
 
-/**
- * 가족 만들기 — 첫 화면.
- *
- * 만드는 사람은 **항상 PARENT 이자 owner** 다. 역할을 고르게 하지 않는다.
- * 생년월일로 서버가 연령대와 측정 가능 여부를 정한다.
- *
- * 한 번에 다 묻지 않는다. 나머지 가족은 다음 화면에서 더한다 —
- * 첫 화면에서 네 명의 생년월일을 묻는 앱은 거기서 닫힌다.
- */
+/** 가족 만들기 — 첫 화면. */
 export default function CreateFamilyPage() {
   const router = useRouter();
   const create = useCreateFamily();

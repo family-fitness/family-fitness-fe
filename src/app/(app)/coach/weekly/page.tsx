@@ -24,16 +24,7 @@ import { useSession } from "@/lib/session";
 import { useCoachRunId, useCoachStore } from "@/stores/coach-store";
 import { formatDate } from "@/lib/utils";
 
-/**
- * 이번 주 코치 제안 — 승인 게이트. ★
- *
- * **이 화면이 이 서비스의 핵심 주장이다.** 코치가 만든 것은 제안이고,
- * 보호자가 승인해야 비로소 미션이 된다. 승인 전에는 미션이 0건이다.
- *
- * 그래서 이 화면은 승인 전에 "미션" 이라는 단어를 한 번도 쓰지 않는다.
- * 승인 버튼은 서버가 canApprove 로 정한다 — 자녀 계정에는 버튼 자체가 없다.
- * 거절도 1급 동작이다. 사유를 받아 다음 주 편성에 넘긴다.
- */
+/** 이번 주 코치 제안 — 승인 게이트. ★ */
 export default function WeeklyCoachPage() {
   const router = useRouter();
   const { profile, familyId, isPending: sessionPending } = useSession();

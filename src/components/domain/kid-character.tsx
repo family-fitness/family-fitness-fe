@@ -7,25 +7,11 @@ import { ANIM_FRAMES } from "@/lib/anim-frames";
 import { cn } from "@/lib/utils";
 
 /**
- * 아이 캐릭터.
- *
- * **기본은 멈춰 있다.** 화면에 움직이는 캐릭터가 둘만 돼도 눈이 어디를 봐야 할지
- * 모르게 되고, 다섯이면 그냥 산만하다. 움직임은 "여기를 보라" 는 신호라서
- * 한 화면에 하나여야 뜻이 있다.
- *
- * `animate` 를 켜는 곳은 셋뿐이다.
- *   - 지금 눌러야 할 것 (오늘 할 운동 카드)
- *   - 지금 따라 해야 할 동작 (놀이 중)
- *   - 방금 해낸 순간 (다 했어요 · 칭찬)
- *
- * 멈춰 있을 때는 **그 동작이 가장 잘 읽히는 프레임**을 보여준다. 점프는 공중,
- * 앉기는 가장 낮은 자세다. 1번 프레임은 대개 그냥 서 있는 모습이라 밋밋하다.
- *
- * 프레임 수는 코드에 적지 않는다. 에셋을 넣을 때 파이프라인이 세어 둔 값을 쓴다
- * (`lib/anim-frames.ts`) — 3장을 8장으로 늘려도 코드는 그대로다.
+ * 아이 캐릭터. **기본은 멈춤** — 한 화면에 움직이는 것이 둘 이상이면 산만하다.
+ * 프레임 수는 `lib/anim-frames.ts` 에서 온다(에셋을 넣으면 자동으로 갱신).
  */
+/** still: 멈췄을 때 보여줄 지점(0~1). 그 동작이 가장 잘 읽히는 프레임 */
 const SEQUENCE = {
-  //                                     still: 멈췄을 때 보여줄 지점(0~1)
   idle: { move: "breathe", still: 0, fallback: "move/move-walk" },
   jump: { move: "jump", still: 0.5, fallback: "move/move-long-jump" },
   run: { move: "run", still: 0, fallback: "move/move-shuttle-run" },
@@ -61,10 +47,7 @@ export function KidCharacter({
   /** 멈춰 있을 때 보여줄 프레임 */
   const stillIndex = Math.min(frames - 1, Math.round(still * (frames - 1)));
 
-  /*
-    돌아간 횟수만 센다. 보여줄 프레임은 렌더에서 계산한다 —
-    멈출 때 effect 안에서 상태를 되돌리면 렌더가 한 번 더 돈다.
-  */
+  // 돌아간 횟수만 센다. 보여줄 프레임은 렌더에서 계산한다
   const [tick, setTick] = useState(0);
   useEffect(() => {
     if (!animate || frames < 2) return;
@@ -93,7 +76,6 @@ export function KidCharacter({
           fallback={fallback}
           size={size}
           className="char-frame absolute inset-0"
-          // 지금 프레임만 보이고 나머지는 숨는다. 넘어가는 건 CSS 가 이어 준다
           style={{ opacity: i === index ? 1 : 0 }}
         />
       ))}

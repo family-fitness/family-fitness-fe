@@ -4,15 +4,7 @@ import { useId } from "react";
 
 import type { PredictionPoint } from "@/lib/api/types";
 
-/**
- * 10년 뒤 분포.
- *
- * **중앙값만 그리면 확정된 미래처럼 보인다.** 그래서 p10~p90 음영을 반드시 같이
- * 그린다. 넓은 띠가 "이만큼 폭이 있다" 는 말을 글보다 잘 한다.
- *
- * 국민체력100 은 횡단면 조사다 — 같은 사람을 10년 따라간 자료가 아니라,
- * 지금 10년 위 연령대가 어디 있는지를 본 것이다. 이 그림은 그 분포다.
- */
+/** 10년 뒤 분포. */
 export function TrajectoryChart({
   points,
   unit,

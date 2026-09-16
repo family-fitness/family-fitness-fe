@@ -6,12 +6,7 @@ import { useMe } from "./api/queries";
 import type { ProfileSummary } from "./api/types";
 import { useSessionStore } from "@/stores/session-store";
 
-/**
- * 지금 보고 있는 프로필과 그 가족.
- *
- * 화면마다 "내 프로필 목록에서 현재 프로필 찾기" 를 반복하지 않도록 한 곳에 모았다.
- * 고른 적이 없으면 첫 프로필로 시작한다 — 대개 부모 본인이다.
- */
+/** 지금 보고 있는 프로필과 그 가족. */
 export function useSession() {
   const { data, isPending, error } = useMe();
   const currentProfileId = useSessionStore((s) => s.currentProfileId);

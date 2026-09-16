@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Illustration } from "@/components/ui/illustration";
 import { KidCharacter } from "@/components/domain/kid-character";
+import { Backdrop } from "@/components/ui/backdrop";
 import { ApiError } from "@/lib/api/client";
 import { useCreateProfile } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
@@ -16,19 +17,7 @@ import { useBodyStore } from "@/stores/body-store";
 import { useRoleStore } from "@/stores/role-store";
 import { cn, withJosa } from "@/lib/utils";
 
-/**
- * 아이 등록.
- *
- * 한 화면에 다 묻지 않고 세 걸음으로 나눈다. 첫 화면에 빈칸 다섯 개가 뜨면
- * 거기서 닫는다 — 특히 아이가 옆에서 기다리는 상황이면 더 그렇다.
- *
- *   1. 이름 · 생일 · 성별      → 또래를 정하려면 나이와 성별이 필요하다
- *   2. 키 · 몸무게             → 몸이 자라는 걸 보려면 시작점이 있어야 한다
- *   3. 다 됐어요               → 바로 아이 화면으로 보낸다
- *
- * 키·몸무게는 서버가 측정 회차에 얹어서만 받는다. 아직 측정 전이라
- * 저장소에 담아 뒀다가 첫 측정 때 같이 보낸다(`body-store`).
- */
+/** 아이 등록. */
 const STEPS = ["이름과 생일", "키와 몸무게", "다 됐어요"] as const;
 
 export default function AddChildPage() {
@@ -235,7 +224,8 @@ export default function AddChildPage() {
         )}
 
         {step === 2 && (
-          <section className="flex flex-col items-center py-6 text-center">
+          <section className="relative flex flex-col items-center py-6 text-center">
+            <Backdrop name="bg/bg-confetti" height={200} />
             <KidCharacter motion="cheer" size={170} animate />
             <h1 className="mt-3 text-2xl font-extrabold">{name} 등록 완료!</h1>
             <p className="text-ink-soft mt-2 text-sm leading-relaxed">

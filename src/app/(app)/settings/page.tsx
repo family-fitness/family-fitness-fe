@@ -10,15 +10,7 @@ import { useSession } from "@/lib/session";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRoleStore } from "@/stores/role-store";
 
-/**
- * 설정.
- *
- * **계정의 역할만 보면 안 된다.** 부모 계정으로 로그인한 폰을 아이가 아이 모드로
- * 쓰고 있을 수 있다. 그때 보호자 동의나 참여 방식을 열어 두면, 앞서 부모 화면에서
- * 막은 것을 여기로 돌아 들어오게 된다.
- *
- * 그래서 **계정이 부모이고 지금 부모 모드일 때만** 부모 설정을 낸다.
- */
+/** 설정. */
 export default function SettingsPage() {
   const router = useRouter();
   const { profile } = useSession();

@@ -18,13 +18,7 @@ import { formatDate, withJosa } from "@/lib/utils";
 
 /**
  * 아이 한 명 자세히 — 어떻게 자라고 있나.
- *
- * 부모가 궁금한 건 지금 점수만이 아니라 **달라졌는가**다.
- *
- * ▲ 그런데 서버가 지난 측정을 돌려주지 않는다. `/fitness-tests/latest` 뿐이라
- *   추이를 그릴 수 없다. 키·몸무게도 보낼 수는 있는데 읽을 수가 없다.
- *   백엔드에 둘 다 요청해 뒀고, 그때까지는 지금 값과 마지막으로 잰 날만 보여준다.
- *   없는 걸 있는 척 그리지 않는다.
+ * ▲ 서버가 `/fitness-tests/latest` 만 줘서 추이를 그릴 수 없다. 이력 조회를 요청해 뒀다.
  */
 export default function ChildDetailPage() {
   const { profileId } = useParams<{ profileId: string }>();

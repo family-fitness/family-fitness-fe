@@ -11,15 +11,7 @@ import { useToggleFavorite, useVideos } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
-/**
- * 영상 목록.
- *
- * **연령 안전 필터는 서버가 건다.** 라벨이 없는 영상은 아이 연령대 요청에
- * 아예 내려오지 않는다. 프론트에서 거르면 한 군데만 빠뜨려도 새어 나간다.
- *
- * 뱃지(조용함 · 좁은 공간 OK · 준비물 없음)도 서버가 만든다. 아파트에서 저녁에
- * 할 수 있는지가 실제로 볼지 말지를 가르는 정보라 제목만큼 크게 보여준다.
- */
+/** 영상 목록. */
 export function VideoList({
   list,
   empty,

@@ -17,13 +17,7 @@ export function targetCopy(metric: TargetMetric | string | undefined, value: num
   }
 }
 
-/**
- * 무엇으로 확인됐는지.
- *
- * **웹에서 서버가 진짜로 아는 건 영상 재생 진행률과 앱 내 타이머 둘뿐이다.**
- * 걸음수는 사람이 적은 값이라 "자동 인증" 이라고 쓰지 않는다. 그렇게 쓰면
- * 심사에서 무너지고, 무엇보다 사실이 아니다.
- */
+/** 무엇으로 확인됐는지. */
 export const VERIFIED_COPY: Record<VerifiedBy, string> = {
   VIDEO_PROGRESS: "영상 완주로 확인됨",
   TIMER: "타이머로 확인됨",
