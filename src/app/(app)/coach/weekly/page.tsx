@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { Illustration } from "@/components/ui/illustration";
 import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,7 +37,7 @@ export default function WeeklyCoachPage() {
   const runId = useCoachRunId(familyId);
   const setRunId = useCoachStore((s) => s.setRunId);
 
-  const { data: run, isPending: runPending } = useCoachRun(runId);
+  const { data: run, isPending: runPending, error: runError, refetch } = useCoachRun(runId);
   const start = useStartCoachRun(familyId ?? "");
   const approve = useApproveCoachRun(runId ?? "", familyId ?? "");
   const reject = useRejectCoachRun(runId ?? "");
@@ -54,6 +55,18 @@ export default function WeeklyCoachPage() {
     family?.profiles.find((p) => p.profileId === profileId)?.name ?? "가족";
 
   if (sessionPending) return <WeeklySkeleton />;
+
+  // 만든 제안이 있는데 불러오지 못한 것. 처음부터 다시 만들라고 하면 안 된다
+  if (runId && runError) {
+    return (
+      <>
+        <PageHeader title="이번 주 제안" back />
+        <Screen>
+          <ErrorState error={runError} onRetry={() => void refetch()} />
+        </Screen>
+      </>
+    );
+  }
 
   /* 아직 한 번도 돌리지 않았다 */
   if (!runId) {

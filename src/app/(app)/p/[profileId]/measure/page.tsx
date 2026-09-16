@@ -9,6 +9,7 @@ import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MeasureField } from "@/components/domain/measure-field";
@@ -31,11 +32,22 @@ export default function MeasurePage() {
   const { familyId, isPending: sessionPending } = useSession();
 
   /** 측정은 **주소의 프로필**에 저장한다. 로그인한 사람이 아니다. */
-  const { data: family, isPending: familyPending } = useFamilyProfiles(familyId);
+  const {
+    data: family,
+    isPending: familyPending,
+    error: familyError,
+    refetch: refetchFamily,
+  } = useFamilyProfiles(familyId);
   const profile = family?.profiles?.find((p) => p.profileId === profileId);
 
   // 항목은 연령대마다 다르다. 재는 사람의 연령대로 받는다
-  const { data: itemsData, isPending: itemsPending } = useFitnessItems(profile?.ageGroup);
+  // isLoading 이지 isPending 이 아니다. 연령대를 모르면 이 요청은 꺼져 있고,
+  // 꺼진 요청의 isPending 은 영영 true 라 화면이 뼈대인 채로 멈춘다
+  const {
+    data: itemsData,
+    isLoading: itemsLoading,
+    error: itemsError,
+  } = useFitnessItems(profile?.ageGroup);
 
   const [showEquipment, setShowEquipment] = useState(false);
   const [source, setSource] = useState<FitnessTestSource>("SELF_INPUT");
@@ -73,7 +85,20 @@ export default function MeasurePage() {
     ([key, v]) => key.startsWith("item_") && v !== "" && v !== undefined,
   ).length;
 
-  if (sessionPending || familyPending || itemsPending) return <MeasureSkeleton />;
+  if (sessionPending || familyPending || itemsLoading) return <MeasureSkeleton />;
+
+  // 못 불러온 것을 "그런 프로필 없음" 으로 그리지 않는다
+  const failure = familyError ?? itemsError;
+  if (failure) {
+    return (
+      <>
+        <PageHeader title="체력 측정" back />
+        <Screen>
+          <ErrorState error={failure} onRetry={() => void refetchFamily()} />
+        </Screen>
+      </>
+    );
+  }
 
   if (!profile) {
     return (

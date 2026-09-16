@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrajectoryChart } from "@/components/domain/trajectory-chart";
 import { errorMessage } from "@/lib/errors";
@@ -28,7 +29,12 @@ export default function FuturePage() {
   const { data: family } = useFamilyProfiles(familyId);
   const profile = family?.profiles?.find((p) => p.profileId === profileId);
 
-  const { data: latest, isPending: latestPending } = useLatestFitnessTest(profileId);
+  const {
+    data: latest,
+    isPending: latestPending,
+    error: latestError,
+    refetch,
+  } = useLatestFitnessTest(profileId);
   // 예측 응답에는 항목 코드만 있다. "50" 만 있으면 무슨 수치인지 알 수 없다
   const { data: items } = useFitnessItems(profile?.ageGroup);
   const create = useCreatePrediction(profileId);
@@ -56,6 +62,19 @@ export default function FuturePage() {
   }, [hasTest]);
 
   if (latestPending) return <FutureSkeleton />;
+
+  // 불러오지 못한 것과 아직 안 잰 것은 다르다. 섞으면 서버가 죽었을 때
+  // 이미 잰 사람에게 "측정을 먼저 해 주세요" 라고 말하게 된다
+  if (latestError) {
+    return (
+      <>
+        <PageHeader title="10년 뒤" back />
+        <Screen>
+          <ErrorState error={latestError} onRetry={() => void refetch()} />
+        </Screen>
+      </>
+    );
+  }
 
   if (!hasTest) {
     return (

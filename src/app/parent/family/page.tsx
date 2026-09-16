@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { PlainScreen } from "@/components/app-shell/screen";
+import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,11 +24,23 @@ import { cn } from "@/lib/utils";
 export default function MembersPage() {
   const router = useRouter();
   const { familyId, isPending: sessionPending } = useSession();
-  const { data: family, isPending } = useFamilyProfiles(familyId);
+  const { data: family, isPending, error, refetch } = useFamilyProfiles(familyId);
 
   const [adding, setAdding] = useState(false);
 
   if (sessionPending || isPending) return <MembersSkeleton />;
+
+  // 못 불러온 것을 "아무도 없음" 으로 그리면 가족이 사라진 것처럼 보인다
+  if (error) {
+    return (
+      <>
+        <AppBar backHref="/parent" title="가족" />
+        <PlainScreen className="pt-1">
+          <ErrorState error={error} onRetry={() => void refetch()} />
+        </PlainScreen>
+      </>
+    );
+  }
 
   const profiles = family?.profiles ?? [];
 

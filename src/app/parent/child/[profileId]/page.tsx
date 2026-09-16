@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { SectionTitle, Stage } from "@/components/app-shell/stage";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorRadar } from "@/components/domain/factor-radar";
@@ -24,9 +25,13 @@ export default function ChildDetailPage() {
   const { profileId } = useParams<{ profileId: string }>();
   const { familyId, isPending } = useSession();
 
-  const { data: family } = useFamilyProfiles(familyId);
+  const { data: family, error: familyError, refetch } = useFamilyProfiles(familyId);
   const { data: map } = useFitnessMap(familyId);
-  const { data: latest, isPending: latestPending } = useLatestFitnessTest(profileId);
+  const {
+    data: latest,
+    isPending: latestPending,
+    error: latestError,
+  } = useLatestFitnessTest(profileId);
   const body = useBodyStore((s) => s.byProfile[profileId]);
 
   const profile = family?.profiles?.find((p) => p.profileId === profileId);
@@ -39,6 +44,20 @@ export default function ChildDetailPage() {
         <Stage className="space-y-6">
           <Skeleton className="mx-auto size-44 rounded-full" />
           <Skeleton className="h-24 w-full rounded-2xl" />
+        </Stage>
+      </>
+    );
+  }
+
+  // 불러오지 못한 것과 없는 것은 다르다. 섞으면 서버가 죽었을 때
+  // 부모에게 "그런 아이는 없습니다" 라고 말하게 된다
+  const failure = familyError ?? latestError;
+  if (failure) {
+    return (
+      <>
+        <AppBar back title="자라는 기록" />
+        <Stage>
+          <ErrorState error={failure} onRetry={() => void refetch()} />
         </Stage>
       </>
     );
