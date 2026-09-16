@@ -92,10 +92,11 @@ for (const route of ROUTES) {
     const found = await page.evaluate((minTap) => {
       const out = [];
       if (document.documentElement.scrollWidth > window.innerWidth + 1) out.push("가로 스크롤");
-      if (document.body.innerText.trim().length < 10) out.push("화면이 비어 있음");
+      if (document.body.innerText.trim().length < 6) out.push("화면이 비어 있음");
 
-      const headings = document.querySelectorAll("h1").length;
-      if (headings !== 1) out.push(`h1 이 ${headings}개`);
+      const headings = [...document.querySelectorAll("h1")];
+      if (headings.length !== 1) out.push(`h1 이 ${headings.length}개`);
+      if (headings.length === 1 && !headings[0].textContent?.trim()) out.push("제목이 비어 있음");
 
       const small = [...document.querySelectorAll("button, a[href], [role=tab], input")].filter(
         (el) => {

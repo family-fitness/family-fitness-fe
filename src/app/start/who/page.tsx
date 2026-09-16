@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { Avatar } from "@/components/ui/illustration";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFamilyProfiles } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
@@ -35,9 +37,22 @@ export default function WhoPage() {
 
   return (
     <>
-      <AppBar back title="" />
+      <AppBar back />
       <Stage className="space-y-4">
-        <h2 className="text-[1.6rem] leading-tight font-extrabold">누구야?</h2>
+        <h1 className="text-[1.6rem] leading-tight font-extrabold">누구야?</h1>
+
+        {kids.length === 0 && (
+          <EmptyState
+            scene="first-body"
+            title="아직 등록된 아이가 없어요"
+            description="부모 화면에서 아이를 먼저 등록해 주세요."
+            action={
+              <Link href="/start/child" className="chip press chip-on">
+                아이 등록하기
+              </Link>
+            }
+          />
+        )}
 
         <ul className="space-y-3">
           {kids.map((kid) => (
