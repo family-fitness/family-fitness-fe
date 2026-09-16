@@ -78,7 +78,7 @@ function MemberRow({ profile }: { profile: ProfileSummary }) {
       <div className="flex items-center gap-3">
         <Avatar parts={avatarFor(profile)} size={44} />
         <div className="min-w-0 flex-1">
-          <p className="text-[0.95rem] font-bold">{profile.name}</p>
+          <p className="text-body font-bold">{profile.name}</p>
           <p className="text-faint mt-0.5 text-xs">
             {profile.ageGroup} · {profile.role === "PARENT" ? "부모" : "자녀"}
             {profile.measurable === false && " · 측정은 만 4세부터"}
@@ -136,7 +136,7 @@ function MemberRow({ profile }: { profile: ProfileSummary }) {
         </div>
       )}
       {code && (
-        <p className="text-faint mt-1 text-[0.7rem]">
+        <p className="text-faint text-caption mt-1">
           7일 안에 써야 해요. 새로 만들면 이전 코드는 바로 못 쓰게 돼요.
         </p>
       )}

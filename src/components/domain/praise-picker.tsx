@@ -115,7 +115,7 @@ function PraiseForm({
     <div className="space-y-5">
       <div className="flex items-center gap-3">
         <KidCharacter motion="cheer" size={72} />
-        <p className="bg-signal-soft text-signal-deep min-w-0 flex-1 rounded-2xl rounded-bl-md px-4 py-3 text-[0.95rem] leading-relaxed font-bold">
+        <p className="bg-signal-soft text-signal-deep text-body min-w-0 flex-1 rounded-2xl rounded-bl-md px-4 py-3 leading-relaxed font-bold">
           {message}
         </p>
       </div>

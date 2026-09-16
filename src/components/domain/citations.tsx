@@ -22,7 +22,7 @@ export function Citations({
   if (!items || items.length === 0) {
     return (
       <p className={className}>
-        <span className="text-faint text-[0.7rem]">
+        <span className="text-faint text-caption">
           근거를 불러오지 못했어요. 이 답변은 참고만 해 주세요.
         </span>
       </p>
@@ -35,7 +35,7 @@ export function Citations({
         const label = c.sourceLabel ?? c.label ?? "출처";
         return (
           <li key={c.index ?? i} className="flex gap-1.5 py-1">
-            <span className="text-signal shrink-0 text-[0.7rem] font-extrabold tabular-nums">
+            <span className="text-signal text-caption shrink-0 font-extrabold tabular-nums">
               [{c.index ?? i + 1}]
             </span>
             <span className="min-w-0">
@@ -44,17 +44,17 @@ export function Citations({
                   href={c.url}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="text-ink-soft inline-flex items-start gap-1 text-[0.7rem] leading-relaxed underline underline-offset-2"
+                  className="text-ink-soft text-caption inline-flex items-start gap-1 leading-relaxed underline underline-offset-2"
                 >
                   {label}
                   <ExternalLink className="mt-0.5 size-2.5 shrink-0" aria-hidden />
                 </a>
               ) : (
-                <span className="text-ink-soft text-[0.7rem] leading-relaxed">{label}</span>
+                <span className="text-ink-soft text-caption leading-relaxed">{label}</span>
               )}
               {/* 인용한 대목. 제목만 있으면 무엇을 근거로 했는지 알 수 없다 */}
               {c.excerpt && c.excerpt !== label && (
-                <span className="text-faint mt-0.5 block text-[0.68rem] leading-relaxed">
+                <span className="text-faint text-micro mt-0.5 block leading-relaxed">
                   “{c.excerpt}”
                 </span>
               )}

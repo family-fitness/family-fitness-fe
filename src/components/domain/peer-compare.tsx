@@ -75,9 +75,7 @@ export function PeerCompare({
           className="border-signal bg-paper absolute top-1/2 grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2"
           style={{ left: `${score}%` }}
         >
-          <span className="text-signal-deep text-[0.7rem] font-extrabold tabular-nums">
-            {score}
-          </span>
+          <span className="text-signal-deep text-caption font-extrabold tabular-nums">{score}</span>
         </span>
       </div>
 

@@ -44,8 +44,20 @@
 
   /* 서체 */
   --font-sans: "Pretendard Variable", Pretendard, system-ui, sans-serif;
-  --font-board: var(--font-bebas), "Pretendard Variable", sans-serif;
-  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+  /* 숫자 전용. 본문과 같은 서체를 쓰면 점수가 글에 묻힌다 */
+  --font-num: var(--font-num-face), "Pretendard Variable", sans-serif;
+
+  /*
+    글자 크기. 임의값(text-[0.7rem])을 흩뿌리면 같은 뜻인데 화면마다 다른 크기가 된다.
+    micro   보조 설명, 날짜
+    caption 라벨, 뱃지
+    body    본문
+    lead    줄의 제목
+  */
+  --text-micro: 0.66rem;
+  --text-caption: 0.72rem;
+  --text-body: 0.95rem;
+  --text-lead: 1.04rem;
 
   --radius-card: 16px;
   --width-phone: 30rem;
@@ -134,15 +146,18 @@ body {
   border-bottom: 1px solid var(--color-line);
 }
 /* 전광판 숫자 */
+/* 크게 뜨는 숫자 — 점수, 개수 */
 .board-num {
-  font-family: var(--font-board);
-  letter-spacing: 0.01em;
-  line-height: 0.85;
+  font-family: var(--font-num);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 0.9;
 }
+/* 줄 맞춰 읽는 숫자 — 시간, 퍼센트 */
 .tabular {
-  font-family: var(--font-mono);
+  font-family: var(--font-num);
+  font-weight: 500;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
 }
 
 /* ── 섹션 제목: 제목 ──── 영문라벨 ── */

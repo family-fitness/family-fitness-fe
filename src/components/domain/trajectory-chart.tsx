@@ -92,7 +92,7 @@ export function TrajectoryChart({
               y={y(v)}
               textAnchor="end"
               dominantBaseline="middle"
-              className="fill-faint text-[0.6rem] tabular-nums"
+              className="fill-faint text-micro tabular-nums"
             >
               {Math.round(v)}
             </text>
@@ -143,7 +143,7 @@ export function TrajectoryChart({
           x={padding.left}
           y={height - 8}
           textAnchor="start"
-          className="fill-ink-soft text-[0.62rem] font-bold"
+          className="fill-ink-soft text-micro font-bold"
         >
           지금
         </text>
@@ -151,13 +151,13 @@ export function TrajectoryChart({
           x={width - padding.right}
           y={height - 8}
           textAnchor="end"
-          className="fill-ink-soft text-[0.62rem] font-bold"
+          className="fill-ink-soft text-micro font-bold"
         >
           {maxYear}년 위 연령대
         </text>
       </svg>
 
-      <figcaption className="text-faint mt-1 text-[0.68rem] leading-relaxed">
+      <figcaption className="text-faint text-micro mt-1 leading-relaxed">
         진한 선이 가운데(50%), 옅은 띠가 열에 여덟이 들어가는 범위(10~90%) 예요.
       </figcaption>
     </figure>

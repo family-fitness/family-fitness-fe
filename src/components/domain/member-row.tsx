@@ -18,7 +18,7 @@ export function MemberRow({ member }: { member: FitnessMapMember }) {
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-1.5">
-          <span className="text-[0.95rem] font-extrabold">{name}</span>
+          <span className="text-body font-extrabold">{name}</span>
           <span className="text-faint text-xs font-semibold">
             {ageGroup} · {role === "PARENT" ? "부모" : "자녀"}
           </span>
@@ -29,7 +29,7 @@ export function MemberRow({ member }: { member: FitnessMapMember }) {
             {/* 서버가 만든 문장을 그대로 쓴다. 우리가 다시 조립하지 않는다 */}
             <p className="text-ink-soft mt-0.5 truncate text-sm">{headline}</p>
             {latest?.testedOn && (
-              <p className="text-faint mt-0.5 text-[0.7rem]">{formatDate(latest.testedOn)} 측정</p>
+              <p className="text-faint text-caption mt-0.5">{formatDate(latest.testedOn)} 측정</p>
             )}
           </>
         ) : (

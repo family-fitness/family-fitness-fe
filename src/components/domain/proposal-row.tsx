@@ -27,7 +27,7 @@ export function ProposalRow({
           {index + 1}
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-[1.02rem] leading-snug font-extrabold">{proposal.title}</h3>
+          <h3 className="text-lead leading-snug font-extrabold">{proposal.title}</h3>
           <p className="text-ink-soft mt-0.5 text-xs font-semibold">
             {targetCopy(proposal.targetMetric, proposal.targetValue)}
           </p>
@@ -43,7 +43,7 @@ export function ProposalRow({
           {proposal.participants.map((p) => (
             <li
               key={p.profileId}
-              className="border-line text-ink-soft inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[0.7rem] font-bold"
+              className="border-line text-ink-soft text-caption inline-flex items-center gap-1 rounded-lg border px-2 py-1 font-bold"
             >
               {nameOf(p.profileId)}
               <span className="text-faint font-semibold">{p.coachRole}</span>
@@ -69,7 +69,7 @@ export function ProposalRow({
                 {video.badges.map((b) => (
                   <span
                     key={b}
-                    className="bg-sub text-ink-soft rounded px-1.5 py-0.5 text-[0.65rem] font-bold"
+                    className="bg-sub text-ink-soft text-micro rounded px-1.5 py-0.5 font-bold"
                   >
                     {b}
                   </span>

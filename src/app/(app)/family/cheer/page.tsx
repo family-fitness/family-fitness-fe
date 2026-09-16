@@ -83,7 +83,7 @@ export default function CheerPage() {
                     )}
                   >
                     <Avatar parts={avatarFor(p)} size={52} />
-                    <span className="truncate text-[0.72rem] font-bold">{p.name}</span>
+                    <span className="text-caption truncate font-bold">{p.name}</span>
                   </button>
                 </li>
               );
@@ -127,7 +127,7 @@ export default function CheerPage() {
             }}
             placeholder="직접 쓰기"
             aria-label="직접 쓴 응원"
-            className="border-line focus:border-signal placeholder:text-faint mt-2 h-12 w-full rounded-xl border bg-transparent px-4 text-[0.95rem] focus:outline-none"
+            className="border-line focus:border-signal placeholder:text-faint text-body mt-2 h-12 w-full rounded-xl border bg-transparent px-4 focus:outline-none"
           />
         </section>
 

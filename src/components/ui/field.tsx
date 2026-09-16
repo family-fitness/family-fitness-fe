@@ -13,7 +13,7 @@ export function Field({
   return (
     <label className="block">
       <span className="text-ink-soft block text-xs font-bold">{label}</span>
-      {hint && <span className="text-faint mt-0.5 block text-[0.7rem]">{hint}</span>}
+      {hint && <span className="text-faint text-caption mt-0.5 block">{hint}</span>}
       <span className="mt-1.5 block">{children}</span>
     </label>
   );

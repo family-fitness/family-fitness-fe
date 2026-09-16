@@ -99,7 +99,7 @@ export function ScoreDial({
                 {/* 링이 차오르는 동안 숫자도 같이 올라간다 */}
                 <CountUp to={score} />
               </p>
-              <p className={cn("text-faint mt-1", kid ? "text-xs" : "text-[0.7rem]")}>
+              <p className={cn("text-faint mt-1", kid ? "text-xs" : "text-caption")}>
                 또래 평균 50
               </p>
             </>

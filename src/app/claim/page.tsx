@@ -99,7 +99,7 @@ function ClaimContent() {
         </Button>
       </div>
 
-      <p className="text-faint text-center text-[0.7rem] leading-relaxed">
+      <p className="text-faint text-caption text-center leading-relaxed">
         코드는 만든 지 7일 동안 쓸 수 있어요. 지났다면 가족에게 새로 받아 주세요.
       </p>
     </PlainScreen>

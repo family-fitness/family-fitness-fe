@@ -233,7 +233,7 @@ function ScoreBasis({ profileId }: { profileId: string | undefined }) {
   if (count === 0 || count >= 3) return null;
 
   return (
-    <p className="text-faint mt-1.5 text-center text-[0.7rem] leading-relaxed">
+    <p className="text-faint text-caption mt-1.5 text-center leading-relaxed">
       지금은 {count}개 항목으로 낸 점수예요. 더 재면 또래 비교가 정확해져요.
     </p>
   );
@@ -272,7 +272,7 @@ function HomeLink({
           {description && <span className="text-ink-soft mt-0.5 block text-xs">{description}</span>}
         </span>
         {badge && (
-          <span className="bg-signal shrink-0 rounded-full px-2.5 py-1 text-[0.68rem] font-extrabold text-white">
+          <span className="bg-signal text-micro shrink-0 rounded-full px-2.5 py-1 font-extrabold text-white">
             {badge}
           </span>
         )}

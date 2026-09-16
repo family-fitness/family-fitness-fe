@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Bebas_Neue, IBM_Plex_Mono } from "next/font/google";
+import { Fredoka } from "next/font/google";
 
 import { DesktopDecor } from "@/components/app-shell/desktop-decor";
 import { MswProvider } from "@/providers/msw-provider";
@@ -7,14 +7,16 @@ import { QueryProvider } from "@/providers/query-provider";
 
 import "./globals.css";
 
-// 전광판 숫자. 기록이 뜨는 자리에만 쓴다
-const bebas = Bebas_Neue({ weight: "400", subsets: ["latin"], variable: "--font-bebas" });
+/*
+  숫자가 뜨는 자리에만 쓴다. 점수·개수·시간.
 
-// 표 안에서 자릿수를 맞춰야 하는 숫자
-const plexMono = IBM_Plex_Mono({
-  weight: ["400", "500"],
+  전에 쓰던 Bebas Neue 는 좁고 각진 대문자 서체라 "경기장 전광판" 느낌이었다.
+  아이와 부모가 쓰는 앱이 됐으니 둥근 쪽이 맞는다 — 그림의 둥근 외곽선과도 붙는다.
+*/
+const fredoka = Fredoka({
+  weight: ["500", "600"],
   subsets: ["latin"],
-  variable: "--font-plex-mono",
+  variable: "--font-num-face",
 });
 
 export const metadata: Metadata = {
@@ -36,7 +38,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" className={`h-full ${bebas.variable} ${plexMono.variable}`}>
+    <html lang="ko" className={`h-full ${fredoka.variable}`}>
       <body className="min-h-full antialiased">
         <MswProvider>
           <QueryProvider>

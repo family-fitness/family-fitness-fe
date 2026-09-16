@@ -137,7 +137,7 @@ export function FactorRadar({
               y={y}
               textAnchor={anchor}
               dominantBaseline="middle"
-              className="fill-ink-soft text-[0.68rem] font-bold"
+              className="fill-ink-soft text-micro font-bold"
             >
               {p.factor}
             </text>
@@ -145,7 +145,7 @@ export function FactorRadar({
         })}
       </svg>
 
-      <p className="text-faint mt-1 text-[0.68rem]">
+      <p className="text-faint text-micro mt-1">
         점선이 또래 평균이에요{hasGap && " · 기준이 없는 요인은 비워 뒀어요"}
       </p>
     </div>

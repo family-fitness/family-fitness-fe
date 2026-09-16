@@ -26,7 +26,7 @@ export function LinkRow({
       <NavLink href={href} className="press flex items-center gap-3 py-4">
         <Illustration name={art} size={40} className="shrink-0" />
         <span className="min-w-0 flex-1">
-          <span className="block text-[0.95rem] font-bold">{title}</span>
+          <span className="text-body block font-bold">{title}</span>
           {description && (
             <span className="text-ink-soft mt-0.5 block text-sm leading-relaxed">
               {description}

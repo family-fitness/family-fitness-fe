@@ -34,7 +34,7 @@ export function MissionRow({ mission }: { mission: Mission }) {
           </span>
 
           <div className="min-w-0 flex-1">
-            <h3 className="text-[0.98rem] leading-snug font-extrabold">{mission.title}</h3>
+            <h3 className="text-lead leading-snug font-extrabold">{mission.title}</h3>
             <p className="text-ink-soft mt-0.5 text-xs font-semibold">
               {targetCopy(mission.targetMetric, mission.targetValue)}
               {mission.endDate && (
@@ -61,7 +61,7 @@ export function ParticipantProgress({ participant }: { participant: MissionParti
     <li>
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-[0.8rem] font-bold">{participant.name}</span>
-        <span className="tabular text-faint text-[0.7rem]">{percent}%</span>
+        <span className="tabular text-faint text-caption">{percent}%</span>
       </div>
       <div className="record-rail mt-1">
         <span className="record-fill" style={{ width: `${percent}%` }} aria-hidden />
@@ -75,18 +75,18 @@ export function ParticipantProgress({ participant }: { participant: MissionParti
 export function VerifyLabel({ participant }: { participant: MissionParticipant }) {
   if (participant.needsGuardianCheck) {
     return (
-      <p className="text-signal-deep mt-1 text-[0.7rem] font-bold">
+      <p className="text-signal-deep text-caption mt-1 font-bold">
         목표에 닿았어요 · 부모 확인이 남았어요
       </p>
     );
   }
   if (!participant.verifiedBy) {
-    return <p className="text-faint mt-1 text-[0.7rem]">아직 기록이 없어요</p>;
+    return <p className="text-faint text-caption mt-1">아직 기록이 없어요</p>;
   }
   return (
     <p
       className={cn(
-        "mt-1 text-[0.7rem]",
+        "text-caption mt-1",
         serverKnows(participant.verifiedBy) ? "text-done font-bold" : "text-ink-soft",
       )}
     >

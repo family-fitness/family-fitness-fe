@@ -95,7 +95,7 @@ export default function FuturePage() {
       <Screen className="space-y-6">
         {/* 무엇을 보는 그림인지 먼저 말한다. 그림부터 보면 예언으로 읽힌다 */}
         <div>
-          <p className="text-[0.95rem] leading-relaxed font-bold">
+          <p className="text-body leading-relaxed font-bold">
             지금과 같은 조건의 10년 위 연령대는 여기 있습니다.
           </p>
           {item && (
@@ -125,7 +125,7 @@ export default function FuturePage() {
                       {last.p50}
                       <span className="text-ink-soft ml-0.5 text-sm font-bold">{unit}</span>
                     </span>
-                    <span className="text-faint block text-[0.7rem]">
+                    <span className="text-faint text-caption block">
                       열에 여덟은 {last.p10}~{last.p90}
                       {unit}
                     </span>
@@ -136,12 +136,12 @@ export default function FuturePage() {
 
             {/* 서버가 준 고지. 접거나 줄이지 않는다 */}
             {result.notice && (
-              <p className="border-line text-ink-soft rounded-xl border p-4 text-[0.78rem] leading-relaxed">
+              <p className="border-line text-ink-soft text-caption rounded-xl border p-4 leading-relaxed">
                 {result.notice}
               </p>
             )}
 
-            <p className="text-faint text-[0.7rem] leading-relaxed">
+            <p className="text-faint text-caption leading-relaxed">
               국민체력100은 여러 사람을 한 시점에 조사한 자료예요. 한 사람을 10년 동안 따라간 기록이
               아니라서, 개인이 앞으로 어떻게 변할지는 알 수 없어요.
             </p>

@@ -64,7 +64,7 @@ export default function ConsentPage() {
           </ul>
         )}
 
-        <p className="text-faint text-[0.7rem] leading-relaxed">
+        <p className="text-faint text-caption leading-relaxed">
           동의를 철회해도 이미 저장된 측정 기록은 지워지지 않아요. 기록 삭제가 필요하면 가족
           설정에서 프로필을 지워 주세요.
         </p>
@@ -101,7 +101,7 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
       <div className="flex items-center gap-3">
         <Avatar parts={avatarFor(child)} size={44} />
         <div className="min-w-0 flex-1">
-          <p className="text-[0.95rem] font-bold">{child.name}</p>
+          <p className="text-body font-bold">{child.name}</p>
           <p className={cn("mt-0.5 text-xs font-semibold", given ? "text-done" : "text-ink-soft")}>
             {given ? "동의함 · 측정을 저장할 수 있어요" : "동의 없음 · 측정을 저장할 수 없어요"}
           </p>

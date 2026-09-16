@@ -56,7 +56,7 @@ export function AppBar({
     >
       {showBack ? backButton : <span className="w-2" />}
 
-      <span className="min-w-0 flex-1 truncate px-1 text-[0.95rem] font-bold">{title}</span>
+      <span className="text-body min-w-0 flex-1 truncate px-1 font-bold">{title}</span>
 
       {right}
     </header>

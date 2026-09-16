@@ -24,7 +24,7 @@ const button = cva(
       },
       size: {
         sm: "h-9 rounded-lg px-3.5 text-sm",
-        md: "h-11 rounded-xl px-5 text-[0.95rem]",
+        md: "h-11 rounded-xl px-5 text-body",
         block: "h-13 w-full rounded-xl px-6 text-base",
         kid: "h-16 w-full rounded-2xl px-6 text-xl",
       },

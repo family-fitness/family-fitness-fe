@@ -55,7 +55,7 @@ export default function ResultPage() {
             action={
               <Link
                 href={`/p/${profileId}/measure`}
-                className="press bg-signal mt-1 rounded-xl px-5 py-3 text-[0.95rem] font-bold text-white"
+                className="press bg-signal text-body mt-1 rounded-xl px-5 py-3 font-bold text-white"
               >
                 측정 입력하기
               </Link>
@@ -94,8 +94,8 @@ export default function ResultPage() {
           <section className="flex items-center gap-3">
             <Illustration name={factorPose(strongest?.factor)} size={48} />
             <div className="min-w-0">
-              <p className="text-faint text-[0.7rem] font-bold">지금 재 본 영역</p>
-              <p className="text-[0.95rem] font-bold">{strongest?.factor}</p>
+              <p className="text-faint text-caption font-bold">지금 재 본 영역</p>
+              <p className="text-body font-bold">{strongest?.factor}</p>
               <p className="text-ink-soft mt-0.5 text-xs">
                 항목을 더 재면 강한 영역과 키울 영역이 갈려요
               </p>
@@ -108,8 +108,8 @@ export default function ResultPage() {
                 <div className="flex items-center gap-3 py-3">
                   <Illustration name={factorPose(strongest.factor)} size={48} />
                   <div className="min-w-0">
-                    <p className="text-faint text-[0.7rem] font-bold">잘하고 있는 영역</p>
-                    <p className="text-[0.95rem] font-bold">{strongest.factor}</p>
+                    <p className="text-faint text-caption font-bold">잘하고 있는 영역</p>
+                    <p className="text-body font-bold">{strongest.factor}</p>
                   </div>
                 </div>
               )}
@@ -117,8 +117,8 @@ export default function ResultPage() {
                 <div className="flex items-center gap-3 py-3">
                   <Illustration name={factorPose(weakest.factor)} size={48} />
                   <div className="min-w-0">
-                    <p className="text-faint text-[0.7rem] font-bold">지금 키우기 좋은 영역</p>
-                    <p className="text-[0.95rem] font-bold">{weakest.factor}</p>
+                    <p className="text-faint text-caption font-bold">지금 키우기 좋은 영역</p>
+                    <p className="text-body font-bold">{weakest.factor}</p>
                   </div>
                 </div>
               )}
@@ -193,7 +193,7 @@ export default function ResultPage() {
 
         {/* 서버가 준 고지 문구. 줄이거나 접지 않는다 */}
         {test.disclaimer && (
-          <p className="text-faint text-[0.7rem] leading-relaxed">{test.disclaimer}</p>
+          <p className="text-faint text-caption leading-relaxed">{test.disclaimer}</p>
         )}
       </Screen>
     </>

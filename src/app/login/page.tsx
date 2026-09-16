@@ -98,7 +98,7 @@ function LoginContent() {
 
         {process.env.NODE_ENV === "development" && (
           <div className="border-line space-y-2 rounded-xl border p-3">
-            <p className="text-faint text-[0.7rem] font-bold">개발용 · 구글 없이 들어가기</p>
+            <p className="text-faint text-caption font-bold">개발용 · 구글 없이 들어가기</p>
             {DEV_ACCOUNTS.map((account) => (
               <Button
                 key={account.id}
@@ -124,7 +124,7 @@ function LoginContent() {
         )}
       </div>
 
-      <p className="text-faint text-center text-[0.7rem] leading-relaxed">
+      <p className="text-faint text-caption text-center leading-relaxed">
         국민체력100 측정 데이터를 바탕으로 한 참고 정보입니다. 질병의 진단·치료를 위한 것이
         아닙니다.
       </p>

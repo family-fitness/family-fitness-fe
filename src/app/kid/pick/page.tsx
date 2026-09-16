@@ -85,7 +85,7 @@ export default function PickPage() {
                       cycle={1400}
                     />
                     <span className="min-w-0 flex-1">
-                      <span className="line-clamp-2 text-[1.05rem] leading-snug font-extrabold">
+                      <span className="text-lead line-clamp-2 leading-snug font-extrabold">
                         {video.title}
                       </span>
                       {video.badges && video.badges.length > 0 && (
@@ -93,7 +93,7 @@ export default function PickPage() {
                           {video.badges.map((b) => (
                             <span
                               key={b}
-                              className="bg-sub text-ink-soft rounded px-1.5 py-0.5 text-[0.65rem] font-bold"
+                              className="bg-sub text-ink-soft text-micro rounded px-1.5 py-0.5 font-bold"
                             >
                               {b}
                             </span>

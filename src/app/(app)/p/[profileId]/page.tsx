@@ -52,7 +52,7 @@ export default function ProfilePage() {
         <div className="flex items-center gap-4">
           <Avatar parts={avatarFor(profile)} size={72} />
           <div className="min-w-0">
-            <p className="text-[1.05rem] font-extrabold">{profile.name}</p>
+            <p className="text-lead font-extrabold">{profile.name}</p>
             <p className="text-ink-soft mt-0.5 text-sm">
               {profile.ageGroup} · {profile.role === "PARENT" ? "부모" : "자녀"}
             </p>

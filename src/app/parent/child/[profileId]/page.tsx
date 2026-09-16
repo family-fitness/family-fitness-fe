@@ -91,7 +91,7 @@ export default function ChildDetailPage() {
           </dl>
 
           {/* 없는 걸 있는 척 그리지 않는다 */}
-          <p className="text-faint mt-3 text-[0.7rem] leading-relaxed">
+          <p className="text-faint text-caption mt-3 leading-relaxed">
             지난 기록을 나란히 보여드리려면 서버에 기록이 쌓여야 해요. 준비되는 대로 여기에 변화
             그래프가 생깁니다.
           </p>

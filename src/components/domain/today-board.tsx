@@ -80,7 +80,7 @@ export function TodayBoard({
                   <Check className="size-4" strokeWidth={3} />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[0.95rem] leading-snug font-bold">{cheer.message}</p>
+                  <p className="text-body leading-snug font-bold">{cheer.message}</p>
                   <p
                     className={cn(
                       "mt-0.5 text-xs leading-relaxed",
@@ -136,7 +136,7 @@ export function TodayBoard({
                     <Check className="size-4" strokeWidth={3} />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[0.95rem] font-bold">{mission.title}</p>
+                    <p className="text-body font-bold">{mission.title}</p>
                     <p className="text-ink-soft mt-0.5 text-xs">
                       {targetCopy(mission.targetMetric, mission.targetValue)}
                       <span className="text-faint"> · {percent}%</span>

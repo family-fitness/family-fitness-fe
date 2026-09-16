@@ -62,10 +62,10 @@ export default function KidPraisePage() {
         <ul className="space-y-3">
           {cheers.map((cheer) => (
             <li key={cheer.cheerId}>
-              <p className="bg-signal-soft text-signal-deep rounded-2xl rounded-bl-md px-4 py-3.5 text-[0.98rem] leading-relaxed font-bold">
+              <p className="bg-signal-soft text-signal-deep text-lead rounded-2xl rounded-bl-md px-4 py-3.5 leading-relaxed font-bold">
                 {cheer.message}
               </p>
-              <p className="text-faint mt-1 ml-1 text-[0.68rem]">
+              <p className="text-faint text-micro mt-1 ml-1">
                 {cheer.fromName} · {formatDate(cheer.createdAt.slice(0, 10))}
               </p>
             </li>

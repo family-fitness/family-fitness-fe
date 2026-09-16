@@ -75,7 +75,7 @@ function VideoRow({ video }: { video: Video }) {
             </span>
           )}
           {video.durationSec != null && (
-            <span className="bg-signal-deep/85 absolute right-1 bottom-1 rounded px-1 py-0.5 text-[0.6rem] font-bold text-white tabular-nums">
+            <span className="bg-signal-deep/85 text-micro absolute right-1 bottom-1 rounded px-1 py-0.5 font-bold text-white tabular-nums">
               {formatDuration(video.durationSec)}
             </span>
           )}
@@ -95,7 +95,7 @@ function VideoRow({ video }: { video: Video }) {
             href={video.url ?? "#"}
             target="_blank"
             rel="noreferrer noopener"
-            className="text-[0.88rem] leading-snug font-bold"
+            className="text-body leading-snug font-bold"
           >
             {video.title}
           </Link>
@@ -105,7 +105,7 @@ function VideoRow({ video }: { video: Video }) {
               {video.badges.map((b) => (
                 <li
                   key={b}
-                  className="bg-sub text-ink-soft rounded px-1.5 py-0.5 text-[0.65rem] font-bold"
+                  className="bg-sub text-ink-soft text-micro rounded px-1.5 py-0.5 font-bold"
                 >
                   {b}
                 </li>
@@ -113,7 +113,7 @@ function VideoRow({ video }: { video: Video }) {
             </ul>
           )}
 
-          <p className="text-faint mt-1 text-[0.68rem]">
+          <p className="text-faint text-micro mt-1">
             {done ? "완주했어요" : watched > 0 ? `${watched}%까지 봤어요` : ageRange(video)}
           </p>
         </div>

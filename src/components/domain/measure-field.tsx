@@ -26,11 +26,11 @@ export function MeasureField({
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-1.5">
-          <label htmlFor={item.itemCode} className="text-[0.95rem] font-bold">
+          <label htmlFor={item.itemCode} className="text-body font-bold">
             {item.itemLabel ?? item.itemName}
           </label>
           {item.equipment && (
-            <span className="text-faint inline-flex items-center gap-1 text-[0.7rem]">
+            <span className="text-faint text-caption inline-flex items-center gap-1">
               {equipment && <Illustration name={equipment} size={16} />}
               {item.equipment}
             </span>

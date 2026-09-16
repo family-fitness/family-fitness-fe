@@ -98,7 +98,7 @@ export default function SupportModePage() {
                 >
                   <Illustration name={mode.art} size={44} className="mt-0.5 shrink-0" />
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[0.95rem] font-bold">{mode.title}</span>
+                    <span className="text-body block font-bold">{mode.title}</span>
                     <span className="text-ink-soft mt-0.5 block text-sm leading-relaxed">
                       {mode.description}
                     </span>
@@ -128,7 +128,7 @@ export default function SupportModePage() {
         )}
 
         {current === "CHEER_ONLY" && (
-          <p className="text-faint text-[0.7rem] leading-relaxed">
+          <p className="text-faint text-caption leading-relaxed">
             응원 역할일 때도 미션 참여자 명단에는 남아요. 가족이 함께한 기록으로 남습니다.
           </p>
         )}

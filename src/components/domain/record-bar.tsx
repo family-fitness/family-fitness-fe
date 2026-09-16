@@ -56,7 +56,7 @@ export function RecordRow({
         <span className="tabular text-ink-soft text-sm">{value}</span>
       </div>
       <RecordBar percentile={percentile} label={caption} delay={delay} />
-      <p className="text-faint text-[0.7rem]">{caption ?? "이 나이대는 아직 비교 기준이 없어요"}</p>
+      <p className="text-faint text-caption">{caption ?? "이 나이대는 아직 비교 기준이 없어요"}</p>
     </div>
   );
 }

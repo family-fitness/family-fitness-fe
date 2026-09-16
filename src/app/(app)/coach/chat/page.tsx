@@ -82,7 +82,7 @@ export default function CoachChatPage() {
         {turns.length === 0 ? (
           <div className="flex flex-col items-center py-6 text-center">
             <Illustration name="char/face-cheer" size={96} />
-            <p className="mt-3 text-[0.95rem] font-bold">
+            <p className="text-body mt-3 font-bold">
               {isChild ? "운동에 대해 물어봐" : "운동에 대해 물어보세요"}
             </p>
             <p className="text-ink-soft mt-1 text-sm leading-relaxed">
@@ -108,12 +108,12 @@ export default function CoachChatPage() {
             {turns.map((turn, i) => (
               <li key={i} className={cn(turn.role === "USER" && "flex justify-end")}>
                 {turn.role === "USER" ? (
-                  <p className="bg-signal max-w-[80%] rounded-2xl rounded-br-md px-4 py-2.5 text-[0.9rem] leading-relaxed text-white">
+                  <p className="bg-signal text-body max-w-[80%] rounded-2xl rounded-br-md px-4 py-2.5 leading-relaxed text-white">
                     {turn.text}
                   </p>
                 ) : (
                   <div>
-                    <p className="text-[0.9rem] leading-relaxed whitespace-pre-wrap">{turn.text}</p>
+                    <p className="text-body leading-relaxed whitespace-pre-wrap">{turn.text}</p>
                     {/* 거부한 답에는 인용이 없는 게 맞다. 그 외에는 항상 붙는다 */}
                     {!turn.refused && <Citations items={turn.citations} className="mt-2.5" />}
                   </div>
@@ -168,7 +168,7 @@ export default function CoachChatPage() {
             rows={1}
             placeholder="무엇이든 물어보세요"
             aria-label="질문"
-            className="border-line focus:border-signal placeholder:text-faint max-h-28 min-h-11 flex-1 resize-none rounded-xl border bg-transparent px-4 py-2.5 text-[0.95rem] focus:outline-none"
+            className="border-line focus:border-signal placeholder:text-faint text-body max-h-28 min-h-11 flex-1 resize-none rounded-xl border bg-transparent px-4 py-2.5 focus:outline-none"
           />
           <button
             type="submit"
