@@ -9,13 +9,8 @@ type S = components["schemas"];
 /* ─── 공통 타입 (docs/api-contract.md §0) ──────────────────── */
 
 export type Uuid = string;
-/** YYYY-MM-DD */
-export type IsoDate = string;
-/** ISO-8601 */
-export type IsoDateTime = string;
 
 export type Role = "PARENT" | "CHILD";
-export type Sex = "M" | "F";
 
 /** PARENT 만 가진다. 다음 주 코치 편성과 홈 화면을 바꾼다 */
 export type SupportMode = "CHEER_ONLY" | "WEEKEND" | "FULL";
@@ -41,16 +36,8 @@ export type Grade = NonNullable<S["ItemResult"]["grade"]>;
 export type ValueRange = S["ValueRange"];
 
 export type TargetMetric = "VIDEO_DONE" | "TIMER_MINUTES" | "STEPS";
-export type ActivitySource = "MANUAL" | "TIMER" | "VIDEO";
 export type VerifiedBy = "VIDEO_PROGRESS" | "TIMER" | "SELF_REPORT";
-export type InviteStatus = "NONE" | "ISSUED" | "EXPIRED" | "CLAIMED";
-export type MissionOrigin = "COACH" | "MANUAL";
-export type CoachRunStatus = "RUNNING" | "AWAITING_APPROVAL" | "APPROVED" | "REJECTED" | "FAILED";
 export type FitnessTestSource = "SELF_INPUT" | "CENTER_SHEET";
-export type InputGroup = "EASY" | "EQUIPMENT";
-export type CoachDirection = "GROWTH" | "STRENGTHEN";
-/** 코치가 정하는 편성 역할. 프로필 역할(role)과 다르다 */
-export type CoachRole = "주행자" | "동반자" | "응원";
 
 /** 앱 진입 시 어디로 보낼지 */
 export type NextStep = "CREATE_FAMILY" | "CLAIM" | "HOME" | "SUPPORT_MODE";
@@ -78,8 +65,6 @@ export type Cheer = S["CheerResponse"];
 
 export type FitnessMap = S["FitnessMapResponse"];
 export type FitnessMapMember = S["Member"];
-/** 구성원의 최근 측정 요약. 없으면 null 이 온다 */
-export type MemberLatest = S["Latest"];
 export type FitnessItems = S["FitnessItemsResponse"];
 export type FitnessItem = S["Item"];
 export type FitnessTestResult = S["FitnessTestResponse"];
@@ -101,7 +86,6 @@ export type ChatCitation = S["ChatCitationView"];
 export type MissionList = S["MissionListView"];
 export type Mission = S["MissionView"];
 export type MissionParticipant = S["MissionParticipantView"];
-export type MissionVideo = S["MissionVideoView"];
 
 export type VideoList = S["VideoListView"];
 export type Video = S["VideoView"];
@@ -122,7 +106,8 @@ export interface CheerLog {
   toProfileId: Uuid;
   message: string | null;
   missionId: Uuid | null;
-  createdAt: IsoDateTime;
+  /** ISO-8601 */
+  createdAt: string;
 }
 
 export interface CheerLogList {

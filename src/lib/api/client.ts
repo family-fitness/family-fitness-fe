@@ -38,10 +38,6 @@ export function setAccessToken(token: string | null) {
   accessToken = token;
 }
 
-export function getAccessToken() {
-  return accessToken;
-}
-
 type Options = Omit<RequestInit, "body"> & { body?: unknown };
 
 async function request<T>(path: string, options: Options = {}): Promise<T> {

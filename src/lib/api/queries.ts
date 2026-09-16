@@ -17,7 +17,6 @@ import type {
   InviteCode,
   LatestFitnessTest,
   MeResponse,
-  Mission,
   NextStep,
   MissionList,
   PredictionResult,
@@ -301,22 +300,6 @@ export function useMissions(
     queryKey: qk.family.missions(familyId ?? "", options.scope, options.status),
     queryFn: () => api.get<MissionList>(`/families/${familyId}/missions${query({ ...options })}`),
     enabled: Boolean(familyId),
-  });
-}
-
-export function useCreateMission(familyId: Uuid) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (body: {
-      title: string;
-      startDate: string;
-      endDate: string;
-      targetMetric: "VIDEO_DONE" | "TIMER_MINUTES" | "STEPS";
-      targetValue: number;
-      videoId?: string;
-      participantProfileIds: string[];
-    }) => api.post<Mission>(`/families/${familyId}/missions`, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] }),
   });
 }
 

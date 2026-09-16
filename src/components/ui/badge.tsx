@@ -1,30 +1,6 @@
-import { cva, type VariantProps } from "class-variance-authority";
-import type { ReactNode } from "react";
-
 import { Illustration } from "@/components/ui/illustration";
-import { cn } from "@/lib/utils";
 import type { Band, Grade } from "@/lib/api/types";
 import { BAND_COPY } from "@/lib/api/types";
-
-const badge = cva("inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-bold", {
-  variants: {
-    tone: {
-      neutral: "bg-line text-ink-soft",
-      signal: "bg-signal-soft text-signal-deep",
-      done: "bg-done-soft text-done",
-      outline: "border-line text-ink-soft border",
-    },
-  },
-  defaultVariants: { tone: "neutral" },
-});
-
-export function Badge({
-  tone,
-  className,
-  children,
-}: VariantProps<typeof badge> & { className?: string; children: ReactNode }) {
-  return <span className={cn(badge({ tone }), className)}>{children}</span>;
-}
 
 /** 국민체력100 등급. */
 const GRADE_SEAL: Record<Grade, string> = {
