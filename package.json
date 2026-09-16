@@ -18,7 +18,8 @@
     "assets": "node scripts/prepare-assets.mjs",
     "api:types": "openapi-typescript http://localhost:8080/v3/api-docs -o src/lib/api/schema.ts",
     "api:fixtures": "node scripts/capture-fixtures.mjs",
-    "check:assets": "node scripts/check-assets.mjs"
+    "check:assets": "node scripts/check-assets.mjs",
+    "check:screens": "node scripts/check-screens.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
