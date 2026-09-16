@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
-import Link from "next/link";
+import { NavLink } from "@/components/ui/nav-link";
 import type { ReactNode } from "react";
 
 import { Illustration } from "@/components/ui/illustration";
@@ -29,7 +29,7 @@ export function LinkRow({
 }) {
   return (
     <li>
-      <Link href={href} className="press flex items-center gap-3 py-4">
+      <NavLink href={href} className="press flex items-center gap-3 py-4">
         <Illustration name={art} size={40} className="shrink-0" />
         <span className="min-w-0 flex-1">
           <span className="block text-[0.95rem] font-bold">{title}</span>
@@ -41,7 +41,7 @@ export function LinkRow({
         </span>
         {trailing}
         <ChevronRight className="text-faint size-4 shrink-0" aria-hidden />
-      </Link>
+      </NavLink>
     </li>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { Play, Settings } from "lucide-react";
-import Link from "next/link";
+import { NavLink } from "@/components/ui/nav-link";
 import { useRouter } from "next/navigation";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -112,13 +112,13 @@ export default function KidHomePage() {
       <AppBar
         title=""
         right={
-          <Link
+          <NavLink
             href="/settings"
             aria-label="설정"
             className="press text-faint grid size-10 place-items-center rounded-full"
           >
             <Settings className="size-5" />
-          </Link>
+          </NavLink>
         }
       />
 
@@ -166,13 +166,13 @@ export default function KidHomePage() {
           )}
 
           {/* 권한 것 하나만 걸려 있으면, 그게 하기 싫은 날은 그냥 안 한다 */}
-          <Link
+          <NavLink
             href="/kid/pick"
             className="press border-line mt-3 flex items-center justify-center gap-2 rounded-2xl border py-3.5 text-base font-extrabold"
           >
             <Illustration name="item/item-dice" fallback="item/item-target" size={24} />
             다른 운동 고르기
-          </Link>
+          </NavLink>
         </section>
 
         {/* 아이가 다시 열어 볼 것 둘. 이게 없으면 운동 한 번 하고 닫는 앱이 된다 */}
@@ -216,14 +216,14 @@ function KidTile({
   count: number;
 }) {
   return (
-    <Link
+    <NavLink
       href={href}
       className="press border-line flex flex-col items-center gap-1 rounded-3xl border-2 py-5"
     >
       <Illustration name={art} fallback={fallback} size={40} />
       <span className="board-num text-signal-deep text-2xl leading-none">{count}</span>
       <span className="text-sm font-extrabold">{label}</span>
-    </Link>
+    </NavLink>
   );
 }
 
@@ -239,9 +239,9 @@ function BigAction({
   motion: "jump" | "stretch";
 }) {
   return (
-    <Link href={href} className="press bg-signal block rounded-3xl p-5 text-white">
+    <NavLink href={href} className="press bg-signal block rounded-3xl p-5 text-white">
       <div className="flex items-center gap-3">
-        <KidCharacter motion={motion} size={96} />
+        <KidCharacter motion={motion} size={96} animate />
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-[1.35rem] leading-snug font-extrabold">{title}</p>
           <p className="mt-1 line-clamp-2 text-sm opacity-90">{hint}</p>
@@ -251,7 +251,7 @@ function BigAction({
         <Play className="size-5 fill-current" aria-hidden />
         시작하기
       </span>
-    </Link>
+    </NavLink>
   );
 }
 

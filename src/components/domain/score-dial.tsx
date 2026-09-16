@@ -1,5 +1,6 @@
 "use client";
 
+import { CountUp } from "@/components/ui/count-up";
 import { cn } from "@/lib/utils";
 
 /**
@@ -105,7 +106,8 @@ export function ScoreDial({
           ) : (
             <>
               <p className="board-num leading-none" style={{ fontSize: size * (kid ? 0.34 : 0.3) }}>
-                {score}
+                {/* 링이 차오르는 동안 숫자도 같이 올라간다 */}
+                <CountUp to={score} />
               </p>
               <p className={cn("text-faint mt-1", kid ? "text-xs" : "text-[0.7rem]")}>
                 또래 평균 50

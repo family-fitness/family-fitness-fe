@@ -26,7 +26,7 @@ export default function HistoryPage() {
   if (isPending || donePending) {
     return (
       <>
-        <AppBar back title="지난 기록" />
+        <AppBar backHref="/parent" title="지난 기록" />
         <Stage className="space-y-4">
           {[0, 1].map((i) => (
             <Skeleton key={i} className="h-24 w-full rounded-2xl" />
@@ -40,7 +40,7 @@ export default function HistoryPage() {
 
   return (
     <>
-      <AppBar back title="지난 기록" />
+      <AppBar backHref="/parent" title="지난 기록" />
       <Stage>
         {missions.length === 0 ? (
           <EmptyState

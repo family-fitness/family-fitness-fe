@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { NavLink } from "@/components/ui/nav-link";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -48,7 +48,7 @@ export default function PickPage() {
   if (isPending) {
     return (
       <>
-        <AppBar back title="운동 고르기" />
+        <AppBar backHref="/kid" title="운동 고르기" />
         <Stage wide className="space-y-3">
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-32 w-full rounded-3xl" />
@@ -62,7 +62,7 @@ export default function PickPage() {
 
   return (
     <>
-      <AppBar back title="운동 고르기" />
+      <AppBar backHref="/kid" title="운동 고르기" />
       <Stage wide className="space-y-4">
         <h1 className="text-[1.5rem] leading-tight font-extrabold">뭐 하고 싶어?</h1>
 
@@ -78,7 +78,7 @@ export default function PickPage() {
               const done = (video.maxProgress ?? 0) >= 0.9;
               return (
                 <li key={video.videoId}>
-                  <Link
+                  <NavLink
                     href={`/kid/play/video-${video.videoId}`}
                     className={cn(
                       "press flex items-center gap-3 rounded-3xl border-2 p-4",
@@ -112,7 +112,7 @@ export default function PickPage() {
                         </span>
                       )}
                     </span>
-                  </Link>
+                  </NavLink>
                 </li>
               );
             })}

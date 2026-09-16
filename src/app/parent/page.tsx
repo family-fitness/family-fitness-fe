@@ -1,7 +1,7 @@
 "use client";
 
 import { Settings } from "lucide-react";
-import Link from "next/link";
+import { NavLink } from "@/components/ui/nav-link";
 import { useRouter } from "next/navigation";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -80,13 +80,13 @@ export default function ParentHomePage() {
     <AppBar
       title={map?.familyName ?? "우리집"}
       right={
-        <Link
+        <NavLink
           href="/settings"
           aria-label="설정"
           className="press text-ink-soft grid size-10 place-items-center rounded-full"
         >
           <Settings className="size-5" />
-        </Link>
+        </NavLink>
       }
     />
   );
@@ -141,9 +141,9 @@ export default function ParentHomePage() {
         <section>
           <SectionTitle
             action={
-              <Link href="/parent/history" className="text-signal text-xs font-bold">
+              <NavLink href="/parent/history" className="text-signal text-xs font-bold">
                 지난 기록
-              </Link>
+              </NavLink>
             }
           >
             오늘
@@ -284,7 +284,7 @@ function HomeLink({
 }) {
   return (
     <li>
-      <Link href={href} className="press flex items-center gap-3 py-3.5">
+      <NavLink href={href} className="press flex items-center gap-3 py-3.5">
         <Illustration name={art} fallback={fallback} size={36} />
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-bold">{title}</span>
@@ -295,7 +295,7 @@ function HomeLink({
             {badge}
           </span>
         )}
-      </Link>
+      </NavLink>
     </li>
   );
 }

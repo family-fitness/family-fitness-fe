@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { NavLink } from "@/components/ui/nav-link";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -31,7 +31,7 @@ export default function DonePage() {
   if (isPending) {
     return (
       <>
-        <AppBar back title="내가 한 운동" />
+        <AppBar backHref="/kid" title="내가 한 운동" />
         <Stage wide className="grid grid-cols-2 gap-3">
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="aspect-square rounded-3xl" />
@@ -48,19 +48,19 @@ export default function DonePage() {
   if (watched.length === 0) {
     return (
       <>
-        <AppBar back title="내가 한 운동" />
+        <AppBar backHref="/kid" title="내가 한 운동" />
         <Stage wide className="flex flex-col items-center pt-8 text-center">
           <Illustration name="scene/scene-collection" fallback="scene/scene-no-video" size={150} />
           <p className="mt-4 text-xl font-extrabold">아직 한 운동이 없어요</p>
           <p className="text-ink-soft mt-2 text-sm leading-relaxed">
             하나만 해 보면 여기에 쌓여요.
           </p>
-          <Link
+          <NavLink
             href="/kid/pick"
             className="press bg-signal mt-6 rounded-2xl px-7 py-4 text-lg font-extrabold text-white"
           >
             운동 고르러 가기
-          </Link>
+          </NavLink>
         </Stage>
       </>
     );
@@ -68,7 +68,7 @@ export default function DonePage() {
 
   return (
     <>
-      <AppBar back title="내가 한 운동" />
+      <AppBar backHref="/kid" title="내가 한 운동" />
       <Stage wide className="space-y-6">
         <div className="flex items-center gap-3">
           <KidCharacter motion="cheer" size={84} />
@@ -86,7 +86,7 @@ export default function DonePage() {
             const done = percent >= 90;
             return (
               <li key={video.videoId}>
-                <Link
+                <NavLink
                   href={`/kid/play/video-${video.videoId}`}
                   className={cn(
                     "press flex h-full flex-col gap-2 rounded-3xl border-2 p-3",
@@ -108,7 +108,7 @@ export default function DonePage() {
                   <span className="line-clamp-3 text-[0.85rem] leading-snug font-bold">
                     {video.title}
                   </span>
-                </Link>
+                </NavLink>
               </li>
             );
           })}

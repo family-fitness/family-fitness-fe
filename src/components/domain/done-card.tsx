@@ -62,7 +62,7 @@ export function DoneCard({
     <div className="flex flex-col items-center py-6 text-center">
       <Celebrate show />
 
-      <KidCharacter motion="cheer" size={170} />
+      <KidCharacter motion="cheer" size={170} animate />
       <h1 className="mt-3 text-2xl font-extrabold">다 했어요!</h1>
       <p className="text-ink-soft mt-1.5 text-sm leading-relaxed">{title}</p>
 

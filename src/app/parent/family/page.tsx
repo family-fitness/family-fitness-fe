@@ -40,7 +40,7 @@ export default function MembersPage() {
 
   return (
     <>
-      <AppBar back title="가족" />
+      <AppBar backHref="/parent" title="가족" />
       <PlainScreen className="space-y-6 pt-1">
         <div>
           <h1 className="page-title">{family?.familyName ?? "우리집"}</h1>
@@ -311,7 +311,7 @@ function AddMemberSheet({
 function MembersSkeleton() {
   return (
     <>
-      <AppBar back title="가족" />
+      <AppBar backHref="/parent" title="가족" />
       <PlainScreen className="space-y-6 pt-1">
         <Skeleton className="h-9 w-40" />
         {[0, 1].map((i) => (

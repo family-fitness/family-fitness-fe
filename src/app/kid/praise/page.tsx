@@ -26,7 +26,7 @@ export default function KidPraisePage() {
   if (isPending) {
     return (
       <>
-        <AppBar back title="칭찬" />
+        <AppBar backHref="/kid" title="칭찬" />
         <Stage wide className="space-y-3">
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-20 w-full rounded-2xl" />
@@ -41,7 +41,7 @@ export default function KidPraisePage() {
   if (cheers.length === 0) {
     return (
       <>
-        <AppBar back title="칭찬" />
+        <AppBar backHref="/kid" title="칭찬" />
         <Stage wide className="flex flex-col items-center pt-8 text-center">
           <Illustration name="scene/scene-waiting-stamp" size={150} />
           <p className="mt-4 text-xl font-extrabold">아직 칭찬이 없어요</p>
@@ -53,7 +53,7 @@ export default function KidPraisePage() {
 
   return (
     <>
-      <AppBar back title="칭찬" />
+      <AppBar backHref="/kid" title="칭찬" />
       <Stage wide className="space-y-5">
         <div className="flex items-center gap-3">
           <KidCharacter motion="cheer" size={84} />

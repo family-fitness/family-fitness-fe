@@ -86,7 +86,7 @@ export function RepGame({
     const seconds = Math.max(elapsed, ROUND_SEC);
     return (
       <div className="flex flex-col items-center py-6 text-center">
-        <KidCharacter motion="cheer" size={150} />
+        <KidCharacter motion="cheer" size={150} animate />
         <p className="board-num mt-3 text-[3.4rem] leading-none">{reps}</p>
         <p className="text-ink-soft mt-1 text-base font-bold">
           {motion.label} {reps}번 했어요
@@ -137,7 +137,7 @@ export function RepGame({
             ))}
           </div>
           <div className="border-line rounded-3xl border-2 border-dashed py-6 text-center">
-            <KidCharacter motion={motion.key} size={150} className="mx-auto" />
+            <KidCharacter motion={motion.key} size={150} className="mx-auto" animate />
             <p className="mt-2 text-lg font-extrabold">{motion.hint}</p>
             <p className="text-ink-soft mt-1 text-sm">1분 동안 할 때마다 화면을 눌러요</p>
           </div>
@@ -175,7 +175,7 @@ export function RepGame({
               className="pointer-events-none absolute inset-0"
             />
             <span className="pointer-events-none absolute inset-0 grid place-content-center">
-              <KidCharacter motion={motion.key} size={170} cycle={800} />
+              <KidCharacter motion={motion.key} size={170} cycle={800} animate />
               <span className="text-signal-deep mt-1 text-lg font-extrabold">눌러요!</span>
             </span>
           </button>
