@@ -17,18 +17,29 @@ const MOVES: { motion: Motion; label: string }[] = [
 
 const ROUNDS = 3;
 
+type Move = (typeof MOVES)[number];
+
 interface Roll {
-  move: (typeof MOVES)[number];
+  move: Move;
   count: number;
 }
 
-/** 4~9회. 너무 적으면 시시하고 너무 많으면 중간에 그만둔다 */
-function roll(): Roll {
+/**
+ * 4~9회. 너무 적으면 시시하고 너무 많으면 중간에 그만둔다.
+ *
+ * 바로 앞에 나온 운동은 빼고 뽑는다. 넷 중에서 아무거나 뽑으면 네 번에 한 번은
+ * 같은 게 연달아 나오는데, 아이 눈에는 주사위가 고장 난 것으로 보인다.
+ */
+function roll(previous?: Move): Roll {
+  const pool = previous ? MOVES.filter((m) => m.motion !== previous.motion) : MOVES;
   return {
-    move: MOVES[Math.floor(Math.random() * MOVES.length)],
+    move: pool[Math.floor(Math.random() * pool.length)],
     count: 4 + Math.floor(Math.random() * 6),
   };
 }
+
+/** 한 판이 아무리 길어도 여기까지만 기록한다. 켜 두고 잊은 화면을 운동으로 세지 않는다 */
+const MAX_SECONDS = 10 * 60;
 
 export function DiceGame({
   onFinish,
@@ -58,7 +69,7 @@ export function DiceGame({
       return;
     }
     setRound((r) => r + 1);
-    setCurrent(roll());
+    setCurrent(roll(current?.move));
   };
 
   if (phase === "ready") {
@@ -88,7 +99,9 @@ export function DiceGame({
           size="kid"
           className="mt-6"
           loading={pending}
-          onClick={() => onFinish({ seconds: Math.max(elapsed, 60) })}
+          /* 실제로 걸린 시간을 그대로 보낸다. 8초 만에 지나갔는데 1분으로
+             올리면 "앱이 확인한 시간" 이 거짓말이 된다 */
+          onClick={() => onFinish({ seconds: Math.min(elapsed, MAX_SECONDS) })}
         >
           기록하기
         </Button>

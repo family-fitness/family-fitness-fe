@@ -62,7 +62,11 @@ export function RepGame({
   };
 
   if (phase === "done") {
-    const seconds = Math.max(elapsed, ROUND_SEC);
+    /*
+      한 판은 60초다. 탭을 뒤로 보내면 인터벌이 밀려 시계로 잰 값이 60초를
+      넘는데, 그 시간을 운동한 시간으로 올리면 안 된다. 짧은 쪽을 쓴다.
+    */
+    const seconds = Math.min(elapsed || ROUND_SEC, ROUND_SEC);
     return (
       <div className="flex flex-col items-center py-6 text-center">
         <KidCharacter motion="cheer" size={150} animate />
