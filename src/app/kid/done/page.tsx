@@ -9,7 +9,7 @@ import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KidCharacter } from "@/components/domain/kid-character";
 import { useVideos } from "@/lib/api/queries";
-import { isVideoDone } from "@/lib/mission";
+import { isVideoDone, progressPercent } from "@/lib/mission";
 import { useRoleStore } from "@/stores/role-store";
 import { cn } from "@/lib/utils";
 
@@ -76,8 +76,10 @@ export default function DonePage() {
 
         <ul className="grid grid-cols-2 gap-3">
           {watched.map((video) => {
-            const percent = Math.round((video.maxProgress ?? 0) * 100);
-            const done = percent >= 90;
+            // 반올림한 퍼센트로 다시 재지 않는다. 0.895 는 90% 로 보이지만
+            // 서버는 적립하지 않는다 — "완주했는데 기록이 없어요" 가 된다
+            const percent = progressPercent(video.maxProgress);
+            const done = isVideoDone(video.maxProgress);
             return (
               <li key={video.videoId}>
                 <NavLink

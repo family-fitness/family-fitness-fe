@@ -23,6 +23,7 @@ import type {
   WeeklyReport,
 } from "@/lib/api/types";
 
+import { isVideoDone } from "@/lib/mission";
 import { ageOf } from "@/lib/today";
 
 import fixturesJson from "./fixtures.json";
@@ -738,13 +739,13 @@ const videos = [
     const maxProgress = Math.max(previous, body.progress);
     if (video) video.maxProgress = maxProgress;
 
-    // 최초로 0.9 를 넘을 때만 적립한다. 두 번 적립되지 않는다
-    const justCompleted = previous < 0.9 && maxProgress >= 0.9;
+    // 처음 기준을 넘을 때만 적립한다. 두 번 적립되지 않는다
+    const justCompleted = !isVideoDone(previous) && isVideoDone(maxProgress);
     return HttpResponse.json({
       maxProgress,
-      completed: maxProgress >= 0.9,
+      completed: isVideoDone(maxProgress),
       creditedMinutes: justCompleted ? Math.ceil((video?.durationSec ?? 0) / 60) : 0,
-      verifiedBy: maxProgress >= 0.9 ? "VIDEO_PROGRESS" : null,
+      verifiedBy: isVideoDone(maxProgress) ? "VIDEO_PROGRESS" : null,
       missionProgress: null,
     });
   }),
