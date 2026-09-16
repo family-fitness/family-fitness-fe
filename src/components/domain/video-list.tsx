@@ -3,6 +3,7 @@
 import { Heart, Play } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -50,6 +51,13 @@ function VideoRow({ video }: { video: Video }) {
   const { profile } = useSession();
   const toggle = useToggleFavorite(profile?.profileId ?? "");
 
+  /*
+    썸네일 주소가 있다고 그림이 뜨는 건 아니다. 내려간 영상은 404 가 오고,
+    그러면 브라우저가 깨진 이미지 표시를 그린다. 우리 자리 표시로 바꾼다.
+  */
+  const [thumbBroken, setThumbBroken] = useState(false);
+  const thumb = thumbBroken ? null : video.thumbnailUrl;
+
   const watched = Math.round((video.maxProgress ?? 0) * 100);
   const done = isVideoDone(video.maxProgress);
 
@@ -60,15 +68,18 @@ function VideoRow({ video }: { video: Video }) {
           href={safeUrl(video.url) ?? "#"}
           target="_blank"
           rel="noreferrer noopener"
-          className="press relative block w-30 shrink-0 overflow-hidden rounded-xl"
+          /* self-start 가 없으면 줄 높이만큼 늘어나서, 시간 배지가 그림 아래
+             허공에 떠 버린다 */
+          className="press relative block w-30 shrink-0 self-start overflow-hidden rounded-xl"
         >
-          {video.thumbnailUrl ? (
+          {thumb ? (
             <Image
-              src={video.thumbnailUrl}
+              src={thumb}
               alt=""
               width={160}
               height={90}
               className="aspect-video w-full object-cover"
+              onError={() => setThumbBroken(true)}
               unoptimized
             />
           ) : (

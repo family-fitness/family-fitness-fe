@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { PageHeader } from "@/components/app-shell/page-header";
 import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Screen } from "@/components/app-shell/screen";
@@ -35,6 +37,15 @@ function WeeklyReportPageContent() {
   const members = report.members ?? [];
   const stats = report.missionStats;
   const totalMinutes = members.reduce((sum, m) => sum + (m.activeMinutes ?? 0), 0);
+  /*
+    아직 아무 일도 없었던 주.
+
+    0분 · 미션 0／0 · 응원 0번 · 구성원마다 "기록이 없어요" 를 늘어놓으면
+    은영에게 "당신 가족은 이번 주에 아무것도 안 했습니다" 라고 말하는 화면이 된다.
+    기획서에서 뺀 통제형 기능과 같은 이유로 그렇게 그리지 않는다.
+  */
+  const nothingYet =
+    totalMinutes === 0 && (stats?.total ?? 0) === 0 && (report.cheerCount ?? 0) === 0;
   // 이번 주 미션을 전부 끝냈을 때만 트로피로 바꾼다. 늘 트로피면 아무 뜻이 없다
   const allDone = (stats?.total ?? 0) > 0 && stats?.completed === stats?.total;
   const maxMinutes = Math.max(1, ...members.map((m) => m.activeMinutes ?? 0));
@@ -54,80 +65,95 @@ function WeeklyReportPageContent() {
       />
 
       <Screen className="space-y-8">
-        {/* 가족 전체 한 줄 */}
-        <div className="flex items-center gap-4">
-          <Illustration name={allDone ? "item/item-trophy" : "item/item-calendar"} size={72} />
-          <div className="min-w-0">
-            <p className="text-ink-soft text-sm font-semibold">가족이 함께 움직인 시간</p>
-            <p className="board-num text-[3.2rem] leading-none">
-              {totalMinutes}
-              <span className="text-ink-soft ml-1 text-lg font-bold">분</span>
-            </p>
-            <p className="text-faint mt-1 text-xs">
-              미션 {stats?.completed ?? 0}／{stats?.total ?? 0}개 완료 · 응원{" "}
-              {report.cheerCount ?? 0}번
-            </p>
-            {allDone && (
-              <p className="text-done mt-1 text-xs font-bold">이번 주 미션을 다 끝냈어요</p>
+        {nothingYet ? (
+          <EmptyState
+            scene="together"
+            title="이번 주는 이제 시작이에요"
+            description="한 사람이 한 번만 움직여도 여기에 쌓이기 시작해요."
+            action={
+              <Link href="/coach/weekly" className="chip press chip-on">
+                이번 주 제안 보기
+              </Link>
+            }
+          />
+        ) : (
+          <>
+            {/* 가족 전체 한 줄 */}
+            <div className="flex items-center gap-4">
+              <Illustration name={allDone ? "item/item-trophy" : "item/item-calendar"} size={72} />
+              <div className="min-w-0">
+                <p className="text-ink-soft text-sm font-semibold">가족이 함께 움직인 시간</p>
+                <p className="board-num text-[3.2rem] leading-none">
+                  {totalMinutes}
+                  <span className="text-ink-soft ml-1 text-lg font-bold">분</span>
+                </p>
+                <p className="text-faint mt-1 text-xs">
+                  미션 {stats?.completed ?? 0}／{stats?.total ?? 0}개 완료 · 응원{" "}
+                  {report.cheerCount ?? 0}번
+                </p>
+                {allDone && (
+                  <p className="text-done mt-1 text-xs font-bold">이번 주 미션을 다 끝냈어요</p>
+                )}
+              </div>
+            </div>
+
+            {report.summary && (
+              <p className="text-ink-soft text-sm leading-relaxed">{report.summary}</p>
             )}
-          </div>
-        </div>
 
-        {report.summary && (
-          <p className="text-ink-soft text-sm leading-relaxed">{report.summary}</p>
+            <section>
+              <div className="section-head">
+                <h2>구성원별</h2>
+              </div>
+              <ul className="divide-rows">
+                {members.map((m) => {
+                  const active = m.activeMinutes ?? 0;
+                  const verified = m.verifiedMinutes ?? 0;
+                  return (
+                    <li key={m.profileId} className="py-4">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-sm font-bold">{m.name}</span>
+                        <span className="tabular text-ink-soft text-sm">
+                          {active}분
+                          {(m.completedMissions ?? 0) > 0 && (
+                            <span className="text-faint"> · 미션 {m.completedMissions}개</span>
+                          )}
+                        </span>
+                      </div>
+
+                      {/* 막대 하나에 두 값을 겹쳐 그린다. 확인된 만큼이 진한 부분이다 */}
+                      <div className="record-rail mt-1.5">
+                        <span
+                          className="record-fill bg-signal-soft"
+                          style={{ width: `${(active / maxMinutes) * 100}%` }}
+                          aria-hidden
+                        />
+                        <span
+                          className="record-fill"
+                          style={{ width: `${(verified / maxMinutes) * 100}%` }}
+                          aria-hidden
+                        />
+                      </div>
+
+                      <p className="text-faint text-caption mt-1">
+                        {verified > 0
+                          ? `${verified}분은 타이머·영상으로 확인됐어요`
+                          : active > 0
+                            ? "모두 직접 입력한 기록이에요"
+                            : "아직 기록이 없어요"}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+
+            <p className="text-faint text-caption leading-relaxed">
+              타이머와 영상 재생은 앱이 직접 확인한 시간이고, 걸음수처럼 직접 적은 기록은 확인된
+              시간에 들어가지 않아요.
+            </p>
+          </>
         )}
-
-        <section>
-          <div className="section-head">
-            <h2>구성원별</h2>
-          </div>
-          <ul className="divide-rows">
-            {members.map((m) => {
-              const active = m.activeMinutes ?? 0;
-              const verified = m.verifiedMinutes ?? 0;
-              return (
-                <li key={m.profileId} className="py-4">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-sm font-bold">{m.name}</span>
-                    <span className="tabular text-ink-soft text-sm">
-                      {active}분
-                      {(m.completedMissions ?? 0) > 0 && (
-                        <span className="text-faint"> · 미션 {m.completedMissions}개</span>
-                      )}
-                    </span>
-                  </div>
-
-                  {/* 막대 하나에 두 값을 겹쳐 그린다. 확인된 만큼이 진한 부분이다 */}
-                  <div className="record-rail mt-1.5">
-                    <span
-                      className="record-fill bg-signal-soft"
-                      style={{ width: `${(active / maxMinutes) * 100}%` }}
-                      aria-hidden
-                    />
-                    <span
-                      className="record-fill"
-                      style={{ width: `${(verified / maxMinutes) * 100}%` }}
-                      aria-hidden
-                    />
-                  </div>
-
-                  <p className="text-faint text-caption mt-1">
-                    {verified > 0
-                      ? `${verified}분은 타이머·영상으로 확인됐어요`
-                      : active > 0
-                        ? "모두 직접 입력한 기록이에요"
-                        : "이번 주 기록이 없어요"}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-
-        <p className="text-faint text-caption leading-relaxed">
-          타이머와 영상 재생은 앱이 직접 확인한 시간이고, 걸음수처럼 직접 적은 기록은 확인된 시간에
-          들어가지 않아요.
-        </p>
       </Screen>
     </>
   );

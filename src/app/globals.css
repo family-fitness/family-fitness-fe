@@ -330,6 +330,16 @@ body {
 }
 
 @layer base {
+  /*
+    한글은 단어 가운데서 줄이 바뀌면 읽기 어렵다.
+    "코치 / 가 짜 준" 처럼 조사만 다음 줄로 떨어진다.
+    keep-all 로 어절을 지키고, 끊을 데가 없는 긴 영문·주소만 break-word 로 넘긴다.
+  */
+  body {
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
   :focus-visible {
     outline: 2px solid var(--color-signal);
     outline-offset: 2px;
