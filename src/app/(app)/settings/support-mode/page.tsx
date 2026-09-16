@@ -1,11 +1,13 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
 import { PageHeader } from "@/components/app-shell/page-header";
 import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Screen } from "@/components/app-shell/screen";
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -38,9 +40,14 @@ const MODES: { value: SupportMode; title: string; description: string; art: stri
 ];
 
 function SupportModePageContent() {
+  const router = useRouter();
+  const params = useSearchParams();
   const { profile, familyId, isPending } = useSession();
   const update = useUpdateSupportMode(profile?.profileId ?? "", familyId ?? "");
   const [error, setError] = useState<string | null>(null);
+
+  // 초대를 받아 막 들어온 길이면 여기가 끝이 아니다. 고르고 나서 갈 곳이 있어야 한다
+  const joining = params.get("from") === "claim";
 
   if (isPending) return <SupportSkeleton />;
 
@@ -64,7 +71,7 @@ function SupportModePageContent() {
 
   return (
     <>
-      <PageHeader title="참여 방식" back />
+      <PageHeader title="참여 방식" back={!joining} />
 
       <Screen className="space-y-5">
         <p className="text-ink-soft text-sm leading-relaxed">
@@ -128,6 +135,12 @@ function SupportModePageContent() {
           </p>
         )}
 
+        {joining && (
+          <Button size="block" disabled={!current} onClick={() => router.replace("/start")}>
+            {current ? "다 골랐어요" : "하나 골라 주세요"}
+          </Button>
+        )}
+
         {current === "CHEER_ONLY" && (
           <p className="text-faint text-caption leading-relaxed">
             응원 역할일 때도 미션 참여자 명단에는 남아요. 가족이 함께한 기록으로 남습니다.
@@ -161,7 +174,9 @@ function SupportSkeleton() {
 export default function SupportModePage() {
   return (
     <ParentOnly>
-      <SupportModePageContent />
+      <Suspense fallback={<SupportSkeleton />}>
+        <SupportModePageContent />
+      </Suspense>
     </ParentOnly>
   );
 }
