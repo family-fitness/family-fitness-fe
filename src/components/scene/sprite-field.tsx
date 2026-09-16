@@ -3,6 +3,21 @@
 import { useEffect, useRef } from "react";
 import type { Sprite, Texture } from "three";
 
+/**
+ * 그릴 준비를 미리 해 둔다.
+ *
+ * three 는 따로 떨어진 큰 묶음이라 축하 연출이 시작되는 순간에 받기 시작하면
+ * 정작 아이가 다 했을 때 아무것도 안 뜨고 한 박자 뒤에 터진다.
+ * 운동을 시작할 때처럼 터질 게 뻔한 자리에서 한가한 틈에 미리 받아 둔다.
+ */
+export function warmUpSprites() {
+  if (typeof window === "undefined") return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const pull = () => void import("three").catch(() => {});
+  if ("requestIdleCallback" in window) window.requestIdleCallback(pull, { timeout: 4000 });
+  else setTimeout(pull, 1500);
+}
+
 /** 우리 2D 에셋을 WebGL 스프라이트로 띄워 천천히 움직인다. */
 export function SpriteField({
   assets,

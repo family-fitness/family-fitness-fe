@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -14,6 +14,7 @@ import { DiceGame } from "@/components/domain/dice-game";
 import { RepGame } from "@/components/domain/rep-game";
 import { YouTubePlayer } from "@/components/domain/youtube-player";
 import { DoneCard } from "@/components/domain/done-card";
+import { warmUpSprites } from "@/components/scene/sprite-field";
 import { errorMessage } from "@/lib/errors";
 import { useMissions, useRecordTimer, useRecordVideoProgress, useVideos } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
@@ -27,6 +28,9 @@ export default function PlayPage() {
   const { playId } = useParams<{ playId: string }>();
   const { familyId } = useSession();
   const childProfileId = useRoleStore((s) => s.childProfileId);
+
+  // 여기 들어왔으면 곧 다 했다는 화면이 뜬다. 축하 연출을 미리 받아 둔다
+  useEffect(warmUpSprites, []);
 
   const videoOnly = playId.startsWith("video-");
   const videoId = videoOnly ? playId.slice("video-".length) : null;
