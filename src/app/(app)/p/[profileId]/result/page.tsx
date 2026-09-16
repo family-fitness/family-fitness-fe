@@ -146,7 +146,8 @@ export default function ResultPage() {
                   label={entry.itemLabel ?? entry.itemCode ?? ""}
                   value={`${entry.value}${entry.unit ?? ""}`}
                   percentile={entry.percentile}
-                  caption={entry.topPercentText}
+                  /* 서준에게 백분위 표를 보여주면 그걸로 끝이다 — 아이에겐 상태만 */
+                  caption={kidView ? undefined : entry.topPercentText}
                   delay={index * 0.08}
                 />
                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -159,44 +160,67 @@ export default function ResultPage() {
           ))}
         </section>
 
-        {/* 다음에 뭘 할지. 서버가 정한 방향을 그대로 따른다 */}
-        <div className="bg-signal-soft rounded-2xl p-4">
-          <p className="text-signal-deep text-sm font-bold">
-            {onlyOneFactor
-              ? "항목을 더 재면 더 잘 맞는 운동을 찾아요"
-              : test.coachDirection === "STRENGTHEN"
-                ? "잘하는 영역을 더 키울 때예요"
-                : weakest
-                  ? `${withJosa(weakest.factor ?? "", "을를")} 키우기 좋은 때예요`
-                  : "이번 주 운동을 찾아볼까요"}
-          </p>
-          <p className="text-ink-soft mt-1 text-sm leading-relaxed">
-            코치가 이 결과에 맞는 운동을 찾아 제안해요. 보호자가 승인하면 이번 주 미션이 돼요.
-          </p>
-          <Link
-            href="/coach/weekly"
-            className="text-signal mt-1 inline-flex min-h-11 items-center text-sm font-bold"
-          >
-            이번 주 제안 보기
-          </Link>
-        </div>
+        {/* 다음에 뭘 할지. 서버가 정한 방향을 그대로 따른다.
+            승인·미션·보호자는 부모의 말이라 아이 화면에서는 통째로 뺀다 */}
+        {kidView ? (
+          <div className="bg-signal-soft rounded-2xl p-4">
+            <p className="text-signal-deep text-sm font-bold">
+              {onlyOneFactor
+                ? "더 재 보면 더 잘 맞는 운동을 찾아 줄게"
+                : test.coachDirection === "STRENGTHEN"
+                  ? "잘하는 걸 더 키워 볼까"
+                  : strongest
+                    ? `${withJosa(strongest.factor ?? "", "이가")} 좋아지고 있어`
+                    : "오늘 할 운동을 골라 볼까"}
+            </p>
+            <Link
+              href="/kid/pick"
+              className="text-signal mt-1 inline-flex min-h-11 items-center text-sm font-bold"
+            >
+              오늘 할 운동 고르기
+            </Link>
+          </div>
+        ) : (
+          <div className="bg-signal-soft rounded-2xl p-4">
+            <p className="text-signal-deep text-sm font-bold">
+              {onlyOneFactor
+                ? "항목을 더 재면 더 잘 맞는 운동을 찾아요"
+                : test.coachDirection === "STRENGTHEN"
+                  ? "잘하는 영역을 더 키울 때예요"
+                  : weakest
+                    ? `${withJosa(weakest.factor ?? "", "을를")} 키우기 좋은 때예요`
+                    : "이번 주 운동을 찾아볼까요"}
+            </p>
+            <p className="text-ink-soft mt-1 text-sm leading-relaxed">
+              코치가 이 결과에 맞는 운동을 찾아 제안해요. 보호자가 승인하면 이번 주 미션이 돼요.
+            </p>
+            <Link
+              href="/coach/weekly"
+              className="text-signal mt-1 inline-flex min-h-11 items-center text-sm font-bold"
+            >
+              이번 주 제안 보기
+            </Link>
+          </div>
+        )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <Link
-            href={`/p/${profileId}/future`}
-            className="press border-line flex items-center gap-2 rounded-xl border px-4 py-3.5"
-          >
-            <LineChart className="text-signal size-4" aria-hidden />
-            <span className="text-sm font-bold">10년 후 보기</span>
-          </Link>
-          <Link
-            href={`/p/${profileId}/measure`}
-            className="press border-line flex items-center gap-2 rounded-xl border px-4 py-3.5"
-          >
-            <Ruler className="text-signal size-4" aria-hidden />
-            <span className="text-sm font-bold">다시 측정</span>
-          </Link>
-        </div>
+        {!kidView && (
+          <div className="grid grid-cols-2 gap-3">
+            <Link
+              href={`/p/${profileId}/future`}
+              className="press border-line flex items-center gap-2 rounded-xl border px-4 py-3.5"
+            >
+              <LineChart className="text-signal size-4" aria-hidden />
+              <span className="text-sm font-bold">10년 후 보기</span>
+            </Link>
+            <Link
+              href={`/p/${profileId}/measure`}
+              className="press border-line flex items-center gap-2 rounded-xl border px-4 py-3.5"
+            >
+              <Ruler className="text-signal size-4" aria-hidden />
+              <span className="text-sm font-bold">다시 측정</span>
+            </Link>
+          </div>
+        )}
 
         {/* 서버가 준 고지 문구. 줄이거나 접지 않는다 */}
         {test.disclaimer && (

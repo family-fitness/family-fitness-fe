@@ -52,29 +52,63 @@ const MIN_TAP = 40;
 /** 무시할 콘솔 잡음 — 목 데이터의 가짜 영상 id 때문에 나는 것들 */
 const NOISE = /favicon|ytimg|_next\/image|400 |404 /;
 
+/**
+ * 아이 화면에 나오면 안 되는 말.
+ *
+ * AGENTS.md — "서준에게 백분위 표를 보여주면 그걸로 끝이다".
+ * 승인 · 미션 · 보호자는 부모끼리 하는 말이고, 등급과 백분위는 서열이다.
+ */
+const PARENT_WORDS = [
+  "백분위",
+  "상위",
+  "등급",
+  "제안",
+  "승인",
+  "미션",
+  "보호자",
+  "동의",
+  "철회",
+  "약점",
+  "하위",
+];
+
+/** 아이 모드로 열어 보는 경로. 부모 화면은 막히는 게 맞아서 여기 넣지 않는다 */
+const KID_ROUTES = [
+  "/kid",
+  "/kid/pick",
+  "/kid/done",
+  "/kid/praise",
+  "/videos",
+  "/settings",
+  `/p/${KID}/result`,
+];
+
 const browser = await chromium.launch({ channel: "chrome" });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
 
-// 로그인한 채로, 경로에 맞는 역할로 본다. 아이 모드면 부모 화면은 막히는 게 맞다
-await context.addInitScript(
-  ([kid]) => {
-    const mode = location.pathname.startsWith("/kid") ? "kid" : "parent";
-    localStorage.setItem(
-      "ff-role",
-      JSON.stringify({ state: { mode, childProfileId: kid }, version: 0 }),
-    );
-    localStorage.setItem(
-      "ff-auth",
-      JSON.stringify({
-        state: { accessToken: "mock-access-token", refreshToken: "mock-refresh-token" },
-        version: 0,
-      }),
-    );
-  },
-  [KID],
-);
+/** 로그인한 채로, 정해진 역할로 본다 */
+function seed(mode) {
+  return [
+    ([role, kid]) => {
+      localStorage.setItem(
+        "ff-role",
+        JSON.stringify({ state: { mode: role, childProfileId: kid }, version: 0 }),
+      );
+      localStorage.setItem(
+        "ff-auth",
+        JSON.stringify({
+          state: { accessToken: "mock-access-token", refreshToken: "mock-refresh-token" },
+          version: 0,
+        }),
+      );
+    },
+    [mode, KID],
+  ];
+}
 
 const problems = [];
+
+await context.addInitScript(...seed("parent"));
 
 for (const route of ROUTES) {
   const page = await context.newPage();
@@ -128,10 +162,30 @@ for (const route of ROUTES) {
   await page.close();
 }
 
+/* ─── 아이 모드로 한 번 더 ─────────────────────────────────── */
+
+const kidContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+await kidContext.addInitScript(...seed("kid"));
+
+for (const route of KID_ROUTES) {
+  const page = await kidContext.newPage();
+  try {
+    await page.goto(`${BASE}${route}`, { waitUntil: "load", timeout: 30000 });
+    await page.waitForTimeout(1100);
+    const text = await page.locator("body").innerText();
+    const leaked = PARENT_WORDS.filter((word) => text.includes(word));
+    if (leaked.length > 0)
+      problems.push(`${route} (아이 모드)\n    부모 말이 샘: ${leaked.join(", ")}`);
+  } catch (e) {
+    problems.push(`${route} (아이 모드)\n    열지 못함: ${String(e).split("\n")[0]}`);
+  }
+  await page.close();
+}
+
 await browser.close();
 
 if (problems.length > 0) {
   console.error("화면 문제:\n  " + problems.join("\n  "));
   process.exit(1);
 }
-console.log(`화면 ${ROUTES.length}개 이상 없음`);
+console.log(`화면 ${ROUTES.length}개 · 아이 모드 ${KID_ROUTES.length}개 이상 없음`);
