@@ -235,7 +235,7 @@ export default function AddChildPage() {
         {step === 2 && (
           <section className="relative flex flex-col items-center py-6 text-center">
             <Backdrop name="bg/bg-confetti" height={200} />
-            <KidCharacter motion="cheer" size={170} animate />
+            <KidCharacter motion="cheer" size={170} />
             <h2 className="mt-3 text-2xl font-extrabold">{name} 등록 완료!</h2>
             <p className="text-ink-soft mt-2 text-sm leading-relaxed">
               이제 오늘 할 운동을 골라 볼까요. 한 가지만 재면 또래 중 어디쯤인지도 보여요.

@@ -90,7 +90,7 @@ export function DiceGame({
   if (phase === "done") {
     return (
       <div className="flex flex-col items-center py-4 text-center">
-        <KidCharacter motion="cheer" size={150} animate />
+        <KidCharacter motion="cheer" size={150} />
         <p className="mt-3 text-2xl font-extrabold">세 번 다 했어요!</p>
         <p className="text-faint mt-2 text-xs leading-relaxed">
           횟수는 직접 센 거예요. 움직인 시간은 앱이 기록해요.
@@ -129,12 +129,7 @@ export function DiceGame({
       </div>
 
       <div className="bg-signal-soft rounded-3xl py-6 text-center">
-        <KidCharacter
-          motion={current?.move.motion ?? "idle"}
-          size={170}
-          className="mx-auto"
-          animate
-        />
+        <KidCharacter motion={current?.move.motion ?? "idle"} size={170} className="mx-auto" />
         <p className="text-signal-deep mt-2 text-2xl font-extrabold">{current?.move.label}</p>
         <p className="board-num text-signal-deep mt-1 text-[3.2rem] leading-none">
           {current?.count}

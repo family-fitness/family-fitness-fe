@@ -227,7 +227,7 @@ function BigAction({
   return (
     <NavLink href={href} className="press bg-signal block rounded-3xl p-5 text-white">
       <div className="flex items-center gap-3">
-        <KidCharacter motion={motion} size={96} animate />
+        <KidCharacter motion={motion} size={96} />
         <div className="min-w-0 flex-1">
           <p className="line-clamp-2 text-[1.35rem] leading-snug font-extrabold">{title}</p>
           <p className="mt-1 line-clamp-2 text-sm opacity-90">{hint}</p>
