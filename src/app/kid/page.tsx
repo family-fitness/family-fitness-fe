@@ -167,7 +167,7 @@ export default function KidHomePage() {
             href="/kid/done"
             art="item/item-check-big"
             fallback="item/item-medal"
-            label="내가 한 운동"
+            label="본 영상"
             count={doneCount}
           />
           <KidTile
