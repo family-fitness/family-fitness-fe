@@ -55,7 +55,7 @@ export default function KidHomePage() {
   if (failure) {
     return (
       <>
-        <AppBar title="" />
+        <AppBar title="오늘" />
         <Stage wide>
           <ErrorState error={failure} onRetry={() => void refetchMap()} retrying={isRefetching} />
         </Stage>
@@ -96,7 +96,6 @@ export default function KidHomePage() {
   return (
     <>
       <AppBar
-        title={me.name ?? ""}
         right={
           <NavLink
             href="/settings"
@@ -111,13 +110,14 @@ export default function KidHomePage() {
       <Stage wide className="relative space-y-7">
         {/* 조각을 흩뿌리는 대신 하늘 한 장을 깐다. 없으면 조용히 사라진다 */}
         <Backdrop name="bg/bg-sky" height={230} />
-        {/* 이름을 크게. 아이는 자기 이름을 먼저 찾는다 */}
+        {/* 이름을 크게. 아이는 자기 이름을 먼저 찾는다.
+            막대에 또 적지 않는다 — 한 화면에 같은 이름이 두 번 뜬다 */}
         <div className="flex items-center gap-2">
           <KidCharacter motion="wave" size={84} />
-          <p className="text-[1.7rem] leading-tight font-extrabold">
+          <h1 className="text-[1.7rem] leading-tight font-extrabold">
             {me.name}
             <span className="text-ink-soft block text-lg font-bold">오늘도 만나서 반가워!</span>
-          </p>
+          </h1>
         </div>
 
         {/* 내 점수 */}
@@ -244,7 +244,7 @@ function BigAction({
 function KidHomeSkeleton() {
   return (
     <>
-      <AppBar title="" />
+      <AppBar title="오늘" />
       <Stage wide className="space-y-7">
         <Skeleton className="h-16 w-56" />
         <div className="flex justify-center">
