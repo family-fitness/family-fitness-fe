@@ -37,7 +37,7 @@ export default function WhoPage() {
     <>
       <AppBar back title="" />
       <Stage className="space-y-4">
-        <h1 className="text-[1.6rem] leading-tight font-extrabold">누구야?</h1>
+        <h2 className="text-[1.6rem] leading-tight font-extrabold">누구야?</h2>
 
         <ul className="space-y-3">
           {kids.map((kid) => (

@@ -21,7 +21,7 @@ export function VideoTabs() {
           key={href}
           href={href}
           aria-current={pathname === href ? "page" : undefined}
-          className={cn("chip press", pathname === href && "chip-on")}
+          className={cn("chip press min-w-20", pathname === href && "chip-on")}
         >
           {label}
         </Link>

@@ -173,7 +173,10 @@ export default function ResultPage() {
           <p className="text-ink-soft mt-1 text-sm leading-relaxed">
             코치가 이 결과에 맞는 운동을 찾아 제안해요. 보호자가 승인하면 이번 주 미션이 돼요.
           </p>
-          <Link href="/coach/weekly" className="text-signal mt-2 inline-block text-sm font-bold">
+          <Link
+            href="/coach/weekly"
+            className="text-signal mt-1 inline-flex min-h-11 items-center text-sm font-bold"
+          >
             이번 주 제안 보기
           </Link>
         </div>

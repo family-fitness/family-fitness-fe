@@ -109,7 +109,7 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
         </div>
 
         <Button
-          size="sm"
+          size="md"
           variant={given ? "danger" : "primary"}
           loading={update.isPending}
           onClick={() => (given ? setConfirming(true) : apply(true, true))}

@@ -37,7 +37,7 @@ export default function CreateFamilyPage() {
       <PlainScreen className="space-y-7 pt-2">
         <div className="flex flex-col items-center text-center">
           <Illustration name="scene/scene-invite" size={130} />
-          <h1 className="page-title mt-3">가족을 만들어요</h1>
+          <h2 className="page-title mt-3">가족을 만들어요</h2>
           <p className="text-ink-soft mt-2 text-sm leading-relaxed">
             먼저 본인 프로필만 만들어요. 나머지 가족은 다음에 더할 수 있어요.
           </p>

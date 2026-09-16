@@ -127,7 +127,7 @@ function VideoRow({ video }: { video: Video }) {
           onClick={() =>
             toggle.mutate({ videoId: video.videoId ?? "", favorited: !video.favorited })
           }
-          className="press grid size-9 shrink-0 place-items-center self-start rounded-lg"
+          className="press grid size-11 shrink-0 place-items-center self-start rounded-lg"
         >
           <Heart
             className={cn("size-4.5", video.favorited ? "fill-signal text-signal" : "text-faint")}

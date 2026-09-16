@@ -166,7 +166,7 @@ export default function PlayPage() {
 
         {/* 놀이 중에는 제목을 다시 쓰지 않는다. 위 막대에 이미 있고, 화면이 좁다 */}
         <div className={cn(how !== "video" && "hidden")}>
-          <h1 className="text-xl leading-snug font-extrabold">{title}</h1>
+          <h2 className="text-xl leading-snug font-extrabold">{title}</h2>
           {mission && (
             <p className="text-ink-soft mt-1 text-sm">
               {targetCopy(mission.targetMetric, mission.targetValue)}
