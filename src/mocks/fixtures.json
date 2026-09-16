@@ -6,7 +6,7 @@
       {
         "profileId": "00000000-0000-4000-8000-000000000011",
         "familyId": "00000000-0000-4000-8000-000000000010",
-        "name": "데모 엄마",
+        "name": "은영",
         "role": "PARENT",
         "ageGroup": "성인",
         "hasAccount": true,
@@ -20,12 +20,12 @@
   },
   "profiles": {
     "familyId": "00000000-0000-4000-8000-000000000010",
-    "familyName": "데모네",
+    "familyName": "서준이네",
     "profiles": [
       {
         "profileId": "00000000-0000-4000-8000-000000000011",
         "familyId": "00000000-0000-4000-8000-000000000010",
-        "name": "데모 엄마",
+        "name": "은영",
         "role": "PARENT",
         "ageGroup": "성인",
         "hasAccount": true,
@@ -38,7 +38,7 @@
       {
         "profileId": "00000000-0000-4000-8000-000000000012",
         "familyId": "00000000-0000-4000-8000-000000000010",
-        "name": "데모 첫째",
+        "name": "서준",
         "role": "CHILD",
         "ageGroup": "유소년",
         "hasAccount": false,
@@ -51,7 +51,7 @@
       {
         "profileId": "00000000-0000-4000-8000-000000000013",
         "familyId": "00000000-0000-4000-8000-000000000010",
-        "name": "데모 아빠",
+        "name": "도현",
         "role": "PARENT",
         "ageGroup": "성인",
         "hasAccount": false,
@@ -65,11 +65,11 @@
   },
   "fitnessMap": {
     "familyId": "00000000-0000-4000-8000-000000000010",
-    "familyName": "데모네",
+    "familyName": "서준이네",
     "members": [
       {
         "profileId": "00000000-0000-4000-8000-000000000011",
-        "name": "데모 엄마",
+        "name": "은영",
         "role": "PARENT",
         "ageGroup": "성인",
         "hasAccount": true,
@@ -82,7 +82,7 @@
       },
       {
         "profileId": "00000000-0000-4000-8000-000000000012",
-        "name": "데모 첫째",
+        "name": "서준",
         "role": "CHILD",
         "ageGroup": "유소년",
         "hasAccount": false,
@@ -110,7 +110,7 @@
       },
       {
         "profileId": "00000000-0000-4000-8000-000000000013",
-        "name": "데모 아빠",
+        "name": "도현",
         "role": "PARENT",
         "ageGroup": "성인",
         "hasAccount": false,
@@ -705,7 +705,7 @@
         "participants": [
           {
             "profileId": "00000000-0000-4000-8000-000000000012",
-            "name": "데모 첫째",
+            "name": "서준",
             "progress": 0,
             "completed": false,
             "verifiedBy": null,
@@ -713,7 +713,7 @@
           },
           {
             "profileId": "00000000-0000-4000-8000-000000000011",
-            "name": "데모 엄마",
+            "name": "은영",
             "progress": 0,
             "completed": false,
             "verifiedBy": null,
@@ -834,21 +834,21 @@
     "members": [
       {
         "profileId": "00000000-0000-4000-8000-000000000011",
-        "name": "데모 엄마",
+        "name": "은영",
         "activeMinutes": 0,
         "verifiedMinutes": 0,
         "completedMissions": 0
       },
       {
         "profileId": "00000000-0000-4000-8000-000000000012",
-        "name": "데모 첫째",
+        "name": "서준",
         "activeMinutes": 0,
         "verifiedMinutes": 0,
         "completedMissions": 0
       },
       {
         "profileId": "00000000-0000-4000-8000-000000000013",
-        "name": "데모 아빠",
+        "name": "도현",
         "activeMinutes": 0,
         "verifiedMinutes": 0,
         "completedMissions": 0

@@ -57,6 +57,7 @@ type MissionRow = Concrete<Mission>;
 const BASE = "/api/v1";
 const CHEER_KEY = "ff-mock-cheers";
 const ACTING_KEY = "ff-mock-acting";
+const NEWCOMER_KEY = "ff-mock-newcomer";
 
 export const DEMO = {
   familyId: "00000000-0000-4000-8000-000000000010",
@@ -83,7 +84,29 @@ const db = {
    * 새로고침해도 남아야 한다 — 바꾸자마자 되돌아가면 자녀 계정 화면을 볼 수 없다.
    */
   actingProfileId: loadActing(),
+  /**
+   * 아직 가족에 붙지 않은 계정으로 들어와 있나.
+   * 초대 수락 흐름은 이 상태가 있어야만 걸어 볼 수 있다.
+   */
+  newcomer: loadNewcomer(),
 };
+
+function loadNewcomer(): boolean {
+  try {
+    return sessionStorage.getItem(NEWCOMER_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setNewcomer(value: boolean) {
+  db.newcomer = value;
+  try {
+    sessionStorage.setItem(NEWCOMER_KEY, value ? "1" : "0");
+  } catch {
+    // 브라우저가 아니면 그냥 넘어간다
+  }
+}
 
 function loadActing(): string {
   try {
@@ -156,9 +179,18 @@ const authGate = [
   }),
 ];
 
+/** 아직 가족이 없는 개발용 계정 */
+const NEWCOMER_ID = "demo-newcomer";
+const NEWCOMER_ME = {
+  userId: "00000000-0000-4000-8000-000000000002",
+  nextStep: "CLAIM",
+  profiles: [],
+};
+
 const identity = [
   /** 지금 로그인한 계정이 관리하는 프로필. */
   http.get(`${BASE}/me`, () => {
+    if (db.newcomer) return HttpResponse.json(NEWCOMER_ME);
     const me = acting();
     if (!me || me.profileId === DEMO.mom) return HttpResponse.json(fixtures.me);
     return HttpResponse.json({
@@ -168,13 +200,18 @@ const identity = [
     });
   }),
 
-  http.post(`${BASE}/auth/dev-login`, () =>
-    HttpResponse.json({
+  http.post(`${BASE}/auth/dev-login`, async ({ request }) => {
+    const body = (await request.json().catch(() => ({}))) as { providerUserId?: string };
+    // 프로필이 아직 없는 계정. 초대코드를 넣어야 가족에 붙는다
+    const newcomer = body.providerUserId === NEWCOMER_ID;
+    setNewcomer(newcomer);
+    if (!newcomer) setActingProfile(DEMO.mom);
+    return HttpResponse.json({
       accessToken: "mock-access-token",
       refreshToken: "mock-refresh-token",
-      ...fixtures.me,
-    }),
-  ),
+      ...(newcomer ? NEWCOMER_ME : fixtures.me),
+    });
+  }),
 
   http.get(`${BASE}/families/:familyId/profiles`, () => HttpResponse.json(db.profiles)),
 
@@ -239,6 +276,14 @@ const identity = [
     if (claimCode?.toUpperCase() !== "K7M2QT") {
       return fail(404, "CODE_NOT_FOUND", "코드를 찾을 수 없습니다");
     }
+    // 코드가 맞으면 그 프로필이 내 것이 된다. 도현에게 발급된 초대다
+    const dad = db.profiles.profiles.find((p) => p.profileId === DEMO.dad);
+    if (dad) {
+      dad.hasAccount = true;
+      dad.inviteStatus = "CLAIMED";
+    }
+    setNewcomer(false);
+    setActingProfile(DEMO.dad);
     return HttpResponse.json({
       profileId: DEMO.dad,
       familyId: DEMO.familyId,

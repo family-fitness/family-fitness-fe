@@ -12,8 +12,8 @@ import { useAuthStore } from "@/stores/auth-store";
 
 /** 로그인. */
 const DEV_ACCOUNTS = [
-  { id: "demo-parent", label: "데모네 부모 (가족 3명)" },
-  { id: "demo-parent-2", label: "초대받는 계정 (프로필 없음)" },
+  { id: "demo-parent", label: "은영 · 가족 3명" },
+  { id: "demo-newcomer", label: "초대받는 계정 · 프로필 없음" },
 ];
 
 /** 구글이 돌아올 자리. 인가코드는 이 주소로 붙어서 온다 */
