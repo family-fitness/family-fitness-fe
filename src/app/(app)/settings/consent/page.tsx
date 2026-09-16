@@ -20,9 +20,9 @@ import { cn } from "@/lib/utils";
 /** 보호자 동의 관리. */
 function ConsentPageContent() {
   const { profile, familyId, isPending: sessionPending } = useSession();
-  const { data: family, isPending: familyPending } = useFamilyProfiles(familyId);
+  const { data: family, isLoading: familyLoading } = useFamilyProfiles(familyId);
 
-  if (sessionPending || familyPending) return <ConsentSkeleton />;
+  if (sessionPending || familyLoading) return <ConsentSkeleton />;
 
   if (profile?.role === "CHILD") {
     return (

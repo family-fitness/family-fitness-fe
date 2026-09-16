@@ -92,6 +92,12 @@ export function useGoogleLogin() {
 
 /* ─── 가족 · 프로필 ────────────────────────────────────────── */
 
+/*
+  ▲ 아래 쿼리 여럿은 인자가 없으면 `enabled: false` 로 꺼진다.
+  **꺼진 쿼리의 `isPending` 은 영영 true 다.** 화면이 그걸로 뼈대를 띄우면
+  영영 뼈대만 보인다. 화면에서는 `isLoading`(꺼져 있으면 false) 을 본다.
+*/
+
 export function useFamilyProfiles(familyId: Uuid | undefined) {
   return useQuery({
     queryKey: qk.family.profiles(familyId ?? ""),

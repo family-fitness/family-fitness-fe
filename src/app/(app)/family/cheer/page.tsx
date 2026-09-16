@@ -27,7 +27,7 @@ const PRESETS = [
 
 export default function CheerPage() {
   const { profile, familyId, isPending: sessionPending } = useSession();
-  const { data: family, isPending: familyPending } = useFamilyProfiles(familyId);
+  const { data: family, isLoading: familyLoading } = useFamilyProfiles(familyId);
   const send = useSendCheer(familyId ?? "");
 
   const [toProfileId, setToProfileId] = useState<string | null>(null);
@@ -35,7 +35,7 @@ export default function CheerPage() {
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  if (sessionPending || familyPending) return <CheerSkeleton />;
+  if (sessionPending || familyLoading) return <CheerSkeleton />;
 
   // 자기 자신에게는 보낼 수 없다. 서버도 422 로 막는다
   const others = (family?.profiles ?? []).filter((p) => p.profileId !== profile?.profileId);

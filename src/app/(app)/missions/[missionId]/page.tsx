@@ -33,7 +33,7 @@ export default function MissionDetailPage() {
   const { missionId } = useParams<{ missionId: string }>();
   const { profile, familyId, isPending: sessionPending } = useSession();
 
-  const { data, isPending } = useMissions(familyId, { scope: "ALL" });
+  const { data, isLoading } = useMissions(familyId, { scope: "ALL" });
   const mission = data?.missions?.find((m) => m.missionId === missionId);
 
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +58,7 @@ export default function MissionDetailPage() {
   const recordVideo = useRecordVideoProgress(mission?.video?.videoId ?? "");
   const confirm = useConfirmParticipant(missionId, familyId ?? "");
 
-  if (sessionPending || isPending) return <DetailSkeleton />;
+  if (sessionPending || isLoading) return <DetailSkeleton />;
 
   if (!mission) {
     return (

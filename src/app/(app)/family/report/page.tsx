@@ -13,9 +13,9 @@ import { formatDate } from "@/lib/utils";
 /** 주간 리포트. */
 function WeeklyReportPageContent() {
   const { familyId, isPending: sessionPending } = useSession();
-  const { data: report, isPending } = useWeeklyReport(familyId);
+  const { data: report, isLoading } = useWeeklyReport(familyId);
 
-  if (sessionPending || isPending) return <ReportSkeleton />;
+  if (sessionPending || isLoading) return <ReportSkeleton />;
 
   if (!report) {
     return (
