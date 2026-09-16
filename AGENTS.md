@@ -142,6 +142,9 @@ npx openapi-typescript http://localhost:8080/v3/api-docs -o src/lib/api/schema.t
   | 데이터를 기다릴 때  | 그 화면의 스켈레톤                   |
   | 바깥 것을 기다릴 때 | 유튜브처럼 남의 스크립트를 받는 동안 |
 - 에러를 `alert()` 로 띄우지 않는다
+- **한 화면에 `<h1>` 은 하나다.** `AppBar` 가 제목을 받으면 그게 `<h1>` 이다.
+  본문에 큰 제목을 따로 두는 화면(`/start`, `/kid`, `/login`)은 막대에 제목을 주지 않는다.
+  `npm run check:screens` 가 화면마다 센다
 - **하단 탭바를 만들지 않는다.** 역할이 내비게이션이다 (위 "화면 구조")
 
 ## 홈 화면에 얹히는 앱

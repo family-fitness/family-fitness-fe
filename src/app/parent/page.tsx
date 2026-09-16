@@ -87,7 +87,7 @@ export default function ParentHomePage() {
         {bar}
         <Stage className="flex flex-col items-center pt-10 text-center">
           <Illustration name="scene/scene-first-body" fallback="scene/scene-invite" size={150} />
-          <h1 className="mt-4 text-xl font-extrabold">아이를 등록해 주세요</h1>
+          <h2 className="mt-4 text-xl font-extrabold">아이를 등록해 주세요</h2>
           <p className="text-ink-soft mt-2 text-sm leading-relaxed">
             이름과 키·몸무게만 있으면 또래 중 어디쯤인지 바로 볼 수 있어요.
           </p>
