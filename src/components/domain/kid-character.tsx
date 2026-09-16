@@ -58,6 +58,27 @@ export function KidCharacter({
 
   const index = animate && frames > 1 ? tick % frames : stillIndex;
 
+  /*
+    멈춰 있으면 한 장만 받는다.
+    프레임을 전부 그려 두면 캐릭터 하나에 이미지 8장이다 — 운동 고르기처럼
+    카드가 다섯이면 40장을 받는다. 폰에서는 그것만으로 첫 화면이 늦어진다.
+  */
+  if (!animate || frames < 2) {
+    return (
+      <span
+        className={cn("relative inline-block shrink-0", className)}
+        style={{ width: size, height: size }}
+      >
+        <Illustration
+          name={`anim/${motion}-${stillIndex + 1}`}
+          fallback={fallback}
+          size={size}
+          className="absolute inset-0"
+        />
+      </span>
+    );
+  }
+
   return (
     <span
       className={cn(animate && `char-move-${move}`, "relative inline-block shrink-0", className)}

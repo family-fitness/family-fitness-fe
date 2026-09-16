@@ -4,7 +4,10 @@ import nextTypescript from "eslint-config-next/typescript";
 import prettier from "eslint-config-prettier/flat";
 
 export default defineConfig([
-  { ignores: [".next/**", "node_modules/**", "next-env.d.ts", "public/**"] },
+  {
+    // scripts/.tmp-* 는 손으로 돌려 보는 일회용 검사 스크립트다. 커밋하지 않는다
+    ignores: [".next/**", "node_modules/**", "next-env.d.ts", "public/**", "scripts/.tmp-*"],
+  },
 
   nextCoreWebVitals,
   nextTypescript,
