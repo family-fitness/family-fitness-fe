@@ -1,7 +1,8 @@
 "use client";
 
-import { Check, Copy, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Check, ChevronRight, Copy, Plus } from "lucide-react";
+import { Illustration } from "@/components/ui/illustration";
+import Link from "next/link";
 import { useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -22,8 +23,7 @@ import { cn } from "@/lib/utils";
 
 /** 가족 더하기. */
 export default function MembersPage() {
-  const router = useRouter();
-  const { familyId, isPending: sessionPending } = useSession();
+  const { profile, familyId, isPending: sessionPending } = useSession();
   const { data: family, isPending, error, refetch } = useFamilyProfiles(familyId);
 
   const [adding, setAdding] = useState(false);
@@ -43,6 +43,7 @@ export default function MembersPage() {
   }
 
   const profiles = family?.profiles ?? [];
+  const mySupportMode = profile?.supportMode ?? undefined;
 
   return (
     <>
@@ -71,9 +72,28 @@ export default function MembersPage() {
           <span className="text-sm font-bold">가족 더하기</span>
         </button>
 
-        <Button size="block" onClick={() => router.replace("/parent")}>
-          {profiles.length > 1 ? "시작하기" : "나중에 더하고 시작하기"}
-        </Button>
+        {/* 부모 홈에서 내려온 것들. 가족에 관한 일은 여기 모인다 */}
+        <ul className="divide-rows">
+          <FamilyLink
+            href="/settings/support-mode"
+            art="item/item-shoes"
+            title="얼마나 같이 뛸지"
+            description={SUPPORT_COPY[mySupportMode ?? "none"]}
+          />
+          <FamilyLink
+            href="/family/report"
+            art="item/item-calendar"
+            title="이번 주 우리 가족"
+            description="누가 얼마나 움직였는지"
+          />
+          <FamilyLink
+            href="/family/cheer"
+            art="scene/scene-no-cheer"
+            fallback="item/item-whistle"
+            title="응원 보내기"
+            description="가족끼리 한마디"
+          />
+        </ul>
 
         <AddMemberSheet open={adding} onClose={() => setAdding(false)} familyId={familyId ?? ""} />
       </PlainScreen>
@@ -160,6 +180,42 @@ function MemberRow({ profile }: { profile: ProfileSummary }) {
           {error}
         </p>
       )}
+    </li>
+  );
+}
+
+/** 참여 방식을 한 줄로. 고르지 않았으면 고르라고 말한다 */
+const SUPPORT_COPY: Record<string, string> = {
+  CHEER_ONLY: "응원할게요",
+  WEEKEND: "주말에는 같이",
+  FULL: "매번 같이",
+  none: "아직 안 골랐어요",
+};
+
+/** 가족에 관한 일로 들어가는 줄. */
+function FamilyLink({
+  href,
+  art,
+  fallback,
+  title,
+  description,
+}: {
+  href: string;
+  art: string;
+  fallback?: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <li>
+      <Link href={href} className="press flex items-center gap-3 py-3.5">
+        <Illustration name={art} fallback={fallback} size={36} className="shrink-0" />
+        <span className="min-w-0 flex-1">
+          <span className="text-body block font-bold">{title}</span>
+          <span className="text-ink-soft text-caption block leading-relaxed">{description}</span>
+        </span>
+        <ChevronRight className="text-faint size-4 shrink-0" aria-hidden />
+      </Link>
     </li>
   );
 }

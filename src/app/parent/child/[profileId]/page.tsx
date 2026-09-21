@@ -144,6 +144,12 @@ export default function ChildDetailPage() {
           >
             측정 결과 자세히
           </Link>
+          <Link
+            href={`/p/${profileId}/future`}
+            className="press border-line block rounded-2xl border py-4 text-center text-base font-bold"
+          >
+            10년 뒤 보기
+          </Link>
         </section>
 
         {!latest?.fitnessTestId && (

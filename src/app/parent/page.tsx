@@ -20,7 +20,6 @@ import { useCoachRun, useFitnessMap, useLatestFitnessTest, useMissions } from "@
 import { useCoachRunId } from "@/stores/coach-store";
 import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
-import { withJosa } from "@/lib/utils";
 
 /** 부모 홈. */
 export default function ParentHomePage() {
@@ -104,7 +103,8 @@ export default function ParentHomePage() {
     <>
       {bar}
       <Stage className="relative space-y-8">
-        <Backdrop name="bg/bg-hill" height={210} />
+        {/* 언덕 능선이 점수 아래 한 줄을 가로지르지 않게 높이를 맞춘다 */}
+        <Backdrop name="bg/bg-hill" height={272} />
         {children.length > 1 && (
           <ChildSwitch kids={children} selectedId={child.profileId} onSelect={setChild} />
         )}
@@ -178,56 +178,59 @@ export default function ParentHomePage() {
           </ul>
         </section>
 
-        {/* 6. 아이를 더 자세히 */}
-        <section>
-          <SectionTitle>{withJosa(child.name ?? "아이", "은는")} 어떤가</SectionTitle>
-          <ul className="divide-rows">
-            <HomeLink
-              href={`/parent/child/${child.profileId}`}
-              art="item/item-compare"
-              fallback="item/item-growth-up"
-              title="어떻게 자라고 있나"
-              description="점수와 키·몸무게 변화"
-            />
-            <HomeLink
-              href={`/p/${child.profileId}/result`}
-              art="item/item-clipboard"
-              title="측정 결과 자세히"
-              description="요인별로 어디가 강하고 어디를 키울지"
-            />
-            <HomeLink
-              href={`/p/${child.profileId}/future`}
-              art="deco/deco-arrow-up"
-              title="10년 뒤"
-              description="지금과 같은 조건의 10년 위 연령대"
-            />
-          </ul>
+        {/*
+          6. 더 들어가는 곳 둘.
+
+          전에는 여기에 구역 둘과 링크 여섯 개가 더 있었다. 한 화면에 여덟 줄을
+          세워 두면 어느 것도 눈에 안 들어온다 — 조사한 바로도 한 화면의 항목은
+          대여섯을 넘기면 안 된다. 묶어서 각자의 화면으로 내렸다.
+        */}
+        <section className="grid grid-cols-2 gap-3">
+          <HomeTile
+            href={`/parent/child/${child.profileId}`}
+            art="item/item-compare"
+            fallback="item/item-growth-up"
+            title={`${child.name} 기록`}
+            description="자라는 모습 · 측정 결과 · 10년 뒤"
+          />
+          <HomeTile
+            href="/parent/family"
+            art="scene/scene-together"
+            title="우리 가족"
+            description="구성원 · 참여 방식 · 이번 주"
+          />
         </section>
 
-        {/** 7. 부모 자신. */}
-        <section>
-          <SectionTitle>나도 함께</SectionTitle>
-          <ul className="divide-rows">
-            {/* 기획서 ① 가족 체력 지도 — 아이만 있고 부모가 없으면 잔소리 도구가 된다 */}
-            <li>
-              <MyRow me={myMember} />
-            </li>
-            <HomeLink
-              href="/settings/support-mode"
-              art="scene/scene-together"
-              title="얼마나 같이 뛸지"
-              description={SUPPORT_COPY[profile?.supportMode ?? "none"]}
-            />
-            <HomeLink
-              href="/family/report"
-              art="item/item-calendar"
-              title="이번 주 우리 가족"
-              description="누가 얼마나 움직였는지"
-            />
-          </ul>
-        </section>
+        {/* 기획서 ① 가족 체력 지도 — 아이만 있고 부모가 없으면 잔소리 도구가 된다 */}
+        <MyRow me={myMember} />
       </Stage>
     </>
+  );
+}
+
+/** 더 들어가는 큰 칸. 줄로 세우는 대신 둘만 나란히 둔다 */
+function HomeTile({
+  href,
+  art,
+  fallback,
+  title,
+  description,
+}: {
+  href: string;
+  art: string;
+  fallback?: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <NavLink
+      href={href}
+      className="press border-line flex h-full flex-col gap-1 rounded-2xl border p-4"
+    >
+      <Illustration name={art} fallback={fallback} size={40} />
+      <span className="text-body mt-1 font-extrabold">{title}</span>
+      <span className="text-ink-soft text-caption leading-relaxed">{description}</span>
+    </NavLink>
   );
 }
 
@@ -243,14 +246,6 @@ function ScoreBasis({ profileId }: { profileId: string | undefined }) {
     </p>
   );
 }
-
-/** 참여 방식을 한 줄로. 고르지 않았으면 고르라고 말한다 */
-const SUPPORT_COPY: Record<string, string> = {
-  CHEER_ONLY: "응원할게요",
-  WEEKEND: "주말에는 같이",
-  FULL: "매번 같이",
-  none: "아직 안 골랐어요",
-};
 
 function HomeLink({
   href,
