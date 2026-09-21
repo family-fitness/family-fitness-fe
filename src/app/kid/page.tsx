@@ -11,6 +11,9 @@ import { Backdrop } from "@/components/ui/backdrop";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { KidCharacter } from "@/components/domain/kid-character";
+import { Avatar } from "@/components/ui/illustration";
+import { avatarFor } from "@/lib/avatar";
+import { useAvatarStore } from "@/stores/avatar-store";
 import { PeerCloud } from "@/components/domain/peer-cloud";
 import { WeekDots } from "@/components/domain/week-dots";
 import {
@@ -41,6 +44,9 @@ export default function KidHomePage() {
   const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
   /** 가족의 칭찬·알림을 한 번에 받아 두 갈래로 쓴다. */
   const { data: cheerLog } = useCheers(familyId);
+  const chosenLook = useAvatarStore((s) =>
+    childProfileId ? s.byProfile[childProfileId] : undefined,
+  );
 
   const me = map?.members?.find((m) => m.profileId === childProfileId);
   const profile = family?.profiles?.find((p) => p.profileId === childProfileId);
@@ -113,7 +119,7 @@ export default function KidHomePage() {
         {/* 이름을 크게. 아이는 자기 이름을 먼저 찾는다.
             막대에 또 적지 않는다 — 한 화면에 같은 이름이 두 번 뜬다 */}
         <div className="flex items-center gap-2">
-          <KidCharacter motion="wave" size={84} />
+          <Avatar parts={avatarFor(me, chosenLook)} size={84} />
           <h1 className="text-[1.7rem] leading-tight font-extrabold">
             {me.name}
             <span className="text-ink-soft block text-lg font-bold">오늘도 만나서 반가워!</span>
@@ -178,6 +184,18 @@ export default function KidHomePage() {
             count={praises.length}
           />
         </section>
+
+        {/* 운동을 안 하는 날에도 열어 볼 이유 하나. 목표를 걸지 않는다 */}
+        <NavLink
+          href="/kid/me"
+          className="press border-line flex items-center gap-3 rounded-2xl border p-4"
+        >
+          <Avatar parts={avatarFor(me, chosenLook)} size={52} />
+          <span className="min-w-0 flex-1">
+            <span className="block text-base font-extrabold">내 캐릭터 꾸미기</span>
+            <span className="text-ink-soft text-caption block">머리 · 표정 · 옷 · 소품</span>
+          </span>
+        </NavLink>
       </Stage>
     </>
   );

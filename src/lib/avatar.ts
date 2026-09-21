@@ -1,4 +1,5 @@
 import type { AvatarParts } from "@/components/ui/illustration";
+import type { AvatarChoice } from "@/stores/avatar-store";
 import type { ProfileSummary } from "./api/types";
 
 /**
@@ -30,10 +31,21 @@ function pick(list: string[], seed: string, salt: string): string {
   return list[hash(seed + salt) % list.length];
 }
 
-export function avatarFor(profile: {
-  profileId?: string;
-  ageGroup?: ProfileSummary["ageGroup"];
-}): AvatarParts {
+/** 아이가 꾸미기 화면에서 고를 수 있는 것들. 여기 없는 부품은 화면에 안 나온다 */
+export const PICKABLE = {
+  hair: KID_HAIR,
+  face: KID_FACES,
+  top: KID_TOPS,
+} as const;
+
+export function avatarFor(
+  profile: {
+    profileId?: string;
+    ageGroup?: ProfileSummary["ageGroup"];
+  },
+  /** 아이가 직접 고른 것이 있으면 그게 먼저다 */
+  chosen?: AvatarChoice,
+): AvatarParts {
   const seed = profile.profileId ?? "";
   const h = hash(seed);
   const grown = profile.ageGroup === "성인" || profile.ageGroup === "어르신";
@@ -53,8 +65,8 @@ export function avatarFor(profile: {
 
   return {
     body,
-    hair: pick(grown ? ADULT_HAIR : KID_HAIR, seed, "hair"),
-    face: pick(grown ? ADULT_FACES : KID_FACES, seed, "face"),
-    top: pick(grown ? ADULT_TOPS : KID_TOPS, seed, "top"),
+    hair: chosen?.hair ?? pick(grown ? ADULT_HAIR : KID_HAIR, seed, "hair"),
+    face: chosen?.face ?? pick(grown ? ADULT_FACES : KID_FACES, seed, "face"),
+    top: chosen?.top ?? pick(grown ? ADULT_TOPS : KID_TOPS, seed, "top"),
   };
 }
