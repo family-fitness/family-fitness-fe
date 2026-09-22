@@ -60,11 +60,12 @@ export function FamilyMap({
                   key={member.profileId}
                   href={`/parent/child/${member.profileId}`}
                   aria-label={`${member.name} 또래 100명 중 ${score}번째`}
-                  className="press absolute -translate-x-1/2"
+                  /* 그림은 34px 지만 누르는 자리는 44px 이어야 한다 */
+                  className="press absolute grid size-11 -translate-x-1/2 place-items-center"
                   style={{
                     left: `${Math.min(92, Math.max(8, score))}%`,
                     /* 막대가 28~36px 를 차지한다. 그 위에 올라서게 둔다 */
-                    bottom: i % 2 === 0 ? 38 : 56,
+                    bottom: i % 2 === 0 ? 34 : 52,
                   }}
                 >
                   <span className="border-paper bg-paper block rounded-full border-2">
