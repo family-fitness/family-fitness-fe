@@ -64,8 +64,9 @@ export function FamilyMap({
                   className="press absolute grid size-11 -translate-x-1/2 place-items-center"
                   style={{
                     left: `${Math.min(92, Math.max(8, score))}%`,
-                    /* 막대가 28~36px 를 차지한다. 그 위에 올라서게 둔다 */
-                    bottom: i % 2 === 0 ? 34 : 52,
+                    /* 막대가 28~36px 를 차지한다. 닿지 않게 그 위로 띄운다 —
+                       조금이라도 겹치면 아바타의 흰 테두리가 막대를 끊는다 */
+                    bottom: i % 2 === 0 ? 38 : 56,
                   }}
                 >
                   <span className="border-paper bg-paper block rounded-full border-2">

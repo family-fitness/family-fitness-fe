@@ -217,7 +217,7 @@ function seedMissions(): MissionRow[] {
       targetValue: 20,
       serverVerifiable: true,
       startDate: day(6),
-      endDate: day(-1),
+      endDate: day(0),
       rationale: "심폐지구력은 짧게 자주가 길게 한 번보다 낫습니다.",
       video: {
         videoId: "IdpXx2gm90o",
@@ -230,7 +230,7 @@ function seedMissions(): MissionRow[] {
         {
           profileId: DEMO.kid,
           name: "서준",
-          progress: 14,
+          progress: 0.7,
           completed: false,
           verifiedBy: "TIMER",
           needsGuardianCheck: false,
@@ -238,7 +238,7 @@ function seedMissions(): MissionRow[] {
         {
           profileId: DEMO.mom,
           name: "은영",
-          progress: 6,
+          progress: 0.3,
           completed: false,
           verifiedBy: "TIMER",
           needsGuardianCheck: false,
@@ -267,7 +267,7 @@ function seedMissions(): MissionRow[] {
         {
           profileId: DEMO.kid,
           name: "서준",
-          progress: 30,
+          progress: 1,
           completed: true,
           verifiedBy: "VIDEO_PROGRESS",
           needsGuardianCheck: false,
@@ -275,7 +275,7 @@ function seedMissions(): MissionRow[] {
         {
           profileId: DEMO.mom,
           name: "은영",
-          progress: 30,
+          progress: 1,
           completed: true,
           verifiedBy: "TIMER",
           needsGuardianCheck: false,
@@ -298,7 +298,7 @@ function seedMissions(): MissionRow[] {
         {
           profileId: DEMO.kid,
           name: "서준",
-          progress: 3200,
+          progress: 1,
           completed: true,
           verifiedBy: "SELF_REPORT",
           needsGuardianCheck: true,
