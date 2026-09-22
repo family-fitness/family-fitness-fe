@@ -742,6 +742,13 @@ const coaching = [
   http.get<PathParams>(`${BASE}/coach/runs/:runId`, () => HttpResponse.json(db.coachRun)),
 
   /**
+   * ▲ 서버에 아직 없다. 제안 모양으로 답한다.
+   * 기기에 든 runId 가 없으면 이번 주 제안을 영영 못 찾아서, 승인 게이트가
+   * 통째로 사라진다 — 이 서비스의 핵심 주장을 보여 줄 화면이 없어진다.
+   */
+  http.get(`${BASE}/families/:familyId/coach/runs/latest`, () => HttpResponse.json(db.coachRun)),
+
+  /**
    * ★ 미션이 만들어지는 유일한 지점.
    * 승인 전까지 db.missions 는 0건이고, 그게 이 서비스의 핵심 주장이다.
    */

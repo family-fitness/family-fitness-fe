@@ -53,6 +53,7 @@ export const qk = {
   },
   coach: {
     run: (runId: Uuid) => ["coach", "runs", runId] as const,
+    latest: (familyId: Uuid) => ["coach", "runs", "latest", familyId] as const,
   },
   videos: (list: string, profileId?: Uuid, ageGroup?: AgeGroup) =>
     ["videos", list, profileId ?? "-", ageGroup ?? "-"] as const,
@@ -265,6 +266,26 @@ export function useCoachRun(runId: Uuid | undefined) {
     queryFn: () => api.get<CoachRun>(`/coach/runs/${runId}`),
     enabled: Boolean(runId),
     refetchInterval: (q) => (q.state.data?.status === "RUNNING" ? 1500 : false),
+  });
+}
+
+/**
+ * 이 가족의 가장 최근 코치 회차.
+ *
+ * 실행한 `runId` 를 기기에 들고 있어서, 브라우저를 바꾸거나 저장소를 비우면
+ * **이번 주 제안을 다시 찾지 못하고** 화면이 "제안을 만들어 볼까요" 로 돌아갔다.
+ * 승인 기다리는 제안이 있는데도 없는 것처럼 보이는 게 이 서비스에서 가장
+ * 나쁜 상태다 — 승인 게이트가 통째로 사라진다.
+ *
+ * ▲ 요청: `GET /families/{familyId}/coach/runs/latest`.
+ * 아직 없으면 404 가 오고, 그때는 기기에 든 값만으로 지금처럼 돈다.
+ */
+export function useLatestCoachRun(familyId: Uuid | undefined) {
+  return useQuery({
+    queryKey: qk.coach.latest(familyId ?? ""),
+    queryFn: () => api.get<CoachRun>(`/families/${familyId}/coach/runs/latest`),
+    enabled: Boolean(familyId),
+    retry: false,
   });
 }
 

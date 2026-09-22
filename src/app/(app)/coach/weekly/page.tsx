@@ -18,6 +18,7 @@ import {
   useApproveCoachRun,
   useCoachRun,
   useFamilyProfiles,
+  useLatestCoachRun,
   useRejectCoachRun,
   useStartCoachRun,
 } from "@/lib/api/queries";
@@ -34,8 +35,16 @@ export default function WeeklyCoachPage() {
   // 프로필만이라 자녀 이름이 빠진다 — 이름은 가족 프로필 조회에서 찾는다
   const { data: family } = useFamilyProfiles(familyId);
 
-  const runId = useCoachRunId(familyId);
+  /*
+    기기에 들고 있는 회차가 먼저고, 없으면 서버에 이번 주 것을 묻는다.
+    저장소를 비운 브라우저에서 승인 기다리는 제안이 없는 것처럼 보이던 문제다.
+  */
+  const localRunId = useCoachRunId(familyId);
   const setRunId = useCoachStore((s) => s.setRunId);
+  const { data: latest, isPending: latestPending } = useLatestCoachRun(
+    localRunId ? undefined : familyId,
+  );
+  const runId = localRunId ?? latest?.coachRunId;
 
   const { data: run, isPending: runPending, error: runError, refetch } = useCoachRun(runId);
   const start = useStartCoachRun(familyId ?? "");
@@ -54,7 +63,7 @@ export default function WeeklyCoachPage() {
   const nameOf = (profileId: string | undefined) =>
     family?.profiles.find((p) => p.profileId === profileId)?.name ?? "가족";
 
-  if (sessionPending) return <WeeklySkeleton />;
+  if (sessionPending || (!localRunId && latestPending)) return <WeeklySkeleton />;
 
   // 만든 제안이 있는데 불러오지 못한 것. 처음부터 다시 만들라고 하면 안 된다
   if (runId && runError) {
@@ -77,7 +86,6 @@ export default function WeeklyCoachPage() {
           <EmptyState
             scene="waiting-approval"
             title="이번 주 제안을 만들어 볼까요"
-            description="보호자가 승인해야 미션이 됩니다"
             action={
               <Button
                 size="md"
@@ -131,9 +139,7 @@ export default function WeeklyCoachPage() {
         {run.status === "AWAITING_APPROVAL" && (
           <div className="flex items-start gap-3">
             <Illustration name="scene/scene-waiting-approval" size={56} />
-            <p className="text-ink-soft pt-1 text-sm leading-relaxed">
-              아직 미션이 아니에요. 보호자가 승인하면 이번 주 미션으로 시작돼요.
-            </p>
+            <p className="pt-1 text-sm leading-relaxed font-bold">아직 미션이 아니에요</p>
           </div>
         )}
 
@@ -147,17 +153,9 @@ export default function WeeklyCoachPage() {
           </section>
         )}
 
-        {run.status === "RUNNING" && (
-          <p className="text-ink-soft text-sm">자료를 찾는 중이에요. 보통 10초 안에 끝나요.</p>
-        )}
-
         {run.status === "FAILED" && (
           <div className="space-y-4">
-            <EmptyState
-              scene="no-record"
-              title="이번엔 제안을 만들지 못했어요"
-              description="측정 기록이 있는 구성원이 없거나 자료를 찾지 못했어요. 한 명이라도 측정을 등록하면 다시 시도할 수 있어요."
-            />
+            <EmptyState scene="no-record" title="이번엔 제안을 만들지 못했어요" />
             <Button
               size="block"
               variant="outline"
@@ -188,7 +186,6 @@ export default function WeeklyCoachPage() {
                     “{run.rejectedReason}”
                   </p>
                 )}
-                <p className="text-faint mt-1 text-xs">적어 주신 이유는 다음 주 편성에 참고돼요.</p>
               </div>
             </div>
             <Button
