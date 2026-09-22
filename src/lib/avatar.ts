@@ -10,17 +10,16 @@ import type { ProfileSummary } from "./api/types";
  *
  * 같은 프로필은 언제 봐도 같은 모습이어야 한다. profileId 를 씨앗으로 쓴다.
  */
-/** 아이가 꾸미기에서 고를 수 있는 전부. 고르는 자리에서는 성별로 나누지 않는다 */
-const KID_HAIR = [
-  "hair-bob",
-  "hair-ponytail",
-  "hair-short-m",
-  "hair-crop",
-  "hair-twintail",
-  "hair-cap-blue",
-];
+/**
+ * 아이가 꾸미기에서 고를 수 있는 전부. 고르는 자리에서는 성별로 나누지 않는다.
+ *
+ * `hair-cap-blue` 는 넣지 않는다 — **모자만 그린 장**이라 머리와 얼굴이 없다.
+ * 머리 층에 올리면 모자가 목 위에 떠 있고 얼굴이 사라진다. 다른 머리 장은
+ * 전부 머리통까지 같이 그려져 있다.
+ */
+const KID_HAIR = ["hair-bob", "hair-ponytail", "hair-short-m", "hair-crop", "hair-twintail"];
 /* 자동으로 고를 때만 성별을 따른다 */
-const KID_HAIR_M = ["hair-short-m", "hair-crop", "hair-cap-blue"];
+const KID_HAIR_M = ["hair-short-m", "hair-crop"];
 const KID_HAIR_F = ["hair-bob", "hair-ponytail", "hair-twintail"];
 const ADULT_HAIR_M = ["hair-dad-short", "hair-cap"];
 const ADULT_HAIR_F = ["hair-mom-long", "hair-bun", "hair-curly"];
@@ -54,7 +53,6 @@ export const PART_LABEL: Record<string, string> = {
   "hair-short-m": "짧은 머리",
   "hair-crop": "아주 짧은 머리",
   "hair-twintail": "양갈래",
-  "hair-cap-blue": "모자",
   "face-calm": "평소 얼굴",
   "face-happy": "웃는 얼굴",
   "face-cheer": "신난 얼굴",
