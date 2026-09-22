@@ -24,23 +24,33 @@ import { cn } from "@/lib/utils";
  * 제목이 이미 하는 말이고, 뒤 문장이 실제로 달라지는 것 — 코치가 나를 미션에
  * 넣느냐 마느냐 — 을 말한다.
  */
-const MODES: { value: SupportMode; title: string; description: string; art: string }[] = [
+const MODES: {
+  value: SupportMode;
+  title: string;
+  description: string;
+  /** 고르면 **아이 화면에 이렇게 뜬다**. 이게 이 화면의 전부다 */
+  kid: string;
+  art: string;
+}[] = [
   {
     value: "CHEER_ONLY",
     title: "응원할게요",
     description: "미션 편성에서 빠지고 응원을 보내요",
+    kid: "엄마가 보고 있어요",
     art: "item/item-whistle",
   },
   {
     value: "WEEKEND",
     title: "주말에는 같이",
     description: "코치가 주말 미션에 같이 넣어 줘요",
+    kid: "토요일에 같이 나가요",
     art: "item/item-shoes",
   },
   {
     value: "FULL",
     title: "매번 같이",
     description: "코치가 모든 미션에 동반자로 넣어 줘요",
+    kid: "엄마도 오늘 같이 해요",
     art: "item/item-medal",
   },
 ];
@@ -52,8 +62,12 @@ function SupportModePageContent() {
   const update = useUpdateSupportMode(profile?.profileId ?? "", familyId ?? "");
   const [error, setError] = useState<string | null>(null);
 
-  // 초대를 받아 막 들어온 길이면 여기가 끝이 아니다. 고르고 나서 갈 곳이 있어야 한다
-  const joining = params.get("from") === "claim";
+  /*
+    여기가 끝이 아닌 길이 둘이다 — 초대를 받아 막 들어온 길, 가입 중인 길.
+    둘 다 고르고 나서 갈 곳이 있어야 하고, 뒤로 가기를 주면 안 된다.
+  */
+  const from = params.get("from");
+  const joining = from === "claim" || from === "onboarding";
 
   if (isPending) return <SupportSkeleton />;
 
@@ -107,6 +121,10 @@ function SupportModePageContent() {
                     <span className="text-ink-soft mt-0.5 block text-sm leading-relaxed">
                       {mode.description}
                     </span>
+                    {/* 고르면 아이 화면이 어떻게 바뀌는지. 고르는 근거가 이것뿐이다 */}
+                    <span className="bg-signal-soft text-signal-deep text-micro mt-1.5 inline-block rounded-md px-2 py-1 font-bold">
+                      아이 화면에 「{mode.kid}」
+                    </span>
                   </span>
                   <span
                     className={cn(
@@ -133,7 +151,11 @@ function SupportModePageContent() {
         )}
 
         {joining && (
-          <Button size="block" disabled={!current} onClick={() => router.replace("/start")}>
+          <Button
+            size="block"
+            disabled={!current}
+            onClick={() => router.replace(from === "onboarding" ? "/parent" : "/start")}
+          >
             {current ? "다 골랐어요" : "하나 골라 주세요"}
           </Button>
         )}
