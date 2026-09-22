@@ -18,6 +18,7 @@ import { UpdateNudge } from "@/components/domain/update-nudge";
 import { useCoachRun, useFitnessMap, useLatestFitnessTest, useMissions } from "@/lib/api/queries";
 import { useCoachRunId } from "@/stores/coach-store";
 import { useSession } from "@/lib/session";
+import { useChatStore } from "@/stores/chat-store";
 import { useRoleStore } from "@/stores/role-store";
 
 /** 부모 홈. */
@@ -40,6 +41,7 @@ export default function ParentHomePage() {
 
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
+  const openChat = useChatStore((s) => s.openChat);
 
   const children = (map?.members ?? []).filter((m) => m.role === "CHILD");
   // 고른 적이 없으면 첫째로 본다. 기본값을 저장해 두지 않는다 —
@@ -166,8 +168,12 @@ export default function ParentHomePage() {
               }
               badge={run?.status === "AWAITING_APPROVAL" ? "승인 기다림" : undefined}
             />
+            {/*
+              별도 화면으로 보내지 않는다. 오른쪽 아래 창을 그대로 연다 —
+              보던 것을 두고 나가지 않아도 되는 게 그 창을 만든 이유다.
+            */}
             <HomeLink
-              href="/coach/chat"
+              onClick={() => openChat(child.profileId ?? undefined)}
               art="item/item-whistle"
               title="코치에게 묻기"
               description="국민체력100 운동처방에서 찾아 답합니다"
@@ -205,13 +211,16 @@ function ScoreBasis({ profileId }: { profileId: string | undefined }) {
 
 function HomeLink({
   href,
+  onClick,
   art,
   fallback,
   title,
   description,
   badge,
 }: {
-  href: string;
+  /** 가는 곳. 여는 것(코치 창)이면 onClick 만 준다 */
+  href?: string;
+  onClick?: () => void;
   art: string;
   fallback?: string;
   title: string;
@@ -219,20 +228,33 @@ function HomeLink({
   /** 지금 손봐야 할 줄에만 붙인다. 모든 줄에 배지가 있으면 아무것도 눈에 안 띈다 */
   badge?: string;
 }) {
+  const body = (
+    <>
+      <Illustration name={art} fallback={fallback} size={36} />
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-bold">{title}</span>
+        {description && <span className="text-ink-soft mt-0.5 block text-xs">{description}</span>}
+      </span>
+      {badge && (
+        <span className="bg-signal text-micro shrink-0 rounded-full px-2.5 py-1 font-extrabold text-white">
+          {badge}
+        </span>
+      )}
+    </>
+  );
+  const shape = "press flex w-full items-center gap-3 py-3.5 text-left";
+
   return (
     <li>
-      <NavLink href={href} className="press flex items-center gap-3 py-3.5">
-        <Illustration name={art} fallback={fallback} size={36} />
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold">{title}</span>
-          {description && <span className="text-ink-soft mt-0.5 block text-xs">{description}</span>}
-        </span>
-        {badge && (
-          <span className="bg-signal text-micro shrink-0 rounded-full px-2.5 py-1 font-extrabold text-white">
-            {badge}
-          </span>
-        )}
-      </NavLink>
+      {href ? (
+        <NavLink href={href} className={shape}>
+          {body}
+        </NavLink>
+      ) : (
+        <button type="button" onClick={onClick} className={shape}>
+          {body}
+        </button>
+      )}
     </li>
   );
 }

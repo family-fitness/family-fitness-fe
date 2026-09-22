@@ -875,7 +875,18 @@ const coaching = [
         버튼 한 번으로 미션을 만들 수 있다. 목에서는 운동·시간을 물으면 붙여 준다.
       */
       suggestion: topic.mission
-        ? { ...topic.mission, startDate: today(), endDate: week.weekEnd }
+        ? {
+            ...topic.mission,
+            startDate: today(),
+            endDate: week.weekEnd,
+            /* 물어본 사람이 빠진 제안을 내놓지 않는다 */
+            participantProfileIds: [
+              ...new Set([
+                ...(profileId ? [profileId] : []),
+                ...topic.mission.participantProfileIds,
+              ]),
+            ],
+          }
         : null,
     });
   }),

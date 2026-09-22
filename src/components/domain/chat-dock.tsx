@@ -11,6 +11,7 @@ import { useAskCoach, useFamilyProfiles } from "@/lib/api/queries";
 import { errorMessage } from "@/lib/errors";
 import { useSession } from "@/lib/session";
 import { useIsKidView } from "@/lib/view-role";
+import { useChatStore } from "@/stores/chat-store";
 import { useRoleStore } from "@/stores/role-store";
 import { cn } from "@/lib/utils";
 
@@ -42,6 +43,12 @@ export function ChatDock() {
   const { data: family } = useFamilyProfiles(familyId);
   const selectedChild = useRoleStore((s) => s.childProfileId);
 
+  /* 다른 화면의 줄에서도 열 수 있어야 한다 — 부모 홈의 "코치에게 묻기" */
+  const open = useChatStore((st) => st.open);
+  const openChat = useChatStore((st) => st.openChat);
+  const closeChat = useChatStore((st) => st.closeChat);
+  const asked = useChatStore((st) => st.aboutProfileId);
+
   /*
     **누구에 대해 묻는지**가 이 창의 전부다.
 
@@ -52,12 +59,11 @@ export function ChatDock() {
   const members = family?.profiles ?? [];
   const [aboutId, setAboutId] = useState<string | null>(null);
   const about =
-    members.find((m) => m.profileId === (aboutId ?? selectedChild)) ??
+    members.find((m) => m.profileId === (aboutId ?? asked ?? selectedChild)) ??
     members.find((m) => m.role === "CHILD") ??
     profile;
   const ask = useAskCoach(about?.profileId ?? profile?.profileId ?? "");
 
-  const [open, setOpen] = useState(false);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [conversationId, setConversationId] = useState<string | undefined>();
   const [draft, setDraft] = useState("");
@@ -123,7 +129,7 @@ export function ChatDock() {
       {!open && (
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => openChat()}
           aria-label="코치에게 묻기"
           className="press bg-signal fixed right-4 z-40 grid size-14 place-items-center rounded-full text-white shadow-lg"
           style={{ bottom: "calc(1rem + env(safe-area-inset-bottom))" }}
@@ -137,7 +143,7 @@ export function ChatDock() {
           <button
             type="button"
             aria-label="닫기"
-            onClick={() => setOpen(false)}
+            onClick={() => closeChat()}
             className="absolute inset-0 bg-black/25"
           />
 
@@ -150,7 +156,7 @@ export function ChatDock() {
             <header className="border-line flex h-14 shrink-0 items-center gap-2 border-b px-4">
               <Illustration name="item/item-whistle" size={26} className="shrink-0" />
               <h2 className="text-body min-w-0 flex-1 font-extrabold">
-                코치
+                코치{" "}
                 {about?.name && !isChild && (
                   <span className="text-ink-soft ml-1.5 text-sm font-bold">
                     {about.name} 이야기
@@ -159,7 +165,7 @@ export function ChatDock() {
               </h2>
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={() => closeChat()}
                 aria-label="닫기"
                 className="press text-ink-soft grid size-10 shrink-0 place-items-center rounded-full"
               >

@@ -33,7 +33,6 @@ const ROUTES = [
   "/kid/me",
   `/kid/play/video-IdpXx2gm90o`,
   "/coach/weekly",
-  "/coach/chat",
   "/missions/none",
   "/videos",
   "/videos/favorites",
