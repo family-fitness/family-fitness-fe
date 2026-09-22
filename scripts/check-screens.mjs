@@ -187,10 +187,39 @@ for (const route of KID_ROUTES) {
   await page.close();
 }
 
+/* ─── 좁은 폰에서 한 번 더 ─────────────────────────────────── */
+
+/**
+ * 320px. 아이폰 SE 와 갤럭시 폴드 접은 화면이 이만하다.
+ *
+ * 390 에서만 보면 가로로 넘치는 걸 못 잡는다 — 긴 이름 하나에 아이 홈
+ * 제목이 화면 밖으로 나가던 것이 여기서 잡혔다.
+ * 여기서는 **가로 스크롤만** 본다. 누르는 크기와 제목 수는 폭과 무관하다.
+ */
+const narrow = await browser.newContext({ viewport: { width: 320, height: 720 } });
+await narrow.addInitScript(...seed("parent"));
+
+for (const route of ROUTES) {
+  const page = await narrow.newPage();
+  try {
+    await page.goto(`${BASE}${route}`, { waitUntil: "load", timeout: 30000 });
+    await page.waitForTimeout(900);
+    const over = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    );
+    if (over) problems.push(`${route} (320px)\n    가로 스크롤`);
+  } catch {
+    // 넓은 화면에서 이미 봤다. 여기서 못 연 건 따로 적지 않는다
+  }
+  await page.close();
+}
+
 await browser.close();
 
 if (problems.length > 0) {
   console.error("화면 문제:\n  " + problems.join("\n  "));
   process.exit(1);
 }
-console.log(`화면 ${ROUTES.length}개 · 아이 모드 ${KID_ROUTES.length}개 이상 없음`);
+console.log(
+  `화면 ${ROUTES.length}개 · 아이 모드 ${KID_ROUTES.length}개 · 좁은 폰 ${ROUTES.length}개 이상 없음`,
+);
