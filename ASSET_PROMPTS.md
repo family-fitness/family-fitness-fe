@@ -1,5 +1,42 @@
 # 에셋 생성 명세 — 우리가족 체력키움
 
+## ★★ 가장 급한 것 — 머리카락이 없는 그림 12장
+
+1차로 받은 `move/` 12장 중 **11장에 머리카락이 없습니다.** `scene-first-body` 도 같습니다.
+민머리라 나이도 성별도 읽히지 않고, 아이 서비스 그림으로 쓰기 어렵습니다.
+**`move-jump-rope` 은 로그인 화면과 홈 화면 아이콘에 그대로 쓰이고 있습니다.**
+
+| 파일                          | 무엇                            |
+| ----------------------------- | ------------------------------- |
+| `move/move-grip.png`          | 악력계를 쥔 모습                |
+| `move/move-jump-rope.png`     | 줄넘기 ★ 앱 아이콘에 쓰임       |
+| `move/move-long-jump.png`     | 제자리멀리뛰기                  |
+| `move/move-plank.png`         | 플랭크                          |
+| `move/move-shuttle-run.png`   | 왕복달리기                      |
+| `move/move-single-leg.png`    | 외발서기                        |
+| `move/move-sit-and-reach.png` | 앉아윗몸앞으로굽히기            |
+| `move/move-situp.png`         | 윗몸말아올리기                  |
+| `move/move-stretch-back.png`  | 등 스트레칭                     |
+| `move/move-stretch-leg.png`   | 다리 스트레칭                   |
+| `move/move-walk.png`          | 걷기                            |
+| `scene/scene-first-body.png`  | 키 재는 그림 — 머리도 옷도 없음 |
+
+`move/move-squat.png` 한 장만 머리(묶음머리)가 있습니다. **그 그림의 결에 맞춰** 주세요.
+
+### 프롬프트에 꼭 넣어 주세요
+
+```
+the child has short dark navy hair clearly drawn on the head,
+hair silhouette is visible and distinct from the skin tone,
+wearing a white t-shirt and blue shorts and blue sneakers,
+not bald, no shaved head, no skin-coloured scalp, not naked
+```
+
+`anim/` 8종과 **같은 아이**로 보여야 합니다. 그쪽은 짧은 남색 머리에 흰 티셔츠,
+파란 반바지, 파란 운동화입니다.
+
+---
+
 ## ★ 지금 가장 급한 것 — 다시 뽑아야 할 프레임 13장
 
 3차로 받은 `anim/` 64장 중 **13장이 못 쓰는 상태**입니다. 화면은 이 장들을 자동으로
