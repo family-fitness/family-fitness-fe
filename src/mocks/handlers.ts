@@ -77,7 +77,7 @@ const db = {
   profiles: structuredClone(fixtures.profiles),
   fitnessMap: structuredClone(fixtures.fitnessMap),
   latest: structuredClone(fixtures.latestByProfile),
-  coachRun: structuredClone(fixtures.coachRun),
+  coachRun: freshCoachRun(),
   /** 이번 주 제안은 아직 0건이다. 심어 둔 것은 지난 회차에서 승인한 미션들이다 */
   missions: seedMissions(),
   videos: structuredClone(fixtures.videos.videos),
@@ -304,6 +304,25 @@ function seedMissions(): MissionRow[] {
       ],
     },
   ] as unknown as MissionRow[];
+}
+
+/**
+ * 이번 주 코치 회차.
+ *
+ * 픽스처에 날짜를 박아 두면 며칠만 지나도 "9월 14일 주간" 처럼 지난주 제안을
+ * 승인하라고 내민다. 제안 기간도 이번 주로 맞춘다 — 기간이 지난 제안을
+ * 승인하면 태어나자마자 끝난 미션이 된다.
+ */
+function freshCoachRun() {
+  const run = structuredClone(fixtures.coachRun);
+  const week = thisWeek();
+  run.weekStart = week.weekStart;
+  run.proposals = (run.proposals ?? []).map((proposal) => ({
+    ...proposal,
+    startDate: week.weekStart,
+    endDate: week.weekEnd,
+  }));
+  return run;
 }
 
 function saveCheers(cheers: CheerLog[]) {

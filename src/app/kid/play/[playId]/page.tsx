@@ -206,9 +206,24 @@ export default function PlayPage() {
           </p>
         )}
 
-        {/* 아이가 누르는 마지막 버튼. 여기까지 오면 오늘 할 일은 끝이다 */}
-        {how === "video" && (
-          <>
+        {/*
+          아이가 누르는 마지막 버튼.
+
+          타이머가 있는 미션에서는 **시작하기 아래에 둘째로** 둔다. 둘 다 크고
+          파란 버튼이면 아이는 어느 쪽이 먼저인지 모른다 — 앱이 직접 보는
+          기록(타이머)이 먼저고, 직접 적는 건 그다음이다(도메인 규칙 2).
+          타이머가 없는 영상 미션에서는 이게 유일한 버튼이라 크게 둔다.
+        */}
+        {how === "video" &&
+          (isTimer && mission?.missionId ? (
+            <button
+              type="button"
+              onClick={() => setDone(true)}
+              className="press border-line text-ink w-full rounded-2xl border-2 py-4 text-base font-extrabold"
+            >
+              다 했어요!
+            </button>
+          ) : (
             <button
               type="button"
               onClick={() => setDone(true)}
@@ -216,8 +231,7 @@ export default function PlayPage() {
             >
               다 했어요!
             </button>
-          </>
-        )}
+          ))}
       </Stage>
     </>
   );

@@ -132,13 +132,18 @@ export default function MissionDetailPage() {
 
             {recordable.length > 1 && (
               <div className="mb-3 flex flex-wrap gap-2">
+                {/*
+                  고른 칸은 recordForId 가 아니라 **실제로 기록될 사람**으로 친다.
+                  아직 누르지 않았을 때 recordForId 는 비어 있어서, 이걸로 비교하면
+                  어느 칸도 켜지지 않은 채 첫 사람 몫이 조용히 적히고 있었다.
+                */}
                 {recordable.map((p) => (
                   <button
                     key={p.profileId}
                     type="button"
-                    aria-pressed={p.profileId === recordForId}
+                    aria-pressed={p.profileId === recordFor.profileId}
                     onClick={() => setRecordForId(p.profileId ?? null)}
-                    className={cn("chip press", p.profileId === recordForId && "chip-on")}
+                    className={cn("chip press", p.profileId === recordFor.profileId && "chip-on")}
                   >
                     {p.profileId === profile?.profileId ? "나" : p.name}
                   </button>
