@@ -34,36 +34,45 @@ export function FamilyMap({
         <span className="text-faint text-micro font-bold">각자의 또래와 견준 자리</span>
       </div>
 
-      {/* 축 하나에 모두 올린다. 사람마다 따로 그리면 견줄 수가 없다.
-          한 명만 쟀으면 축을 그리지 않는다 — 점 하나짜리 축은 말해 주는 게 없다 */}
+      {/*
+        축 하나에 모두 올린다. 사람마다 따로 그리면 견줄 수가 없다.
+        한 명만 쟀으면 축을 그리지 않는다 — 점 하나짜리 축은 말해 주는 게 없다.
+
+        아바타는 **축 위쪽에만** 둔다. 위아래로 번갈아 놓으면 아래쪽 것이
+        눈금 글자를 덮는다. 자리가 가까우면 높이만 조금 어긋나게 한다.
+      */}
       {measured.length > 1 && (
-        <div className="relative mt-3 h-24">
-          <span className="bg-sub absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full" />
-          <span className="bg-line absolute top-1/2 left-1/2 h-8 w-px -translate-x-1/2 -translate-y-1/2" />
+        <div className="relative mt-4 h-32">
+          {/* 막대는 아래쪽에 깔고 그 위에 사람을 세운다 */}
+          <span className="bg-sub absolute inset-x-0 bottom-7 h-2 rounded-full" />
+          <span className="bg-line absolute bottom-5 left-1/2 h-6 w-px -translate-x-1/2" />
           <span className="text-faint text-micro absolute bottom-0 left-1/2 -translate-x-1/2 font-bold">
             또래 평균
           </span>
 
-          {measured.map((member, i) => {
-            const score = member.latest?.overallPercentile ?? 0;
-            return (
-              <Link
-                key={member.profileId}
-                href={`/parent/child/${member.profileId}`}
-                aria-label={`${member.name} 또래 100명 중 ${score}번째`}
-                className="press absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
-                style={{
-                  left: `${Math.min(94, Math.max(6, score))}%`,
-                  // 자리가 겹치면 위아래로 어긋나게 둔다
-                  marginTop: i % 2 === 0 ? -14 : 14,
-                }}
-              >
-                <span className="border-paper bg-paper block rounded-full border-2 shadow-sm">
-                  <Avatar parts={avatarFor(member)} size={38} />
-                </span>
-              </Link>
-            );
-          })}
+          {measured
+            .slice()
+            .sort((a, b) => (a.latest?.overallPercentile ?? 0) - (b.latest?.overallPercentile ?? 0))
+            .map((member, i) => {
+              const score = member.latest?.overallPercentile ?? 0;
+              return (
+                <Link
+                  key={member.profileId}
+                  href={`/parent/child/${member.profileId}`}
+                  aria-label={`${member.name} 또래 100명 중 ${score}번째`}
+                  className="press absolute -translate-x-1/2"
+                  style={{
+                    left: `${Math.min(92, Math.max(8, score))}%`,
+                    /* 막대가 28~36px 를 차지한다. 그 위에 올라서게 둔다 */
+                    bottom: i % 2 === 0 ? 38 : 56,
+                  }}
+                >
+                  <span className="border-paper bg-paper block rounded-full border-2">
+                    <Avatar parts={avatarFor(member)} size={34} />
+                  </span>
+                </Link>
+              );
+            })}
         </div>
       )}
 

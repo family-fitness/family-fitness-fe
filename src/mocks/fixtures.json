@@ -77,8 +77,23 @@
         "measurable": true,
         "consentRequired": false,
         "consentGiven": true,
-        "headline": null,
-        "latest": null
+        "headline": "성인 상위 38%",
+        "latest": {
+          "fitnessTestId": "00000000-0000-4000-8000-000000000031",
+          "testedOn": "2026-09-10",
+          "overallPercentile": 62,
+          "weakest": {
+            "factor": "유연성",
+            "itemCode": "012",
+            "percentile": 41
+          },
+          "strongest": {
+            "factor": "근력",
+            "itemCode": "028",
+            "percentile": 78
+          },
+          "coachDirection": "GROWTH"
+        }
       },
       {
         "profileId": "00000000-0000-4000-8000-000000000012",
@@ -118,8 +133,23 @@
         "measurable": true,
         "consentRequired": false,
         "consentGiven": true,
-        "headline": null,
-        "latest": null
+        "headline": "성인 상위 71%",
+        "latest": {
+          "fitnessTestId": "00000000-0000-4000-8000-000000000032",
+          "testedOn": "2026-08-30",
+          "overallPercentile": 29,
+          "weakest": {
+            "factor": "심폐지구력",
+            "itemCode": "020",
+            "percentile": 18
+          },
+          "strongest": {
+            "factor": "유연성",
+            "itemCode": "012",
+            "percentile": 44
+          },
+          "coachDirection": "GROWTH"
+        }
       }
     ],
     "disclaimer": "국민체력100 측정 데이터를 바탕으로 한 참고 정보입니다. 질병의 진단·치료를 위한 것이 아니며, 건강에 관한 판단은 전문가와 상담하세요."
