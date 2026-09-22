@@ -15,6 +15,7 @@ import { YouTubePlayer } from "@/components/domain/youtube-player";
 import { errorMessage } from "@/lib/errors";
 import {
   useConfirmParticipant,
+  useFamilyProfiles,
   useMissions,
   useRecordSteps,
   useRecordTimer,
@@ -23,7 +24,7 @@ import {
 import { useSession } from "@/lib/session";
 import { today } from "@/lib/today";
 import { progressPercent, targetCopy } from "@/lib/mission";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 /**
  * 미션 하나 — 기록하는 곳.
@@ -34,9 +35,12 @@ export default function MissionDetailPage() {
   const { profile, familyId, isPending: sessionPending } = useSession();
 
   const { data, isLoading } = useMissions(familyId, { scope: "ALL" });
+  const { data: family } = useFamilyProfiles(familyId);
   const mission = data?.missions?.find((m) => m.missionId === missionId);
 
   const [error, setError] = useState<string | null>(null);
+  /** 누구 몫을 적는 중인지. 고르지 않았으면 첫 번째 */
+  const [recordForId, setRecordForId] = useState<string | null>(null);
   const [celebrating, setCelebrating] = useState(false);
 
   // 내가 방금 끝냈을 때만 한 번 터뜨린다. 들어올 때마다 터지면 축하가 아니라 소음이다
@@ -76,9 +80,21 @@ export default function MissionDetailPage() {
   }
 
   const participants = mission.participants ?? [];
-  const me = participants.find((p) => p.profileId === profile?.profileId);
   const isParent = profile?.role === "PARENT";
   const waiting = participants.filter((p) => p.needsGuardianCheck);
+
+  /*
+    적을 수 있는 몫: 내 것 + (보호자라면) 계정이 없는 참여자의 것.
+    계정이 있는 사람 몫을 대신 적지는 않는다 — 자기 기록은 자기가 적는다.
+  */
+  const recordable = participants.filter((p) => {
+    if (p.profileId === profile?.profileId) return true;
+    if (!isParent) return false;
+    const inFamily = family?.profiles?.find((member) => member.profileId === p.profileId);
+    return inFamily?.hasAccount === false;
+  });
+  const recordFor =
+    recordable.find((p) => p.profileId === recordForId) ?? recordable[0] ?? undefined;
 
   return (
     <>
@@ -101,12 +117,35 @@ export default function MissionDetailPage() {
           <p className="text-ink-soft text-sm leading-relaxed">{mission.rationale}</p>
         )}
 
-        {/* 기록하기. 내가 참여자일 때만 나온다 */}
-        {me && (
+        {/*
+          기록하기.
+
+          내 몫만 적을 수 있으면 **폰이 없는 아이의 기록이 영영 안 남는다** —
+          이 서비스는 프로필만 있으면 굴러가게 만들어 뒀다. 계약상 가족 구성원은
+          다른 참여자 몫도 적을 수 있으므로(profileId 를 본문에 싣는다),
+          계정이 없는 참여자가 있으면 보호자가 누구 몫인지 골라 적는다.
+        */}
+        {recordFor && (
           <section>
             <div className="section-head">
               <h2>오늘 기록하기</h2>
             </div>
+
+            {recordable.length > 1 && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {recordable.map((p) => (
+                  <button
+                    key={p.profileId}
+                    type="button"
+                    aria-pressed={p.profileId === recordForId}
+                    onClick={() => setRecordForId(p.profileId ?? null)}
+                    className={cn("chip press", p.profileId === recordForId && "chip-on")}
+                  >
+                    {p.profileId === profile?.profileId ? "나" : p.name}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {mission.targetMetric === "TIMER_MINUTES" && (
               <MissionTimer
@@ -115,7 +154,10 @@ export default function MissionDetailPage() {
                 onFinish={async (body) => {
                   setError(null);
                   try {
-                    await recordTimer.mutateAsync({ profileId: me.profileId ?? "", ...body });
+                    await recordTimer.mutateAsync({
+                      profileId: recordFor.profileId ?? "",
+                      ...body,
+                    });
                   } catch (e) {
                     setError(activityMessage(e));
                   }
@@ -130,7 +172,7 @@ export default function MissionDetailPage() {
                   startSec={mission.video.startSec}
                   onProgress={(progress, watchedSec) => {
                     recordVideo.mutate({
-                      profileId: me.profileId ?? "",
+                      profileId: recordFor.profileId ?? "",
                       progress,
                       watchedSec,
                       missionId,
@@ -147,7 +189,7 @@ export default function MissionDetailPage() {
                   setError(null);
                   try {
                     await recordSteps.mutateAsync({
-                      profileId: me.profileId ?? "",
+                      profileId: recordFor.profileId ?? "",
                       activityDate: today(),
                       steps,
                     });

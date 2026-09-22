@@ -2,6 +2,8 @@
 
 import { Check, ChevronRight } from "lucide-react";
 import Link from "next/link";
+
+import { useIsKidView } from "@/lib/view-role";
 import { useState } from "react";
 
 import type { CheerLog, Mission } from "@/lib/api/types";
@@ -26,6 +28,7 @@ export function TodayBoard({
   parentProfileId: string;
   missions: Mission[] | undefined;
 }) {
+  const kidView = useIsKidView();
   // 아이가 나에게 보낸 알림 · 내가 아이에게 보낸 칭찬
   const { data: inbox } = useCheers(familyId, parentProfileId);
   const { data: given } = useCheers(familyId, childProfileId);
@@ -120,9 +123,15 @@ export function TodayBoard({
 
             return (
               <li key={mission.missionId}>
-                {/** 누가 눌러도 같은 화면으로 간다. */}
+                {/*
+                  가는 곳이 역할에 따라 다르다. 아이는 바로 운동 화면으로 가고,
+                  부모는 미션 상세로 간다 — 부모에게 "세기 놀이" 화면을 열어 주면
+                  자기가 할 일이 아니라 아이가 할 일을 보게 된다.
+                */}
                 <Link
-                  href={`/kid/play/${mission.missionId}`}
+                  href={
+                    kidView ? `/kid/play/${mission.missionId}` : `/missions/${mission.missionId}`
+                  }
                   className="press flex items-start gap-3 py-4"
                 >
                   <span
