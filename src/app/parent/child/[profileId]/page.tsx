@@ -11,8 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BadgeStrip } from "@/components/domain/badge-row";
 import { RecordList } from "@/components/domain/record-list";
 import { earnedBadges } from "@/lib/badges";
-import { FactorRow, StatStrip } from "@/components/domain/stat-strip";
-import { daysSince } from "@/lib/today";
+import { FactorRow, RecentForm, StatStrip } from "@/components/domain/stat-strip";
+import { daysBefore, daysSince } from "@/lib/today";
 import {
   useCheers,
   useFamilyProfiles,
@@ -107,6 +107,27 @@ export default function ChildDetailPage() {
   });
   const weakest = latest?.weakest;
   /*
+    최근 7일. 측정 점수는 몇 달에 한 번 바뀌지만 이 줄은 오늘 움직이면
+    오늘 바뀐다 — 부모가 매일 열어 볼 이유가 여기서 생긴다.
+  */
+  const sevenDaysAgo = daysBefore(6);
+  const recentParts = recent
+    .filter((m) => (m.endDate ?? "") >= sevenDaysAgo)
+    .flatMap((m) =>
+      (m.participants ?? []).filter((p) => p.profileId === profileId).map((p) => ({ m, p })),
+    );
+  const recentMinutes = recentParts.reduce(
+    (sum, { m, p }) =>
+      sum +
+      (m.targetMetric === "TIMER_MINUTES"
+        ? Math.round((p.progress ?? 0) * (m.targetValue ?? 0))
+        : 0),
+    0,
+  );
+  const recentPraise = (cheers?.cheers ?? []).filter(
+    (c) => c.toProfileId === profileId && c.message && c.createdAt.slice(0, 10) >= sevenDaysAgo,
+  ).length;
+  /*
     서버가 돌려주면 서버 값을 쓴다. 기기에 들고 있는 값은 **서버가 아직 안
     돌려줄 때만** 쓰는 임시 저장이라, 둘이 다르면 서버가 맞다.
   */
@@ -148,7 +169,17 @@ export default function ChildDetailPage() {
           </div>
         )}
 
-        {/* 2. 요인별. 레이더는 모양만 보이고 값을 못 읽어서 표로 세운다 */}
+        {/* 2. 최근 며칠. 통산 점수만으론 지금 어떤 상태인지 알 수 없다 */}
+        <RecentForm
+          days={7}
+          items={[
+            { label: "움직인 시간", value: recentMinutes, unit: "분" },
+            { label: "끝낸 미션", value: recentParts.filter(({ p }) => p.completed).length },
+            { label: "받은 칭찬", value: recentPraise },
+          ]}
+        />
+
+        {/* 3. 요인별. 레이더는 모양만 보이고 값을 못 읽어서 표로 세운다 */}
         {radar.length > 0 && (
           <section>
             <div className="section-head">
@@ -167,7 +198,7 @@ export default function ChildDetailPage() {
           </section>
         )}
 
-        {/* 3. 항목별 원값. 무엇을 재서 나온 수인지 */}
+        {/* 4. 항목별 원값. 무엇을 재서 나온 수인지 */}
         {items.length > 0 && (
           <section>
             <div className="section-head">
@@ -193,7 +224,7 @@ export default function ChildDetailPage() {
           </section>
         )}
 
-        {/* 4. 지금 몸 */}
+        {/* 5. 지금 몸 */}
         <section>
           <div className="section-head">
             <h2>지금 몸</h2>
@@ -212,7 +243,7 @@ export default function ChildDetailPage() {
           </dl>
         </section>
 
-        {/* 5. 최근 기록. 무엇으로 확인된 기록인지가 줄마다 보인다 */}
+        {/* 6. 최근 기록. 무엇으로 확인된 기록인지가 줄마다 보인다 */}
         {recent.length > 0 && (
           <section>
             <div className="section-head">

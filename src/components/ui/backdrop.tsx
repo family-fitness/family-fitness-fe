@@ -35,6 +35,15 @@ export function Backdrop({ name, className }: { name: string; className?: string
         sizes="100vw"
         onError={() => setFailed(true)}
         className="object-contain object-top"
+        /*
+          아래쪽을 흐리게 지운다. 장면과 글이 만나는 자리에 선이 생기면
+          장식이 아니라 얼룩으로 읽힌다 — 본 영상 화면에서 체육관 공이
+          카드 모서리에 걸려 있던 게 그랬다.
+        */
+        style={{
+          maskImage: "linear-gradient(to bottom, #000 45%, transparent 95%)",
+          WebkitMaskImage: "linear-gradient(to bottom, #000 45%, transparent 95%)",
+        }}
       />
     </span>
   );

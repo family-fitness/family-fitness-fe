@@ -34,3 +34,15 @@ export function ageOf(birthDate: string | null | undefined, on: string = today()
     (day.getMonth() === born.getMonth() && day.getDate() < born.getDate());
   return day.getFullYear() - born.getFullYear() - (yetToHaveBirthday ? 1 : 0);
 }
+
+/**
+ * 며칠 전 날짜(YYYY-MM-DD).
+ *
+ * "최근 7일" 같은 구간의 시작을 잡을 때 쓴다. 화면에서 직접 `Date.now()` 를
+ * 부르면 렌더마다 값이 달라져서 리액트 컴파일러가 순수하지 않다고 막는다.
+ */
+export function daysBefore(days: number, from: string = today()): string {
+  const day = new Date(`${from}T00:00:00`);
+  day.setDate(day.getDate() - days);
+  return day.toISOString().slice(0, 10);
+}

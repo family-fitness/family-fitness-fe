@@ -94,3 +94,45 @@ export function FactorRow({
     </div>
   );
 }
+
+/**
+ * 최근 며칠을 숫자 몇 개로.
+ *
+ * 전적 검색 사이트의 "최근 20경기" 자리다 — 통산 값 하나만 크게 띄우면
+ * **지금 어떤 상태인지**를 말해 주지 못한다. 측정 점수는 몇 달에 한 번
+ * 바뀌지만 이 줄은 오늘 움직이면 오늘 바뀐다.
+ *
+ * 색으로 잘잘못을 말하지 않는다. 0 이어도 회색이지 빨강이 아니다.
+ */
+export function RecentForm({
+  days,
+  items,
+}: {
+  /** 며칠치를 센 건지 */
+  days: number;
+  items: { label: string; value: number; unit?: string }[];
+}) {
+  return (
+    <section>
+      <div className="section-head">
+        <h2>최근 {days}일</h2>
+      </div>
+      <dl className="mt-1 flex">
+        {items.map((item) => (
+          <div
+            key={item.label}
+            className="border-line flex-1 border-l pl-3 first:border-l-0 first:pl-0"
+          >
+            <dt className="text-faint text-micro font-bold">{item.label}</dt>
+            <dd className="board-num text-signal-deep mt-0.5 text-2xl leading-none">
+              {item.value}
+              {item.unit && (
+                <span className="text-ink-soft ml-0.5 text-xs font-bold">{item.unit}</span>
+              )}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
