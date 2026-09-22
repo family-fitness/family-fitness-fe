@@ -110,15 +110,19 @@ export default function KidHomePage() {
   const doneCount = (watched?.videos ?? []).filter((v) => isVideoDone(v.maxProgress)).length;
   const allCheers = cheerLog?.cheers ?? [];
   /*
-    오늘 이미 해냈나.
+    오늘 몫을 끝냈나.
 
     전에는 다 하고 돌아와도 곧바로 다음 영상을 권했다. 아이 눈에는 해도 해도
     끝이 없는 화면이고, 어른이 보기에도 재촉이다. 오늘 몫을 끝냈으면
     **해냈다는 화면**을 먼저 보여 주고, 더 하고 싶을 때만 고르러 가게 한다.
+
+    **남은 미션이 있으면 축하하지 않는다.** 오늘 하나 알렸어도 아직 할 게
+    남았는데 "다 했어요" 라고 쓰면 화면이 거짓말을 한다.
   */
-  const finishedToday = allCheers.some(
+  const toldToday = allCheers.some(
     (c) => c.fromProfileId === childProfileId && c.createdAt.slice(0, 10) === today(),
   );
+  const finishedToday = toldToday && !todo;
   const praises = allCheers.filter((c) => c.toProfileId === childProfileId && c.message);
   const badges = earnedBadges({
     watched: watched?.videos,
