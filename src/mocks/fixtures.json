@@ -948,39 +948,6 @@
     ],
     "nextCursor": null
   },
-  "report": {
-    "weekStart": "2026-09-14",
-    "weekEnd": "2026-09-20",
-    "summary": null,
-    "missionStats": {
-      "total": 0,
-      "completed": 0
-    },
-    "members": [
-      {
-        "profileId": "00000000-0000-4000-8000-000000000011",
-        "name": "은영",
-        "activeMinutes": 0,
-        "verifiedMinutes": 0,
-        "completedMissions": 0
-      },
-      {
-        "profileId": "00000000-0000-4000-8000-000000000012",
-        "name": "서준",
-        "activeMinutes": 0,
-        "verifiedMinutes": 0,
-        "completedMissions": 0
-      },
-      {
-        "profileId": "00000000-0000-4000-8000-000000000013",
-        "name": "도현",
-        "activeMinutes": 0,
-        "verifiedMinutes": 0,
-        "completedMissions": 0
-      }
-    ],
-    "cheerCount": 0
-  },
   "prediction": {
     "predictionId": "7c4c4af9-d640-4286-88fa-420a164bf9cf",
     "modelVersion": "ai-trajectory-v1",

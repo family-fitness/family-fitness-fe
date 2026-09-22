@@ -20,10 +20,9 @@ import type {
   PredictionResult,
   ProfileSummary,
   VideoList,
-  WeeklyReport,
 } from "@/lib/api/types";
 
-import { isVideoDone } from "@/lib/mission";
+import { isVideoDone, serverKnows } from "@/lib/mission";
 import { ageOf, today } from "@/lib/today";
 
 import fixturesJson from "./fixtures.json";
@@ -46,7 +45,6 @@ interface Fixtures {
   coachApprove: CoachApproveResult;
   missionsAfterApproval: MissionList;
   videos: VideoList;
-  report: WeeklyReport;
   prediction: PredictionResult;
 }
 
@@ -1052,9 +1050,62 @@ const missions = [
     });
   }),
 
-  http.get(`${BASE}/families/:familyId/report/weekly`, () =>
-    HttpResponse.json({ ...fixtures.report, ...thisWeek() }),
-  ),
+  /**
+   * 주간 기록은 **지금 서버 상태에서 센다.**
+   *
+   * 픽스처를 그대로 돌려주면 미션을 하고 칭찬을 주고받아도 화면은 늘 0분이라
+   * "이번 주는 이제 시작이에요" 에 머문다. 시연에서 방금 한 일이 다음 화면에
+   * 안 보이는 게 가장 나쁘다.
+   */
+  http.get(`${BASE}/families/:familyId/report/weekly`, () => {
+    const week = thisWeek();
+    const inWeek = (date: string | null | undefined) =>
+      Boolean(date) && date! >= week.weekStart && date! <= week.weekEnd;
+
+    const missions = db.missions.filter((m) => inWeek(m.endDate));
+    const members = db.profiles.profiles.map((profile) => {
+      const mine = missions.flatMap((m) =>
+        (m.participants ?? [])
+          .filter((p) => p.profileId === profile.profileId)
+          .map((p) => ({ m, p })),
+      );
+      /* 진행률 × 목표 분. 걸음수 미션은 분으로 세지 않는다 */
+      const minutes = mine.reduce(
+        (sum, { m, p }) =>
+          sum +
+          (m.targetMetric === "TIMER_MINUTES"
+            ? Math.round((p.progress ?? 0) * (m.targetValue ?? 0))
+            : 0),
+        0,
+      );
+      const verified = mine.reduce(
+        (sum, { m, p }) =>
+          sum +
+          (m.targetMetric === "TIMER_MINUTES" && serverKnows(p.verifiedBy)
+            ? Math.round((p.progress ?? 0) * (m.targetValue ?? 0))
+            : 0),
+        0,
+      );
+      return {
+        profileId: profile.profileId,
+        name: profile.name,
+        activeMinutes: minutes,
+        verifiedMinutes: verified,
+        completedMissions: mine.filter(({ p }) => p.completed).length,
+      };
+    });
+
+    return HttpResponse.json({
+      ...week,
+      summary: null,
+      missionStats: {
+        total: missions.length,
+        completed: missions.filter((m) => (m.participants ?? []).every((p) => p.completed)).length,
+      },
+      members,
+      cheerCount: db.cheers.filter((c) => inWeek(c.createdAt.slice(0, 10)) && c.message).length,
+    });
+  }),
 ];
 
 const videos = [
