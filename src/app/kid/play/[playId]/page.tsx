@@ -125,8 +125,12 @@ export default function PlayPage() {
   return (
     <>
       <AppBar back title={title} />
-      <Stage wide className="relative space-y-5">
-        <Backdrop name={how === "video" ? "bg/bg-living-room" : "bg/bg-playground"} />
+      {/*
+        여기엔 배경 장면을 깔지 않는다. 첫 줄이 누르는 칩이라 거실 스탠드가
+        칩 위로 올라왔고, 그 아래는 곧바로 검은 영상 상자다 — 장면이 보일
+        자리가 없다.
+      */}
+      <Stage wide className="space-y-5">
         <div className="flex gap-2" role="tablist" aria-label="어떻게 할까요">
           {(
             [
