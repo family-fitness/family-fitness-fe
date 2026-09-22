@@ -30,6 +30,7 @@ import {
 import { useSession } from "@/lib/session";
 import { earnedBadges } from "@/lib/badges";
 import { isVideoDone } from "@/lib/mission";
+import { today } from "@/lib/today";
 import { labelBadges, pickTodayVideo, videoArt, whyThisVideo } from "@/lib/video-label";
 import { useRoleStore } from "@/stores/role-store";
 
@@ -108,6 +109,16 @@ export default function KidHomePage() {
   const why = suggestion ? whyThisVideo(suggestion, me?.latest?.weakest?.factor) : null;
   const doneCount = (watched?.videos ?? []).filter((v) => isVideoDone(v.maxProgress)).length;
   const allCheers = cheerLog?.cheers ?? [];
+  /*
+    오늘 이미 해냈나.
+
+    전에는 다 하고 돌아와도 곧바로 다음 영상을 권했다. 아이 눈에는 해도 해도
+    끝이 없는 화면이고, 어른이 보기에도 재촉이다. 오늘 몫을 끝냈으면
+    **해냈다는 화면**을 먼저 보여 주고, 더 하고 싶을 때만 고르러 가게 한다.
+  */
+  const finishedToday = allCheers.some(
+    (c) => c.fromProfileId === childProfileId && c.createdAt.slice(0, 10) === today(),
+  );
   const praises = allCheers.filter((c) => c.toProfileId === childProfileId && c.message);
   const badges = earnedBadges({
     watched: watched?.videos,
@@ -146,8 +157,13 @@ export default function KidHomePage() {
 
         {/* 오늘 할 일 하나. 여러 개를 늘어놓지 않는다 */}
         <section>
-          <SectionTitle>오늘 할 운동</SectionTitle>
-          {todo ? (
+          <SectionTitle>{finishedToday ? "오늘 한 일" : "오늘 할 운동"}</SectionTitle>
+          {finishedToday ? (
+            <div className="border-done bg-done-soft rounded-3xl border-2 p-5 text-center">
+              <KidCharacter motion="cheer" size={120} className="mx-auto" />
+              <p className="text-done mt-2 text-2xl font-extrabold">오늘 다 했어요</p>
+            </div>
+          ) : todo ? (
             <BigAction
               href={`/kid/play/${todo.missionId}`}
               title={todo.title ?? "오늘의 운동"}
