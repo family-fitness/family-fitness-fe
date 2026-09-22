@@ -119,13 +119,73 @@ function loadActing(): string {
   }
 }
 
-/** 탭 저장소에서 되살린다. 브라우저가 아닌 곳(검사 스크립트)에서는 빈 배열이다 */
+/**
+ * 탭 저장소에서 되살린다. 없으면 **이미 쓰던 가족**으로 시작한다.
+ *
+ * 빈 상태로 시작하면 칭찬 화면도, 부모 홈의 오늘도, 기념 표시도 전부 빈 화면이다.
+ * 시연에서 처음 보는 화면이 전부 "아직 없어요" 면 이 앱이 무엇을 하는지 보여 줄
+ * 기회가 없다. 첫 화면부터 며칠치 기록이 쌓여 있어야 순환이 보인다.
+ */
 function loadCheers(): CheerLog[] {
   try {
-    return JSON.parse(sessionStorage.getItem(CHEER_KEY) ?? "[]") as CheerLog[];
+    const saved = sessionStorage.getItem(CHEER_KEY);
+    if (saved) return JSON.parse(saved) as CheerLog[];
   } catch {
-    return [];
+    return seedCheers();
   }
+  return seedCheers();
+}
+
+/**
+ * 며칠 전 몇 시.
+ *
+ * 오늘 것은 **지금보다 앞선 시각이 되면 안 된다** — 새벽에 열면 저녁 7시가
+ * 미래가 되고, 화면이 아직 오지 않은 일을 이미 일어난 일처럼 보여 준다.
+ */
+function daysAgo(days: number, hour: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  d.setHours(days === 0 ? Math.min(hour, d.getHours()) : hour, 12, 0, 0);
+  return d.toISOString();
+}
+
+/**
+ * 이번 주에 오간 말들. 날짜는 늘 오늘 기준이라 언제 열어도 이번 주다.
+ *
+ * 오는 순서가 중요하다 — 아이가 알리면(`missionId` 있음) 부모가 답한다.
+ * 그 짝이 맞아야 부모 홈의 "오늘" 이 기다리는 줄과 답한 줄을 가른다.
+ *
+ * **오늘 것 하나는 답이 없는 채로 둔다.** 부모가 앱을 열었을 때 할 일이
+ * 하나 있어야 이 서비스가 무엇을 하는지 한 화면에서 보인다.
+ */
+function seedCheers(): CheerLog[] {
+  type Row = { from: string; to: string; msg: string; mission: string | null; days: number };
+  const rows: Row[] = [
+    // 오늘 — 아이가 알렸고 부모는 아직 답하지 않았다
+    { from: DEMO.kid, to: DEMO.mom, msg: "줄넘기 2분 다 했어요!", mission: "seed-m1", days: 0 },
+    { from: DEMO.kid, to: DEMO.dad, msg: "줄넘기 2분 다 했어요!", mission: "seed-m1", days: 0 },
+    // 어제 — 알리고 받았다
+    { from: DEMO.kid, to: DEMO.mom, msg: "같이 스트레칭 다 했어요!", mission: "seed-m2", days: 1 },
+    { from: DEMO.mom, to: DEMO.kid, msg: "끝까지 한 게 제일 멋있어", mission: "seed-m2", days: 1 },
+    { from: DEMO.dad, to: DEMO.kid, msg: "아빠보다 오래 하던데?", mission: "seed-m2", days: 1 },
+    // 사흘 전
+    { from: DEMO.kid, to: DEMO.mom, msg: "제자리 뛰기 다 했어요!", mission: "seed-m3", days: 3 },
+    { from: DEMO.mom, to: DEMO.kid, msg: "오늘 진짜 잘했어", mission: "seed-m3", days: 3 },
+  ];
+  const nameOf = (id: string) =>
+    fixtures.profiles.profiles.find((p) => p.profileId === id)?.name ?? "가족";
+
+  return rows
+    .map((row, i) => ({
+      cheerId: `seed-cheer-${i}`,
+      fromProfileId: row.from,
+      fromName: nameOf(row.from),
+      toProfileId: row.to,
+      message: row.msg,
+      missionId: row.mission,
+      createdAt: daysAgo(row.days, row.from === DEMO.kid ? 17 : 21),
+    }))
+    .reverse(); // 최신이 앞
 }
 
 function saveCheers(cheers: CheerLog[]) {
