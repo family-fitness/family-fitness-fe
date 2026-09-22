@@ -167,7 +167,7 @@ for (const group of await readdir(SRC, { withFileTypes: true })) {
 
   /*
     격자로 뽑힌 프레임과, 혼자만 장식이 붙어 크기가 확 다른 프레임을 걸러낸다.
-    걸러낸 번호는 anim-frames.ts 에 안 실리므로 화면이 알아서 건너뛴다.
+    걸러낸 장은 옮기지 않는다. 화면은 동작마다 고른 한 장만 쓴다.
   */
   const rejected = [];
   if (GROUPED.has(group.name)) {
@@ -236,38 +236,6 @@ for (const group of await readdir(SRC, { withFileTypes: true })) {
     });
   }
 }
-
-/*
-  애니메이션 프레임 수를 코드가 알 수 있게 적어 둔다.
-
-  프레임을 3장에서 6장으로 늘리면 코드도 같이 고쳐야 하는데, 그걸 잊으면
-  4~6번 프레임이 조용히 안 나온다. 에셋을 넣을 때 여기서 세어 두면
-  화면은 있는 만큼 알아서 쓴다.
-*/
-const animFrames = {};
-for (const item of report) {
-  const match = item.file.match(/^anim\/(.+)-(\d+)\.png$/);
-  if (!match) continue;
-  const [, motion, frame] = match;
-  animFrames[motion] = [...(animFrames[motion] ?? []), Number(frame)].sort((a, b) => a - b);
-}
-
-await writeFile(
-  "src/lib/anim-frames.ts",
-  `/**
- * 동작별로 쓸 수 있는 프레임 번호. **손으로 고치지 않는다** —
- * \`node scripts/prepare-assets.mjs\` 가 에셋을 넣을 때 다시 쓴다.
- *
- * 격자로 잘못 뽑힌 장은 여기 안 실린다 — 화면이 알아서 건너뛴다.
- */
-export const ANIM_FRAMES: Record<string, number[]> = {
-${Object.entries(animFrames)
-  .sort(([a], [b]) => a.localeCompare(b))
-  .map(([motion, frames]) => `  ${motion}: [${frames.join(", ")}],`)
-  .join("\n")}
-};
-`,
-);
 
 await writeFile(
   path.join(OUT, "manifest.json"),

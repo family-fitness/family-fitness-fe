@@ -151,7 +151,7 @@ export default function KidHomePage() {
             />
           ) : (
             <div className="border-line rounded-3xl border-2 border-dashed p-6 text-center">
-              <KidCharacter motion="tired" size={110} className="mx-auto" />
+              <KidCharacter motion="rest" size={110} className="mx-auto" />
               <p className="mt-3 text-xl font-extrabold">오늘은 쉬는 날이에요</p>
               <p className="text-ink-soft mt-1 text-sm">쉬는 것도 하는 일이에요</p>
             </div>

@@ -22,7 +22,8 @@
     "check:screens": "node scripts/check-screens.mjs",
     "icons": "node scripts/make-icons.mjs",
     "check:clicks": "node scripts/check-clicks.mjs",
-    "check:down": "node scripts/check-backend-down.mjs"
+    "check:down": "node scripts/check-backend-down.mjs",
+    "clean:smudge": "node scripts/clean-smudge.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
