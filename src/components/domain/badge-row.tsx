@@ -18,12 +18,12 @@ export function BadgeRow({ badges, className }: { badges: Badge[]; className?: s
     <section className={className}>
       <div className="section-head">
         <h2>내가 받은 것</h2>
-        <span className="board-num text-signal-deep text-lg leading-none">{badges.length}</span>
       </div>
 
+      {/* 개수를 세지 않는다. 세는 순간 모아야 할 것이 된다(도메인 규칙 12) */}
       <ul className="scroll-row mt-2 flex gap-3 pb-1">
         {badges.map((badge, i) => (
-          <li key={badge.id} className="w-20 shrink-0 text-center">
+          <li key={badge.id} className="w-[4.5rem] shrink-0 text-center">
             <span
               className="badge-pop border-line bg-paper mx-auto grid size-16 place-items-center rounded-2xl border"
               /* 차례로 하나씩 올라온다. 한꺼번에 뜨면 받은 느낌이 안 난다 */
@@ -31,8 +31,7 @@ export function BadgeRow({ badges, className }: { badges: Badge[]; className?: s
             >
               <Illustration name={badge.art} fallback={badge.fallback} size={42} />
             </span>
-            <span className="mt-1.5 block text-xs font-extrabold">{badge.label}</span>
-            <span className="text-faint text-micro mt-0.5 block leading-snug">{badge.note}</span>
+            <span className="mt-1.5 block text-xs leading-snug font-extrabold">{badge.label}</span>
           </li>
         ))}
       </ul>

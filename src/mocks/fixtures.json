@@ -790,8 +790,8 @@
           "model": null
         },
         "badges": ["조용함", "좁은 공간 OK", "준비물 없음"],
-        "favorited": false,
-        "maxProgress": null
+        "favorited": true,
+        "maxProgress": 1.0
       },
       {
         "videoId": "sample00003",
@@ -810,7 +810,7 @@
         },
         "badges": ["좁은 공간 OK", "준비물 없음"],
         "favorited": false,
-        "maxProgress": null
+        "maxProgress": 0.94
       },
       {
         "videoId": "sample00004",
@@ -847,8 +847,8 @@
           "model": null
         },
         "badges": ["좁은 공간 OK", "준비물 없음"],
-        "favorited": false,
-        "maxProgress": null
+        "favorited": true,
+        "maxProgress": 0.42
       }
     ],
     "nextCursor": null

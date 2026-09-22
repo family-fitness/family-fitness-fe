@@ -308,7 +308,8 @@ function BigAction({
           <p className="mt-1 line-clamp-2 text-sm opacity-90">{hint}</p>
         </div>
       </div>
-      <span className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-white/20 py-3.5 text-xl font-extrabold">
+      {/* 흰 바탕에 파란 글씨. 파랑 위의 반투명 흰색은 눌리는 것으로 안 읽힌다 */}
+      <span className="text-signal mt-4 flex items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-xl font-extrabold">
         <Play className="size-5 fill-current" aria-hidden />
         시작하기
       </span>

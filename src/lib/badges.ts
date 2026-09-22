@@ -15,8 +15,6 @@ import { today } from "./today";
 export interface Badge {
   id: string;
   label: string;
-  /** 무엇을 해서 받았는지 한 마디 */
-  note: string;
   art: string;
   /** 새 그림이 오기 전까지 쓸 그림 */
   fallback: string;
@@ -47,7 +45,6 @@ export function earnedBadges(input: {
     badges.push({
       id: "first-video",
       label: "첫 완주",
-      note: "영상을 끝까지 봤어요",
       art: "badge/badge-video",
       fallback: "stamp/stamp-star",
     });
@@ -56,7 +53,6 @@ export function earnedBadges(input: {
     badges.push({
       id: "five-video",
       label: "다섯 편",
-      note: `영상 ${finished.length}편 완주`,
       art: "badge/badge-collection",
       fallback: "stamp/stamp-crown",
     });
@@ -65,7 +61,6 @@ export function earnedBadges(input: {
     badges.push({
       id: "verified",
       label: "확인된 기록",
-      note: "앱이 직접 본 기록이 남았어요",
       art: "badge/badge-timer",
       fallback: "stamp/stamp-medal",
     });
@@ -74,7 +69,6 @@ export function earnedBadges(input: {
     badges.push({
       id: "together",
       label: "같이 하기",
-      note: "가족과 같은 미션을 했어요",
       art: "badge/badge-together",
       fallback: "stamp/stamp-clap",
     });
@@ -83,7 +77,6 @@ export function earnedBadges(input: {
     badges.push({
       id: "measured",
       label: "첫 측정",
-      note: "또래 중 어디쯤인지 알게 됐어요",
       art: "badge/badge-measure",
       fallback: "stamp/stamp-great",
     });
@@ -92,7 +85,6 @@ export function earnedBadges(input: {
     badges.push({
       id: "praised",
       label: "첫 칭찬",
-      note: "부모님께 한마디를 받았어요",
       art: "badge/badge-praise",
       fallback: "stamp/stamp-heart",
     });
@@ -104,7 +96,6 @@ export function earnedBadges(input: {
     badges.push({
       id: "three-days",
       label: "세 날",
-      note: `이번 주 ${movedDays.size}일 움직였어요`,
       art: "badge/badge-week",
       fallback: "stamp/stamp-flower",
     });
@@ -113,7 +104,6 @@ export function earnedBadges(input: {
     badges.push({
       id: "today",
       label: "오늘도",
-      note: "오늘 운동을 마쳤어요",
       art: "badge/badge-first",
       fallback: "stamp/stamp-smile",
     });
