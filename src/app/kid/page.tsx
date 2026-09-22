@@ -133,7 +133,7 @@ export default function KidHomePage() {
 
       <Stage wide className="relative space-y-7">
         {/* 조각을 흩뿌리는 대신 하늘 한 장을 깐다. 없으면 조용히 사라진다 */}
-        <Backdrop name="bg/bg-sky" height={230} />
+        <Backdrop name="bg/bg-sky" />
         {/* 이름을 크게. 아이는 자기 이름을 먼저 찾는다.
             막대에 또 적지 않는다 — 한 화면에 같은 이름이 두 번 뜬다 */}
         <div className="flex items-center gap-2">

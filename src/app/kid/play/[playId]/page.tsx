@@ -108,7 +108,7 @@ export default function PlayPage() {
       <>
         <AppBar back title="다 했어요" />
         <Stage wide className="relative">
-          <Backdrop name="bg/bg-confetti" height={220} />
+          <Backdrop name="bg/bg-confetti" />
           <DoneCard
             familyId={familyId ?? ""}
             childProfileId={childProfileId ?? ""}
@@ -126,7 +126,7 @@ export default function PlayPage() {
     <>
       <AppBar back title={title} />
       <Stage wide className="relative space-y-5">
-        <Backdrop name={how === "video" ? "bg/bg-living-room" : "bg/bg-playground"} height={180} />
+        <Backdrop name={how === "video" ? "bg/bg-living-room" : "bg/bg-playground"} />
         <div className="flex gap-2" role="tablist" aria-label="어떻게 할까요">
           {(
             [

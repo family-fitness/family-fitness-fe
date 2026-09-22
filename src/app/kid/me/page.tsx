@@ -59,7 +59,7 @@ export default function DressUpPage() {
     <>
       <AppBar backHref="/kid" title="내 캐릭터" />
       <Stage wide className="relative space-y-5">
-        <Backdrop name="bg/bg-sky" height={200} />
+        <Backdrop name="bg/bg-sky" />
 
         {/* 지금 모습. 고르는 즉시 여기서 바뀐다 */}
         <div className="flex flex-col items-center pt-2">

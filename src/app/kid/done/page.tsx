@@ -67,7 +67,7 @@ export default function DonePage() {
     <>
       <AppBar backHref="/kid" title="본 영상" />
       <Stage wide className="relative space-y-6">
-        <Backdrop name="bg/bg-gym" height={190} />
+        <Backdrop name="bg/bg-gym" />
         <div className="flex items-center gap-3">
           <KidCharacter motion="cheer" size={84} />
           <p className="text-[1.4rem] leading-tight font-extrabold">
