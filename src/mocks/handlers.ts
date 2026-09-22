@@ -154,6 +154,22 @@ function fail(status: number, code: string, message: string) {
   return HttpResponse.json<ApiErrorBody>({ error: { code, message } }, { status });
 }
 
+/**
+ * 이번 주 일요일~토요일.
+ *
+ * 픽스처에 날짜를 박아 두면 며칠만 지나도 "이번 주 기록" 화면에 지난주가 뜬다.
+ * 데모를 언제 열어도 말이 되게 오늘을 기준으로 계산한다.
+ */
+function thisWeek(): { weekStart: string; weekEnd: string } {
+  const now = new Date();
+  const sunday = new Date(now);
+  sunday.setDate(now.getDate() - now.getDay());
+  const saturday = new Date(sunday);
+  saturday.setDate(sunday.getDate() + 6);
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  return { weekStart: iso(sunday), weekEnd: iso(saturday) };
+}
+
 function uuid() {
   return crypto.randomUUID();
 }
@@ -512,7 +528,17 @@ const fitness = [
 
 const coaching = [
   http.post(`${BASE}/families/:familyId/coach/runs`, async () => {
-    db.coachRun = structuredClone(fixtures.coachRun);
+    /* 제안도 오늘이 속한 주로 만든다. 픽스처 날짜를 그대로 쓰면 지난주 제안이 뜬다 */
+    const week = thisWeek();
+    db.coachRun = {
+      ...structuredClone(fixtures.coachRun),
+      weekStart: week.weekStart,
+      proposals: structuredClone(fixtures.coachRun.proposals ?? []).map((p) => ({
+        ...p,
+        startDate: week.weekStart,
+        endDate: week.weekEnd,
+      })),
+    };
     // 실행은 비동기다. 접수만 하고 202 를 준다
     return HttpResponse.json(
       { coachRunId: db.coachRun.coachRunId, status: "RUNNING", pollAfterMs: 1500 },
@@ -536,7 +562,11 @@ const coaching = [
     }
 
     db.coachRun.status = "APPROVED";
-    db.missions = structuredClone(fixtures.missionsAfterApproval.missions);
+    db.missions = structuredClone(fixtures.missionsAfterApproval.missions).map((m) => ({
+      ...m,
+      startDate: thisWeek().weekStart,
+      endDate: thisWeek().weekEnd,
+    }));
     db.coachRun.missionCount = db.missions.length;
     return HttpResponse.json(fixtures.coachApprove);
   }),
@@ -712,7 +742,9 @@ const missions = [
     });
   }),
 
-  http.get(`${BASE}/families/:familyId/report/weekly`, () => HttpResponse.json(fixtures.report)),
+  http.get(`${BASE}/families/:familyId/report/weekly`, () =>
+    HttpResponse.json({ ...fixtures.report, ...thisWeek() }),
+  ),
 ];
 
 const videos = [
