@@ -71,6 +71,27 @@ function LoginContent() {
     }
   };
 
+  /** 구글 인가 요청. 코드 교환은 백엔드가 한다 — 시크릿이 브라우저에 오면 안 된다 */
+  const googleButton = (
+    <Button
+      size="block"
+      variant={GOOGLE_CLIENT_ID ? "primary" : "outline"}
+      disabled={!GOOGLE_CLIENT_ID}
+      loading={googleLogin.isPending}
+      onClick={() => {
+        const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+        url.searchParams.set("client_id", GOOGLE_CLIENT_ID);
+        url.searchParams.set("redirect_uri", `${window.location.origin}${REDIRECT_PATH}`);
+        url.searchParams.set("response_type", "code");
+        url.searchParams.set("scope", "openid email profile");
+        if (claimCode) url.searchParams.set("state", claimCode);
+        window.location.assign(url.toString());
+      }}
+    >
+      구글로 시작하기
+    </Button>
+  );
+
   return (
     <PlainScreen className="flex min-h-dvh flex-col justify-center gap-8">
       <div className="flex flex-col items-center text-center">
@@ -81,42 +102,24 @@ function LoginContent() {
         </p>
       </div>
 
-      <div className="space-y-3">
-        <Button
-          size="block"
-          variant={GOOGLE_CLIENT_ID ? "primary" : "outline"}
-          disabled={!GOOGLE_CLIENT_ID}
-          loading={googleLogin.isPending}
-          onClick={() => {
-            // 인가 요청은 프론트가 하고 코드 교환은 백엔드가 한다.
-            // 클라이언트 시크릿이 브라우저에 오면 안 된다
-            const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-            url.searchParams.set("client_id", GOOGLE_CLIENT_ID);
-            url.searchParams.set("redirect_uri", `${window.location.origin}${REDIRECT_PATH}`);
-            url.searchParams.set("response_type", "code");
-            url.searchParams.set("scope", "openid email profile");
-            if (claimCode) url.searchParams.set("state", claimCode);
-            window.location.assign(url.toString());
-          }}
-        >
-          구글로 시작하기
-        </Button>
+      {/*
+        구글 키가 없으면 **구글 단추를 맨 위에 두지 않는다.**
 
-        {/* 눌러 봐야 아는 것보다 미리 말해 주는 편이 낫다 */}
-        {!GOOGLE_CLIENT_ID && (
-          <p className="text-faint text-caption text-center">
-            구글 로그인 키가 아직 없어요. 아래로 들어가 주세요.
-          </p>
-        )}
+        첫 화면 맨 위에 눌리지 않는 회색 단추가 있으면 처음 여는 사람은
+        거기서 멈춘다. 키가 있을 때는 구글이 주고, 없을 때는 들어갈 수 있는
+        길이 주다 — 순서만 바꾸고 아무것도 숨기지 않는다.
+      */}
+      <div className="space-y-3">
+        {GOOGLE_CLIENT_ID && googleButton}
 
         {process.env.NODE_ENV === "development" && (
           <div className="border-line space-y-2 rounded-xl border p-3">
             <p className="text-faint text-caption font-bold">개발용 · 구글 없이 들어가기</p>
-            {DEV_ACCOUNTS.map((account) => (
+            {DEV_ACCOUNTS.map((account, i) => (
               <Button
                 key={account.id}
                 size="md"
-                variant="outline"
+                variant={!GOOGLE_CLIENT_ID && i === 0 ? "primary" : "outline"}
                 className="w-full"
                 loading={devLogin.isPending}
                 onClick={() => enter(account.id)}
@@ -125,6 +128,14 @@ function LoginContent() {
               </Button>
             ))}
           </div>
+        )}
+
+        {!GOOGLE_CLIENT_ID && (
+          <>
+            {googleButton}
+            {/* 눌러 봐야 아는 것보다 미리 말해 주는 편이 낫다 */}
+            <p className="text-faint text-caption text-center">구글 로그인 키가 아직 없어요</p>
+          </>
         )}
 
         {error && (
