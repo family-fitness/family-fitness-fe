@@ -12,7 +12,7 @@ import { Backdrop } from "@/components/ui/backdrop";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChildSwitch } from "@/components/domain/child-switch";
-import { MyRow } from "@/components/domain/my-row";
+import { FamilyMap } from "@/components/domain/family-map";
 import { PeerCompare } from "@/components/domain/peer-compare";
 import { TodayBoard } from "@/components/domain/today-board";
 import { UpdateNudge } from "@/components/domain/update-nudge";
@@ -43,7 +43,6 @@ export default function ParentHomePage() {
   const setChild = useRoleStore((s) => s.setChild);
 
   const children = (map?.members ?? []).filter((m) => m.role === "CHILD");
-  const myMember = map?.members?.find((m) => m.profileId === profile?.profileId);
   // 고른 적이 없으면 첫째로 본다. 기본값을 저장해 두지 않는다 —
   // effect 안에서 상태를 쓰면 렌더가 한 번 더 돌고, 여기서는 굳이 저장할 것도 없다
   const child = children.find((c) => c.profileId === childProfileId) ?? children[0];
@@ -196,13 +195,13 @@ export default function ParentHomePage() {
           <HomeTile
             href="/parent/family"
             art="scene/scene-together"
-            title="우리 가족"
-            description="구성원 · 참여 방식 · 이번 주"
+            title="가족 관리"
+            description="구성원 초대 · 참여 방식 · 주간 기록"
           />
         </section>
 
         {/* 기획서 ① 가족 체력 지도 — 아이만 있고 부모가 없으면 잔소리 도구가 된다 */}
-        <MyRow me={myMember} />
+        <FamilyMap members={map?.members ?? []} />
       </Stage>
     </>
   );
