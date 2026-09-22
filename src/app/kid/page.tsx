@@ -30,7 +30,7 @@ import {
 import { useSession } from "@/lib/session";
 import { earnedBadges } from "@/lib/badges";
 import { isVideoDone } from "@/lib/mission";
-import { labelBadges, pickTodayVideo, whyThisVideo } from "@/lib/video-label";
+import { labelBadges, pickTodayVideo, videoArt, whyThisVideo } from "@/lib/video-label";
 import { useRoleStore } from "@/stores/role-store";
 
 /** 아이 홈. */
@@ -161,6 +161,7 @@ export default function KidHomePage() {
               hint={labelBadges(suggestion).join(" · ") || "영상 보고 따라 하기"}
               tag={why}
               thumbnail={suggestion.thumbnailUrl}
+              art={videoArt(suggestion)}
               motion="stretch"
             />
           ) : (
@@ -270,6 +271,7 @@ function BigAction({
   hint,
   tag,
   thumbnail,
+  art,
   motion,
 }: {
   href: string;
@@ -279,6 +281,8 @@ function BigAction({
   tag?: string | null;
   /** 곧 볼 영상. 없으면 캐릭터를 세운다 */
   thumbnail?: string | null;
+  /** 썸네일이 없을 때 대신 세울 그림 */
+  art?: string | null;
   motion: "jump" | "stretch";
 }) {
   return (
@@ -294,6 +298,11 @@ function BigAction({
               className="aspect-video w-full object-cover"
               unoptimized
             />
+          </span>
+        ) : art ? (
+          /* 썸네일이 없으면 무엇을 키우는 운동인지 그림으로 세운다 */
+          <span className="grid w-28 shrink-0 place-items-center self-start rounded-xl bg-white/25 py-3">
+            <Illustration name={art} fallback="item/item-target" size={48} />
           </span>
         ) : (
           <KidCharacter motion={motion} size={96} />

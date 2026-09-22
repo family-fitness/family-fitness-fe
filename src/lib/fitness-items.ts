@@ -44,9 +44,7 @@ const POSE_BY_FACTOR: Record<string, string> = {
 };
 
 export function itemPose(item: Pick<FitnessItem, "itemCode" | "factor">): string {
-  return (
-    POSE_BY_CODE[item.itemCode ?? ""] ?? POSE_BY_FACTOR[item.factor ?? ""] ?? "item/item-target"
-  );
+  return POSE_BY_CODE[item.itemCode ?? ""] ?? factorPose(item.factor ?? undefined);
 }
 
 /** 장비가 필요한 항목에만 그 장비 그림을 붙인다. 악력계가 뭔지 모르는 사람이 많다 */

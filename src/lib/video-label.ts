@@ -1,4 +1,5 @@
 import type { Video, VideoLabel } from "./api/types";
+import { factorPose } from "./fitness-items";
 import { isVideoDone } from "./mission";
 
 /**
@@ -112,4 +113,17 @@ export function whyThisVideo(
   }
   const first = labelFactors(video.label)[0];
   return first ? `${first} 운동` : null;
+}
+
+/**
+ * 썸네일이 없을 때 대신 세울 그림.
+ *
+ * 유튜브는 **없는 영상에도 회색 자리 그림을 200 으로 돌려준다.** 그래서
+ * `onError` 가 뜨지 않고, 화면에는 깨진 것처럼 보이는 회색 네모만 남는다.
+ *
+ * 사람 그림(`move/*`)을 쓰지 않는다 — 1차로 받은 자세 그림은 머리카락이 없어
+ * 목록 가득 민머리가 늘어선다. 측정 항목과 같은 **몸 부위 그림**을 쓴다.
+ */
+export function videoArt(video: Pick<Video, "label">): string {
+  return factorPose(labelFactors(video.label)[0]);
 }

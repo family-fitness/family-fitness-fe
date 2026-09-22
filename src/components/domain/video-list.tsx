@@ -1,18 +1,19 @@
 "use client";
 
-import { Heart, Play } from "lucide-react";
+import { Heart } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
 import { EmptyState } from "@/components/ui/empty-state";
+import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Video } from "@/lib/api/types";
 import { useToggleFavorite, useVideos } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { safeUrl } from "@/lib/safe-url";
 import { isVideoDone, progressPercent } from "@/lib/mission";
-import { labelAges, labelBadges, labelFactors } from "@/lib/video-label";
+import { labelAges, labelBadges, labelFactors, videoArt } from "@/lib/video-label";
 import { cn } from "@/lib/utils";
 
 /** 영상 목록. */
@@ -86,8 +87,9 @@ function VideoRow({ video }: { video: Video }) {
               unoptimized
             />
           ) : (
-            <span className="bg-sub grid aspect-video w-full place-items-center">
-              <Play className="text-faint size-5" aria-hidden />
+            /* 회색 네모 대신 이 영상이 키우는 동작을 세운다 */
+            <span className="bg-signal-soft grid aspect-video w-full place-items-center">
+              <Illustration name={videoArt(video)} fallback="item/item-target" size={40} />
             </span>
           )}
           {video.durationSec != null && (

@@ -778,7 +778,7 @@
         "videoId": "sample00002",
         "title": "가족이 함께하는 거실 5분 스트레칭",
         "url": "https://www.youtube.com/watch?v=sample00002",
-        "thumbnailUrl": "https://i.ytimg.com/vi/sample00002/hqdefault.jpg",
+        "thumbnailUrl": null,
         "durationSec": 300,
         "label": {
           "ageFrom": 4,
@@ -797,7 +797,7 @@
         "videoId": "sample00003",
         "title": "유소년 심폐지구력 키우기 — 제자리 달리기 루틴",
         "url": "https://www.youtube.com/watch?v=sample00003",
-        "thumbnailUrl": "https://i.ytimg.com/vi/sample00003/hqdefault.jpg",
+        "thumbnailUrl": null,
         "durationSec": 480,
         "label": {
           "ageFrom": 7,
@@ -816,7 +816,7 @@
         "videoId": "sample00004",
         "title": "성인 근력 운동 — 맨몸 스쿼트와 플랭크",
         "url": "https://www.youtube.com/watch?v=sample00004",
-        "thumbnailUrl": "https://i.ytimg.com/vi/sample00004/hqdefault.jpg",
+        "thumbnailUrl": null,
         "durationSec": 720,
         "label": {
           "ageFrom": 19,
@@ -835,7 +835,7 @@
         "videoId": "sample00005",
         "title": "유아 놀이 체육 — 균형 잡기와 점프",
         "url": "https://www.youtube.com/watch?v=sample00005",
-        "thumbnailUrl": "https://i.ytimg.com/vi/sample00005/hqdefault.jpg",
+        "thumbnailUrl": null,
         "durationSec": 420,
         "label": {
           "ageFrom": 4,
