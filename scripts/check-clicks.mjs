@@ -12,6 +12,11 @@ const B = "http://localhost:3001";
 const KID = "00000000-0000-4000-8000-000000000012";
 const SKIP = /devtools|dev tools|뒤로/i;
 
+/** 개발 서버에만 뜨는 덮개들 */
+const DEV_OVERLAY = `nextjs-portal, [data-nextjs-toast], .tsqd-parent-container {
+  display: none !important;
+}`;
+
 const ROUTES = {
   parent: [
     "/parent",
@@ -82,6 +87,8 @@ for (const [mode, routes] of Object.entries(ROUTES)) {
       try {
         await page.goto(B + route, { waitUntil: "load" });
         await page.waitForTimeout(1300);
+        /* 개발 전용 덮개는 치운다. 운영에는 없는 것이 누름을 막으면 안 된다 */
+        await page.addStyleTag({ content: DEV_OVERLAY });
         const el = page.locator("button:not([disabled]), a[href], [role=tab]").nth(i);
         label = ((await el.getAttribute("aria-label")) || (await el.innerText()) || `#${i}`)
           .replace(/\s+/g, " ")

@@ -30,7 +30,13 @@ export function QueryProvider({ children }: { children: ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      {process.env.NODE_ENV === "development" && <ReactQueryDevtools initialIsOpen={false} />}
+      {process.env.NODE_ENV === "development" && (
+        <ReactQueryDevtools
+          initialIsOpen={false}
+          /* 오른쪽 아래는 코치 창 자리다. 겹치면 개발 중에 코치 창을 누를 수 없다 */
+          buttonPosition="bottom-left"
+        />
+      )}
     </QueryClientProvider>
   );
 }
