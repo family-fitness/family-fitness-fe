@@ -10,11 +10,18 @@ import type { ProfileSummary } from "./api/types";
  *
  * 같은 프로필은 언제 봐도 같은 모습이어야 한다. profileId 를 씨앗으로 쓴다.
  */
-const KID_HAIR = ["hair-bob", "hair-ponytail", "hair-short-m", "hair-crop", "hair-twintail"];
+const KID_HAIR = [
+  "hair-bob",
+  "hair-ponytail",
+  "hair-short-m",
+  "hair-crop",
+  "hair-twintail",
+  "hair-cap-blue",
+];
 const ADULT_HAIR = ["hair-mom-long", "hair-dad-short", "hair-bun", "hair-curly", "hair-cap"];
 
 /** 평상시 얼굴. 다 웃고 있으면 누가 누군지 구분되지 않는다 */
-const KID_FACES = ["face-calm", "face-happy", "face-cheer", "face-proud"];
+const KID_FACES = ["face-calm", "face-happy", "face-cheer", "face-proud", "face-focused"];
 const ADULT_FACES = ["face-parent-1", "face-parent-2", "face-parent-3", "face-calm"];
 
 function hash(seed: string): number {
@@ -34,6 +41,23 @@ export const PICKABLE = {
   face: KID_FACES,
   body: ["body-child-m", "body-child-f"],
 } as const;
+
+/** 고르는 칸을 소리로 읽을 때 쓰는 이름. "hair-bob" 은 사람 말이 아니다 */
+export const PART_LABEL: Record<string, string> = {
+  "hair-bob": "단발",
+  "hair-ponytail": "묶은 머리",
+  "hair-short-m": "짧은 머리",
+  "hair-crop": "아주 짧은 머리",
+  "hair-twintail": "양갈래",
+  "hair-cap-blue": "모자",
+  "face-calm": "평소 얼굴",
+  "face-happy": "웃는 얼굴",
+  "face-cheer": "신난 얼굴",
+  "face-proud": "뿌듯한 얼굴",
+  "face-focused": "집중한 얼굴",
+  "body-child-m": "반팔에 반바지",
+  "body-child-f": "티셔츠에 치마바지",
+};
 
 export function avatarFor(
   profile: {
