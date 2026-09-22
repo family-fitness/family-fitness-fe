@@ -36,11 +36,7 @@ export default function HistoryPage() {
       <AppBar backHref="/parent" title="지난 기록" />
       <Stage>
         {missions.length === 0 ? (
-          <EmptyState
-            scene="no-mission"
-            title="아직 끝낸 운동이 없어요"
-            description="하나를 끝내면 여기에 쌓여요."
-          />
+          <EmptyState scene="no-mission" title="아직 끝낸 운동이 없어요" />
         ) : (
           <ul className="divide-rows">
             {missions.map((m) => (

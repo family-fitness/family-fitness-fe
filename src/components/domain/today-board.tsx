@@ -58,9 +58,7 @@ export function TodayBoard({
     return (
       <div className="border-line flex items-center gap-3 rounded-2xl border border-dashed p-4">
         <Illustration name="scene/scene-rest-day" fallback="scene/scene-no-mission" size={52} />
-        <p className="text-ink-soft text-sm leading-relaxed">
-          오늘은 아직 소식이 없어요. 쉬는 것도 하는 일이에요.
-        </p>
+        <p className="text-ink-soft text-sm leading-relaxed">오늘은 아직 소식이 없어요</p>
       </div>
     );
   }

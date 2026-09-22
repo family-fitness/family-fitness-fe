@@ -24,11 +24,7 @@ function WeeklyReportPageContent() {
       <>
         <PageHeader title="이번 주 기록" back />
         <Screen>
-          <EmptyState
-            scene="no-record"
-            title="아직 기록이 없어요"
-            description="미션을 시작하면 한 주 동안 얼마나 움직였는지 여기에 모여요."
-          />
+          <EmptyState scene="no-record" title="아직 기록이 없어요" />
         </Screen>
       </>
     );
@@ -69,7 +65,6 @@ function WeeklyReportPageContent() {
           <EmptyState
             scene="together"
             title="이번 주는 이제 시작이에요"
-            description="한 사람이 한 번만 움직여도 여기에 쌓이기 시작해요."
             action={
               <Link href="/coach/weekly" className="chip press chip-on">
                 이번 주 제안 보기

@@ -84,7 +84,6 @@ export default function FuturePage() {
           <EmptyState
             scene="first-measure"
             title="측정을 먼저 해 주세요"
-            description="지금 어디에 있는지를 알아야 10년 위 연령대가 어디 있는지 견줄 수 있어요."
             action={
               <Button size="md" onClick={() => router.push(`/p/${profileId}/measure`)}>
                 측정 입력하기

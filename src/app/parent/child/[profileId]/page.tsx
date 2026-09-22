@@ -7,7 +7,6 @@ import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
-import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BadgeStrip } from "@/components/domain/badge-row";
 import { RecordList } from "@/components/domain/record-list";
@@ -246,19 +245,6 @@ export default function ChildDetailPage() {
             10년 뒤
           </Link>
         </section>
-
-        {!latest?.fitnessTestId && (
-          <div className="border-line flex items-center gap-3 rounded-2xl border border-dashed p-4">
-            <Illustration
-              name="scene/scene-first-measure"
-              fallback="scene/scene-first-body"
-              size={52}
-            />
-            <p className="text-ink-soft text-sm leading-relaxed">
-              한 가지만 재도 또래 중 어디쯤인지 바로 보여요.
-            </p>
-          </div>
-        )}
       </Stage>
     </>
   );

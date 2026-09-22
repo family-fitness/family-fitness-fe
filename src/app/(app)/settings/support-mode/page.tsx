@@ -57,11 +57,7 @@ function SupportModePageContent() {
       <>
         <PageHeader title="참여 방식" back />
         <Screen>
-          <EmptyState
-            scene="no-mission"
-            title="이 설정은 보호자만 있어요"
-            description="참여 방식은 보호자가 얼마나 같이 뛸지를 정하는 설정이에요."
-          />
+          <EmptyState scene="no-mission" title="이 설정은 보호자만 있어요" />
         </Screen>
       </>
     );

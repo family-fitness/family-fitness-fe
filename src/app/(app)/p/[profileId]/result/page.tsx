@@ -54,7 +54,7 @@ export default function ResultPage() {
           <EmptyState
             scene="no-record"
             title="아직 기록이 없어요"
-            description="집에서 잴 수 있는 항목부터 넣어 보세요. 한 개만 넣어도 또래 중 어디쯤인지 알 수 있어요."
+            description="집에서 잴 수 있는 항목부터 넣어 보세요."
             action={
               <Link
                 href={`/p/${profileId}/measure`}
@@ -99,9 +99,6 @@ export default function ResultPage() {
             <div className="min-w-0">
               <p className="text-faint text-caption font-bold">지금 재 본 영역</p>
               <p className="text-body font-bold">{strongest?.factor}</p>
-              <p className="text-ink-soft mt-0.5 text-xs">
-                항목을 더 재면 강한 영역과 키울 영역이 갈려요
-              </p>
             </div>
           </section>
         ) : (

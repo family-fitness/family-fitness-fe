@@ -93,9 +93,6 @@ export function ProposalEmpty() {
     <div className="flex flex-col items-center py-8 text-center">
       <Illustration name="scene/scene-no-record" size={120} />
       <p className="mt-3 text-sm font-bold">제안이 만들어지지 않았어요</p>
-      <p className="text-ink-soft mt-1 text-sm">
-        측정 기록이 있는 구성원이 없으면 코치가 편성할 수 없어요.
-      </p>
     </div>
   );
 }

@@ -51,7 +51,6 @@ export default function DonePage() {
         <Stage wide className="flex flex-col items-center pt-8 text-center">
           <Illustration name="scene/scene-collection" fallback="scene/scene-no-video" size={150} />
           <p className="mt-4 text-xl font-extrabold">아직 본 영상이 없어요</p>
-          <p className="text-ink-soft mt-2 text-sm leading-relaxed">하나만 봐도 여기에 쌓여요.</p>
           <NavLink
             href="/kid/pick"
             className="press bg-signal mt-6 rounded-2xl px-7 py-4 text-lg font-extrabold text-white"

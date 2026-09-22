@@ -38,9 +38,6 @@ export default function CreateFamilyPage() {
         <div className="flex flex-col items-center text-center">
           <Illustration name="scene/scene-invite" size={130} />
           <h2 className="page-title mt-3">가족을 만들어요</h2>
-          <p className="text-ink-soft mt-2 text-sm leading-relaxed">
-            나머지 가족은 다음에 더합니다.
-          </p>
         </div>
 
         <form

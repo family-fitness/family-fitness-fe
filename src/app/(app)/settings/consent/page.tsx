@@ -52,11 +52,7 @@ function ConsentPageContent() {
         </p>
 
         {needConsent.length === 0 ? (
-          <EmptyState
-            scene="invite"
-            title="동의가 필요한 가족이 없어요"
-            description="만 14세 미만 가족이 생기면 여기에서 동의를 관리해요."
-          />
+          <EmptyState scene="invite" title="동의가 필요한 가족이 없어요" />
         ) : (
           <ul className="divide-rows">
             {needConsent.map((child) => (

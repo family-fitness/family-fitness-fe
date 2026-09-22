@@ -219,9 +219,7 @@ export default function AddChildPage() {
               </Button>
             </div>
             {!step2Ok && (
-              <p className="text-faint text-caption text-center">
-                키와 몸무게를 넣어 주세요. 대략이어도 괜찮아요.
-              </p>
+              <p className="text-faint text-caption text-center">키와 몸무게를 넣어 주세요</p>
             )}
           </section>
         )}
@@ -232,7 +230,7 @@ export default function AddChildPage() {
             <KidCharacter motion="cheer" size={170} />
             <h2 className="mt-3 text-2xl font-extrabold">{name} 등록 완료!</h2>
             <p className="text-ink-soft mt-2 text-sm leading-relaxed">
-              이제 오늘 할 운동을 골라 볼까요. 한 가지만 재면 또래 중 어디쯤인지도 보여요.
+              이제 오늘 할 운동을 골라 볼까요
             </p>
 
             <Button

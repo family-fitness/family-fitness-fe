@@ -81,7 +81,6 @@ export default function MissionDetailPage() {
 
   const participants = mission.participants ?? [];
   const isParent = profile?.role === "PARENT";
-  const waiting = participants.filter((p) => p.needsGuardianCheck);
 
   /*
     적을 수 있는 몫: 내 것 + (보호자라면) 계정이 없는 참여자의 것.
@@ -245,13 +244,6 @@ export default function MissionDetailPage() {
             })}
           </ul>
         </section>
-
-        {/* 보호자에게 확인이 밀려 있으면 위에서 한 번 더 말한다 */}
-        {waiting.length > 0 && !isParent && (
-          <p className="text-ink-soft text-sm leading-relaxed">
-            보호자가 확인하면 완료로 바뀌어요.
-          </p>
-        )}
 
         {error && (
           <p

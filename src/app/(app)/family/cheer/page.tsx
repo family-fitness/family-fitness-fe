@@ -46,11 +46,7 @@ export default function CheerPage() {
       <>
         <PageHeader title="응원 보내기" back />
         <Screen>
-          <EmptyState
-            scene="no-cheer"
-            title="아직 함께하는 가족이 없어요"
-            description="가족을 초대하면 서로 응원을 보낼 수 있어요."
-          />
+          <EmptyState scene="no-cheer" title="아직 함께하는 가족이 없어요" />
         </Screen>
       </>
     );
