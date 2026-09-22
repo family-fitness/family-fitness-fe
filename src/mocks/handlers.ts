@@ -281,6 +281,11 @@ function seedMissions(): MissionRow[] {
       ],
     },
     {
+      /*
+        직접 적은 기록. **목표를 넘겨도 완료가 아니다** — 보호자가 확인해야
+        완료가 된다(도메인 규칙 2). 그래서 completed 는 false 로 둔다.
+        부모 홈에 "확인해 주기" 가 하나 떠 있어야 이 규칙이 화면에서 보인다.
+      */
       missionId: "seed-m3",
       title: "제자리 뛰기 100번",
       origin: "PARENT",
@@ -288,8 +293,32 @@ function seedMissions(): MissionRow[] {
       targetMetric: "STEPS",
       targetValue: 3000,
       serverVerifiable: false,
-      startDate: day(12),
-      endDate: day(6),
+      startDate: day(4),
+      endDate: day(0),
+      rationale: null,
+      video: null,
+      participants: [
+        {
+          profileId: DEMO.kid,
+          name: "서준",
+          progress: 1,
+          completed: false,
+          verifiedBy: "SELF_REPORT",
+          needsGuardianCheck: true,
+        },
+      ],
+    },
+    {
+      /* 지지난주. 지난 기록에 한 줄 더 있어야 목록이 목록으로 보인다 */
+      missionId: "seed-m0",
+      title: "저녁 산책 20분",
+      origin: "PARENT",
+      coachRunId: null,
+      targetMetric: "TIMER_MINUTES",
+      targetValue: 60,
+      serverVerifiable: true,
+      startDate: day(20),
+      endDate: day(14),
       rationale: null,
       video: null,
       participants: [
@@ -298,8 +327,16 @@ function seedMissions(): MissionRow[] {
           name: "서준",
           progress: 1,
           completed: true,
-          verifiedBy: "SELF_REPORT",
-          needsGuardianCheck: true,
+          verifiedBy: "TIMER",
+          needsGuardianCheck: false,
+        },
+        {
+          profileId: DEMO.dad,
+          name: "도현",
+          progress: 1,
+          completed: true,
+          verifiedBy: "TIMER",
+          needsGuardianCheck: false,
         },
       ],
     },
