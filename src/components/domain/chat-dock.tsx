@@ -7,10 +7,11 @@ import { Citations } from "@/components/domain/citations";
 import { MissionSuggestionCard } from "@/components/domain/mission-suggestion-card";
 import { Illustration } from "@/components/ui/illustration";
 import type { ChatCitation, MissionSuggestion } from "@/lib/api/types";
-import { useAskCoach } from "@/lib/api/queries";
+import { useAskCoach, useFamilyProfiles } from "@/lib/api/queries";
 import { errorMessage } from "@/lib/errors";
 import { useSession } from "@/lib/session";
 import { useIsKidView } from "@/lib/view-role";
+import { useRoleStore } from "@/stores/role-store";
 import { cn } from "@/lib/utils";
 
 /**
@@ -38,7 +39,23 @@ const EXAMPLES = [
 export function ChatDock() {
   const { profile, familyId, isChild } = useSession();
   const kidView = useIsKidView();
-  const ask = useAskCoach(profile?.profileId ?? "");
+  const { data: family } = useFamilyProfiles(familyId);
+  const selectedChild = useRoleStore((s) => s.childProfileId);
+
+  /*
+    **누구에 대해 묻는지**가 이 창의 전부다.
+
+    전에는 늘 지금 로그인한 사람의 번호를 보냈다. 그래서 은영이 "윗몸일으키기를
+    힘들어해요" 라고 물으면 코치가 은영의 측정 기록을 뒤졌다 — 부모가 알고 싶은
+    건 아이 이야기인데 답은 자기 이야기로 돌아왔다.
+  */
+  const members = family?.profiles ?? [];
+  const [aboutId, setAboutId] = useState<string | null>(null);
+  const about =
+    members.find((m) => m.profileId === (aboutId ?? selectedChild)) ??
+    members.find((m) => m.role === "CHILD") ??
+    profile;
+  const ask = useAskCoach(about?.profileId ?? profile?.profileId ?? "");
 
   const [open, setOpen] = useState(false);
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -132,7 +149,14 @@ export function ChatDock() {
           >
             <header className="border-line flex h-14 shrink-0 items-center gap-2 border-b px-4">
               <Illustration name="item/item-whistle" size={26} className="shrink-0" />
-              <h2 className="text-body min-w-0 flex-1 font-extrabold">코치</h2>
+              <h2 className="text-body min-w-0 flex-1 font-extrabold">
+                코치
+                {about?.name && !isChild && (
+                  <span className="text-ink-soft ml-1.5 text-sm font-bold">
+                    {about.name} 이야기
+                  </span>
+                )}
+              </h2>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -142,6 +166,36 @@ export function ChatDock() {
                 <X className="size-5" aria-hidden />
               </button>
             </header>
+
+            {/* 가족이 둘을 넘으면 누구 이야기인지 고른다. 답이 달라지는 값이다 */}
+            {!isChild && members.length > 1 && (
+              <div className="scroll-row border-line shrink-0 border-b px-4 py-2">
+                <div className="flex w-max gap-2">
+                  {members.map((member) => (
+                    <button
+                      key={member.profileId}
+                      type="button"
+                      aria-pressed={member.profileId === about?.profileId}
+                      onClick={() => {
+                        if (member.profileId === about?.profileId) return;
+                        setAboutId(member.profileId ?? null);
+                        /* 사람이 바뀌면 대화도 새로 시작한다. 앞사람 답을
+                           새 이름 밑에 두면 누구 얘기인지 알 수 없다 */
+                        setTurns([]);
+                        setConversationId(undefined);
+                        setError(null);
+                      }}
+                      className={cn(
+                        "chip press",
+                        member.profileId === about?.profileId && "chip-on",
+                      )}
+                    >
+                      {member.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
               {turns.length === 0 ? (

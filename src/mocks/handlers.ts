@@ -848,10 +848,13 @@ const coaching = [
   }),
 
   http.post(`${BASE}/coach/chat`, async ({ request }) => {
-    const { question, conversationId } = (await request.json()) as {
+    const { question, conversationId, profileId } = (await request.json()) as {
       question: string;
       conversationId?: string;
+      profileId?: string;
     };
+    /* 누구에 대해 묻는지가 답을 가른다. 목에서는 이름을 붙여 그걸 보여 준다 */
+    const about = db.profiles.profiles.find((p) => p.profileId === profileId);
     // RAG 검색과 생성에 걸리는 시간. 스켈레톤이 실제로 보이게 하려고 넣었다
     await new Promise((r) => setTimeout(r, 900));
 
@@ -861,7 +864,7 @@ const coaching = [
       // 이어지는 대화는 같은 id 를 돌려준다. 매번 새로 주면 대화가 끊긴다
       conversationId: conversationId ?? uuid(),
       messageId: uuid(),
-      answer: topic.answer,
+      answer: about?.name ? `${about.name} 기준으로 보면, ${topic.answer}` : topic.answer,
       // 근거 없는 답변은 버그로 본다. 목에서도 항상 채운다
       citations: topic.citations,
       refused: false,
