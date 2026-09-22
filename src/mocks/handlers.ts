@@ -800,12 +800,92 @@ const coaching = [
     };
     // RAG 검색과 생성에 걸리는 시간. 스켈레톤이 실제로 보이게 하려고 넣었다
     await new Promise((r) => setTimeout(r, 900));
+
+    const topic = topicOf(question);
+    const week = thisWeek();
     return HttpResponse.json({
       // 이어지는 대화는 같은 id 를 돌려준다. 매번 새로 주면 대화가 끊긴다
       conversationId: conversationId ?? uuid(),
       messageId: uuid(),
-      answer: `${question.slice(0, 20)}… 에 대해, 아이 연령대에 맞춰 정적 스트레칭부터 시작하는 편이 좋습니다. 하루 5분, 주 4회 정도가 적당합니다.`,
+      answer: topic.answer,
       // 근거 없는 답변은 버그로 본다. 목에서도 항상 채운다
+      citations: topic.citations,
+      refused: false,
+      refusalReason: null,
+      /*
+        ▲ 백엔드에 요청해 둔 것 — 대화 중 미션 제안.
+        값이 그대로 POST /families/{id}/missions 본문이 되어, 부모가 카드의
+        버튼 한 번으로 미션을 만들 수 있다. 목에서는 운동·시간을 물으면 붙여 준다.
+      */
+      suggestion: topic.mission
+        ? { ...topic.mission, startDate: today(), endDate: week.weekEnd }
+        : null,
+    });
+  }),
+];
+
+/**
+ * 물음에 맞는 답을 고른다.
+ *
+ * 전에는 물음을 그대로 앞에 붙이고("… 에 대해,") 늘 같은 문장을 돌려줬다.
+ * 무엇을 물어도 같은 답이 오면 대화라기보다 자동응답기로 보인다 — 진짜
+ * 코치가 무엇을 하는지 보여 주려면 답이 물음을 따라 달라져야 한다.
+ */
+function topicOf(question: string) {
+  const q = question ?? "";
+
+  if (/윗몸|코어|근력|팔굽|스쿼트|플랭크/.test(q)) {
+    return {
+      answer:
+        "윗몸일으키기가 힘들면 바닥에서 완전히 일어나지 않아도 됩니다. 등을 절반만 들었다 내리는 동작으로 열 번씩 세 세트부터 시작해 보세요. 목을 손으로 당기지 않는 것이 중요합니다.",
+      citations: [
+        {
+          index: 1,
+          sourceLabel: "유소년 근지구력 운동처방",
+          excerpt: "부분 윗몸말아올리기는 경추 부담 없이 복부 근지구력을 키우는 데 효과적입니다.",
+          url: null,
+        },
+      ],
+      mission: {
+        title: "코어 10분 놀이",
+        targetMetric: "TIMER_MINUTES",
+        targetValue: 30,
+        videoId: "sample00009",
+        videoTitle: "아이와 마주 보고 하는 코어 놀이",
+        participantProfileIds: [DEMO.kid, DEMO.mom],
+        rationale: "마주 보고 하면 자세를 서로 봐 줄 수 있어 처음 배울 때 좋습니다.",
+      },
+    };
+  }
+
+  if (/층간|소음|아래층|조용/.test(q)) {
+    return {
+      answer:
+        "뛰지 않고도 심박수를 올릴 수 있습니다. 제자리에서 무릎을 들어 올리는 동작과 팔 벌려 높이뛰기 대신 옆으로 발 내딛기를 섞으면 바닥 충격이 크게 줄어듭니다.",
+      citations: [
+        {
+          index: 1,
+          sourceLabel: "가정 내 유산소 운동처방",
+          excerpt: "착지 충격이 적은 동작으로도 중강도 심박수(최대심박수의 64~76%)에 도달합니다.",
+          url: null,
+        },
+      ],
+      mission: {
+        title: "층간소음 없는 유산소",
+        targetMetric: "TIMER_MINUTES",
+        targetValue: 40,
+        videoId: "sample00006",
+        videoTitle: "온 가족 층간소음 없는 유산소 10분",
+        participantProfileIds: [DEMO.kid, DEMO.mom],
+        rationale: "소음이 적어 저녁에도 할 수 있습니다.",
+      },
+    };
+  }
+
+  if (/유연|스트레칭|굽히|뻣뻣/.test(q)) {
+    return {
+      answer:
+        "유연성은 세게 한 번보다 짧게 자주가 낫습니다. 한 자세를 15~30초 유지하고 반동을 주지 않는 것이 핵심이며, 주 4회 이상이면 몇 주 안에 차이가 보입니다.",
       citations: [
         {
           index: 1,
@@ -814,29 +894,56 @@ const coaching = [
           url: null,
         },
       ],
-      refused: false,
-      refusalReason: null,
-      /*
-        ▲ 백엔드에 요청해 둔 것 — 대화 중 미션 제안.
-        값이 그대로 POST /families/{id}/missions 본문이 되어, 부모가 카드의
-        버튼 한 번으로 미션을 만들 수 있다. 목에서는 운동·시간을 물으면 붙여 준다.
-      */
-      suggestion: /운동|뭘|무엇|할까|주말|분|추천/.test(question)
-        ? {
-            title: "주말 10분 스트레칭",
-            targetMetric: "TIMER_MINUTES",
-            targetValue: 10,
-            startDate: today(),
-            endDate: today(),
-            videoId: "IdpXx2gm90o",
-            videoTitle: "가족이 함께하는 거실 5분 스트레칭",
-            participantProfileIds: [DEMO.kid, DEMO.mom],
-            rationale: "유연성이 또래 평균보다 낮아 짧게 자주 하는 편이 좋습니다.",
-          }
-        : null,
-    });
-  }),
-];
+      mission: {
+        title: "저녁 10분 스트레칭",
+        targetMetric: "TIMER_MINUTES",
+        targetValue: 40,
+        videoId: "sample00002",
+        videoTitle: "가족이 함께하는 거실 5분 스트레칭",
+        participantProfileIds: [DEMO.kid, DEMO.mom],
+        rationale: "유연성이 또래 평균보다 낮아 짧게 자주 하는 편이 좋습니다.",
+      },
+    };
+  }
+
+  if (/주말|시간|분|바쁘|퇴근|언제/.test(q)) {
+    return {
+      answer:
+        "주말 30분 한 번이 평일 매일보다 지키기 쉽습니다. 처음에는 15분으로 잡고 아이가 끝까지 하면 늘리는 편이 좋습니다. 같이 하는 사람이 있으면 완주율이 눈에 띄게 올라갑니다.",
+      citations: [
+        {
+          index: 1,
+          sourceLabel: "가족 참여형 신체활동 지침",
+          excerpt: "보호자가 함께 참여한 경우 아동의 주간 활동 지속률이 높게 나타났습니다.",
+          url: null,
+        },
+      ],
+      mission: {
+        title: "주말 30분 같이 하기",
+        targetMetric: "TIMER_MINUTES",
+        targetValue: 30,
+        videoId: "sample00002",
+        videoTitle: "가족이 함께하는 거실 5분 스트레칭",
+        participantProfileIds: [DEMO.kid, DEMO.mom],
+        rationale: "평일보다 주말 한 번이 지키기 쉽습니다.",
+      },
+    };
+  }
+
+  return {
+    answer:
+      "국민체력100 측정 결과를 기준으로 답합니다. 어느 항목을 키우고 싶은지, 집에서 할 수 있는 시간이 얼마나 되는지 알려 주시면 더 맞는 운동을 찾아 드릴 수 있어요.",
+    citations: [
+      {
+        index: 1,
+        sourceLabel: "국민체력100 체력측정 안내",
+        excerpt: "체력 요인별 측정 결과에 따라 권장 운동과 강도가 달라집니다.",
+        url: null,
+      },
+    ],
+    mission: null,
+  };
+}
 
 /* ─── 미션 · 활동 · 영상 · 리포트 ──────────────────────────── */
 

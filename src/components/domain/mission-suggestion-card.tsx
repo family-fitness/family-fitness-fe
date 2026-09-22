@@ -1,6 +1,7 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -30,19 +31,24 @@ export function MissionSuggestionCard({
 }) {
   const { data: family } = useFamilyProfiles(familyId);
   const create = useCreateMission(familyId);
-  const [made, setMade] = useState(false);
+  /** 만들어진 미션의 번호. 만든 뒤에 바로 열어 볼 수 있어야 한 바퀴가 돈다 */
+  const [madeId, setMadeId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const names = (suggestion.participantProfileIds ?? [])
     .map((id) => family?.profiles?.find((p) => p.profileId === id)?.name)
     .filter(Boolean);
 
-  if (made) {
+  if (madeId) {
     return (
-      <div className="border-done bg-done-soft flex items-center gap-2 rounded-2xl border p-3.5">
+      <Link
+        href={`/missions/${madeId}`}
+        className="press border-done bg-done-soft flex items-center gap-2 rounded-2xl border p-3.5"
+      >
         <Check className="text-done size-4 shrink-0" strokeWidth={3} aria-hidden />
-        <span className="text-done text-sm font-extrabold">미션이 됐어요</span>
-      </div>
+        <span className="text-done min-w-0 flex-1 text-sm font-extrabold">미션이 됐어요</span>
+        <ChevronRight className="text-done size-4 shrink-0" aria-hidden />
+      </Link>
     );
   }
 
@@ -85,7 +91,7 @@ export function MissionSuggestionCard({
         onClick={async () => {
           setError(null);
           try {
-            await create.mutateAsync({
+            const born = await create.mutateAsync({
               title: suggestion.title,
               startDate: suggestion.startDate,
               endDate: suggestion.endDate,
@@ -94,7 +100,7 @@ export function MissionSuggestionCard({
               videoId: suggestion.videoId ?? undefined,
               participantProfileIds: suggestion.participantProfileIds,
             });
-            setMade(true);
+            setMadeId(born.missionId ?? null);
           } catch (e) {
             setError(
               errorMessage(
