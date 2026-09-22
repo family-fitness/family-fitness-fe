@@ -22,7 +22,8 @@ export function VideoList({
   empty,
 }: {
   list: "ALL" | "FAVORITES" | "RECENT";
-  empty: { title: string; description: string };
+  /** 아무것도 없을 때 뭐라고 할지. 한 줄이면 된다 */
+  empty: { title: string };
 }) {
   const { profile } = useSession();
 
@@ -37,7 +38,7 @@ export function VideoList({
 
   const videos = data?.videos ?? [];
   if (videos.length === 0) {
-    return <EmptyState scene="no-video" title={empty.title} description={empty.description} />;
+    return <EmptyState scene="no-video" title={empty.title} />;
   }
 
   return (

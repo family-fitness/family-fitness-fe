@@ -56,7 +56,7 @@ export default function SettingsPage() {
               description="만 14세 미만 가족의 건강정보 동의"
             />
           )}
-          <LinkRow href="/videos/favorites" art="item/item-medal" title="즐겨찾기한 영상" />
+          <LinkRow href="/videos?list=favorites" art="item/item-medal" title="즐겨찾기한 영상" />
         </ul>
 
         {/* 아이 모드에서는 로그아웃을 내지 않는다. 부모 폰을 빌려 쓰다 눌러 버리면 곤란하다 */}
