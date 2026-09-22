@@ -24,7 +24,7 @@ export default function ParentAreaLayout({ children }: { children: ReactNode }) 
   if (blocked) return null;
   return (
     <>
-      {children}
+      <div className="has-dock">{children}</div>
       <ChatDock />
     </>
   );

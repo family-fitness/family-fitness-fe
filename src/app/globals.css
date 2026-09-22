@@ -356,6 +356,14 @@ body {
 }
 
 /* 입력 한 줄. 온보딩에서 같은 모양이 여러 번 나온다 */
+/*
+  오른쪽 아래 코치 창이 화면 맨 끝 버튼을 덮는다.
+  창이 뜨는 구역(부모·공통)에서는 그만큼 아래를 비워 둔다.
+*/
+.has-dock {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+}
+
 .field {
   height: 3rem;
   width: 100%;

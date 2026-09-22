@@ -4,7 +4,7 @@ import { ChatDock } from "@/components/domain/chat-dock";
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <>
-      {children}
+      <div className="has-dock">{children}</div>
       <ChatDock />
     </>
   );

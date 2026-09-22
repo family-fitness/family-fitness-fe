@@ -4,13 +4,12 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { AppBar } from "@/components/app-shell/app-bar";
-import { SectionTitle, Stage } from "@/components/app-shell/stage";
+import { Stage } from "@/components/app-shell/stage";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FactorRadar } from "@/components/domain/factor-radar";
-import { ScoreDial } from "@/components/domain/score-dial";
+import { FactorRow, StatStrip } from "@/components/domain/stat-strip";
 import { daysSince } from "@/lib/today";
 import { useFamilyProfiles, useFitnessMap, useLatestFitnessTest } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
@@ -81,22 +80,84 @@ export default function ChildDetailPage() {
   const score = member?.latest?.overallPercentile ?? null;
   const days = daysSince(latest?.testedOn);
   const radar = latest?.radar ?? [];
+  const items = latest?.items ?? [];
+  const weakest = latest?.weakest;
 
   return (
     <>
       <AppBar back title={`${profile.name} 기록`} />
-      <Stage className="space-y-8">
-        <section className="pt-1">
-          <ScoreDial score={score} size={180} label={`${profile.name} 신체 점수`} />
-        </section>
+      <Stage className="space-y-6">
+        {/* 1. 누구인지 · 지금 몇인지 · 기준 대비 어디인지. 한 줄에 몰아 둔다 */}
+        <StatStrip
+          profile={profile}
+          score={score}
+          meta={
+            latest?.testedOn
+              ? `${formatDate(latest.testedOn)}${days != null ? ` · ${days}일 전` : ""}`
+              : undefined
+          }
+        />
 
-        {/* 지금 몸 */}
+        {member?.headline && (
+          <p className="text-sm font-bold">
+            {member.headline}
+            {weakest && (
+              <span className="text-ink-soft font-semibold"> · 지금은 {weakest.factor}</span>
+            )}
+          </p>
+        )}
+
+        {/* 2. 요인별. 레이더는 모양만 보이고 값을 못 읽어서 표로 세운다 */}
+        {radar.length > 0 && (
+          <section>
+            <div className="section-head">
+              <h2>요인별</h2>
+              <span className="text-faint text-micro font-bold">가운데 눈금이 또래 평균</span>
+            </div>
+            <div className="divide-rows">
+              {radar.map((point) => (
+                <FactorRow
+                  key={point.factor}
+                  factor={point.factor ?? ""}
+                  percentile={point.percentile}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 3. 항목별 원값. 무엇을 재서 나온 수인지 */}
+        {items.length > 0 && (
+          <section>
+            <div className="section-head">
+              <h2>항목별</h2>
+              <span className="text-faint text-micro font-bold">{items.length}개 측정</span>
+            </div>
+            <table className="w-full">
+              <tbody className="divide-rows">
+                {items.map((item) => (
+                  <tr key={item.itemCode}>
+                    <td className="py-2.5 text-sm font-bold">{item.itemLabel}</td>
+                    <td className="board-num py-2.5 text-right text-base">
+                      {item.value}
+                      <span className="text-ink-soft ml-0.5 text-xs font-bold">{item.unit}</span>
+                    </td>
+                    <td className="text-ink-soft w-16 py-2.5 text-right text-xs font-bold tabular-nums">
+                      {item.topPercentText ?? "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        )}
+
+        {/* 4. 지금 몸 */}
         <section>
-          <SectionTitle action={<Illustration name="item/item-growth-tree" size={30} />}>
-            지금 몸
-          </SectionTitle>
+          <div className="section-head">
+            <h2>지금 몸</h2>
+          </div>
           <dl className="divide-rows">
-            <BodyRow label="나이대" value={profile.ageGroup ?? "-"} />
             <BodyRow
               label="키"
               value={body ? `${body.heightCm}cm` : "아직 안 적었어요"}
@@ -107,50 +168,35 @@ export default function ChildDetailPage() {
               value={body ? `${body.weightKg}kg` : "아직 안 적었어요"}
               note={body && formatDate(body.measuredOn)}
             />
-            <BodyRow
-              label="마지막으로 잰 날"
-              value={
-                latest?.testedOn
-                  ? `${formatDate(latest.testedOn)}${days != null ? ` · ${days}일 전` : ""}`
-                  : "아직 안 쟀어요"
-              }
-            />
           </dl>
         </section>
 
-        {radar.length >= 3 && (
-          <section>
-            <SectionTitle>요인별로 보면</SectionTitle>
-            <FactorRadar points={radar} size={200} />
-          </section>
-        )}
-
-        <section className="space-y-2">
+        <section className="grid grid-cols-2 gap-2">
           <Link
             href={`/p/${profileId}/measure`}
-            className="press bg-signal block rounded-2xl py-4 text-center text-base font-extrabold text-white"
+            className="press bg-signal col-span-2 block rounded-2xl py-4 text-center text-base font-extrabold text-white"
           >
-            {withJosa(profile.name ?? "아이", "은는")} 다시 재기
+            {withJosa(profile.name ?? "아이", "을를")} 다시 재기
           </Link>
           <Link
             href={`/p/${profileId}/result`}
-            className="press border-line block rounded-2xl border py-4 text-center text-base font-bold"
+            className="press border-line block rounded-2xl border py-3.5 text-center text-sm font-bold"
           >
-            측정 결과 자세히
+            측정 결과
           </Link>
           <Link
             href={`/p/${profileId}/future`}
-            className="press border-line block rounded-2xl border py-4 text-center text-base font-bold"
+            className="press border-line block rounded-2xl border py-3.5 text-center text-sm font-bold"
           >
-            10년 뒤 보기
+            10년 뒤
           </Link>
         </section>
 
         {!latest?.fitnessTestId && (
           <div className="border-line flex items-center gap-3 rounded-2xl border border-dashed p-4">
             <Illustration
-              name="scene/scene-first-body"
-              fallback="scene/scene-first-measure"
+              name="scene/scene-first-measure"
+              fallback="scene/scene-first-body"
               size={52}
             />
             <p className="text-ink-soft text-sm leading-relaxed">
