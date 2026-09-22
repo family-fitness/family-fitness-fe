@@ -57,6 +57,8 @@ type MissionRow = Concrete<Mission>;
 
 const BASE = "/api/v1";
 const CHEER_KEY = "ff-mock-cheers";
+const MISSION_KEY = "ff-mock-missions";
+const RUN_KEY = "ff-mock-run";
 const ACTING_KEY = "ff-mock-acting";
 const NEWCOMER_KEY = "ff-mock-newcomer";
 
@@ -77,9 +79,9 @@ const db = {
   profiles: structuredClone(fixtures.profiles),
   fitnessMap: structuredClone(fixtures.fitnessMap),
   latest: structuredClone(fixtures.latestByProfile),
-  coachRun: freshCoachRun(),
+  coachRun: loadCoachRun(),
   /** 이번 주 제안은 아직 0건이다. 심어 둔 것은 지난 회차에서 승인한 미션들이다 */
-  missions: seedMissions(),
+  missions: loadMissions(),
   videos: structuredClone(fixtures.videos.videos),
   /** 주고받은 칭찬 · 알림. */
   cheers: loadCheers(),
@@ -360,6 +362,49 @@ function freshCoachRun() {
     endDate: week.weekEnd,
   }));
   return run;
+}
+
+/**
+ * 승인·거절·미션 만들기는 **탭이 살아 있는 동안 남는다.**
+ *
+ * 전에는 모듈 상태로만 들고 있어서 새로고침 한 번에 방금 승인한 제안이
+ * 승인 전으로 돌아갔다. 시연 중에 그러면 방금 한 일이 없던 일이 된다.
+ * 칭찬과 같은 자리(탭 저장소)에 둔다 — 새 탭을 열면 처음부터다.
+ */
+function loadMissions(): MissionRow[] {
+  try {
+    const saved = sessionStorage.getItem(MISSION_KEY);
+    if (saved) return JSON.parse(saved) as MissionRow[];
+  } catch {
+    return seedMissions();
+  }
+  return seedMissions();
+}
+
+function saveMissions() {
+  try {
+    sessionStorage.setItem(MISSION_KEY, JSON.stringify(db.missions));
+  } catch {
+    // 저장이 안 돼도 화면은 돌아야 한다
+  }
+}
+
+function loadCoachRun() {
+  try {
+    const saved = sessionStorage.getItem(RUN_KEY);
+    if (saved) return JSON.parse(saved) as ReturnType<typeof freshCoachRun>;
+  } catch {
+    return freshCoachRun();
+  }
+  return freshCoachRun();
+}
+
+function saveCoachRun() {
+  try {
+    sessionStorage.setItem(RUN_KEY, JSON.stringify(db.coachRun));
+  } catch {
+    // 저장이 안 돼도 화면은 돌아야 한다
+  }
 }
 
 function saveCheers(cheers: CheerLog[]) {
@@ -786,6 +831,7 @@ const coaching = [
         endDate: week.weekEnd,
       })),
     };
+    saveCoachRun();
     // 실행은 비동기다. 접수만 하고 202 를 준다
     return HttpResponse.json(
       { coachRunId: db.coachRun.coachRunId, status: "RUNNING", pollAfterMs: 1500 },
@@ -825,6 +871,8 @@ const coaching = [
     }));
     db.missions = [...db.missions, ...born];
     db.coachRun.missionCount = born.length;
+    saveMissions();
+    saveCoachRun();
     return HttpResponse.json(fixtures.coachApprove);
   }),
 
@@ -838,6 +886,7 @@ const coaching = [
     const { reason } = (await request.json()) as { reason?: string };
     db.coachRun.status = "REJECTED";
     db.coachRun.rejectedReason = reason ?? null;
+    saveCoachRun();
     // 거절해도 미션은 0건 유지
     return HttpResponse.json({
       coachRunId: db.coachRun.coachRunId,
@@ -1078,6 +1127,7 @@ const missions = [
       })),
     };
     db.missions.push(mission);
+    saveMissions();
     return HttpResponse.json(mission, { status: 201 });
   }),
 
