@@ -152,16 +152,14 @@ export default function FuturePage() {
               </dl>
             )}
 
-            {/* 서버가 준 고지. 접거나 줄이지 않는다 */}
-            {result.notice && (
-              <p className="border-line text-ink-soft text-caption rounded-xl border p-4 leading-relaxed">
-                {result.notice}
-              </p>
-            )}
-
-            <p className="text-faint text-caption leading-relaxed">
-              국민체력100은 여러 사람을 한 시점에 조사한 자료예요. 한 사람을 10년 동안 따라간 기록이
-              아니라서, 개인이 앞으로 어떻게 변할지는 알 수 없어요.
+            {/*
+              고지는 한 번만 한다. 서버가 준 문구가 있으면 그걸 쓰고(도메인 규칙 9),
+              없을 때만 우리 문장을 낸다 — 둘 다 내면 같은 말이 두 번 쌓이고,
+              두 번 읽히는 경고는 한 번도 안 읽힌다.
+            */}
+            <p className="border-line text-ink-soft text-caption rounded-xl border p-4 leading-relaxed">
+              {result.notice ??
+                "국민체력100은 여러 사람을 한 시점에 조사한 자료예요. 한 사람을 10년 동안 따라간 기록이 아니라서, 개인이 앞으로 어떻게 변할지는 알 수 없어요."}
             </p>
           </>
         )}

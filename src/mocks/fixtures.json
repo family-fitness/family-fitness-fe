@@ -33,7 +33,8 @@
         "supportMode": "FULL",
         "measurable": true,
         "consentRequired": false,
-        "consentGiven": true
+        "consentGiven": true,
+        "sex": "F"
       },
       {
         "profileId": "00000000-0000-4000-8000-000000000012",
@@ -46,7 +47,8 @@
         "supportMode": null,
         "measurable": true,
         "consentRequired": true,
-        "consentGiven": true
+        "consentGiven": true,
+        "sex": "M"
       },
       {
         "profileId": "00000000-0000-4000-8000-000000000013",
@@ -59,7 +61,8 @@
         "supportMode": null,
         "measurable": true,
         "consentRequired": false,
-        "consentGiven": true
+        "consentGiven": true,
+        "sex": "M"
       }
     ]
   },

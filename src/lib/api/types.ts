@@ -148,6 +148,17 @@ export type LatestWithBody = LatestFitnessTest & {
   weightKg?: number | null;
 };
 
+/**
+ * 프로필에 붙는 성별.
+ *
+ * ▲ 요청: `ProfileSummary` 에 `sex` 를 돌려주세요.
+ * 가족을 만들 때(`OwnerRequest`) 와 구성원을 더할 때(`AddMemberRequest`) 는
+ * 받으면서 조회 응답에는 없습니다. 그래서 아바타 몸을 프로필 번호 해시로
+ * 고르고 있고, 아빠가 절반의 확률로 엄마 모습으로 그려집니다.
+ * 국민체력100 규준 자체가 성별로 나뉘어 있어 어차피 서버가 아는 값입니다.
+ */
+export type ProfileWithSex = ProfileSummary & { sex?: "M" | "F" | null };
+
 /** 서버 응답에 제안이 붙어 올 수 있다 */
 export type CoachChatAnswer = CoachChatResult & { suggestion?: MissionSuggestion | null };
 

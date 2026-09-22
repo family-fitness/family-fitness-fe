@@ -10,6 +10,7 @@ import type { ProfileSummary } from "./api/types";
  *
  * 같은 프로필은 언제 봐도 같은 모습이어야 한다. profileId 를 씨앗으로 쓴다.
  */
+/** 아이가 꾸미기에서 고를 수 있는 전부. 고르는 자리에서는 성별로 나누지 않는다 */
 const KID_HAIR = [
   "hair-bob",
   "hair-ponytail",
@@ -18,7 +19,11 @@ const KID_HAIR = [
   "hair-twintail",
   "hair-cap-blue",
 ];
-const ADULT_HAIR = ["hair-mom-long", "hair-dad-short", "hair-bun", "hair-curly", "hair-cap"];
+/* 자동으로 고를 때만 성별을 따른다 */
+const KID_HAIR_M = ["hair-short-m", "hair-crop", "hair-cap-blue"];
+const KID_HAIR_F = ["hair-bob", "hair-ponytail", "hair-twintail"];
+const ADULT_HAIR_M = ["hair-dad-short", "hair-cap"];
+const ADULT_HAIR_F = ["hair-mom-long", "hair-bun", "hair-curly"];
 
 /** 평상시 얼굴. 다 웃고 있으면 누가 누군지 구분되지 않는다 */
 const KID_FACES = ["face-calm", "face-happy", "face-cheer", "face-proud", "face-focused"];
@@ -63,6 +68,12 @@ export function avatarFor(
   profile: {
     profileId?: string;
     ageGroup?: ProfileSummary["ageGroup"];
+    /**
+     * 있으면 이걸로 몸을 고른다.
+     * ▲ 서버가 아직 조회 응답에 안 준다 — 없으면 프로필 번호로 갈음한다.
+     * 해시로 고르면 아빠가 절반의 확률로 엄마 모습이 된다.
+     */
+    sex?: "M" | "F" | null;
   },
   /** 아이가 직접 고른 것이 있으면 그게 먼저다 */
   chosen?: AvatarChoice,
@@ -70,23 +81,33 @@ export function avatarFor(
   const seed = profile.profileId ?? "";
   const h = hash(seed);
   const grown = profile.ageGroup === "성인" || profile.ageGroup === "어르신";
+  /*
+    생성된 `ProfileSummary` 에 아직 `sex` 가 없다. 화면들은 서버가 준 객체를
+    그대로 넘기므로 값이 오기 시작하면 타입을 다시 만들지 않아도 바로 쓰인다.
+    없으면 지금처럼 프로필 번호로 갈음한다.
+  */
+  const given = profile.sex ?? (profile as { sex?: "M" | "F" | null }).sex;
+  const male = given ? given === "M" : h % 2 === 0;
 
   const body =
     profile.ageGroup === "유아기"
-      ? h % 2 === 0
+      ? male
         ? "body-toddler"
         : "body-child-f"
       : grown
-        ? h % 2 === 0
+        ? male
           ? "body-adult-m"
           : "body-adult-f"
-        : h % 2 === 0
+        : male
           ? "body-child-m"
           : "body-child-f";
 
+  /* 머리도 성별을 따른다. 아빠에게 양갈래를 씌우면 가족 화면이 어긋난다 */
+  const hairs = grown ? (male ? ADULT_HAIR_M : ADULT_HAIR_F) : male ? KID_HAIR_M : KID_HAIR_F;
+
   return {
     body: chosen?.body ?? body,
-    hair: chosen?.hair ?? pick(grown ? ADULT_HAIR : KID_HAIR, seed, "hair"),
+    hair: chosen?.hair ?? pick(hairs, seed, "hair"),
     face: chosen?.face ?? pick(grown ? ADULT_FACES : KID_FACES, seed, "face"),
   };
 }
