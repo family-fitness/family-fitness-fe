@@ -38,8 +38,7 @@ export function PeerCompare({
             size={56}
           />
           <p className="text-ink-soft text-sm leading-relaxed">
-            한 가지만 재도 {withJosa(name, "이가")} 또래 중 어디쯤인지 바로 보여요. 자 하나면 집에서
-            됩니다.
+            한 가지만 재도 {withJosa(name, "이가")} 또래 중 어디쯤인지 보입니다.
           </p>
         </div>
         {profileId && (

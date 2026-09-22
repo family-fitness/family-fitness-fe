@@ -69,9 +69,6 @@ export function RepGame({
         <p className="text-ink-soft mt-1 text-base font-bold">
           {motion.label} {reps}번 했어요
         </p>
-        <p className="text-faint mt-2 text-xs leading-relaxed">
-          횟수는 직접 센 거예요. 1분 동안 움직인 건 앱이 기록해요.
-        </p>
 
         <Button
           size="kid"

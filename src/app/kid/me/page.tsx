@@ -100,10 +100,6 @@ export default function DressUpPage() {
             );
           })}
         </ul>
-
-        <p className="text-faint text-caption text-center leading-relaxed">
-          언제든 바꿀 수 있어요. 고른 모습은 이 기기에 남아요.
-        </p>
       </Stage>
     </>
   );

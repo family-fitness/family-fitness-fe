@@ -98,9 +98,6 @@ export default function CoachChatPage() {
             <p className="text-body mt-3 font-bold">
               {isChild ? "운동에 대해 물어봐" : "운동에 대해 물어보세요"}
             </p>
-            <p className="text-ink-soft mt-1 text-sm leading-relaxed">
-              국민체력100 운동처방과 영상에서 찾아 답해요. 답에는 어디서 찾았는지가 같이 붙어요.
-            </p>
 
             <ul className="mt-5 w-full space-y-2">
               {EXAMPLES.map((q) => (

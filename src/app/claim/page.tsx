@@ -64,9 +64,6 @@ function ClaimContent() {
       <div className="flex flex-col items-center text-center">
         <Illustration name="scene/scene-invite" size={140} />
         <h1 className="page-title mt-3">초대코드를 넣어 주세요</h1>
-        <p className="text-ink-soft mt-2 text-sm leading-relaxed">
-          가족이 만들어 둔 프로필에 내 계정을 붙여요. 그동안 쌓인 기록이 그대로 따라와요.
-        </p>
       </div>
 
       <div className="space-y-3">
@@ -104,9 +101,7 @@ function ClaimContent() {
         </Button>
       </div>
 
-      <p className="text-faint text-caption text-center leading-relaxed">
-        코드는 만든 지 7일 동안 쓸 수 있어요. 지났다면 가족에게 새로 받아 주세요.
-      </p>
+      <p className="text-faint text-caption text-center">코드는 7일 동안 씁니다</p>
     </PlainScreen>
   );
 }

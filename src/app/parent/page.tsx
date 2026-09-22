@@ -173,7 +173,7 @@ export default function ParentHomePage() {
               href="/coach/chat"
               art="item/item-whistle"
               title="코치에게 묻기"
-              description="답에는 어디서 찾았는지가 같이 붙어요"
+              description="국민체력100 운동처방에서 찾아 답합니다"
             />
           </ul>
         </section>

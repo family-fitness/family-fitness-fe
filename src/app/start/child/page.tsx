@@ -93,9 +93,6 @@ export default function AddChildPage() {
               <h2 className="text-xl leading-snug font-extrabold">
                 아이 이름과 생일을 알려 주세요
               </h2>
-              <p className="text-ink-soft mt-1.5 text-sm leading-relaxed">
-                또래 중 어디쯤인지 보려면 나이와 성별이 필요해요.
-              </p>
             </div>
 
             <Field label="이름">
@@ -153,9 +150,6 @@ export default function AddChildPage() {
               <h2 className="text-xl leading-snug font-extrabold">
                 {withJosa(name || "아이", "은는")} 지금 얼마나 컸나요?
               </h2>
-              <p className="text-ink-soft mt-1.5 text-sm leading-relaxed">
-                지금을 적어 두면 나중에 얼마나 자랐는지 보여 드려요.
-              </p>
             </div>
 
             <Field label="키" hint={rangeHint("heightCm")}>

@@ -147,11 +147,6 @@ function WeeklyReportPageContent() {
                 })}
               </ul>
             </section>
-
-            <p className="text-faint text-caption leading-relaxed">
-              타이머와 영상 재생은 앱이 직접 확인한 시간이고, 걸음수처럼 직접 적은 기록은 확인된
-              시간에 들어가지 않아요.
-            </p>
           </>
         )}
       </Screen>

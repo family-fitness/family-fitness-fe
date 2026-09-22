@@ -77,7 +77,7 @@ export default function WeeklyCoachPage() {
           <EmptyState
             scene="waiting-approval"
             title="이번 주 제안을 만들어 볼까요"
-            description="가족의 측정 기록을 보고 또래 운동처방과 영상을 찾아 한 주를 짭니다. 만들어진 제안은 보호자가 승인해야 미션이 돼요."
+            description="보호자가 승인해야 미션이 됩니다"
             action={
               <Button
                 size="md"
@@ -300,9 +300,6 @@ export default function WeeklyCoachPage() {
 
       <Sheet open={rejectOpen} onClose={() => setRejectOpen(false)} title="제안을 거절할까요">
         <div className="space-y-4">
-          <p className="text-ink-soft text-sm leading-relaxed">
-            거절해도 괜찮아요. 적어 주신 이유는 다음 주 편성에 참고돼요.
-          </p>
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value.slice(0, 300))}

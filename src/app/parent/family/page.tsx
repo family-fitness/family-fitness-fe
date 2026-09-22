@@ -51,10 +51,6 @@ export default function MembersPage() {
       <PlainScreen className="space-y-6 pt-1">
         <div>
           <h2 className="page-title">{family?.familyName ?? "우리집"}</h2>
-          <p className="text-ink-soft mt-2 text-sm leading-relaxed">
-            같이 할 가족을 더해요. 아이가 폰이 없어도 괜찮아요 — 프로필만 있으면 측정과 미션이
-            굴러가요.
-          </p>
         </div>
 
         <ul className="divide-rows">

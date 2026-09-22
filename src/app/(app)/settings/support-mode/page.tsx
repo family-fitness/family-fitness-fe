@@ -74,11 +74,6 @@ function SupportModePageContent() {
       <PageHeader title="참여 방식" back={!joining} />
 
       <Screen className="space-y-5">
-        <p className="text-ink-soft text-sm leading-relaxed">
-          얼마나 같이 뛸 수 있는지 골라 주세요. 다음 주 미션 편성이 이 선택을 따라가요. 바쁠 땐
-          응원만으로도 충분해요.
-        </p>
-
         <ul className="divide-rows">
           {MODES.map((mode) => {
             const on = current === mode.value;
@@ -139,12 +134,6 @@ function SupportModePageContent() {
           <Button size="block" disabled={!current} onClick={() => router.replace("/start")}>
             {current ? "다 골랐어요" : "하나 골라 주세요"}
           </Button>
-        )}
-
-        {current === "CHEER_ONLY" && (
-          <p className="text-faint text-caption leading-relaxed">
-            응원 역할일 때도 미션 참여자 명단에는 남아요. 가족이 함께한 기록으로 남습니다.
-          </p>
         )}
       </Screen>
     </>

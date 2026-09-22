@@ -137,9 +137,6 @@ export default function MissionDetailPage() {
                     });
                   }}
                 />
-                <p className="text-faint text-xs">
-                  영상을 90%까지 보면 완주로 기록돼요. 건너뛰면 올라가지 않아요.
-                </p>
               </div>
             )}
 
@@ -256,8 +253,7 @@ function StepsForm({
         </span>
       </div>
       <p className="text-faint text-xs leading-relaxed">
-        오늘 총 걸음수를 적어요. 여러 번 적으면 더해지지 않고 마지막 값으로 바뀌어요. 직접 적은
-        값이라 보호자 확인이 있어야 완료가 돼요.
+        직접 입력한 값이라 보호자 확인이 필요합니다.
       </p>
       <Button size="block" disabled={!valid} loading={pending} onClick={() => onSubmit(steps)}>
         기록하기

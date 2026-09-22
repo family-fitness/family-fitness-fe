@@ -70,9 +70,6 @@ export function DoneCard({
           <p className="bg-done-soft text-done mt-6 rounded-2xl px-5 py-4 text-base font-extrabold">
             부모님께 알렸어요
           </p>
-          <p className="text-ink-soft mt-2 text-sm leading-relaxed">
-            칭찬이 오면 홈에서 볼 수 있어요.
-          </p>
         </>
       ) : (
         <Button

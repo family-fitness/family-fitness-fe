@@ -10,7 +10,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { KidCharacter } from "@/components/domain/kid-character";
 import { MissionTimer } from "@/components/domain/mission-timer";
-import { DiceGame } from "@/components/domain/dice-game";
 import { RepGame } from "@/components/domain/rep-game";
 import { YouTubePlayer } from "@/components/domain/youtube-player";
 import { DoneCard } from "@/components/domain/done-card";
@@ -59,7 +58,7 @@ export default function PlayPage() {
   const [tooShort, setTooShort] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** 같은 운동을 두 가지 방법으로 할 수 있다. */
-  const [how, setHow] = useState<"video" | "count" | "dice">("video");
+  const [how, setHow] = useState<"video" | "count">("video");
 
   if (missionPending || videoPending) return <PlaySkeleton />;
 
@@ -133,7 +132,6 @@ export default function PlayPage() {
             [
               ["video", "영상"],
               ["count", "세기"],
-              ["dice", "주사위"],
             ] as const
           ).map(([value, label]) => (
             <button
@@ -151,8 +149,6 @@ export default function PlayPage() {
 
         {how === "count" ? (
           <RepGame pending={recordTimer.isPending} onFinish={finishGame} />
-        ) : how === "dice" ? (
-          <DiceGame pending={recordTimer.isPending} onFinish={finishGame} />
         ) : video?.videoId ? (
           <YouTubePlayer
             videoId={video.videoId}
@@ -220,10 +216,6 @@ export default function PlayPage() {
             >
               다 했어요!
             </button>
-
-            <p className="text-faint text-center text-xs leading-relaxed">
-              영상을 끝까지 보면 자동으로 기록돼요. 중간에 그만둬도 괜찮아요.
-            </p>
           </>
         )}
       </Stage>
