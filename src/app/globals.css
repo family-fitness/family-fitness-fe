@@ -364,6 +364,21 @@ body {
   padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
 }
 
+/*
+  칩을 가로로 미는 줄.
+
+  음수 여백으로 화면 끝까지 늘리면 페이지 자체가 가로로 스크롤된다.
+  칸 안에서만 밀고, 스크롤 막대는 숨긴다.
+*/
+.scroll-row {
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scroll-row::-webkit-scrollbar {
+  display: none;
+}
+
 .field {
   height: 3rem;
   width: 100%;
