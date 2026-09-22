@@ -182,6 +182,62 @@ export interface InvitePeek {
   expiresAt?: string | null;
 }
 
+/**
+ * 영상 속 **구간**.
+ *
+ * 국민체력100 운동처방 하나가 영상 한 편이 아니라 영상 **안의 한 토막**이다.
+ * 「초등학생 기초체력」 12분짜리 한 편에 준비운동·본운동·정리운동이 다 들어 있다.
+ *
+ * ▲ 요청: `VideoView.chapters[]` 와 `ProposalVideoView.endSec`.
+ * 지금 계약에는 `startSec` 만 있어서 **구간의 끝을 모른다.** 끝을 모르면 구간
+ * 재생도 구간 완주 판정도 안 된다 — 영상 전체 90%를 봐야 완주로 치는 지금
+ * 규칙으로는 90초짜리 구간만 한 아이가 영원히 완주에 못 닿는다.
+ */
+export interface VideoClip {
+  videoId: string;
+  /** 초 단위. 없으면 영상 처음부터 */
+  startSec?: number | null;
+  /** 초 단위. **없으면 구간이 아니라 영상 한 편이다** */
+  endSec?: number | null;
+  title?: string | null;
+  url?: string | null;
+  thumbnailUrl?: string | null;
+}
+
+/** 준비 · 본 · 정리. 하루치 미션이 이 셋으로 나뉜다 */
+export type SessionPhase = "WARMUP" | "MAIN" | "COOLDOWN";
+
+/**
+ * 미션 한 건 안의 세션 하나.
+ *
+ * ▲ 요청: `MissionView.sessions[]` · `ProposalView.sessions[]` ·
+ * `CreateMissionRequest.sessions[]` · `POST /missions/{id}/sessions/{position}/done`.
+ *
+ * **안 오면 지어내지 않는다.** 세션이 없으면 화면은 본운동 한 칸만 그린다 —
+ * 준비운동과 정리운동을 프론트가 만들어 붙이면 코치가 짜지 않은 운동을
+ * 아이에게 시키는 게 된다.
+ */
+export interface MissionSession {
+  /** 1부터. 순서가 곧 하는 차례다 */
+  position: number;
+  phase: SessionPhase;
+  title: string;
+  factor?: string | null;
+  /** 이 세션에 잡힌 시간(분) */
+  minutes?: number | null;
+  clip?: VideoClip | null;
+  completed?: boolean;
+  verifiedBy?: VerifiedBy | null;
+}
+
+/** 서버가 세션을 붙여 줄 수 있다 */
+export type MissionWithSessions = Mission & { sessions?: MissionSession[] | null };
+export type ProposalWithSessions = CoachProposal & {
+  sessions?: MissionSession[] | null;
+  /** 이번 주 어느 요일에 넣을지. ▲ 요청: `ProposalView.days` */
+  days?: string[] | null;
+};
+
 /** 서버 응답에 제안이 붙어 올 수 있다 */
 export type CoachChatAnswer = CoachChatResult & { suggestion?: MissionSuggestion | null };
 
