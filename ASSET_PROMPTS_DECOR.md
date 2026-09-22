@@ -107,6 +107,22 @@ elements spread evenly across the full width so it can be cropped from either si
 very low visual weight, thin outlines, pale fills, must not compete with text placed on top
 ```
 
+### ★ 1차 띠를 써 보고 알게 된 것 — 꼭 읽어 주세요
+
+1차로 받은 `bg-park` · `bg-sky` · `bg-gym` 은 **사물이 왼쪽 끝과 오른쪽 끝에만** 있고
+가운데가 비어 있습니다. 넓은 화면을 생각하면 맞는 구성인데, 실제 화면은 **폰 너비
+390px** 입니다. 폭에 맞춰 통째로 넣으면 띠 높이가 130px 밖에 안 되고, 왼쪽 끝
+나무 한 그루가 화면의 3분의 1을 차지해 칩과 제목을 덮었습니다.
+
+그래서 이렇게 부탁드립니다.
+
+- **사물을 좌우 끝에 몰지 마세요.** 폭 전체에 **고르게** 흩어 주세요
+- 사물 하나의 크기는 **그림 폭의 1/8 을 넘지 않게** 해 주세요.
+  390px 화면에서 50px 쯤 되는 크기입니다
+- 아래 1/3 비우기는 그대로입니다. 화면 쪽에서 아래쪽을 한 번 더 흐리게 지우고 있습니다
+
+---
+
 ---
 
 ## 3. 구획 장식 — 6장 · 가로 1024×96
@@ -249,6 +265,28 @@ positioned as if worn by a character but the character is NOT drawn,
 consistent scale across all parts in this set, front facing view,
 no body, no head, no skin, no shadow under the item
 ```
+
+---
+
+## 8. 1차로 받은 것 중 **안 쓰는 것** — 다시 만들지 마세요
+
+화면에 붙여 보고 뺀 것들입니다. 같은 결로 더 만들면 또 못 씁니다.
+
+| 파일                           | 왜 뺐나                                                                                         |
+| ------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `item/part-core`               | **맨 배**입니다. 측정 화면에서 40px 넘게 키우면 아이 건강 서비스 화면에 둘 그림이 아닙니다      |
+| `item/part-arm` · `part-leg`   | 파란 소매·바짓단이 잘린 팔다리로 보입니다. 작은 아이콘이면 몰라도 항목마다 크게 서면 불편합니다 |
+| `item/part-heart`              | 해부학 심장이라 병원 자료처럼 보입니다                                                          |
+| `item/item-dice` · `item-lock` | 주사위 놀이를 뺐고, 잠긴 칸은 규칙상 만들지 않습니다(못 채운 날이 실패가 됩니다)                |
+| `move/*` 11장                  | 머리카락이 없습니다. `ASSET_PROMPTS.md` 맨 앞에 다시 뽑을 목록이 있습니다                       |
+
+요인 그림은 **몸이 아니라 도구**로 갑니다 — 이미 있는 `item-shoes` · `item-mat` ·
+`item-tape` · `item-grip` · `item-cone` · `item-target` · `item-stopwatch` 로 충분합니다.
+
+`deco/` 의 `deco-sun` · `deco-cloud-*` · `deco-grass` · `deco-ribbon` · `deco-arrow-up` ·
+`deco-dots` · `deco-track-lines` · `deco-line-wave` 도 아직 안 붙였습니다.
+낱개 장식을 화면에 흩뿌리면 이모지를 뿌려 놓은 것처럼 보여서(AGENTS.md 「three.js 는
+이렇게만 쓴다」) **2절의 띠 한 장**으로 대신하고 있습니다. 더 만들지 않으셔도 됩니다.
 
 ---
 
