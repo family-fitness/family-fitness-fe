@@ -18,7 +18,6 @@ import { UpdateNudge } from "@/components/domain/update-nudge";
 import { useCoachRun, useFitnessMap, useLatestFitnessTest, useMissions } from "@/lib/api/queries";
 import { useCoachRunId } from "@/stores/coach-store";
 import { useSession } from "@/lib/session";
-import { useChatStore } from "@/stores/chat-store";
 import { useRoleStore } from "@/stores/role-store";
 
 /** 부모 홈. */
@@ -41,7 +40,6 @@ export default function ParentHomePage() {
 
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
-  const openChat = useChatStore((s) => s.openChat);
 
   const children = (map?.members ?? []).filter((m) => m.role === "CHILD");
   // 고른 적이 없으면 첫째로 본다. 기본값을 저장해 두지 않는다 —
@@ -167,16 +165,6 @@ export default function ParentHomePage() {
                         : "가족 기록을 보고 코치가 한 주를 짜요"
               }
               badge={run?.status === "AWAITING_APPROVAL" ? "승인 기다림" : undefined}
-            />
-            {/*
-              별도 화면으로 보내지 않는다. 오른쪽 아래 창을 그대로 연다 —
-              보던 것을 두고 나가지 않아도 되는 게 그 창을 만든 이유다.
-            */}
-            <HomeLink
-              onClick={() => openChat(child.profileId ?? undefined)}
-              art="item/item-whistle"
-              title="코치에게 묻기"
-              description="국민체력100 운동처방에서 찾아 답합니다"
             />
           </ul>
         </section>

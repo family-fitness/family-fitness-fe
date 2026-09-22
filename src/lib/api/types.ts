@@ -80,7 +80,6 @@ export type CoachRun = S["CoachRunView"];
 export type CoachProposal = S["ProposalView"];
 export type CoachStep = S["CoachStep"];
 export type CoachApproveResult = S["ApproveCoachRunView"];
-export type CoachChatResult = S["ChatView"];
 export type ChatCitation = S["ChatCitationView"];
 
 export type MissionList = S["MissionListView"];
@@ -112,28 +111,6 @@ export interface CheerLog {
 
 export interface CheerLogList {
   cheers: CheerLog[];
-}
-
-/**
- * 코치가 대화 중에 내놓는 미션 제안.
- *
- * ▲ 요청: `POST /coach/chat` 응답에 `suggestion?` 을 붙여 주세요.
- * 값이 그대로 `POST /families/{familyId}/missions` 요청 본문이 됩니다 —
- * 부모가 카드의 버튼 한 번으로 미션을 만들 수 있게 하려는 것입니다.
- * 없으면 화면은 지금처럼 답변만 보여 줍니다.
- */
-export interface MissionSuggestion {
-  title: string;
-  targetMetric: TargetMetric;
-  targetValue: number;
-  /** YYYY-MM-DD */
-  startDate: string;
-  endDate: string;
-  videoId?: string | null;
-  videoTitle?: string | null;
-  participantProfileIds: Uuid[];
-  /** 왜 이 미션인지 한 줄 */
-  rationale?: string | null;
 }
 
 /**
@@ -237,9 +214,6 @@ export type ProposalWithSessions = CoachProposal & {
   /** 이번 주 어느 요일에 넣을지. ▲ 요청: `ProposalView.days` */
   days?: string[] | null;
 };
-
-/** 서버 응답에 제안이 붙어 올 수 있다 */
-export type CoachChatAnswer = CoachChatResult & { suggestion?: MissionSuggestion | null };
 
 /* ─── 오류 ─────────────────────────────────────────────────── */
 

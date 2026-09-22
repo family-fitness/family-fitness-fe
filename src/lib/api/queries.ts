@@ -10,7 +10,6 @@ import type {
   CheerLogList,
   CoachApproveResult,
   TargetMetric,
-  CoachChatAnswer,
   CoachRun,
   FitnessItems,
   FitnessMap,
@@ -336,13 +335,6 @@ export function useRejectCoachRun(runId: Uuid, familyId?: Uuid) {
       qc.invalidateQueries({ queryKey: qk.coach.run(runId) });
       if (familyId) qc.invalidateQueries({ queryKey: qk.coach.latest(familyId) });
     },
-  });
-}
-
-export function useAskCoach(profileId: Uuid) {
-  return useMutation({
-    mutationFn: (body: { question: string; conversationId?: string }) =>
-      api.post<CoachChatAnswer>("/coach/chat", { profileId, ...body }),
   });
 }
 
