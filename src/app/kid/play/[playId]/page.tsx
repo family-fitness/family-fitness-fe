@@ -168,7 +168,7 @@ export default function PlayPage() {
           />
         ) : (
           <div className="bg-sub grid place-items-center rounded-2xl py-10">
-            <KidCharacter motion="squat" size={140} />
+            <KidCharacter motion="squat" size={140} animate />
           </div>
         )}
 

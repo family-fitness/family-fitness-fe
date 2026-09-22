@@ -28,10 +28,16 @@ export type Motion = keyof typeof POSE;
 export function KidCharacter({
   motion = "idle",
   size = 160,
+  animate = false,
   className,
 }: {
   motion?: Motion;
   size?: number;
+  /**
+   * 숨 쉬듯 아주 조금 움직인다. **기본은 멈춤이다.**
+   * 켜는 곳은 셋 — 지금 눌러야 할 것, 지금 따라 해야 할 동작, 방금 해낸 순간.
+   */
+  animate?: boolean;
   className?: string;
 }) {
   const { file, fallback } = POSE[motion];
@@ -40,7 +46,7 @@ export function KidCharacter({
       name={file}
       fallback={fallback}
       size={size}
-      className={cn("shrink-0", className)}
+      className={cn("shrink-0", animate && "breathe", className)}
     />
   );
 }

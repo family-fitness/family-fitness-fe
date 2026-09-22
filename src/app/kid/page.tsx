@@ -164,7 +164,7 @@ export default function KidHomePage() {
           <SectionTitle>{finishedToday ? "오늘 한 일" : "오늘 할 운동"}</SectionTitle>
           {finishedToday ? (
             <div className="border-done bg-done-soft rounded-3xl border-2 p-5 text-center">
-              <KidCharacter motion="cheer" size={120} className="mx-auto" />
+              <KidCharacter motion="cheer" size={120} className="mx-auto" animate />
               <p className="text-done mt-2 text-2xl font-extrabold">오늘 다 했어요</p>
             </div>
           ) : todo ? (
@@ -325,7 +325,7 @@ function BigAction({
             <Illustration name={art} fallback="item/item-target" size={48} />
           </span>
         ) : (
-          <KidCharacter motion={motion} size={96} />
+          <KidCharacter motion={motion} size={96} animate />
         )}
         <div className="min-w-0 flex-1">
           {tag && (
