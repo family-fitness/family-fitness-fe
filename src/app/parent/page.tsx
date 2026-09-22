@@ -8,7 +8,6 @@ import { AppBar } from "@/components/app-shell/app-bar";
 import { SectionTitle, Stage } from "@/components/app-shell/stage";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/error-state";
-import { Backdrop } from "@/components/ui/backdrop";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChildSwitch } from "@/components/domain/child-switch";
@@ -102,8 +101,10 @@ export default function ParentHomePage() {
     <>
       {bar}
       <Stage className="relative space-y-8">
-        {/* 언덕 능선이 점수 아래 한 줄을 가로지르지 않게 높이를 맞춘다 */}
-        <Backdrop name="bg/bg-hill" height={272} />
+        {/*
+          언덕 띠를 깔았다가 뺐다. 능선이 가로지르는 자리가 내용 높이에 따라
+          계속 바뀌어 매번 다른 줄을 덮었다. 점 구름이 이미 이 자리를 채운다.
+        */}
         {children.length > 1 && (
           <ChildSwitch kids={children} selectedId={child.profileId} onSelect={setChild} />
         )}
