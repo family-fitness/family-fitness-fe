@@ -126,13 +126,6 @@ body {
 }
 
 /* ── 타이포 ── */
-/* 영문 eyebrow — 제목 위에 놓는 작은 라벨 */
-.eyebrow {
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  color: var(--color-signal);
-}
 /* 화면 제목. 크게 쓴다 — 이 앱은 읽는 앱이 아니라 보는 앱이다 */
 .page-title {
   font-size: 1.9rem;
@@ -143,9 +136,6 @@ body {
 /* 제목 아래 굵은 선 */
 .rule {
   border-bottom: 2.5px solid var(--color-rule);
-}
-.rule-thin {
-  border-bottom: 1px solid var(--color-line);
 }
 /* 전광판 숫자 */
 /* 크게 뜨는 숫자 — 점수, 개수 */
@@ -295,20 +285,6 @@ body {
   animation: shimmer 1.25s ease-in-out infinite;
 }
 
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-.rise {
-  animation: rise 0.45s ease-out both;
-}
-
 /* 기록이 왼쪽에서 차오른다 */
 @keyframes fill {
   from {
@@ -320,31 +296,6 @@ body {
 }
 
 /* 전광판이 켜진다 */
-@keyframes boardOn {
-  0% {
-    opacity: 0.2;
-  }
-  35% {
-    opacity: 1;
-  }
-  55% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-.board-on {
-  animation: boardOn 0.7s ease-out both;
-}
-
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  scrollbar-width: none;
-}
-
 @layer base {
   /*
     한글은 단어 가운데서 줄이 바뀌면 읽기 어렵다.
@@ -423,22 +374,7 @@ body {
 }
 
 /* 점수 링이 0에서 차오른다. 숫자만 바뀌면 아무 일도 안 일어난 것 같다 */
-@keyframes dial-fill {
-  from {
-    stroke-dasharray: 0 var(--dial-gap);
-  }
-  to {
-    stroke-dasharray: var(--dial-to) var(--dial-gap);
-  }
-}
-.dial-fill {
-  stroke-dasharray: var(--dial-to) var(--dial-gap);
-  animation: dial-fill 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
 @media (prefers-reduced-motion: reduce) {
-  .dial-fill {
-    animation: none;
-  }
 }
 
 /* ── 화면 전환 ──
