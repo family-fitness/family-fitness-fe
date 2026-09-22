@@ -25,6 +25,7 @@ import {
 } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { isVideoDone } from "@/lib/mission";
+import { labelBadges, pickTodayVideo, whyThisVideo } from "@/lib/video-label";
 import { useRoleStore } from "@/stores/role-store";
 
 /** 아이 홈. */
@@ -94,7 +95,12 @@ export default function KidHomePage() {
   const todo = (missions?.missions ?? []).find((m) =>
     m.participants?.some((p) => p.profileId === childProfileId && !p.completed),
   );
-  const suggestion = videos?.videos?.[0];
+  /* 아무거나 첫 번째를 권하지 않는다. 약한 요인과 집에서 할 수 있는지를 본다 */
+  const suggestion = pickTodayVideo(videos?.videos ?? [], {
+    weakestFactor: me?.latest?.weakest?.factor,
+    watched: watched?.videos,
+  });
+  const why = suggestion ? whyThisVideo(suggestion, me?.latest?.weakest?.factor) : null;
   const doneCount = (watched?.videos ?? []).filter((v) => isVideoDone(v.maxProgress)).length;
   const allCheers = cheerLog?.cheers ?? [];
   const praises = allCheers.filter((c) => c.toProfileId === childProfileId && c.message);
@@ -146,7 +152,8 @@ export default function KidHomePage() {
             <BigAction
               href={`/kid/play/video-${suggestion.videoId}`}
               title={suggestion.title ?? "오늘의 운동"}
-              hint={suggestion.badges?.join(" · ") ?? "영상 보고 따라 하기"}
+              hint={labelBadges(suggestion).join(" · ") || "영상 보고 따라 하기"}
+              tag={why}
               motion="stretch"
             />
           ) : (
@@ -235,11 +242,14 @@ function BigAction({
   href,
   title,
   hint,
+  tag,
   motion,
 }: {
   href: string;
   title: string;
   hint: string;
+  /** 왜 이걸 권하는지 한 마디. 없으면 안 붙인다 */
+  tag?: string | null;
   motion: "jump" | "stretch";
 }) {
   return (
@@ -247,6 +257,11 @@ function BigAction({
       <div className="flex items-center gap-3">
         <KidCharacter motion={motion} size={96} />
         <div className="min-w-0 flex-1">
+          {tag && (
+            <span className="text-micro mb-1 inline-block rounded-md bg-white/25 px-2 py-0.5 font-extrabold">
+              {tag}
+            </span>
+          )}
           <p className="line-clamp-2 text-[1.35rem] leading-snug font-extrabold">{title}</p>
           <p className="mt-1 line-clamp-2 text-sm opacity-90">{hint}</p>
         </div>
