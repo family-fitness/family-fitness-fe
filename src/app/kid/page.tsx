@@ -12,6 +12,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Backdrop } from "@/components/ui/backdrop";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BadgeRow } from "@/components/domain/badge-row";
 import { KidCharacter } from "@/components/domain/kid-character";
 import { Avatar } from "@/components/ui/illustration";
 import { avatarFor } from "@/lib/avatar";
@@ -26,6 +27,7 @@ import {
   useVideos,
 } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
+import { earnedBadges } from "@/lib/badges";
 import { isVideoDone } from "@/lib/mission";
 import { labelBadges, pickTodayVideo, whyThisVideo } from "@/lib/video-label";
 import { useRoleStore } from "@/stores/role-store";
@@ -106,6 +108,13 @@ export default function KidHomePage() {
   const doneCount = (watched?.videos ?? []).filter((v) => isVideoDone(v.maxProgress)).length;
   const allCheers = cheerLog?.cheers ?? [];
   const praises = allCheers.filter((c) => c.toProfileId === childProfileId && c.message);
+  const badges = earnedBadges({
+    watched: watched?.videos,
+    missions: missions?.missions,
+    cheers: allCheers,
+    me,
+    profileId: childProfileId ?? undefined,
+  });
 
   return (
     <>
@@ -176,6 +185,9 @@ export default function KidHomePage() {
             다른 운동 고르기
           </NavLink>
         </section>
+
+        {/* 받은 기념 표시. 하나도 없으면 아예 안 나온다 */}
+        <BadgeRow badges={badges} />
 
         {/*
           다시 열어 볼 것 셋. 아직 없는 것에 0 을 크게 띄우지 않는다 —

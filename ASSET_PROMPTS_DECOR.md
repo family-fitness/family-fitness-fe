@@ -6,7 +6,7 @@
 >
 > 캐릭터·장면 에셋은 `ASSET_PROMPTS.md` 에 따로 있습니다. 섞지 마세요.
 
-**총 46장.** 급한 순서로 적었습니다 — 1절부터 만들어 주시면 바로 씁니다.
+**총 44장.** 급한 순서로 적었습니다 — 1절부터 만들어 주시면 바로 씁니다.
 
 ---
 
@@ -186,7 +186,7 @@ must look identical when scaled down to 8 pixels
 
 ---
 
-## 6. 기념 표시 — 10장 · 정사각형 512×512
+## 6. 기념 표시 — 8장 · 정사각형 512×512
 
 아이가 **이미 해낸 것**을 기념하는 표시입니다.
 
@@ -196,18 +196,19 @@ must look identical when scaled down to 8 pixels
 
 저장 위치: `public/assets/badge/` (새 분류. 기존 `stamp/` 12장은 그대로 둡니다)
 
-| 파일                 | 언제 받나                | 무엇을 그리나                     |
-| -------------------- | ------------------------ | --------------------------------- |
-| `badge-first.png`    | 처음 운동을 마친 날      | 싹이 트는 새싹                    |
-| `badge-video.png`    | 영상을 처음 끝까지 본 날 | 재생 삼각형이 든 둥근 화면        |
-| `badge-timer.png`    | 타이머로 처음 기록한 날  | 초시계                            |
-| `badge-dice.png`     | 주사위 놀이를 마친 날    | 주사위 두 개                      |
-| `badge-together.png` | 부모와 같은 운동을 한 날 | 맞잡은 두 개의 둥근 고리          |
-| `badge-week.png`     | 한 주에 세 번 움직인 날  | 달력 한 장에 동그라미 셋          |
-| `badge-measure.png`  | 측정을 처음 등록한 날    | 줄자가 감긴 원                    |
-| `badge-grow.png`     | 키를 다시 잰 날          | 눈금이 있는 세로 막대와 위 화살표 |
-| `badge-praise.png`   | 칭찬을 처음 받은 날      | 말풍선 안에 하트                  |
-| `badge-morning.png`  | 오전에 운동한 날         | 지평선 위로 뜬 해                 |
+| 파일                   | 언제 받나                   | 무엇을 그리나              |
+| ---------------------- | --------------------------- | -------------------------- |
+| `badge-first.png`      | 오늘 운동을 마친 날         | 싹이 트는 새싹             |
+| `badge-video.png`      | 영상을 처음 끝까지 본 날    | 재생 삼각형이 든 둥근 화면 |
+| `badge-collection.png` | 영상 다섯 편을 완주한 날    | 겹쳐 놓은 카드 세 장       |
+| `badge-timer.png`      | 앱이 직접 본 기록이 남은 날 | 초시계                     |
+| `badge-together.png`   | 가족과 같은 미션을 한 날    | 맞잡은 두 개의 둥근 고리   |
+| `badge-week.png`       | 한 주에 세 번 움직인 날     | 달력 한 장에 동그라미 셋   |
+| `badge-measure.png`    | 측정을 처음 등록한 날       | 줄자가 감긴 원             |
+| `badge-praise.png`     | 칭찬을 처음 받은 날         | 말풍선 안에 하트           |
+
+> 코드가 지금 이 여덟 개를 찾습니다(`src/lib/badges.ts`). 오기 전까지는
+> 기존 `stamp/` 그림으로 대신 보여 주고 있습니다.
 
 ```
 circular badge, single icon centered inside a ring,

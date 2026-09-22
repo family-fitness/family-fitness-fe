@@ -9,14 +9,18 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BadgeStrip } from "@/components/domain/badge-row";
 import { RecordList } from "@/components/domain/record-list";
+import { earnedBadges } from "@/lib/badges";
 import { FactorRow, StatStrip } from "@/components/domain/stat-strip";
 import { daysSince } from "@/lib/today";
 import {
+  useCheers,
   useFamilyProfiles,
   useFitnessMap,
   useLatestFitnessTest,
   useMissions,
+  useVideos,
 } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { useBodyStore } from "@/stores/body-store";
@@ -33,6 +37,8 @@ export default function ChildDetailPage() {
   const { data: family, error: familyError, refetch } = useFamilyProfiles(familyId);
   const { data: map } = useFitnessMap(familyId);
   const { data: missions } = useMissions(familyId, { scope: "ALL" });
+  const { data: cheers } = useCheers(familyId);
+  const { data: watched } = useVideos({ list: "RECENT", profileId });
   const {
     data: latest,
     isPending: latestPending,
@@ -92,6 +98,14 @@ export default function ChildDetailPage() {
   const recent = (missions?.missions ?? []).filter((m) =>
     m.participants?.some((p) => p.profileId === profileId),
   );
+  /* 아이가 받은 기념 표시. 부모도 같은 것을 본다 */
+  const badges = earnedBadges({
+    watched: watched?.videos,
+    missions: missions?.missions,
+    cheers: cheers?.cheers,
+    me: member,
+    profileId,
+  });
   const weakest = latest?.weakest;
 
   return (
@@ -108,6 +122,15 @@ export default function ChildDetailPage() {
               : undefined
           }
         />
+
+        {badges.length > 0 && (
+          <p className="flex items-center gap-2 text-sm">
+            <BadgeStrip badges={badges} />
+            <span className="text-ink-soft font-semibold">
+              기념 표시 {badges.length}개를 받았어요
+            </span>
+          </p>
+        )}
 
         {member?.headline && (
           <p className="text-sm font-bold">
