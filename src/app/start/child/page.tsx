@@ -121,7 +121,7 @@ export default function AddChildPage() {
               />
             </Field>
 
-            <Field label="성별" hint="국민체력100 기준이 성별로 나뉘어 있어요">
+            <Field label="성별" hint="국민체력100 기준이 성별로 나뉘어 있어요" group>
               <div className="flex gap-2">
                 {(
                   [
