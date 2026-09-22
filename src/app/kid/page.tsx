@@ -1,6 +1,8 @@
 "use client";
 
 import { Play, Settings } from "lucide-react";
+import Image from "next/image";
+
 import { NavLink } from "@/components/ui/nav-link";
 import { useRouter } from "next/navigation";
 
@@ -154,6 +156,7 @@ export default function KidHomePage() {
               title={suggestion.title ?? "오늘의 운동"}
               hint={labelBadges(suggestion).join(" · ") || "영상 보고 따라 하기"}
               tag={why}
+              thumbnail={suggestion.thumbnailUrl}
               motion="stretch"
             />
           ) : (
@@ -174,8 +177,11 @@ export default function KidHomePage() {
           </NavLink>
         </section>
 
-        {/* 아이가 다시 열어 볼 것 둘. 이게 없으면 운동 한 번 하고 닫는 앱이 된다 */}
-        <section className="grid grid-cols-2 gap-3">
+        {/*
+          다시 열어 볼 것 셋. 아직 없는 것에 0 을 크게 띄우지 않는다 —
+          첫 화면에 0 이 둘 나란히 있으면 시작하기도 전에 기죽는다.
+        */}
+        <section className="grid grid-cols-3 gap-2.5">
           <KidTile
             href="/kid/done"
             art="item/item-check-big"
@@ -190,19 +196,8 @@ export default function KidHomePage() {
             label="칭찬"
             count={praises.length}
           />
+          <KidTile href="/kid/me" art="char/face-cheer" fallback="item/item-medal" label="꾸미기" />
         </section>
-
-        {/* 운동을 안 하는 날에도 열어 볼 이유 하나. 목표를 걸지 않는다 */}
-        <NavLink
-          href="/kid/me"
-          className="press border-line flex items-center gap-3 rounded-2xl border p-4"
-        >
-          <Avatar parts={avatarFor(me, chosenLook)} size={52} />
-          <span className="min-w-0 flex-1">
-            <span className="block text-base font-extrabold">내 캐릭터 꾸미기</span>
-            <span className="text-ink-soft text-caption block">머리 · 표정 · 모습</span>
-          </span>
-        </NavLink>
       </Stage>
     </>
   );
@@ -224,25 +219,37 @@ function KidTile({
   art: string;
   fallback: string;
   label: string;
-  count: number;
+  /** 없으면 숫자 자리를 비운다. 0 은 띄우지 않는다 */
+  count?: number;
 }) {
   return (
     <NavLink
       href={href}
-      className="press border-line flex flex-col items-center gap-1 rounded-3xl border-2 py-5"
+      className="press border-line flex flex-col items-center gap-1 rounded-2xl border-2 py-4"
     >
-      <Illustration name={art} fallback={fallback} size={40} />
-      <span className="board-num text-signal-deep text-2xl leading-none">{count}</span>
-      <span className="text-sm font-extrabold">{label}</span>
+      <Illustration name={art} fallback={fallback} size={36} />
+      {count != null && count > 0 && (
+        <span className="board-num text-signal-deep text-xl leading-none">{count}</span>
+      )}
+      <span className="text-xs font-extrabold">{label}</span>
     </NavLink>
   );
 }
 
+/**
+ * 오늘 할 운동 한 칸.
+ *
+ * 전에는 여기에 캐릭터를 세웠는데, 위 인사 자리의 아바타와 나란히 놓이면
+ * **한 화면에 서로 다른 아이 둘**이 된다(아바타는 아이가 고른 모습이고
+ * 캐릭터는 정해진 그림이다). 곧 볼 영상의 썸네일을 대신 보여준다 —
+ * 무엇을 볼지 알려 주기도 한다.
+ */
 function BigAction({
   href,
   title,
   hint,
   tag,
+  thumbnail,
   motion,
 }: {
   href: string;
@@ -250,12 +257,27 @@ function BigAction({
   hint: string;
   /** 왜 이걸 권하는지 한 마디. 없으면 안 붙인다 */
   tag?: string | null;
+  /** 곧 볼 영상. 없으면 캐릭터를 세운다 */
+  thumbnail?: string | null;
   motion: "jump" | "stretch";
 }) {
   return (
     <NavLink href={href} className="press bg-signal block rounded-3xl p-5 text-white">
       <div className="flex items-center gap-3">
-        <KidCharacter motion={motion} size={96} />
+        {thumbnail ? (
+          <span className="relative block w-28 shrink-0 self-start overflow-hidden rounded-xl">
+            <Image
+              src={thumbnail}
+              alt=""
+              width={160}
+              height={90}
+              className="aspect-video w-full object-cover"
+              unoptimized
+            />
+          </span>
+        ) : (
+          <KidCharacter motion={motion} size={96} />
+        )}
         <div className="min-w-0 flex-1">
           {tag && (
             <span className="text-micro mb-1 inline-block rounded-md bg-white/25 px-2 py-0.5 font-extrabold">

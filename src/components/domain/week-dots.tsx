@@ -48,13 +48,7 @@ export function WeekDots({
       */}
       <p className="flex items-center gap-1.5 text-sm font-bold">
         <Illustration name="item/item-streak" size={22} />
-        {count === 0 ? (
-          "움직인 날을 여기 칠해요"
-        ) : (
-          <>
-            이번 주 <span className="text-signal-deep">{count}일</span> 움직였어요
-          </>
-        )}
+        이번 주{count > 0 && <span className="text-signal-deep">{count}일 움직였어요</span>}
       </p>
       <ul className="mt-2 flex justify-between gap-1.5">
         {days.map((day, i) => {
