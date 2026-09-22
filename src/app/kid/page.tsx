@@ -148,7 +148,11 @@ export default function KidHomePage() {
         {/* 이름을 크게. 아이는 자기 이름을 먼저 찾는다.
             막대에 또 적지 않는다 — 한 화면에 같은 이름이 두 번 뜬다 */}
         <div className="flex items-center gap-2">
-          <Avatar parts={avatarFor(me, chosenLook)} size={84} />
+          {/*
+            가족 프로필을 먼저 쓴다. 체력 지도의 구성원에는 성별이 없어서
+            그것만 보면 서준이 절반의 확률로 양갈래 머리가 된다.
+          */}
+          <Avatar parts={avatarFor(profile ?? me, chosenLook)} size={84} />
           <h1 className="text-[1.7rem] leading-tight font-extrabold">
             {me.name}
             <span className="text-ink-soft block text-lg font-bold">오늘도 만나서 반가워!</span>

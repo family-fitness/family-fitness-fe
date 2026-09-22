@@ -102,6 +102,9 @@ suggestion?: {
 sex: "M" | "F"
 ```
 
+`GET /families/{familyId}/fitness-map` 의 `members` 에도 같이 넣어 주세요.
+아이 홈과 가족 지도가 그 응답으로 아바타를 그립니다.
+
 ---
 
 ## 4. 저장
