@@ -54,11 +54,18 @@ function check(name: string, ok: boolean, detail = "") {
 
 const RUN_ID = "0271ff7b-6e8f-4685-986a-a3a881352cd2";
 
-async function missionCount(): Promise<number> {
+/**
+ * **이번 주 제안에서 태어난** 미션 수.
+ *
+ * 지난 회차에서 승인한 미션은 목 서버에 이미 들어 있다. 전체를 세면
+ * "승인 전 0건" 이 지난주 기록 때문에 깨진다 — 세어야 하는 건 언제나
+ * 지금 들여다보고 있는 회차다.
+ */
+async function missionCount(runId = RUN_ID): Promise<number> {
   const body = (await (await get(`/families/${DEMO.familyId}/missions`)).json()) as {
-    missions?: unknown[];
+    missions?: { coachRunId?: string | null }[];
   };
-  return body.missions?.length ?? 0;
+  return (body.missions ?? []).filter((m) => m.coachRunId === runId).length;
 }
 
 /* ─── 0. 로그인부터 한다 ────────────────────────────────────── */

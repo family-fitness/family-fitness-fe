@@ -16,7 +16,7 @@ import type {
   FitnessMap,
   FitnessTestResult,
   InviteCode,
-  LatestFitnessTest,
+  LatestWithBody,
   MeResponse,
   NextStep,
   MissionList,
@@ -204,7 +204,7 @@ export function useFitnessItems(ageGroup: AgeGroup | undefined) {
 export function useLatestFitnessTest(profileId: Uuid | undefined) {
   return useQuery({
     queryKey: qk.profile.latestTest(profileId ?? ""),
-    queryFn: () => api.get<LatestFitnessTest>(`/profiles/${profileId}/fitness-tests/latest`),
+    queryFn: () => api.get<LatestWithBody>(`/profiles/${profileId}/fitness-tests/latest`),
     enabled: Boolean(profileId),
   });
 }

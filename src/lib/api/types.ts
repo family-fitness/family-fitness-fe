@@ -136,6 +136,18 @@ export interface MissionSuggestion {
   rationale?: string | null;
 }
 
+/**
+ * 측정 회차에 같이 적어 둔 키 · 몸무게.
+ *
+ * ▲ 요청: `GET /profiles/{profileId}/fitness-tests/latest` 응답에 붙여 주세요.
+ * 등록할 때 받아 두고도 돌려주지 않아, 방금 적은 값이 저장하자마자 화면에서
+ * 사라집니다. 지금은 기기에 따로 들고 있어서 기기를 바꾸면 없어집니다.
+ */
+export type LatestWithBody = LatestFitnessTest & {
+  heightCm?: number | null;
+  weightKg?: number | null;
+};
+
 /** 서버 응답에 제안이 붙어 올 수 있다 */
 export type CoachChatAnswer = CoachChatResult & { suggestion?: MissionSuggestion | null };
 

@@ -69,6 +69,9 @@ export const DEMO = {
   dad: "00000000-0000-4000-8000-000000000013",
 } as const;
 
+/** 지난 코치 회차. 이미 승인해서 돌아가고 있는 미션들이 여기서 나왔다 */
+const PAST_RUN_ID = "00000000-0000-4000-8000-0000000000a0";
+
 /* ─── 서버 상태 ────────────────────────────────────────────── */
 
 /** 새로고침하면 초기 상태로 돌아간다. 시연 중 되돌리기 쉽게 하려는 의도다 */
@@ -77,11 +80,19 @@ const db = {
   fitnessMap: structuredClone(fixtures.fitnessMap),
   latest: structuredClone(fixtures.latestByProfile),
   coachRun: structuredClone(fixtures.coachRun),
-  /** 승인 전에는 비어 있다. 승인 핸들러가 채운다 */
-  missions: [] as MissionRow[],
+  /** 이번 주 제안은 아직 0건이다. 심어 둔 것은 지난 회차에서 승인한 미션들이다 */
+  missions: seedMissions(),
   videos: structuredClone(fixtures.videos.videos),
   /** 주고받은 칭찬 · 알림. */
   cheers: loadCheers(),
+  /**
+   * 측정 회차에 같이 적은 키 · 몸무게.
+   * ▲ 서버는 받아 두고도 `latest` 로 돌려주지 않는다. 목에서는 돌려준다.
+   */
+  body: {
+    [DEMO.kid]: { heightCm: 139, weightKg: 34 },
+    [DEMO.mom]: { heightCm: 163, weightKg: 56 },
+  } as Record<string, { heightCm: number; weightKg: number }>,
   /**
    * 지금 로그인해서 보고 있는 사람.
    * 새로고침해도 남아야 한다 — 바꾸자마자 되돌아가면 자녀 계정 화면을 볼 수 없다.
@@ -175,17 +186,126 @@ function seedCheers(): CheerLog[] {
   const nameOf = (id: string) =>
     fixtures.profiles.profiles.find((p) => p.profileId === id)?.name ?? "가족";
 
-  return rows
-    .map((row, i) => ({
-      cheerId: `seed-cheer-${i}`,
-      fromProfileId: row.from,
-      fromName: nameOf(row.from),
-      toProfileId: row.to,
-      message: row.msg,
-      missionId: row.mission,
-      createdAt: daysAgo(row.days, row.from === DEMO.kid ? 17 : 21),
-    }))
-    .reverse(); // 최신이 앞
+  return rows.map((row, i) => ({
+    cheerId: `seed-cheer-${i}`,
+    fromProfileId: row.from,
+    fromName: nameOf(row.from),
+    toProfileId: row.to,
+    message: row.msg,
+    missionId: row.mission,
+    createdAt: daysAgo(row.days, row.from === DEMO.kid ? 17 : 21),
+  }));
+}
+
+/**
+ * 이미 승인해서 돌아가고 있는 미션들.
+ *
+ * "승인해야 미션이 된다" 는 **이번 주 제안**에 대한 말이다(도메인 규칙 1).
+ * 지난주에 승인한 미션까지 없는 척하면, 시연을 여는 가족은 이 앱을 오늘 처음
+ * 깐 것이 되고 자라는 기록도 최근 기록도 전부 빈 화면이 된다.
+ * 그래서 **지난 코치 회차**에서 나온 미션을 심고, 이번 주 회차는 승인 전으로 둔다.
+ */
+function seedMissions(): MissionRow[] {
+  const day = (back: number) => daysAgo(back, 12).slice(0, 10);
+  return [
+    {
+      missionId: "seed-m1",
+      title: "줄넘기 2분",
+      origin: "COACH",
+      coachRunId: PAST_RUN_ID,
+      targetMetric: "TIMER_MINUTES",
+      targetValue: 20,
+      serverVerifiable: true,
+      startDate: day(6),
+      endDate: day(-1),
+      rationale: "심폐지구력은 짧게 자주가 길게 한 번보다 낫습니다.",
+      video: {
+        videoId: "IdpXx2gm90o",
+        title: "초등학생의 기초체력향상과 운동능력발달을 위한 운동",
+        url: "https://www.youtube.com/watch?v=IdpXx2gm90o",
+        durationSec: 600,
+        startSec: 96,
+      },
+      participants: [
+        {
+          profileId: DEMO.kid,
+          name: "서준",
+          progress: 14,
+          completed: false,
+          verifiedBy: "TIMER",
+          needsGuardianCheck: false,
+        },
+        {
+          profileId: DEMO.mom,
+          name: "은영",
+          progress: 6,
+          completed: false,
+          verifiedBy: "TIMER",
+          needsGuardianCheck: false,
+        },
+      ],
+    },
+    {
+      missionId: "seed-m2",
+      title: "같이 스트레칭",
+      origin: "COACH",
+      coachRunId: PAST_RUN_ID,
+      targetMetric: "TIMER_MINUTES",
+      targetValue: 30,
+      serverVerifiable: true,
+      startDate: day(9),
+      endDate: day(3),
+      rationale: "유연성은 매일 조금씩 늘려 가는 영역입니다.",
+      video: {
+        videoId: "IdpXx2gm90o",
+        title: "온 가족이 함께하는 스트레칭",
+        url: "https://www.youtube.com/watch?v=IdpXx2gm90o",
+        durationSec: 480,
+        startSec: 0,
+      },
+      participants: [
+        {
+          profileId: DEMO.kid,
+          name: "서준",
+          progress: 30,
+          completed: true,
+          verifiedBy: "VIDEO_PROGRESS",
+          needsGuardianCheck: false,
+        },
+        {
+          profileId: DEMO.mom,
+          name: "은영",
+          progress: 30,
+          completed: true,
+          verifiedBy: "TIMER",
+          needsGuardianCheck: false,
+        },
+      ],
+    },
+    {
+      missionId: "seed-m3",
+      title: "제자리 뛰기 100번",
+      origin: "PARENT",
+      coachRunId: null,
+      targetMetric: "STEPS",
+      targetValue: 3000,
+      serverVerifiable: false,
+      startDate: day(12),
+      endDate: day(6),
+      rationale: null,
+      video: null,
+      participants: [
+        {
+          profileId: DEMO.kid,
+          name: "서준",
+          progress: 3200,
+          completed: true,
+          verifiedBy: "SELF_REPORT",
+          needsGuardianCheck: true,
+        },
+      ],
+    },
+  ] as unknown as MissionRow[];
 }
 
 function saveCheers(cheers: CheerLog[]) {
@@ -433,7 +553,9 @@ const identity = [
    */
   http.get(`${BASE}/families/:familyId/cheers`, ({ request }) => {
     const to = new URL(request.url).searchParams.get("toProfileId");
-    const cheers = to ? db.cheers.filter((c) => c.toProfileId === to) : db.cheers;
+    const cheers = (to ? db.cheers.filter((c) => c.toProfileId === to) : db.cheers)
+      .slice()
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     return HttpResponse.json({ cheers });
   }),
 ];
@@ -481,9 +603,14 @@ const fitness = [
   }),
 
   http.get<PathParams>(`${BASE}/profiles/:profileId/fitness-tests/latest`, ({ params }) => {
-    const found = db.latest[String(params.profileId)];
+    const profileId = String(params.profileId);
+    const found = db.latest[profileId];
     // 이력이 없어도 404 가 아니다. 빈 모양을 돌려준다
-    return HttpResponse.json(found ?? fixtures.latestByProfile[DEMO.mom]);
+    return HttpResponse.json({
+      ...(found ?? fixtures.latestByProfile[DEMO.mom]),
+      // ▲ 서버가 아직 안 돌려주는 값. 있으면 화면이 "지금 몸" 을 그린다
+      ...(db.body[profileId] ?? {}),
+    });
   }),
 
   http.post<PathParams>(
@@ -504,8 +631,14 @@ const fitness = [
       const body = (await request.json()) as {
         testedOn: string;
         source: string;
+        heightCm?: number;
+        weightKg?: number;
         items: { itemCode: string; value: number }[];
       };
+      // 같이 적어 온 키 · 몸무게는 들고 있다가 latest 로 돌려준다
+      if (body.heightCm && body.weightKg) {
+        db.body[profileId] = { heightCm: body.heightCm, weightKg: body.weightKg };
+      }
       const measured = (body.items ?? []).filter((i) => Number.isFinite(i.value));
       if (measured.length === 0) return fail(400, "NO_ITEMS", "항목이 없습니다");
       // 혈압은 입력으로 받지 않는다
@@ -622,12 +755,15 @@ const coaching = [
     }
 
     db.coachRun.status = "APPROVED";
-    db.missions = structuredClone(fixtures.missionsAfterApproval.missions).map((m) => ({
+    /* 지난 회차에서 승인해 둔 미션은 그대로 두고 **이번 회차 것만 더한다** */
+    const born = structuredClone(fixtures.missionsAfterApproval.missions).map((m) => ({
       ...m,
+      coachRunId: db.coachRun.coachRunId,
       startDate: thisWeek().weekStart,
       endDate: thisWeek().weekEnd,
     }));
-    db.coachRun.missionCount = db.missions.length;
+    db.missions = [...db.missions, ...born];
+    db.coachRun.missionCount = born.length;
     return HttpResponse.json(fixtures.coachApprove);
   }),
 

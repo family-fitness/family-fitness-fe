@@ -44,7 +44,7 @@ export default function ChildDetailPage() {
     isPending: latestPending,
     error: latestError,
   } = useLatestFitnessTest(profileId);
-  const body = useBodyStore((s) => s.byProfile[profileId]);
+  const localBody = useBodyStore((s) => s.byProfile[profileId]);
 
   const profile = family?.profiles?.find((p) => p.profileId === profileId);
   const member = map?.members?.find((m) => m.profileId === profileId);
@@ -107,6 +107,14 @@ export default function ChildDetailPage() {
     profileId,
   });
   const weakest = latest?.weakest;
+  /*
+    서버가 돌려주면 서버 값을 쓴다. 기기에 들고 있는 값은 **서버가 아직 안
+    돌려줄 때만** 쓰는 임시 저장이라, 둘이 다르면 서버가 맞다.
+  */
+  const body =
+    latest?.heightCm && latest?.weightKg && latest?.testedOn
+      ? { heightCm: latest.heightCm, weightKg: latest.weightKg, measuredOn: latest.testedOn }
+      : localBody;
 
   return (
     <>
@@ -123,22 +131,22 @@ export default function ChildDetailPage() {
           }
         />
 
-        {badges.length > 0 && (
-          <p className="flex items-center gap-2 text-sm">
-            <BadgeStrip badges={badges} />
-            <span className="text-ink-soft font-semibold">
-              기념 표시 {badges.length}개를 받았어요
-            </span>
-          </p>
-        )}
-
-        {member?.headline && (
-          <p className="text-sm font-bold">
-            {member.headline}
-            {weakest && (
-              <span className="text-ink-soft font-semibold"> · 지금은 {weakest.factor}</span>
+        {/*
+          한 줄에 몰아 둔다 — 서버가 준 한마디와 받은 표시.
+          개수를 세지 않는다(도메인 규칙 12). 표시는 그림으로만 보인다.
+        */}
+        {(member?.headline || badges.length > 0) && (
+          <div className="flex items-center gap-2.5">
+            {member?.headline && (
+              <p className="min-w-0 flex-1 text-sm font-bold">
+                {member.headline}
+                {weakest && (
+                  <span className="text-ink-soft font-semibold"> · 지금은 {weakest.factor}</span>
+                )}
+              </p>
             )}
-          </p>
+            <BadgeStrip badges={badges} className="shrink-0" />
+          </div>
         )}
 
         {/* 2. 요인별. 레이더는 모양만 보이고 값을 못 읽어서 표로 세운다 */}
