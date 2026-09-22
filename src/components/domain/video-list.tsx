@@ -11,7 +11,8 @@ import type { Video } from "@/lib/api/types";
 import { useToggleFavorite, useVideos } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { safeUrl } from "@/lib/safe-url";
-import { isVideoDone } from "@/lib/mission";
+import { isVideoDone, progressPercent } from "@/lib/mission";
+import { labelAges, labelBadges, labelFactors } from "@/lib/video-label";
 import { cn } from "@/lib/utils";
 
 /** 영상 목록. */
@@ -58,8 +59,10 @@ function VideoRow({ video }: { video: Video }) {
   const [thumbBroken, setThumbBroken] = useState(false);
   const thumb = thumbBroken ? null : video.thumbnailUrl;
 
-  const watched = Math.round((video.maxProgress ?? 0) * 100);
+  const watched = progressPercent(video.maxProgress);
   const done = isVideoDone(video.maxProgress);
+  const badges = labelBadges(video);
+  const factors = labelFactors(video.label);
 
   return (
     <li className="py-3.5">
@@ -113,9 +116,9 @@ function VideoRow({ video }: { video: Video }) {
             {video.title}
           </Link>
 
-          {video.badges && video.badges.length > 0 && (
+          {badges.length > 0 && (
             <ul className="mt-1.5 flex flex-wrap gap-1">
-              {video.badges.map((b) => (
+              {badges.map((b) => (
                 <li
                   key={b}
                   className="bg-sub text-ink-soft text-micro rounded px-1.5 py-0.5 font-bold"
@@ -127,7 +130,11 @@ function VideoRow({ video }: { video: Video }) {
           )}
 
           <p className="text-faint text-micro mt-1">
-            {done ? "완주했어요" : watched > 0 ? `${watched}%까지 봤어요` : ageRange(video)}
+            {done
+              ? "완주했어요"
+              : watched > 0
+                ? `${watched}%까지 봤어요`
+                : [factors.join(" · "), labelAges(video.label)].filter(Boolean).join(" · ")}
           </p>
         </div>
 
@@ -148,12 +155,6 @@ function VideoRow({ video }: { video: Video }) {
       </div>
     </li>
   );
-}
-
-function ageRange(video: Video) {
-  const { ageFrom, ageTo } = video.label ?? {};
-  if (ageFrom == null && ageTo == null) return "";
-  return `만 ${ageFrom ?? "?"}~${ageTo ?? "?"}세`;
 }
 
 function formatDuration(sec: number) {
