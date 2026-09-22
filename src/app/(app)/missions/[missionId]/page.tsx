@@ -1,5 +1,6 @@
 "use client";
 
+import { ExternalLink } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -7,12 +8,14 @@ import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Celebrate } from "@/components/scene/celebrate";
 import { MissionTimer } from "@/components/domain/mission-timer";
 import { VerifyLabel } from "@/components/domain/mission-row";
 import { YouTubePlayer } from "@/components/domain/youtube-player";
 import { errorMessage } from "@/lib/errors";
+import { safeUrl } from "@/lib/safe-url";
 import {
   useConfirmParticipant,
   useFamilyProfiles,
@@ -203,6 +206,35 @@ export default function MissionDetailPage() {
                 }}
               />
             )}
+          </section>
+        )}
+
+        {/*
+          어떤 운동인지.
+
+          제목만 있으면 부모는 "줄넘기 2분" 이 무슨 영상인지 모른 채 아이에게
+          시키게 된다. 같이 하려면 먼저 봐야 한다 — 새 탭으로 연다.
+          영상 미션이면 위에서 이미 플레이어가 돌고 있으니 두 번 두지 않는다.
+        */}
+        {mission.video?.url && mission.targetMetric !== "VIDEO_DONE" && (
+          <section>
+            <div className="section-head">
+              <h2>이 운동</h2>
+            </div>
+            <a
+              href={safeUrl(mission.video.url) ?? "#"}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="press mt-1 flex items-center gap-3 py-2"
+            >
+              <span className="bg-signal-soft grid size-14 shrink-0 place-items-center rounded-xl">
+                <Illustration name="item/item-shoes" size={30} />
+              </span>
+              <span className="text-body min-w-0 flex-1 leading-snug font-bold">
+                {mission.video.title}
+              </span>
+              <ExternalLink className="text-faint size-4 shrink-0" aria-hidden />
+            </a>
           </section>
         )}
 
