@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 export function AppBar({
   back,
   backHref,
+  onBack,
   title,
   right,
   className,
@@ -18,12 +19,17 @@ export function AppBar({
   back?: boolean;
   /** 돌아갈 곳. 주면 뒤로 가는 움직임도 방향이 맞는다 */
   backHref?: string;
+  /**
+   * 화면 안에서 한 단계 되돌릴 때. 라우트가 안 바뀌는 자리에 쓴다 —
+   * 세션을 하다 목록으로 돌아가는 것처럼.
+   */
+  onBack?: () => void;
   title?: string;
   right?: ReactNode;
   className?: string;
 }) {
   const router = useRouter();
-  const showBack = back || Boolean(backHref);
+  const showBack = back || Boolean(backHref) || Boolean(onBack);
 
   const backButton = backHref ? (
     <Link
@@ -37,7 +43,7 @@ export function AppBar({
   ) : (
     <button
       type="button"
-      onClick={() => router.back()}
+      onClick={() => (onBack ? onBack() : router.back())}
       aria-label="뒤로"
       className="press text-ink-soft hover:text-ink grid size-10 shrink-0 place-items-center rounded-full"
     >

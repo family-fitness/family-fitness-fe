@@ -200,10 +200,10 @@ export function YouTubePlayer({
         <Illustration name="scene/scene-no-video" size={110} />
         <p className="mt-3 text-lg font-extrabold">지금은 이 영상을 못 봐요</p>
         <NavLink
-          href="/kid/pick"
+          href="/kid"
           className="press bg-signal mt-4 w-full rounded-2xl py-3.5 text-base font-extrabold text-white"
         >
-          다른 운동 고르기
+          홈으로 가기
         </NavLink>
         <a
           href={`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`}

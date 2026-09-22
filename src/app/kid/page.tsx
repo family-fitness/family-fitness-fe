@@ -174,14 +174,14 @@ export default function KidHomePage() {
             </div>
           ) : todo ? (
             <BigAction
-              href={`/kid/play/${todo.missionId}`}
+              href={`/kid/m/${todo.missionId}`}
               title={todo.title ?? "오늘의 운동"}
               hint={todo.video?.title ?? "영상 보고 따라 하기"}
               motion="jump"
             />
           ) : suggestion ? (
             <BigAction
-              href={`/kid/play/video-${suggestion.videoId}`}
+              href={`/kid/m/video-${suggestion.videoId}`}
               title={suggestion.title ?? "오늘의 운동"}
               hint={labelBadges(suggestion).join(" · ") || "영상 보고 따라 하기"}
               tag={why}
@@ -204,14 +204,20 @@ export default function KidHomePage() {
             className="mt-3"
           />
 
-          {/* 권한 것 하나만 걸려 있으면, 그게 하기 싫은 날은 그냥 안 한다 */}
-          <NavLink
-            href="/kid/pick"
-            className="press border-line mt-3 flex items-center justify-center gap-2 rounded-2xl border py-3.5 text-base font-extrabold"
-          >
-            <Illustration name="item/item-target" fallback="item/item-clipboard" size={24} />
-            다른 운동 고르기
-          </NavLink>
+          {/*
+            권한 것 하나만 걸려 있으면, 그게 하기 싫은 날은 그냥 안 한다.
+            **목록으로 보내지 않는다** — 왜 바꾸고 싶은지 받고 그 이유에 맞는
+            것을 골라 오는 자리로 보낸다.
+          */}
+          {(todo || suggestion) && (
+            <NavLink
+              href={`/kid/m/${todo ? todo.missionId : `video-${suggestion?.videoId}`}/swap`}
+              className="press border-line mt-3 flex items-center justify-center gap-2 rounded-2xl border py-3.5 text-base font-extrabold"
+            >
+              <Illustration name="item/item-target" fallback="item/item-clipboard" size={24} />
+              다른 거 하고 싶어
+            </NavLink>
+          )}
         </section>
 
         {/* 내 점수 */}

@@ -52,10 +52,10 @@ export default function DonePage() {
           <Illustration name="scene/scene-collection" fallback="scene/scene-no-video" size={150} />
           <p className="mt-4 text-xl font-extrabold">아직 본 영상이 없어요</p>
           <NavLink
-            href="/kid/pick"
+            href="/kid"
             className="press bg-signal mt-6 rounded-2xl px-7 py-4 text-lg font-extrabold text-white"
           >
-            운동 고르러 가기
+            홈으로 가기
           </NavLink>
         </Stage>
       </>
@@ -86,7 +86,7 @@ export default function DonePage() {
             return (
               <li key={video.videoId}>
                 <NavLink
-                  href={`/kid/play/video-${video.videoId}`}
+                  href={`/kid/m/video-${video.videoId}`}
                   className={cn(
                     "press flex h-full flex-col gap-2 rounded-3xl border-2 p-3",
                     done ? "border-done bg-done-soft" : "border-line",

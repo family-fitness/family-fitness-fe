@@ -171,7 +171,7 @@ export default function ResultPage() {
                     : "오늘 할 운동을 골라 볼까"}
             </p>
             <Link
-              href="/kid/pick"
+              href="/kid"
               className="text-signal mt-1 inline-flex min-h-11 items-center text-sm font-bold"
             >
               오늘 할 운동 고르기

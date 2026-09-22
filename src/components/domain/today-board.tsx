@@ -140,9 +140,7 @@ export function TodayBoard({
                   자기가 할 일이 아니라 아이가 할 일을 보게 된다.
                 */}
                 <Link
-                  href={
-                    kidView ? `/kid/play/${mission.missionId}` : `/missions/${mission.missionId}`
-                  }
+                  href={kidView ? `/kid/m/${mission.missionId}` : `/missions/${mission.missionId}`}
                   className="press flex items-start gap-3 py-4"
                 >
                   <span

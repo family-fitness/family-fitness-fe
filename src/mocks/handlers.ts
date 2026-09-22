@@ -231,6 +231,17 @@ function seedCheers(): CheerLog[] {
  * 깐 것이 되고 자라는 기록도 최근 기록도 전부 빈 화면이 된다.
  * 그래서 **지난 코치 회차**에서 나온 미션을 심고, 이번 주 회차는 승인 전으로 둔다.
  */
+/** 영상 속 한 토막. ▲ `endSec` 는 계약에 없다 — 목에서는 준다 */
+function clip(videoId: string, startSec: number, endSec: number, title: string) {
+  return {
+    videoId,
+    startSec,
+    endSec,
+    title,
+    url: `https://www.youtube.com/watch?v=${videoId}`,
+  };
+}
+
 function seedMissions(): MissionRow[] {
   const day = (back: number) => daysAgo(back, 12).slice(0, 10);
   return [
@@ -252,6 +263,43 @@ function seedMissions(): MissionRow[] {
         durationSec: 600,
         startSec: 96,
       },
+      /*
+        ▲ 서버에 아직 없다. 제안 모양으로 답한다.
+        운동처방 하나가 영상 한 편이 아니라 영상 안의 한 토막이라,
+        하루치가 준비·본·정리 셋으로 나뉜다.
+      */
+      sessions: [
+        {
+          position: 1,
+          phase: "WARMUP",
+          title: "팔 벌려 뛰기",
+          factor: "심폐지구력",
+          minutes: 2,
+          clip: clip("IdpXx2gm90o", 12, 130, "팔 벌려 뛰기"),
+          completed: true,
+          verifiedBy: "VIDEO_PROGRESS",
+        },
+        {
+          position: 2,
+          phase: "MAIN",
+          title: "제자리 달리기",
+          factor: "심폐지구력",
+          minutes: 15,
+          clip: clip("IdpXx2gm90o", 186, 340, "제자리 달리기"),
+          completed: false,
+          verifiedBy: null,
+        },
+        {
+          position: 3,
+          phase: "COOLDOWN",
+          title: "나비자세",
+          factor: "유연성",
+          minutes: 3,
+          clip: clip("IdpXx2gm90o", 580, 738, "나비자세"),
+          completed: false,
+          verifiedBy: null,
+        },
+      ],
       participants: [
         {
           profileId: DEMO.kid,
