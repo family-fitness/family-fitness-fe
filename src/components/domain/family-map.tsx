@@ -53,9 +53,16 @@ export function FamilyMap({
       */}
       {measured.length > 1 && (
         <div className="relative mt-4 h-32">
-          {/* 막대는 아래쪽에 깔고 그 위에 사람을 세운다 */}
-          <span className="bg-sub absolute inset-x-0 bottom-7 h-2 rounded-full" />
-          <span className="bg-line absolute bottom-5 left-1/2 h-6 w-px -translate-x-1/2" />
+          {/*
+            굵은 띠를 깔았더니 아무것도 안 찬 진행 막대처럼 보였다. 여기서 재는
+            건 진행률이 아니라 **자리**다 — 가는 축 하나와 가운데 눈금으로 둔다.
+          */}
+          <span className="bg-line absolute inset-x-0 bottom-7 h-px" />
+          <span
+            className="border-line absolute top-0 bottom-7 left-1/2 w-px -translate-x-1/2 border-l border-dashed"
+            aria-hidden
+          />
+          <span className="bg-ink-soft absolute bottom-6 left-1/2 h-2 w-px -translate-x-1/2" />
           <span className="text-faint text-micro absolute bottom-0 left-1/2 -translate-x-1/2 font-bold">
             또래 평균
           </span>
@@ -74,9 +81,9 @@ export function FamilyMap({
                   className="press absolute grid size-11 -translate-x-1/2 place-items-center"
                   style={{
                     left: `${Math.min(92, Math.max(8, score))}%`,
-                    /* 막대가 28~36px 를 차지한다. 닿지 않게 그 위로 띄운다 —
-                       조금이라도 겹치면 아바타의 흰 테두리가 막대를 끊는다 */
-                    bottom: i % 2 === 0 ? 38 : 56,
+                    /* 축이 28px 자리다. 그 위에 올라선다. 자리가 가까운 사람끼리
+                       겹치지 않게 높이만 번갈아 어긋나게 둔다 */
+                    bottom: i % 2 === 0 ? 32 : 52,
                   }}
                 >
                   <span className="border-paper bg-paper block rounded-full border-2">
