@@ -51,7 +51,13 @@ interface Fixtures {
 const fixtures = fixturesJson as unknown as Concrete<Fixtures>;
 
 /** 목 서버가 만들고 고치는 값들. 응답과 같은 모양이어야 화면이 진짜처럼 돈다 */
-type Profile = Concrete<ProfileSummary>;
+/**
+ * 목이 돌려주는 프로필.
+ *
+ * `sex` 는 생성된 스키마에 아직 없다 — 가족을 만들 때는 받으면서 조회 응답에는
+ * 안 돌려준다(`BACKEND_ASKS.md`). 목은 요청한 모양대로 돌려준다.
+ */
+type Profile = Concrete<ProfileSummary> & { sex?: "M" | "F" };
 type MapMember = Concrete<FitnessMap>["members"][number];
 type MissionRow = Concrete<Mission>;
 
@@ -60,7 +66,8 @@ const CHEER_KEY = "ff-mock-cheers";
 const MISSION_KEY = "ff-mock-missions";
 const RUN_KEY = "ff-mock-run";
 const ACTING_KEY = "ff-mock-acting";
-const NEWCOMER_KEY = "ff-mock-newcomer";
+const STAGE_KEY = "ff-mock-stage";
+const FAMILY_KEY = "ff-mock-family";
 
 export const DEMO = {
   familyId: "00000000-0000-4000-8000-000000000010",
@@ -98,25 +105,44 @@ const db = {
    * 새로고침해도 남아야 한다 — 바꾸자마자 되돌아가면 자녀 계정 화면을 볼 수 없다.
    */
   actingProfileId: loadActing(),
+  /** 이 계정이 어디까지 와 있나 — 가족 없음 · 초대 대기 · 가족 있음 */
+  stage: loadStage(),
   /**
-   * 아직 가족에 붙지 않은 계정으로 들어와 있나.
-   * 초대 수락 흐름은 이 상태가 있어야만 걸어 볼 수 있다.
+   * 이번 주 코치 회차를 한 번이라도 돌렸나.
+   * 새로 만든 가족은 아직 안 돌렸다 — `latest` 가 404 여야 「제안 만들기」 가 뜬다.
    */
-  newcomer: loadNewcomer(),
+  hasCoachRun: true,
 };
 
-function loadNewcomer(): boolean {
+/**
+ * 지금 로그인한 계정이 어디까지 와 있나.
+ *
+ * 전에는 "초대받는 계정인가" 불리언 하나였다. 그러면 **가족이 아직 없는 계정**을
+ * 만들 수가 없어서 `POST /families` 로 가는 길이 아예 없었다 — 처음 쓰는 사람의
+ * 경로를 한 번도 못 돌아 본 이유다.
+ *
+ * | 단계    | `/me` 가 주는 nextStep | 무엇                          |
+ * | ------- | ---------------------- | ----------------------------- |
+ * | `fresh` | `CREATE_FAMILY`        | 가족이 없다. 만드는 것부터     |
+ * | `claim` | `CLAIM`                | 초대코드를 넣어야 가족에 붙는다 |
+ * | `home`  | `HOME`                 | 가족이 있다                    |
+ */
+type Stage = "fresh" | "claim" | "home";
+
+function loadStage(): Stage {
   try {
-    return sessionStorage.getItem(NEWCOMER_KEY) === "1";
+    const saved = sessionStorage.getItem(STAGE_KEY);
+    if (saved === "fresh" || saved === "claim" || saved === "home") return saved;
   } catch {
-    return false;
+    return "home";
   }
+  return "home";
 }
 
-function setNewcomer(value: boolean) {
-  db.newcomer = value;
+function setStage(value: Stage) {
+  db.stage = value;
   try {
-    sessionStorage.setItem(NEWCOMER_KEY, value ? "1" : "0");
+    sessionStorage.setItem(STAGE_KEY, value);
   } catch {
     // 브라우저가 아니면 그냥 넘어간다
   }
@@ -477,20 +503,107 @@ const authGate = [
   }),
 ];
 
-/** 아직 가족이 없는 개발용 계정 */
-const NEWCOMER_ID = "demo-newcomer";
-const NEWCOMER_ME = {
+/** 개발용 계정 셋. 로그인 화면에서 고르는 것과 같은 순서다 */
+const CLAIM_ID = "demo-newcomer";
+const FRESH_ID = "demo-fresh";
+
+/** 초대를 기다리는 계정 — 부모가 낸 자리에 붙는다 */
+const CLAIM_ME = {
   userId: "00000000-0000-4000-8000-000000000002",
   nextStep: "CLAIM",
   profiles: [],
 };
 
+/** 가족이 아예 없는 계정 — 여기서 `POST /families` 로 간다 */
+const FRESH_ME = {
+  userId: "00000000-0000-4000-8000-000000000003",
+  nextStep: "CREATE_FAMILY",
+  profiles: [],
+};
+
+/**
+ * 어떤 계정으로 들어왔나에 따라 단계를 정하고 토큰을 준다.
+ *
+ * 로그인 응답에 `/me` 와 같은 모양을 얹어 준다 — 화면이 들어오자마자
+ * 어디로 갈지 알아야 스플래시에서 한 번 더 왕복하지 않는다.
+ */
+function signIn(providerUserId: string | undefined) {
+  const token = { accessToken: "mock-access-token", refreshToken: "mock-refresh-token" };
+
+  if (providerUserId === CLAIM_ID) {
+    setStage("claim");
+    return { ...token, ...CLAIM_ME };
+  }
+  if (providerUserId === FRESH_ID) {
+    setStage("fresh");
+    return { ...token, ...FRESH_ME };
+  }
+  setStage("home");
+  setActingProfile(DEMO.mom);
+  return { ...token, ...fixtures.me };
+}
+
+/**
+ * 가족을 새로 만든다.
+ *
+ * **서준이네 데이터를 갈아 끼운다.** 안 그러면 방금 가입한 사람이 남의 집
+ * 기록·미션·칭찬을 자기 것으로 본다. 새 가족은 말 그대로 빈 집이어야 한다.
+ */
+function startFamily(familyName: string, owner: Profile) {
+  db.profiles = {
+    familyId: owner.familyId,
+    familyName,
+    profiles: [owner],
+  } as typeof db.profiles;
+  db.fitnessMap = {
+    familyId: owner.familyId,
+    familyName,
+    disclaimer: fixtures.fitnessMap.disclaimer,
+    members: [mapMemberOf(owner)],
+  } as typeof db.fitnessMap;
+  db.missions = [];
+  db.cheers = [];
+  db.latest = {};
+  db.body = {};
+  db.hasCoachRun = false;
+  saveMissions();
+  saveCheers(db.cheers);
+  try {
+    sessionStorage.setItem(FAMILY_KEY, JSON.stringify(db.profiles));
+  } catch {
+    // 저장이 안 돼도 이번 탭에서는 돈다
+  }
+}
+
+/** 프로필 하나를 체력 지도의 한 줄로 */
+function mapMemberOf(profile: Profile): MapMember {
+  return {
+    profileId: profile.profileId,
+    name: profile.name,
+    role: profile.role,
+    ageGroup: profile.ageGroup,
+    sex: profile.sex,
+    hasAccount: profile.hasAccount,
+    supportMode: profile.supportMode,
+    measurable: profile.measurable,
+    consentRequired: profile.consentRequired,
+    consentGiven: profile.consentGiven,
+    headline: null,
+    latest: null,
+  } as MapMember;
+}
+
 const identity = [
   /** 지금 로그인한 계정이 관리하는 프로필. */
   http.get(`${BASE}/me`, () => {
-    if (db.newcomer) return HttpResponse.json(NEWCOMER_ME);
+    if (db.stage === "claim") return HttpResponse.json(CLAIM_ME);
+    if (db.stage === "fresh") return HttpResponse.json(FRESH_ME);
     const me = acting();
-    if (!me || me.profileId === DEMO.mom) return HttpResponse.json(fixtures.me);
+    if (!me) return HttpResponse.json(fixtures.me);
+    // 새로 만든 가족이면 픽스처가 아니라 지금 가족을 돌려준다
+    if (me.profileId === DEMO.mom && db.profiles.familyId === DEMO.familyId) {
+      return HttpResponse.json(fixtures.me);
+    }
     return HttpResponse.json({
       userId: fixtures.me.userId,
       nextStep: "HOME",
@@ -500,15 +613,68 @@ const identity = [
 
   http.post(`${BASE}/auth/dev-login`, async ({ request }) => {
     const body = (await request.json().catch(() => ({}))) as { providerUserId?: string };
-    // 프로필이 아직 없는 계정. 초대코드를 넣어야 가족에 붙는다
-    const newcomer = body.providerUserId === NEWCOMER_ID;
-    setNewcomer(newcomer);
-    if (!newcomer) setActingProfile(DEMO.mom);
-    return HttpResponse.json({
-      accessToken: "mock-access-token",
-      refreshToken: "mock-refresh-token",
-      ...(newcomer ? NEWCOMER_ME : fixtures.me),
-    });
+    return HttpResponse.json(signIn(body.providerUserId));
+  }),
+
+  /**
+   * 구글에서 받은 인가코드를 토큰으로 바꾼다.
+   *
+   * 목에 이게 없어서 요청이 브라우저를 빠져나가 `localhost:8080` 으로 나갔다.
+   * 시연에서는 **가족이 없는 새 계정**으로 본다 — 구글로 처음 들어온 사람이
+   * 실제로 겪는 상태가 그거다.
+   */
+  http.post(`${BASE}/auth/google`, async ({ request }) => {
+    const body = (await request.json().catch(() => ({}))) as { authorizationCode?: string };
+    if (!body.authorizationCode) {
+      return fail(400, "INVALID_CODE", "인가코드가 없습니다");
+    }
+    return HttpResponse.json(signIn(FRESH_ID));
+  }),
+
+  /**
+   * ★ 가족이 생기는 유일한 지점.
+   *
+   * 목에 이 길이 없어서 요청이 브라우저를 빠져나가 `localhost:8080` 으로 나갔다.
+   * 그래서 지금까지 **처음 쓰는 사람의 경로가 한 번도 안 돌았다** — 시연 계정으로만
+   * 앱이 돌고 있었다.
+   */
+  http.post(`${BASE}/families`, async ({ request }) => {
+    const body = (await request.json()) as {
+      familyName?: string;
+      owner?: { name?: string; birthDate?: string; sex?: "M" | "F" };
+    };
+    const familyName = (body.familyName ?? "").trim();
+    const name = (body.owner?.name ?? "").trim();
+    if (!familyName || !name) {
+      return fail(400, "INVALID_INPUT", "가족 이름과 내 이름이 필요합니다");
+    }
+    if (db.stage === "home") {
+      return fail(409, "ALREADY_IN_FAMILY", "이미 가족에 속해 있습니다");
+    }
+
+    const age = ageOf(body.owner?.birthDate) ?? 30;
+    const familyId = uuid();
+    const owner: Profile = {
+      profileId: uuid(),
+      familyId,
+      name,
+      role: "PARENT",
+      ageGroup: ageGroupOf(age),
+      sex: body.owner?.sex ?? "F",
+      hasAccount: true,
+      inviteStatus: "NONE",
+      // 참여 방식은 다음 화면에서 고른다. 서버가 미리 정하지 않는다
+      supportMode: null,
+      measurable: age >= 4,
+      consentRequired: false,
+      consentGiven: true,
+    } as Profile;
+
+    startFamily(familyName, owner);
+    setStage("home");
+    setActingProfile(owner.profileId);
+
+    return HttpResponse.json({ familyId, familyName, ownerProfile: owner }, { status: 201 });
   }),
 
   http.get(`${BASE}/families/:familyId/profiles`, () => HttpResponse.json(db.profiles)),
@@ -580,7 +746,7 @@ const identity = [
       dad.hasAccount = true;
       dad.inviteStatus = "CLAIMED";
     }
-    setNewcomer(false);
+    setStage("home");
     setActingProfile(DEMO.dad);
     return HttpResponse.json({
       profileId: DEMO.dad,
@@ -831,6 +997,7 @@ const coaching = [
         endDate: week.weekEnd,
       })),
     };
+    db.hasCoachRun = true;
     saveCoachRun();
     // 실행은 비동기다. 접수만 하고 202 를 준다
     return HttpResponse.json(
@@ -846,7 +1013,11 @@ const coaching = [
    * 기기에 든 runId 가 없으면 이번 주 제안을 영영 못 찾아서, 승인 게이트가
    * 통째로 사라진다 — 이 서비스의 핵심 주장을 보여 줄 화면이 없어진다.
    */
-  http.get(`${BASE}/families/:familyId/coach/runs/latest`, () => HttpResponse.json(db.coachRun)),
+  http.get(`${BASE}/families/:familyId/coach/runs/latest`, () => {
+    // 새로 만든 가족은 아직 한 번도 안 돌렸다. 없는 것을 있는 척하지 않는다
+    if (!db.hasCoachRun) return fail(404, "NO_RUN", "이번 주 회차가 없습니다");
+    return HttpResponse.json(db.coachRun);
+  }),
 
   /**
    * ★ 미션이 만들어지는 유일한 지점.

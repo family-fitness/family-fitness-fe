@@ -19,7 +19,7 @@ const ROUTES = [
   "/login",
   "/claim",
   "/start",
-  "/start/parent",
+  "/start/family",
   "/start/child",
   "/start/who",
   "/parent",

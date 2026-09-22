@@ -11,9 +11,16 @@ import { useDevLogin, useGoogleLogin } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
 
 /** 로그인. */
+/**
+ * 개발용 계정 셋.
+ *
+ * **「가족 없음」 이 없어서 여태 가입 경로를 한 번도 못 걸어 봤다.** 시연 계정으로만
+ * 앱이 돌고 있었고, 처음 쓰는 사람이 겪는 화면은 아무도 안 봤다.
+ */
 const DEV_ACCOUNTS = [
-  { id: "demo-parent", label: "은영 · 가족 3명" },
-  { id: "demo-newcomer", label: "초대받는 계정 · 프로필 없음" },
+  { id: "demo-fresh", label: "새 계정 · 가족 없음", hint: "가족 만들기부터" },
+  { id: "demo-parent", label: "은영 · 가족 3명", hint: "쓰던 가족" },
+  { id: "demo-newcomer", label: "초대받은 계정", hint: "코드를 넣어야 붙는다" },
 ];
 
 /** 구글이 돌아올 자리. 인가코드는 이 주소로 붙어서 온다 */
@@ -124,7 +131,10 @@ function LoginContent() {
                 loading={devLogin.isPending}
                 onClick={() => enter(account.id)}
               >
-                {account.label}
+                <span className="min-w-0 flex-1 text-left">
+                  {account.label}
+                  <span className="text-faint ml-1.5 text-xs font-bold">{account.hint}</span>
+                </span>
               </Button>
             ))}
           </div>
