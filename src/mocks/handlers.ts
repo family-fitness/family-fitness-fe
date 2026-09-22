@@ -83,8 +83,8 @@ const PAST_RUN_ID = "00000000-0000-4000-8000-0000000000a0";
 
 /** 새로고침하면 초기 상태로 돌아간다. 시연 중 되돌리기 쉽게 하려는 의도다 */
 const db = {
-  profiles: structuredClone(fixtures.profiles),
-  fitnessMap: structuredClone(fixtures.fitnessMap),
+  profiles: loadFamily("profiles", fixtures.profiles),
+  fitnessMap: loadFamily("fitnessMap", fixtures.fitnessMap),
   latest: structuredClone(fixtures.latestByProfile),
   coachRun: loadCoachRun(),
   /** 이번 주 제안은 아직 0건이다. 심어 둔 것은 지난 회차에서 승인한 미션들이다 */
@@ -433,6 +433,31 @@ function saveCoachRun() {
   }
 }
 
+/**
+ * 새로 만든 가족을 탭 저장소에서 되살린다.
+ *
+ * 안 그러면 새로고침 한 번에 방금 만든 가족이 서준이네로 되돌아간다 —
+ * 가입하자마자 남의 집이 뜬다.
+ */
+function loadFamily<T>(key: "profiles" | "fitnessMap", fallback: T): T {
+  try {
+    const saved = sessionStorage.getItem(`${FAMILY_KEY}-${key}`);
+    if (saved) return JSON.parse(saved) as T;
+  } catch {
+    return structuredClone(fallback);
+  }
+  return structuredClone(fallback);
+}
+
+function saveFamily() {
+  try {
+    sessionStorage.setItem(`${FAMILY_KEY}-profiles`, JSON.stringify(db.profiles));
+    sessionStorage.setItem(`${FAMILY_KEY}-fitnessMap`, JSON.stringify(db.fitnessMap));
+  } catch {
+    // 저장이 안 돼도 이번 화면에서는 돈다
+  }
+}
+
 function saveCheers(cheers: CheerLog[]) {
   try {
     sessionStorage.setItem(CHEER_KEY, JSON.stringify(cheers));
@@ -568,11 +593,7 @@ function startFamily(familyName: string, owner: Profile) {
   db.hasCoachRun = false;
   saveMissions();
   saveCheers(db.cheers);
-  try {
-    sessionStorage.setItem(FAMILY_KEY, JSON.stringify(db.profiles));
-  } catch {
-    // 저장이 안 돼도 이번 탭에서는 돈다
-  }
+  saveFamily();
 }
 
 /** 프로필 하나를 체력 지도의 한 줄로 */
@@ -721,6 +742,7 @@ const identity = [
       latest: null,
     };
     db.fitnessMap.members.push(mapMember);
+    saveFamily();
     return HttpResponse.json(profile, { status: 201 });
   }),
 
@@ -768,6 +790,7 @@ const identity = [
 
       profile.supportMode = supportMode as Profile["supportMode"];
       syncMapMember(profile);
+      saveFamily();
       return HttpResponse.json(profile);
     },
   ),
