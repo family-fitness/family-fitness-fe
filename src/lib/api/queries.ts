@@ -255,7 +255,11 @@ export function useStartCoachRun(familyId: Uuid) {
         `/families/${familyId}/coach/runs`,
         body,
       ),
-    onSuccess: (run) => qc.invalidateQueries({ queryKey: qk.coach.run(run.coachRunId) }),
+    onSuccess: (run) => {
+      qc.invalidateQueries({ queryKey: qk.coach.run(run.coachRunId) });
+      // 기기를 바꿔 들어온 화면은 "이번 주 것" 을 서버에 묻는다. 그 답도 바뀌었다
+      qc.invalidateQueries({ queryKey: qk.coach.latest(familyId) });
+    },
   });
 }
 
@@ -296,18 +300,23 @@ export function useApproveCoachRun(runId: Uuid, familyId: Uuid) {
     mutationFn: () => api.post<CoachApproveResult>(`/coach/runs/${runId}/approve`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.coach.run(runId) });
+      qc.invalidateQueries({ queryKey: qk.coach.latest(familyId) });
       // 승인으로 미션이 생성됐다
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
+      qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
     },
   });
 }
 
 /** 거절해도 미션은 0건 유지. 사유가 다음 주 편성에 참고로 들어간다 */
-export function useRejectCoachRun(runId: Uuid) {
+export function useRejectCoachRun(runId: Uuid, familyId?: Uuid) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (reason?: string) => api.post<CoachRun>(`/coach/runs/${runId}/reject`, { reason }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.coach.run(runId) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.coach.run(runId) });
+      if (familyId) qc.invalidateQueries({ queryKey: qk.coach.latest(familyId) });
+    },
   });
 }
 
@@ -360,7 +369,11 @@ export function useRecordSteps(missionId: Uuid, familyId: Uuid) {
         `/missions/${missionId}/activity/steps`,
         body,
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
+      // 이번 주 기록의 분·완료 수가 이 값에서 나온다
+      qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
+    },
   });
 }
 
@@ -378,7 +391,10 @@ export function useRecordTimer(missionId: Uuid, familyId: Uuid) {
         `/missions/${missionId}/activity/timer`,
         body,
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
+      qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
+    },
   });
 }
 
@@ -388,7 +404,10 @@ export function useConfirmParticipant(missionId: Uuid, familyId: Uuid) {
   return useMutation({
     mutationFn: (profileId: string) =>
       api.post(`/missions/${missionId}/participants/${profileId}/confirm`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
+      qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
+    },
   });
 }
 

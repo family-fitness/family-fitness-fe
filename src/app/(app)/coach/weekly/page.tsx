@@ -49,7 +49,7 @@ export default function WeeklyCoachPage() {
   const { data: run, isPending: runPending, error: runError, refetch } = useCoachRun(runId);
   const start = useStartCoachRun(familyId ?? "");
   const approve = useApproveCoachRun(runId ?? "", familyId ?? "");
-  const reject = useRejectCoachRun(runId ?? "");
+  const reject = useRejectCoachRun(runId ?? "", familyId);
 
   const [rejectOpen, setRejectOpen] = useState(false);
   const [reason, setReason] = useState("");
