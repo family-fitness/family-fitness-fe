@@ -91,20 +91,24 @@ export default function StartPage() {
           onClick={goParent}
           /* 어른 아바타를 조립해 쓴다. 1차 에셋의 move/* 는 다 아이 체형이라
              그대로 쓰면 「부모」 칸에 아이가 앉아 있다 */
-          art={<Avatar parts={PARENT_AVATAR} size={68} />}
+          art={<Avatar parts={PARENT_AVATAR} size={92} />}
         />
       )}
     </Stage>
   );
 }
 
-/** 부모 칸에 세울 어른. 2차 에셋의 부모 얼굴이 오면 그걸로 바꾼다 */
+/**
+ * 부모 칸에 세울 어른.
+ *
+ * `hair-bob` 은 아이 머리라 어른 몸에 얹으면 큰 아이처럼 보였다. 옷(`top`)은
+ * 층에서 뺐다 — `body-*` 가 이미 옷을 입고 있어 겹치면 옷 위에 옷이 된다.
+ */
 const PARENT_AVATAR = {
   // Avatar 가 "char/" 를 스스로 붙인다. 여기서 또 붙이면 char/char/… 이 되어 사라진다
   body: "body-adult-f",
-  hair: "hair-bob",
-  face: "face-calm",
-  top: "top-tshirt-yellow",
+  hair: "hair-mom-long",
+  face: "face-parent-1",
 };
 
 /** 고르는 칸. */
