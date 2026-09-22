@@ -53,9 +53,9 @@ export function Illustration({
 
 /** 몸통·옷·머리·표정을 겹쳐 한 사람을 만든다. 체형마다 등신 비율이 다르다 */
 const PROPORTION = {
-  adult: { headW: 30, headTop: 1.5, headH: 23.5, bodyTop: 20.5, topTop: 25.5, topW: 42, topH: 26 },
-  child: { headW: 36, headTop: 1, headH: 28.5, bodyTop: 24.5, topTop: 30, topW: 46, topH: 27 },
-  toddler: { headW: 42, headTop: 0.5, headH: 33, bodyTop: 28.5, topTop: 34.5, topW: 52, topH: 27 },
+  adult: { headW: 30, headTop: 1.5, headH: 23.5, bodyTop: 20.5 },
+  child: { headW: 36, headTop: 1, headH: 28.5, bodyTop: 24.5 },
+  toddler: { headW: 42, headTop: 0.5, headH: 33, bodyTop: 28.5 },
 } as const;
 
 type BodyKind = keyof typeof PROPORTION;
@@ -70,7 +70,6 @@ export interface AvatarParts {
   body: string;
   hair: string;
   face: string;
-  top?: string;
 }
 
 export function Avatar({
@@ -84,14 +83,18 @@ export function Avatar({
 }) {
   const p = PROPORTION[bodyKind(parts.body)];
 
-  // 겹치는 순서가 곧 앞뒤다. 옷이 몸을 덮고, 머리가 목을 덮고, 표정이 맨 위다
+  /*
+    겹치는 순서가 곧 앞뒤다. 머리가 목을 덮고, 표정이 맨 위다.
+
+    **옷은 겹치지 않는다.** `top-*` 은 쇼핑몰 사진처럼 옷만 따로 그린 평면 그림이고
+    `body-*` 는 이미 흰 티셔츠와 반바지를 입은 완성된 몸이다. 둘을 겹치면 옷 위에
+    옷이 얹혀 이상해진다. 몸에 맞춰 그린 옷이 오면 그때 층을 하나 더 둔다.
+    ▲ ASSET_PROMPTS_DECOR.md 7절에 요청해 뒀다.
+  */
   type Layer = { name: string; box: [number, number, number, number] };
 
   const layers: Layer[] = [
     { name: parts.body, box: [24, p.bodyTop, 52, 100 - p.bodyTop] },
-    ...(parts.top
-      ? ([{ name: parts.top, box: [(100 - p.topW) / 2, p.topTop, p.topW, p.topH] }] as Layer[])
-      : []),
     { name: parts.hair, box: [(100 - p.headW) / 2, p.headTop, p.headW, p.headH] },
     {
       name: parts.face,

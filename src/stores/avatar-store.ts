@@ -15,8 +15,7 @@ import { persist } from "zustand/middleware";
 export interface AvatarChoice {
   hair?: string;
   face?: string;
-  top?: string;
-  prop?: string;
+  body?: string;
 }
 
 interface AvatarState {

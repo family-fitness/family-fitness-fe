@@ -13,9 +13,6 @@ import type { ProfileSummary } from "./api/types";
 const KID_HAIR = ["hair-bob", "hair-ponytail", "hair-short-m", "hair-crop", "hair-twintail"];
 const ADULT_HAIR = ["hair-mom-long", "hair-dad-short", "hair-bun", "hair-curly", "hair-cap"];
 
-const KID_TOPS = ["top-jersey-blue", "top-jersey-white", "top-hoodie", "top-tshirt-yellow"];
-const ADULT_TOPS = ["top-tracksuit", "top-apron", "top-hoodie", "top-jersey-white"];
-
 /** 평상시 얼굴. 다 웃고 있으면 누가 누군지 구분되지 않는다 */
 const KID_FACES = ["face-calm", "face-happy", "face-cheer", "face-proud"];
 const ADULT_FACES = ["face-parent-1", "face-parent-2", "face-parent-3", "face-calm"];
@@ -35,7 +32,7 @@ function pick(list: string[], seed: string, salt: string): string {
 export const PICKABLE = {
   hair: KID_HAIR,
   face: KID_FACES,
-  top: KID_TOPS,
+  body: ["body-child-m", "body-child-f"],
 } as const;
 
 export function avatarFor(
@@ -64,9 +61,8 @@ export function avatarFor(
           : "body-child-f";
 
   return {
-    body,
+    body: chosen?.body ?? body,
     hair: chosen?.hair ?? pick(grown ? ADULT_HAIR : KID_HAIR, seed, "hair"),
     face: chosen?.face ?? pick(grown ? ADULT_FACES : KID_FACES, seed, "face"),
-    top: chosen?.top ?? pick(grown ? ADULT_TOPS : KID_TOPS, seed, "top"),
   };
 }

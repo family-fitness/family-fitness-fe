@@ -162,7 +162,7 @@ export default function KidHomePage() {
             href="/kid/pick"
             className="press border-line mt-3 flex items-center justify-center gap-2 rounded-2xl border py-3.5 text-base font-extrabold"
           >
-            <Illustration name="item/item-dice" fallback="item/item-target" size={24} />
+            <Illustration name="item/item-target" fallback="item/item-clipboard" size={24} />
             다른 운동 고르기
           </NavLink>
         </section>
@@ -193,7 +193,7 @@ export default function KidHomePage() {
           <Avatar parts={avatarFor(me, chosenLook)} size={52} />
           <span className="min-w-0 flex-1">
             <span className="block text-base font-extrabold">내 캐릭터 꾸미기</span>
-            <span className="text-ink-soft text-caption block">머리 · 표정 · 옷 · 소품</span>
+            <span className="text-ink-soft text-caption block">머리 · 표정 · 모습</span>
           </span>
         </NavLink>
       </Stage>
