@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { CountUp } from "@/components/ui/count-up";
 import { cn } from "@/lib/utils";
 
 /**
@@ -232,13 +233,14 @@ export function PeerCloud({
 
       <figcaption className="mt-1 flex items-baseline justify-between gap-2">
         <span className={cn("font-extrabold", kid ? "text-lg" : "text-body")}>{label}</span>
+        {/* 점이 자리를 잡는 동안 숫자도 같이 오른다. 숫자만 툭 뜨면 둘이 따로 논다 */}
         <span
           className={cn(
             "board-num text-signal-deep leading-none",
             kid ? "text-[2.4rem]" : "text-3xl",
           )}
         >
-          {score}
+          <CountUp to={score} duration={1400} />
         </span>
       </figcaption>
     </figure>

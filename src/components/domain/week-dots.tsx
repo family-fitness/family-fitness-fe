@@ -60,11 +60,13 @@ export function WeekDots({
               <span
                 className={cn(
                   "grid aspect-square w-full place-items-center rounded-xl text-xs font-extrabold",
-                  on && "bg-signal text-white",
+                  on && "day-on bg-signal text-white",
                   !on && isToday && "border-signal text-signal border-2",
                   !on && !isToday && "bg-sub text-faint",
                   future && "opacity-45",
                 )}
+                /* 칠해진 날은 차례로 올라온다. 한꺼번에 뜨면 아무 일도 없어 보인다 */
+                style={on ? { animationDelay: `${i * 60}ms` } : undefined}
                 aria-label={`${DAY_LABEL[i]}요일 ${on ? "움직였어요" : "아직이에요"}`}
               >
                 {DAY_LABEL[i]}
