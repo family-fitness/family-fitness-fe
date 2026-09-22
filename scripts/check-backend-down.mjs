@@ -21,9 +21,12 @@ const ME = JSON.stringify(
 );
 /**
  * 실패를 말하지 않아도 되는 화면.
- * 처음부터 불러올 게 없거나(코치 대화), 서버 없이도 쓸 수 있는 메뉴다.
+ *
+ * 처음부터 불러올 게 없거나(코치 대화), 서버 없이도 열리는 메뉴다.
+ * 참여 방식은 /me 로 이미 받은 값만 그려서 화면 자체는 멀쩡하고,
+ * **고른 순간** 저장에 실패하면 그때 말해 준다 — 열자마자 경고를 띄울 이유가 없다.
  */
-const SILENT_OK = new Set(["/coach/weekly", "/coach/chat", "/settings"]);
+const SILENT_OK = new Set(["/coach/weekly", "/coach/chat", "/settings", "/settings/support-mode"]);
 
 const ROUTES = [
   "/parent",
