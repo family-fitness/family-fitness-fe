@@ -1,5 +1,4 @@
 import type { Video, VideoLabel } from "./api/types";
-import { factorPose } from "./fitness-items";
 import { isVideoDone } from "./mission";
 
 /**
@@ -121,9 +120,24 @@ export function whyThisVideo(
  * 유튜브는 **없는 영상에도 회색 자리 그림을 200 으로 돌려준다.** 그래서
  * `onError` 가 뜨지 않고, 화면에는 깨진 것처럼 보이는 회색 네모만 남는다.
  *
- * 사람 그림(`move/*`)을 쓰지 않는다 — 1차로 받은 자세 그림은 머리카락이 없어
- * 목록 가득 민머리가 늘어선다. 측정 항목과 같은 **몸 부위 그림**을 쓴다.
+ * 사람 그림(`move/*`)도 몸 부위 그림(`item/part-*`)도 쓰지 않는다 — 자세
+ * 그림은 머리카락이 없어 목록 가득 민머리가 늘어서고, 부위 그림은 이 크기로
+ * 키우면 잘린 팔다리처럼 보인다. **운동 도구**만 쓴다.
  */
+const VIDEO_ART: Record<string, string> = {
+  유연성: "item/item-mat",
+  심폐지구력: "item/item-shoes",
+  근력: "item/item-grip",
+  근지구력: "item/item-stopwatch",
+  순발력: "item/item-cone",
+  민첩성: "item/item-cone",
+  협응력: "item/item-target",
+  평형성: "item/item-target",
+};
+
 export function videoArt(video: Pick<Video, "label">): string {
-  return factorPose(labelFactors(video.label)[0]);
+  for (const factor of labelFactors(video.label)) {
+    if (VIDEO_ART[factor]) return VIDEO_ART[factor];
+  }
+  return "item/item-shoes";
 }

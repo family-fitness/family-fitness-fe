@@ -770,7 +770,7 @@
           "noise": "QUIET",
           "model": null
         },
-        "badges": ["조용함", "좁은 공간 OK", "준비물 없음"],
+        "badges": [],
         "favorited": false,
         "maxProgress": null
       },
@@ -789,7 +789,7 @@
           "noise": "QUIET",
           "model": null
         },
-        "badges": ["조용함", "좁은 공간 OK", "준비물 없음"],
+        "badges": [],
         "favorited": true,
         "maxProgress": 1.0
       },
@@ -798,17 +798,17 @@
         "title": "유소년 심폐지구력 키우기 — 제자리 달리기 루틴",
         "url": "https://www.youtube.com/watch?v=sample00003",
         "thumbnailUrl": null,
-        "durationSec": 480,
+        "durationSec": 420,
         "label": {
           "ageFrom": 7,
           "ageTo": 12,
-          "factors": ["심폐지구력", "순발력"],
+          "factors": ["심폐지구력"],
           "intensity": "MID",
           "space": "SMALL_ROOM",
-          "noise": "NORMAL",
+          "noise": "LOUD",
           "model": null
         },
-        "badges": ["좁은 공간 OK", "준비물 없음"],
+        "badges": [],
         "favorited": false,
         "maxProgress": 0.94
       },
@@ -827,7 +827,7 @@
           "noise": "QUIET",
           "model": null
         },
-        "badges": ["조용함", "좁은 공간 OK", "준비물 없음"],
+        "badges": [],
         "favorited": false,
         "maxProgress": null
       },
@@ -836,19 +836,114 @@
         "title": "유아 놀이 체육 — 균형 잡기와 점프",
         "url": "https://www.youtube.com/watch?v=sample00005",
         "thumbnailUrl": null,
-        "durationSec": 420,
+        "durationSec": 360,
         "label": {
           "ageFrom": 4,
           "ageTo": 6,
           "factors": ["평형성", "순발력"],
           "intensity": "LOW",
+          "space": "ROOM",
+          "noise": "LOUD",
+          "model": null
+        },
+        "badges": [],
+        "favorited": true,
+        "maxProgress": 0.42
+      },
+      {
+        "videoId": "sample00006",
+        "title": "온 가족 층간소음 없는 유산소 10분",
+        "url": "https://www.youtube.com/watch?v=sample00006",
+        "thumbnailUrl": null,
+        "durationSec": 600,
+        "label": {
+          "ageFrom": 7,
+          "ageTo": 64,
+          "factors": ["심폐지구력"],
+          "intensity": "MID",
           "space": "SMALL_ROOM",
+          "noise": "QUIET",
+          "model": null
+        },
+        "badges": [],
+        "favorited": false,
+        "maxProgress": null
+      },
+      {
+        "videoId": "sample00007",
+        "title": "초등 줄넘기 기초 — 한 발 모아 뛰기",
+        "url": "https://www.youtube.com/watch?v=sample00007",
+        "thumbnailUrl": null,
+        "durationSec": 480,
+        "label": {
+          "ageFrom": 7,
+          "ageTo": 12,
+          "factors": ["순발력", "민첩성"],
+          "intensity": "MID",
+          "space": "OPEN",
+          "noise": "LOUD",
+          "model": null
+        },
+        "badges": [],
+        "favorited": false,
+        "maxProgress": null
+      },
+      {
+        "videoId": "sample00008",
+        "title": "앉아서 하는 어깨·등 풀기 8분",
+        "url": "https://www.youtube.com/watch?v=sample00008",
+        "thumbnailUrl": null,
+        "durationSec": 480,
+        "label": {
+          "ageFrom": 13,
+          "ageTo": 64,
+          "factors": ["유연성"],
+          "intensity": "LOW",
+          "space": "SMALL_ROOM",
+          "noise": "QUIET",
+          "model": null
+        },
+        "badges": [],
+        "favorited": false,
+        "maxProgress": null
+      },
+      {
+        "videoId": "sample00009",
+        "title": "아이와 마주 보고 하는 코어 놀이",
+        "url": "https://www.youtube.com/watch?v=sample00009",
+        "thumbnailUrl": null,
+        "durationSec": 540,
+        "label": {
+          "ageFrom": 7,
+          "ageTo": 18,
+          "factors": ["근지구력", "협응력"],
+          "intensity": "LOW",
+          "space": "SMALL_ROOM",
+          "noise": "QUIET",
+          "model": null
+        },
+        "badges": [],
+        "favorited": false,
+        "maxProgress": null
+      },
+      {
+        "videoId": "sample00010",
+        "title": "성인 빠르게 걷기 준비 루틴",
+        "url": "https://www.youtube.com/watch?v=sample00010",
+        "thumbnailUrl": null,
+        "durationSec": 300,
+        "label": {
+          "ageFrom": 19,
+          "ageTo": 64,
+          "factors": ["심폐지구력", "근력"],
+          "intensity": "HIGH",
+          "space": "OPEN",
           "noise": "NORMAL",
           "model": null
         },
-        "badges": ["좁은 공간 OK", "준비물 없음"],
-        "favorited": true,
-        "maxProgress": 0.42
+        "badges": [],
+        "favorited": false,
+        "maxProgress": null
       }
     ],
     "nextCursor": null
