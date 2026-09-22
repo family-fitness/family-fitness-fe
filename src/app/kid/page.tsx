@@ -157,7 +157,8 @@ export default function KidHomePage() {
             그것만 보면 서준이 절반의 확률로 양갈래 머리가 된다.
           */}
           <Avatar parts={avatarFor(profile ?? me, chosenLook)} size={84} />
-          <h1 className="text-[1.7rem] leading-tight font-extrabold">
+          {/* 이름이 길어도 옆으로 넘치지 않는다. 좁은 폰에서 가로 스크롤이 생겼다 */}
+          <h1 className="min-w-0 flex-1 text-[1.7rem] leading-tight font-extrabold break-words">
             {me.name}
             <span className="text-ink-soft block text-lg font-bold">오늘도 만나서 반가워!</span>
           </h1>
