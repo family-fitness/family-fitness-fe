@@ -17,24 +17,30 @@ import { useUpdateSupportMode } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
-/** 참여 방식. */
+/**
+ * 참여 방식.
+ *
+ * 설명은 **고르는 데 필요한 것만** 남긴다. 앞 문장("같이 뛰기는 어려워요")은
+ * 제목이 이미 하는 말이고, 뒤 문장이 실제로 달라지는 것 — 코치가 나를 미션에
+ * 넣느냐 마느냐 — 을 말한다.
+ */
 const MODES: { value: SupportMode; title: string; description: string; art: string }[] = [
   {
     value: "CHEER_ONLY",
     title: "응원할게요",
-    description: "같이 뛰기는 어려워요. 미션 편성에서 빠지고 응원을 보내는 역할을 맡아요.",
+    description: "미션 편성에서 빠지고 응원을 보내요",
     art: "item/item-whistle",
   },
   {
     value: "WEEKEND",
     title: "주말에는 같이",
-    description: "평일은 어려워도 주말엔 함께해요. 코치가 주말 미션에 같이 넣어 줘요.",
+    description: "코치가 주말 미션에 같이 넣어 줘요",
     art: "item/item-shoes",
   },
   {
     value: "FULL",
     title: "매번 같이",
-    description: "가능한 한 함께해요. 코치가 모든 미션에 동반자로 넣어 줘요.",
+    description: "코치가 모든 미션에 동반자로 넣어 줘요",
     art: "item/item-medal",
   },
 ];
