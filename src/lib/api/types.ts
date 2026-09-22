@@ -159,6 +159,29 @@ export type LatestWithBody = LatestFitnessTest & {
  */
 export type ProfileWithSex = ProfileSummary & { sex?: "M" | "F" | null };
 
+/**
+ * 초대코드가 어느 자리인지 미리 보기.
+ *
+ * ▲ 요청: `GET /invites/{claimCode}`.
+ * 코드는 **가족 전체가 아니라 자리 하나**에 발급된다(`POST /profiles/{id}/invite`).
+ * 그런데 받는 쪽 화면은 그걸 모른 채 코드를 넣고 나서야 자기가 누가 됐는지 안다.
+ * 넣기 전에 「서준이네 · 아빠 자리」 를 보여 줘야 **역할을 고를 수 없다**는 것이
+ * 화면에서 사실이 된다.
+ *
+ * 없는 코드는 404, 기한이 지났으면 410 을 주세요.
+ */
+export interface InvitePeek {
+  familyName: string;
+  /** 이 코드가 가리키는 자리 */
+  profileName: string;
+  role: Role;
+  ageGroup?: AgeGroup | null;
+  /** 누가 보냈는지 */
+  invitedByName?: string | null;
+  /** ISO-8601 */
+  expiresAt?: string | null;
+}
+
 /** 서버 응답에 제안이 붙어 올 수 있다 */
 export type CoachChatAnswer = CoachChatResult & { suggestion?: MissionSuggestion | null };
 

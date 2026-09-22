@@ -757,6 +757,28 @@ const identity = [
     ),
   ),
 
+  /**
+   * ▲ 서버에 아직 없다. 제안 모양으로 답한다.
+   * 코드가 어느 **자리**인지 넣기 전에 보여 줘야, 받는 사람이 역할을 고를 수
+   * 없다는 것이 화면에서 사실이 된다.
+   */
+  http.get<PathParams>(`${BASE}/invites/:claimCode`, ({ params }) => {
+    if (String(params.claimCode).toUpperCase() !== "K7M2QT") {
+      return fail(404, "CODE_NOT_FOUND", "코드를 찾을 수 없습니다");
+    }
+    const seat = db.profiles.profiles.find((p) => p.profileId === DEMO.dad);
+    const inviter = db.profiles.profiles.find((p) => p.profileId === DEMO.mom);
+    if (!seat) return fail(404, "CODE_NOT_FOUND", "코드를 찾을 수 없습니다");
+    return HttpResponse.json({
+      familyName: db.profiles.familyName,
+      profileName: seat.name,
+      role: seat.role,
+      ageGroup: seat.ageGroup,
+      invitedByName: inviter?.name ?? null,
+      expiresAt: new Date(Date.now() + 7 * 864e5).toISOString(),
+    });
+  }),
+
   http.post(`${BASE}/profiles/claim`, async ({ request }) => {
     const { claimCode } = (await request.json()) as { claimCode: string };
     if (claimCode?.toUpperCase() !== "K7M2QT") {
