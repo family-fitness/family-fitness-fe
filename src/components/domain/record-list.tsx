@@ -75,6 +75,12 @@ export function RecordList({
                   >
                     {bySelf ? "직접 입력" : "확인됨"}
                   </span>
+                ) : me?.needsGuardianCheck ? (
+                  /*
+                    목표에 닿았지만 아직 완료가 아니다. 여기에 100% 만 적으면
+                    다 한 것처럼 보인다 — 무엇이 남았는지가 이 줄의 뜻이다.
+                  */
+                  <span className="text-signal-deep text-caption font-extrabold">확인 기다림</span>
                 ) : (
                   <span className="board-num text-ink-soft text-base leading-none">{percent}%</span>
                 )}
