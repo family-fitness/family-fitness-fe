@@ -9,9 +9,15 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RecordList } from "@/components/domain/record-list";
 import { FactorRow, StatStrip } from "@/components/domain/stat-strip";
 import { daysSince } from "@/lib/today";
-import { useFamilyProfiles, useFitnessMap, useLatestFitnessTest } from "@/lib/api/queries";
+import {
+  useFamilyProfiles,
+  useFitnessMap,
+  useLatestFitnessTest,
+  useMissions,
+} from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { useBodyStore } from "@/stores/body-store";
 import { formatDate, withJosa } from "@/lib/utils";
@@ -26,6 +32,7 @@ export default function ChildDetailPage() {
 
   const { data: family, error: familyError, refetch } = useFamilyProfiles(familyId);
   const { data: map } = useFitnessMap(familyId);
+  const { data: missions } = useMissions(familyId, { scope: "ALL" });
   const {
     data: latest,
     isPending: latestPending,
@@ -81,6 +88,10 @@ export default function ChildDetailPage() {
   const days = daysSince(latest?.testedOn);
   const radar = latest?.radar ?? [];
   const items = latest?.items ?? [];
+  /* 이 아이가 참여한 미션만. 가족 전체 목록에서 걸러 낸다 */
+  const recent = (missions?.missions ?? []).filter((m) =>
+    m.participants?.some((p) => p.profileId === profileId),
+  );
   const weakest = latest?.weakest;
 
   return (
@@ -170,6 +181,19 @@ export default function ChildDetailPage() {
             />
           </dl>
         </section>
+
+        {/* 5. 최근 기록. 무엇으로 확인된 기록인지가 줄마다 보인다 */}
+        {recent.length > 0 && (
+          <section>
+            <div className="section-head">
+              <h2>최근 기록</h2>
+              <Link href="/parent/history" className="text-signal text-micro font-bold">
+                전체
+              </Link>
+            </div>
+            <RecordList missions={recent} profileId={profileId} limit={5} />
+          </section>
+        )}
 
         <section className="grid grid-cols-2 gap-2">
           <Link
