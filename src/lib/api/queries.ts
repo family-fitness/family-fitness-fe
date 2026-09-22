@@ -9,7 +9,8 @@ import type {
   Cheer,
   CheerLogList,
   CoachApproveResult,
-  CoachChatResult,
+  TargetMetric,
+  CoachChatAnswer,
   CoachRun,
   FitnessItems,
   FitnessMap,
@@ -292,7 +293,27 @@ export function useRejectCoachRun(runId: Uuid) {
 export function useAskCoach(profileId: Uuid) {
   return useMutation({
     mutationFn: (body: { question: string; conversationId?: string }) =>
-      api.post<CoachChatResult>("/coach/chat", { profileId, ...body }),
+      api.post<CoachChatAnswer>("/coach/chat", { profileId, ...body }),
+  });
+}
+
+/** 대화 중에 나온 제안을 그대로 미션으로. 보호자만 할 수 있다 */
+export function useCreateMission(familyId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: {
+      title: string;
+      startDate: string;
+      endDate: string;
+      targetMetric: TargetMetric;
+      targetValue: number;
+      videoId?: string | null;
+      participantProfileIds: Uuid[];
+    }) => api.post<{ missionId: Uuid }>(`/families/${familyId}/missions`, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "fitness-map"] });
+    },
   });
 }
 

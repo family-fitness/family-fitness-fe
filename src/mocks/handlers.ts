@@ -24,7 +24,7 @@ import type {
 } from "@/lib/api/types";
 
 import { isVideoDone } from "@/lib/mission";
-import { ageOf } from "@/lib/today";
+import { ageOf, today } from "@/lib/today";
 
 import fixturesJson from "./fixtures.json";
 
@@ -583,6 +583,24 @@ const coaching = [
       ],
       refused: false,
       refusalReason: null,
+      /*
+        ▲ 백엔드에 요청해 둔 것 — 대화 중 미션 제안.
+        값이 그대로 POST /families/{id}/missions 본문이 되어, 부모가 카드의
+        버튼 한 번으로 미션을 만들 수 있다. 목에서는 운동·시간을 물으면 붙여 준다.
+      */
+      suggestion: /운동|뭘|무엇|할까|주말|분|추천/.test(question)
+        ? {
+            title: "주말 10분 스트레칭",
+            targetMetric: "TIMER_MINUTES",
+            targetValue: 10,
+            startDate: today(),
+            endDate: today(),
+            videoId: "IdpXx2gm90o",
+            videoTitle: "가족이 함께하는 거실 5분 스트레칭",
+            participantProfileIds: [DEMO.kid, DEMO.mom],
+            rationale: "유연성이 또래 평균보다 낮아 짧게 자주 하는 편이 좋습니다.",
+          }
+        : null,
     });
   }),
 ];
