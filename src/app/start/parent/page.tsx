@@ -21,7 +21,8 @@ export default function CreateFamilyPage() {
   const [familyName, setFamilyName] = useState("");
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
-  const [sex, setSex] = useState<"M" | "F">("F");
+  /* 미리 골라 두지 않는다. 규준이 성별로 나뉘어 있어 틀리면 표가 통째로 달라진다 */
+  const [sex, setSex] = useState<"M" | "F" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const valid =
     familyName.trim().length >= 1 &&
@@ -29,7 +30,8 @@ export default function CreateFamilyPage() {
     name.trim().length >= 1 &&
     name.trim().length <= 20 &&
     birthDate !== "" &&
-    birthDate <= today();
+    birthDate <= today() &&
+    sex != null;
 
   return (
     <>
@@ -48,7 +50,7 @@ export default function CreateFamilyPage() {
             try {
               await create.mutateAsync({
                 familyName: familyName.trim(),
-                owner: { name: name.trim(), birthDate, sex },
+                owner: { name: name.trim(), birthDate, sex: sex ?? "F" },
               });
               router.replace("/start/child");
             } catch (err) {

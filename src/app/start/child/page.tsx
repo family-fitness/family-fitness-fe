@@ -33,14 +33,20 @@ export default function AddChildPage() {
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
-  const [sex, setSex] = useState<"M" | "F">("F");
+  /*
+    성별을 미리 골라 두지 않는다.
+
+    국민체력100 규준이 성별로 나뉘어 있어서 틀리면 백분위가 통째로 다른 표에서
+    나온다. "여자" 가 파랗게 켜진 채로 시작하면 많은 사람이 그냥 넘긴다.
+  */
+  const [sex, setSex] = useState<"M" | "F" | null>(null);
   const [heightCm, setHeightCm] = useState("");
   const [weightKg, setWeightKg] = useState("");
   const [error, setError] = useState<string | null>(null);
   const age = ageOf(birthDate);
   const needsConsent = age != null && age < 14;
 
-  const step1Ok = name.trim() !== "" && birthDate !== "" && birthDate <= today();
+  const step1Ok = name.trim() !== "" && birthDate !== "" && birthDate <= today() && sex != null;
   const height = bodyValue("heightCm", heightCm);
   const weight = bodyValue("weightKg", weightKg);
   // 여기서는 둘 다 있어야 다음으로 간다 — 첫 등록에 기준이 없으면 점수가 안 나온다
@@ -53,7 +59,8 @@ export default function AddChildPage() {
       const profile = await create.mutateAsync({
         name: name.trim(),
         birthDate,
-        sex,
+        // step1Ok 이 이미 막고 있다. 타입을 좁히려고 한 번 더 본다
+        sex: sex ?? "F",
         role: "CHILD",
         // 만 14세 미만은 보호자 동의가 있어야 저장된다. 서버가 자동으로 찍지 않는다
         ...(needsConsent ? { guardianConsent: { personalData: true, healthData: true } } : {}),
@@ -139,7 +146,9 @@ export default function AddChildPage() {
               다음
             </Button>
             {!step1Ok && (
-              <p className="text-faint text-caption text-center">이름과 생일을 넣어 주세요.</p>
+              <p className="text-faint text-caption text-center">
+                이름 · 생일 · 성별을 넣어 주세요
+              </p>
             )}
           </section>
         )}
