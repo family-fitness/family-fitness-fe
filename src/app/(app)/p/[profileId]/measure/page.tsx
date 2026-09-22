@@ -215,16 +215,7 @@ export default function MeasurePage() {
 
   return (
     <>
-      <PageHeader
-        title={`${profile.name} 측정`}
-        back
-        meta={
-          <>
-            <span>{filledCount}개 입력함</span>
-            <span className="text-faint">한 항목만 넣어도 결과가 나와요</span>
-          </>
-        }
-      />
+      <PageHeader title={`${profile.name} 측정`} back meta={<span>{filledCount}개 입력함</span>} />
 
       <Screen>
         <form onSubmit={onSubmit} className="space-y-7">
@@ -285,7 +276,6 @@ export default function MeasurePage() {
                 problem={weightProblem}
               />
             </div>
-            <p className="text-faint mt-2 text-xs">비워 둬도 측정은 저장돼요.</p>
           </section>
 
           {easy.length > 0 && (

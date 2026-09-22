@@ -23,6 +23,21 @@ export function GradeBadge({
   const label = digit ? "등급" : (grade ?? "기준 없음");
   const full = grade ?? "기준 없음";
 
+  /*
+    숫자가 없는 등급(참가·기준 없음)에는 도장을 그리지 않는다.
+    빈 동그라미만 남아 그림이 덜 그려진 것처럼 보인다.
+  */
+  if (!digit) {
+    return (
+      <span
+        className="border-line text-ink-soft inline-flex shrink-0 items-center rounded-md border px-2 py-1 text-xs font-bold"
+        title={full}
+      >
+        {full}
+      </span>
+    );
+  }
+
   return (
     <span className="inline-flex shrink-0 items-center gap-1.5" title={full} aria-label={full}>
       <span
@@ -30,15 +45,13 @@ export function GradeBadge({
         style={{ width: size, height: size }}
       >
         <Illustration name={seal} size={size} alt="" />
-        {digit && (
-          <span
-            className="text-signal-deep absolute inset-0 grid place-items-center font-extrabold"
-            style={{ fontSize: size * 0.4 }}
-            aria-hidden
-          >
-            {digit}
-          </span>
-        )}
+        <span
+          className="text-signal-deep absolute inset-0 grid place-items-center font-extrabold"
+          style={{ fontSize: size * 0.4 }}
+          aria-hidden
+        >
+          {digit}
+        </span>
       </span>
       <span className="text-ink-soft text-xs font-bold" aria-hidden>
         {label}
