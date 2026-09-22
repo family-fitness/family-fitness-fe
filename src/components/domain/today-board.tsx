@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronRight } from "lucide-react";
+import { Check, ChevronRight, Hand } from "lucide-react";
 import Link from "next/link";
 
 import { useIsKidView } from "@/lib/view-role";
@@ -73,13 +73,24 @@ export function TodayBoard({
           {told.map((cheer, index) => {
             const answered = index < answeredCount;
             const reply = answered ? (praises[index]?.message ?? null) : null;
+            /*
+              미션이 달려 있지 않으면 **다 했다는 알림이 아니라 말**이다 —
+              아이가 같이 하자고 부른 것이다. 거기에 "칭찬하기" 를 붙이면
+              아직 하지도 않은 일을 칭찬하는 게 된다.
+              ▲ 백엔드에 cheer 의 종류(알림·조르기)를 구분할 칸을 요청해 뒀다.
+            */
+            const isCall = !cheer.missionId;
             return (
               <li key={cheer.cheerId} className="flex items-start gap-3 py-4">
                 <span
                   className="bg-signal-soft text-signal-deep mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg"
                   aria-hidden
                 >
-                  <Check className="size-4" strokeWidth={3} />
+                  {isCall ? (
+                    <Hand className="size-4" />
+                  ) : (
+                    <Check className="size-4" strokeWidth={3} />
+                  )}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-body leading-snug font-bold">{cheer.message}</p>
@@ -91,7 +102,9 @@ export function TodayBoard({
                   >
                     {answered
                       ? `“${reply}” 라고 보냈어요`
-                      : `${withJosa(childName, "이가")} 기다리고 있어요`}
+                      : isCall
+                        ? `${withJosa(childName, "이가")} 부르고 있어요`
+                        : `${withJosa(childName, "이가")} 기다리고 있어요`}
                   </p>
                 </div>
                 {!answered && (
@@ -104,7 +117,7 @@ export function TodayBoard({
                     }
                     className="press bg-signal shrink-0 rounded-xl px-3 py-2 text-xs font-extrabold text-white"
                   >
-                    칭찬하기
+                    {isCall ? "답하기" : "칭찬하기"}
                   </button>
                 )}
               </li>

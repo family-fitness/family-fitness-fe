@@ -13,6 +13,7 @@ import { Backdrop } from "@/components/ui/backdrop";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BadgeRow } from "@/components/domain/badge-row";
+import { InviteParent } from "@/components/domain/invite-parent";
 import { KidCharacter } from "@/components/domain/kid-character";
 import { Avatar } from "@/components/ui/illustration";
 import { avatarFor } from "@/lib/avatar";
@@ -169,6 +170,13 @@ export default function KidHomePage() {
               <p className="text-ink-soft mt-1 text-sm">쉬는 것도 하는 일이에요</p>
             </div>
           )}
+
+          {/* 시작하기 전에도 부모를 부를 수 있어야 "같이 해 주는 것" 이 된다 */}
+          <InviteParent
+            familyId={familyId ?? ""}
+            childProfileId={childProfileId ?? ""}
+            className="mt-3"
+          />
 
           {/* 권한 것 하나만 걸려 있으면, 그게 하기 싫은 날은 그냥 안 한다 */}
           <NavLink
