@@ -89,7 +89,7 @@ export function PeerCloud({
 
       const inset = kid ? 22 : 16;
       const span = width - inset * 2;
-      const peerSize = kid ? 11 : 9;
+      const peerSize = kid ? 10 : 9;
       const meSize = kid ? 26 : 20;
 
       interface Piece {
@@ -112,7 +112,7 @@ export function PeerCloud({
 
       /* 또래 100명. x 는 백분위라 고르게 퍼지고, y 는 흩어 둔다 —
          한 줄로 세우면 그 순간 등수표가 된다 */
-      const rows = kid ? 5 : 4;
+      const rows = 4;
       for (let i = 0; i < PEERS; i += 1) {
         const material = new THREE.SpriteMaterial({ map: peerTexture, transparent: true });
         const sprite = new THREE.Sprite(material);
@@ -212,7 +212,7 @@ export function PeerCloud({
       <div
         ref={host}
         className="relative w-full"
-        style={{ height: kid ? 168 : 132 }}
+        style={{ height: kid ? 128 : 116 }}
         role="img"
         aria-label={`또래 100명 가운데 ${score}번째 자리예요`}
       >

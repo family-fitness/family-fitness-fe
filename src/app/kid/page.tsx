@@ -143,12 +143,6 @@ export default function KidHomePage() {
           </h1>
         </div>
 
-        {/* 내 점수 */}
-        <PeerCloud score={score} tone="kid" label="또래 100명 중 내 자리" />
-
-        {/* 이번 주에 한 날. 연속 기록으로 세지 않는다 — 빠진 날이 벌이 되면 안 된다 */}
-        <WeekDots cheers={allCheers} fromProfileId={childProfileId ?? ""} />
-
         {/* 오늘 할 일 하나. 여러 개를 늘어놓지 않는다 */}
         <section>
           <SectionTitle>오늘 할 운동</SectionTitle>
@@ -185,6 +179,12 @@ export default function KidHomePage() {
             다른 운동 고르기
           </NavLink>
         </section>
+
+        {/* 내 점수 */}
+        <PeerCloud score={score} tone="kid" label="또래 100명 중 내 자리" />
+
+        {/* 이번 주에 한 날. 연속 기록으로 세지 않는다 — 빠진 날이 벌이 되면 안 된다 */}
+        <WeekDots cheers={allCheers} fromProfileId={childProfileId ?? ""} />
 
         {/* 받은 기념 표시. 하나도 없으면 아예 안 나온다 */}
         <BadgeRow badges={badges} />
