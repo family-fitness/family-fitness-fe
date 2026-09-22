@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 
 import { NavLink } from "@/components/ui/nav-link";
@@ -22,6 +23,9 @@ import { cn } from "@/lib/utils";
  *
  * 전에는 서버가 준 순서대로 늘어놓기만 했다. 이제 **라벨로 거른다** —
  * 어느 요인을 키우고 싶은지 고르면 그 영상만 남는다.
+ *
+ * 카드에는 썸네일을 쓴다. 캐릭터를 쓰면 같은 요인의 영상끼리 그림이 똑같아
+ * 어느 게 어느 것인지 구분이 안 된다.
  */
 
 /** 영상이 어떤 요인을 다루는지에 따라 캐릭터 동작을 고른다 */
@@ -81,7 +85,7 @@ export default function PickPage() {
     <>
       <AppBar backHref="/kid" title="운동 고르기" />
       <Stage wide className="relative space-y-4">
-        <Backdrop name="bg/bg-park" height={190} />
+        <Backdrop name="bg/bg-park" height={150} />
         <h2 className="text-[1.5rem] leading-tight font-extrabold">뭐 하고 싶어?</h2>
 
         {factors.length > 1 && (
@@ -130,7 +134,23 @@ export default function PickPage() {
                       done ? "border-done bg-done-soft" : "border-line",
                     )}
                   >
-                    <KidCharacter motion={motionFor(labelFactors(video.label), index)} size={84} />
+                    {video.thumbnailUrl ? (
+                      <span className="relative block w-24 shrink-0 self-start overflow-hidden rounded-xl">
+                        <Image
+                          src={video.thumbnailUrl}
+                          alt=""
+                          width={160}
+                          height={90}
+                          className="aspect-video w-full object-cover"
+                          unoptimized
+                        />
+                      </span>
+                    ) : (
+                      <KidCharacter
+                        motion={motionFor(labelFactors(video.label), index)}
+                        size={72}
+                      />
+                    )}
                     <span className="min-w-0 flex-1">
                       <span className="text-lead line-clamp-2 leading-snug font-extrabold">
                         {video.title}

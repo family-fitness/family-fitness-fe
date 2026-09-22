@@ -48,7 +48,7 @@ export default function SplashPage() {
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-4">
-      <Illustration name="move/move-jump-rope" size={140} priority />
+      <Illustration name="anim/pose-cheer" size={140} priority />
       <p className="page-title text-center">우리가족 체력키움</p>
       <p className="text-ink-soft text-sm">국민체력100 공개데이터로 만든 가족 체력 서비스</p>
     </div>

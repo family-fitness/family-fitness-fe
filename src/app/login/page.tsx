@@ -74,7 +74,7 @@ function LoginContent() {
   return (
     <PlainScreen className="flex min-h-dvh flex-col justify-center gap-8">
       <div className="flex flex-col items-center text-center">
-        <Illustration name="move/move-jump-rope" size={150} />
+        <Illustration name="anim/pose-cheer" size={150} />
         <h1 className="page-title mt-4">우리가족 체력키움</h1>
         <p className="text-ink-soft mt-2 text-sm leading-relaxed">
           국민체력100 측정 기록으로 가족이 함께할 한 주를 짜 드려요.

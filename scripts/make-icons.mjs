@@ -14,7 +14,11 @@ import path from "node:path";
 import sharp from "sharp";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
-const SOURCE = path.join(ROOT, "public/assets/move/move-jump-rope.png");
+/*
+  1차 move/ 그림들은 머리카락이 없어서 아이콘으로 쓸 수 없다.
+  머리가 그려진 anim/ 쪽을 쓴다.
+*/
+const SOURCE = path.join(ROOT, "public/assets/anim/pose-cheer.png");
 const OUT = path.join(ROOT, "public");
 /** Next 가 파일 이름만 보고 <link> 를 만들어 주는 자리 */
 const APP = path.join(ROOT, "src/app");
