@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 import { PeerCloud } from "@/components/domain/peer-cloud";
@@ -21,7 +22,7 @@ export function PeerCompare({
   name: string;
   score: number | null;
   headline: string | null | undefined;
-  /** 아직 안 쟀을 때 재러 가는 곳 */
+  /** 아직 안 쟀으면 재러, 쟀으면 자라는 기록으로 가는 곳 */
   profileId: string | undefined;
 }) {
   /*
@@ -37,9 +38,7 @@ export function PeerCompare({
             fallback="scene/scene-first-measure"
             size={56}
           />
-          <p className="text-ink-soft text-sm leading-relaxed">
-            한 가지만 재도 {withJosa(name, "이가")} 또래 중 어디쯤인지 보입니다.
-          </p>
+          <p className="text-lead font-extrabold">아직 안 쟀어요</p>
         </div>
         {profileId && (
           <Link
@@ -55,8 +54,13 @@ export function PeerCompare({
 
   const gap = score - 50;
 
-  return (
-    <section>
+  /*
+    점수 덩어리 전체가 자라는 기록으로 가는 문이다.
+    전적 사이트에서 등급을 누르면 전적 페이지로 가는 것과 같은 자리다 —
+    이게 있어서 홈에 「아이 기록」 카드를 따로 두지 않아도 된다.
+  */
+  const body = (
+    <>
       <PeerCloud score={score} label={`${name} 신체 점수`} />
 
       <p className="mt-2 text-sm leading-relaxed">
@@ -75,6 +79,18 @@ export function PeerCompare({
               : " · 또래와 비슷해요"}
         </span>
       </p>
-    </section>
+    </>
+  );
+
+  if (!profileId) return <section>{body}</section>;
+
+  return (
+    <Link href={`/parent/child/${profileId}`} className="press block" aria-label={`${name} 기록`}>
+      {body}
+      <span className="text-signal mt-1.5 flex items-center gap-0.5 text-xs font-bold">
+        자라는 기록 보기
+        <ChevronRight className="size-3.5" aria-hidden />
+      </span>
+    </Link>
   );
 }

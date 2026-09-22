@@ -47,7 +47,7 @@ export function Citations({
                   href={href}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="text-ink-soft text-caption inline-flex items-start gap-1 leading-relaxed underline underline-offset-2"
+                  className="text-ink-soft text-caption inline-flex min-h-11 items-start gap-1 py-1.5 leading-relaxed underline underline-offset-2"
                 >
                   {label}
                   <ExternalLink className="mt-0.5 size-2.5 shrink-0" aria-hidden />

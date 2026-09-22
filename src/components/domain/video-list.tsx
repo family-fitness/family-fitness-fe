@@ -108,37 +108,39 @@ function VideoRow({ video }: { video: Video }) {
           )}
         </Link>
 
-        <div className="min-w-0 flex-1">
-          <Link
-            href={safeUrl(video.url) ?? "#"}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="text-body leading-snug font-bold"
-          >
-            {video.title}
-          </Link>
+        {/*
+          제목만 링크로 두면 누르는 자리가 18px 짜리 글줄 하나다. 칸 전체를
+          링크로 만들면 자연히 44px 을 넘고, 손가락이 어디에 닿아도 열린다.
+        */}
+        <Link
+          href={safeUrl(video.url) ?? "#"}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="min-w-0 flex-1"
+        >
+          <span className="text-body block leading-snug font-bold">{video.title}</span>
 
           {badges.length > 0 && (
-            <ul className="mt-1.5 flex flex-wrap gap-1">
+            <span className="mt-1.5 flex flex-wrap gap-1">
               {badges.map((b) => (
-                <li
+                <span
                   key={b}
                   className="bg-sub text-ink-soft text-micro rounded px-1.5 py-0.5 font-bold"
                 >
                   {b}
-                </li>
+                </span>
               ))}
-            </ul>
+            </span>
           )}
 
-          <p className="text-faint text-micro mt-1">
+          <span className="text-faint text-micro mt-1 block">
             {done
               ? "완주했어요"
               : watched > 0
                 ? `${watched}%까지 봤어요`
                 : [factors.join(" · "), labelAges(video.label)].filter(Boolean).join(" · ")}
-          </p>
-        </div>
+          </span>
+        </Link>
 
         <button
           type="button"

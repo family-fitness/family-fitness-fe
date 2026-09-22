@@ -19,9 +19,12 @@ import { cn } from "@/lib/utils";
  */
 export function FamilyMap({
   members,
+  manageHref,
   className,
 }: {
   members: FitnessMapMember[];
+  /** 가족 관리로 가는 길. 없으면 링크를 그리지 않는다 */
+  manageHref?: string;
   className?: string;
 }) {
   const measured = members.filter((m) => m.latest?.overallPercentile != null);
@@ -31,7 +34,14 @@ export function FamilyMap({
     <section className={className}>
       <div className="section-head">
         <h2>우리 가족</h2>
-        <span className="text-faint text-micro font-bold">각자의 또래와 견준 자리</span>
+        {manageHref && (
+          <Link
+            href={manageHref}
+            className="text-signal -mr-3 inline-flex min-h-11 min-w-11 items-center justify-center px-3 text-xs font-bold"
+          >
+            관리
+          </Link>
+        )}
       </div>
 
       {/*

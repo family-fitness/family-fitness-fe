@@ -176,58 +176,17 @@ export default function ParentHomePage() {
         </section>
 
         {/*
-          6. 더 들어가는 곳 둘.
+          6. 기획서 ① 가족 체력 지도 — 아이만 있고 부모가 없으면 잔소리 도구가 된다.
 
-          전에는 여기에 구역 둘과 링크 여섯 개가 더 있었다. 한 화면에 여덟 줄을
-          세워 두면 어느 것도 눈에 안 들어온다 — 조사한 바로도 한 화면의 항목은
-          대여섯을 넘기면 안 된다. 묶어서 각자의 화면으로 내렸다.
+          전에는 이 아래에 「아이 기록」·「가족 관리」 카드 둘이 더 있었다.
+          같은 크기·같은 모서리 카드를 나란히 놓는 건 AI 가 만든 화면의 대표
+          신호이기도 하고, 실제로 **가는 곳이 이미 화면 안에 있었다** —
+          점수를 누르면 아이 기록으로 가고, 가족 줄을 누르면 그 사람에게 간다.
+          같은 문을 두 번 그리는 대신 구역 제목 옆에 작은 링크 하나만 남겼다.
         */}
-        <section className="grid grid-cols-2 gap-3">
-          <HomeTile
-            href={`/parent/child/${child.profileId}`}
-            art="item/item-compare"
-            fallback="item/item-growth-up"
-            title={`${child.name} 기록`}
-            description="자라는 모습 · 측정 결과 · 10년 뒤"
-          />
-          <HomeTile
-            href="/parent/family"
-            art="scene/scene-together"
-            title="가족 관리"
-            description="구성원 초대 · 참여 방식 · 주간 기록"
-          />
-        </section>
-
-        {/* 기획서 ① 가족 체력 지도 — 아이만 있고 부모가 없으면 잔소리 도구가 된다 */}
-        <FamilyMap members={map?.members ?? []} />
+        <FamilyMap members={map?.members ?? []} manageHref="/parent/family" />
       </Stage>
     </>
-  );
-}
-
-/** 더 들어가는 큰 칸. 줄로 세우는 대신 둘만 나란히 둔다 */
-function HomeTile({
-  href,
-  art,
-  fallback,
-  title,
-  description,
-}: {
-  href: string;
-  art: string;
-  fallback?: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <NavLink
-      href={href}
-      className="press border-line flex h-full flex-col gap-1 rounded-2xl border p-4"
-    >
-      <Illustration name={art} fallback={fallback} size={40} />
-      <span className="text-body mt-1 font-extrabold">{title}</span>
-      <span className="text-ink-soft text-caption leading-relaxed">{description}</span>
-    </NavLink>
   );
 }
 

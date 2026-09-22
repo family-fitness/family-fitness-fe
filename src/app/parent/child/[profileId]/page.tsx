@@ -248,7 +248,10 @@ export default function ChildDetailPage() {
           <section>
             <div className="section-head">
               <h2>최근 기록</h2>
-              <Link href="/parent/history" className="text-signal text-micro font-bold">
+              <Link
+                href="/parent/history"
+                className="text-signal -mr-3 inline-flex min-h-11 min-w-11 items-center justify-center px-3 text-xs font-bold"
+              >
                 전체
               </Link>
             </div>
