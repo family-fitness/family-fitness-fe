@@ -12,9 +12,9 @@ import { Illustration } from "@/components/ui/illustration";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InviteParent } from "@/components/domain/invite-parent";
-import { LevelBuddy } from "@/components/domain/level-buddy";
 import { TodayRings } from "@/components/domain/today-rings";
 import { WeekStrip } from "@/components/domain/week-strip";
+import { KiumIsland } from "@/components/scene/kium-island";
 import type { Mission } from "@/lib/api/types";
 import { useCalendar, useFitnessMap, useMissions, useProgress } from "@/lib/api/queries";
 import { levelProgress, stageOf } from "@/lib/levels";
@@ -26,7 +26,8 @@ import { useRoleStore } from "@/stores/role-store";
 /**
  * 아이 홈.
  *
- * 맨 위는 **자라는 캐릭터**다 — 운동을 하면 경험치가 차고, 레벨 둘마다 모습이 자란다.
+ * 맨 위는 **키움 섬**이다 — 운동한 날마다 나무가 하나씩 자라고, 가운데 선 캐릭터는
+ * 경험치가 차면 레벨 둘마다 모습이 자란다. 섬은 손으로 돌리고 누르면 캐릭터가 뛴다.
  * 해야 할 일은 오늘 운동 카드의 큰 버튼 하나다. 나머지는 보는 것이다.
  *
  * 여기에 없는 것: 등급, 약한 요인, 형제 비교, 체력 육각형(규칙 10).
@@ -96,6 +97,8 @@ export default function KidHomePage() {
     (m) => !m.participants?.find((p) => p.profileId === childProfileId)?.completed,
   );
   const stage = stageOf(progress?.level);
+  // 운동한 날만큼 섬에 나무가 선다. 줄지 않는다
+  const trees = progress?.activeDays ?? 0;
   const bar = progress ? levelProgress(progress) : null;
   const score = me.latest?.overallPercentile ?? null;
 
@@ -109,14 +112,21 @@ export default function KidHomePage() {
       </div>
 
       <Stage wide className="space-y-3">
-        {/* 나 — 이름과 자라는 캐릭터. 아이는 자기 이름을 먼저 찾는다 */}
-        <section className="flex flex-col items-center pt-1 pb-2 text-center">
-          <LevelBuddy stage={stage.stage} size={148} label={stage.name} />
-          <h1 className="page-title mt-1 max-w-full break-words">{me.name}</h1>
+        {/* 나 — 내 섬과 이름. 아이는 자기 이름을 먼저 찾는다 */}
+        <section className="flex flex-col items-center pb-2 text-center">
+          <KiumIsland
+            stage={stage.stage}
+            plants={progress ? trees : null}
+            seed={childProfileId ?? "kid"}
+            label={`${me.name}의 섬. 운동한 날마다 나무가 하나씩 자라요. 지금 ${trees}그루`}
+            className="-mt-3"
+          />
+          <h1 className="page-title -mt-2 max-w-full break-words">{me.name}</h1>
           {progress ? (
             <>
               <p className="text-caption text-ink-soft mt-1 font-bold">
                 Lv.{progress.level} · {stage.name}
+                {trees > 0 ? ` · 나무 ${trees}그루` : ""}
               </p>
               <div className="mt-2.5 w-full max-w-60">
                 <div
@@ -134,6 +144,7 @@ export default function KidHomePage() {
                 </div>
                 <p className="text-micro text-ink-soft mt-1.5 font-bold">
                   {bar?.left == null ? "가장 높은 레벨이에요" : `다음 레벨까지 ${bar.left}`}
+                  {trees === 0 && " · 운동한 날마다 섬에 나무가 자라요"}
                 </p>
               </div>
             </>
@@ -249,7 +260,7 @@ function KidHomeSkeleton() {
   return (
     <Stage wide className="space-y-3 pt-12">
       <div className="flex flex-col items-center gap-3">
-        <Skeleton className="size-36 rounded-full" />
+        <Skeleton className="h-60 w-64 rounded-[3rem]" />
         <Skeleton className="h-8 w-24" />
         <Skeleton className="h-3 w-56" />
       </div>

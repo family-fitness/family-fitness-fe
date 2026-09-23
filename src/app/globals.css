@@ -44,6 +44,8 @@
   --color-signal-strong: #1a6fd1;
   --color-signal-deep: #1b2574;
   --color-signal-soft: #eaf3fd;
+  /* 키움 섬 받침의 그늘 면 */
+  --color-signal-pale: #d4e5f9;
   /* 남색 링의 빈 자리 */
   --color-deep-soft: #e4e7f2;
 
@@ -56,6 +58,8 @@
   /* 기록 강조 — 마스코트 노랑 */
   --color-mark: #ffb800;
   --color-mark-soft: #fff5dc;
+  /* 키움 섬의 노랑 그늘 면. 입체의 두 톤 중 어두운 쪽 */
+  --color-mark-shade: #e0a100;
 
   /* 해냈다는 표시. 등급이나 점수에는 쓰지 않는다 */
   --color-done: #1b7f57;
