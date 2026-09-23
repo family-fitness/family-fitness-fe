@@ -1,11 +1,11 @@
 "use client";
 
 import { Check, Dices } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
-import { MoveDice } from "@/components/scene/move-dice";
+import { DICE_SETTLE_MS, MoveDice } from "@/components/scene/move-dice";
 import { DICE_FACES, pick } from "@/lib/play";
 
 /**
@@ -20,6 +20,13 @@ export default function DicePage() {
   const [roll, setRoll] = useState<{ n: number; face: number } | null>(null);
   const [phase, setPhase] = useState<Phase>("ready");
   const [done, setDone] = useState(0);
+
+  // 주사위가 끝났다고 알려 오지 않아도(입체를 못 받은 기기) 조금 뒤에는 결과를 낸다
+  useEffect(() => {
+    if (phase !== "rolling") return;
+    const id = setTimeout(() => setPhase((p) => (p === "rolling" ? "landed" : p)), DICE_SETTLE_MS);
+    return () => clearTimeout(id);
+  }, [phase, roll?.n]);
 
   const throwDice = () => {
     if (phase === "rolling") return;
