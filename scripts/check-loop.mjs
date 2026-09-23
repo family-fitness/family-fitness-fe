@@ -71,7 +71,7 @@ await step("아이가 오늘 운동을 시작한다", async () => {
 });
 for (const minutes of [4, 4, 1, 1]) {
   await page.clock.runFor(minutes * 60 * 1000 + 600);
-  await page.clock.runFor(3500);
+  await page.clock.runFor(10500);
 }
 await step("다 하면 엄마 · 아빠한테 알린다", async () => {
   await page.getByRole("button", { name: "엄마 · 아빠한테 알리기" }).click({ timeout: 8000 });
