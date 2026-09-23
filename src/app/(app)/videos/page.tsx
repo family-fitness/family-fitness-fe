@@ -360,7 +360,7 @@ function Tray({ onClear }: { onClear: () => void }) {
           <button
             type="button"
             onClick={onClear}
-            className="press text-caption text-ink-soft -ml-1 min-h-8 px-1 font-semibold"
+            className="press text-caption text-ink-soft -ml-1 min-h-10 px-1 font-semibold"
           >
             모두 빼기
           </button>
