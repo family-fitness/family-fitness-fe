@@ -125,8 +125,8 @@ function RoleCard({
       onClick={onClick}
       className={
         kid
-          ? "press border-signal bg-signal-soft flex items-center gap-4 rounded-3xl border-2 p-6 text-left"
-          : "press border-line flex items-center gap-4 rounded-3xl border p-5 text-left"
+          ? "press card-hero ring-signal flex items-center gap-4 text-left ring-2"
+          : "press card flex items-center gap-4 text-left"
       }
     >
       {art}

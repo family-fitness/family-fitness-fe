@@ -7,7 +7,7 @@ import { AppBar } from "@/components/app-shell/app-bar";
 import { PlainScreen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
-import { Illustration } from "@/components/ui/illustration";
+import { LevelBuddy } from "@/components/domain/level-buddy";
 import { errorMessage } from "@/lib/errors";
 import { useCreateFamily } from "@/lib/api/queries";
 import { today } from "@/lib/today";
@@ -38,7 +38,7 @@ export default function CreateFamilyPage() {
       <AppBar back title="가족 만들기" />
       <PlainScreen className="space-y-7 pt-2">
         <div className="flex flex-col items-center text-center">
-          <Illustration name="scene/scene-invite" size={130} />
+          <LevelBuddy stage={1} size={112} />
           <h2 className="page-title mt-3">가족을 만들어요</h2>
         </div>
 

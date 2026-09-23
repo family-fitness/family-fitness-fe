@@ -1,11 +1,11 @@
 "use client";
 
+import { TicketCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 import { PlainScreen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
-import { Illustration } from "@/components/ui/illustration";
 import { errorMessage } from "@/lib/errors";
 import { useClaimProfile, useInvitePeek } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
@@ -72,7 +72,12 @@ function ClaimContent() {
   return (
     <PlainScreen className="flex min-h-dvh flex-col justify-center gap-7">
       <div className="flex flex-col items-center text-center">
-        <Illustration name="scene/scene-invite" size={140} />
+        <span
+          aria-hidden
+          className="bg-signal-soft text-signal-strong grid size-20 place-items-center rounded-full"
+        >
+          <TicketCheck className="size-9" strokeWidth={1.8} />
+        </span>
         <h1 className="page-title mt-3">초대코드를 넣어 주세요</h1>
         <p className="text-ink-soft mt-2 text-sm leading-relaxed">
           어느 자리로 들어올지는 이미 정해져 있어요
