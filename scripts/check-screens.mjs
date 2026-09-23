@@ -151,7 +151,19 @@ for (const route of ROUTES) {
         연한 회색 글자가 흰 카드 위에서 2.8:1 로 햇빛 아래 사라지고 있었다.
         바탕은 글자에서 위로 올라가며 처음 만나는 칠한 면으로 본다.
       */
-      const rgb = (c) => (c.match(/[\d.]+/g) ?? []).map(Number);
+      /*
+        색 문자열을 [r, g, b, a] 로. Tailwind v4 는 반투명 색을 oklab() · color-mix() 로
+        내보내서 숫자만 뽑으면 엉뚱한 색이 된다 — 캔버스에 칠해서 브라우저가 읽게 한다.
+      */
+      const pen = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+      const rgb = (c) => {
+        pen.clearRect(0, 0, 1, 1);
+        pen.fillStyle = "rgba(0,0,0,0)";
+        pen.fillStyle = c;
+        pen.fillRect(0, 0, 1, 1);
+        const [r, g, b, a] = pen.getImageData(0, 0, 1, 1).data;
+        return [r, g, b, a / 255];
+      };
       const lum = ([r, g, b]) => {
         const f = (v) => {
           v /= 255;
@@ -159,12 +171,30 @@ for (const route of ROUTES) {
         };
         return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
       };
+      /*
+        글자 뒤의 바탕. 위로 올라가며 칠한 면을 모으고, 반투명한 면은 아래 면과
+        섞는다 — 썸네일 위 검은 반투명 띠를 흰색으로 보면 흰 글자가 1:1 로 잡힌다.
+      */
       const bgOf = (el) => {
+        const layers = [];
         for (let n = el; n; n = n.parentElement) {
           const c = rgb(getComputedStyle(n).backgroundColor);
-          if (c.length >= 3 && (c[3] ?? 1) > 0.9) return c;
+          const a = c[3];
+          if (a === 0) continue;
+          layers.push([c[0], c[1], c[2], a]);
+          if (a >= 0.99) break;
         }
-        return [255, 255, 255];
+        let out = [255, 255, 255];
+        for (const [r, g, b, a] of layers.reverse()) {
+          out = [r * a + out[0] * (1 - a), g * a + out[1] * (1 - a), b * a + out[2] * (1 - a)];
+        }
+        return out;
+      };
+      /** 반투명 글자도 바탕에 섞어서 본다 */
+      const fgOf = (color, bg) => {
+        const c = rgb(color);
+        const a = c[3];
+        return [c[0] * a + bg[0] * (1 - a), c[1] * a + bg[1] * (1 - a), c[2] * a + bg[2] * (1 - a)];
       };
       const faint = [];
       for (const el of document.querySelectorAll("body *")) {
@@ -174,8 +204,9 @@ for (const route of ROUTES) {
         if (st.visibility === "hidden" || Number(st.opacity) < 0.5) continue;
         const box = el.getBoundingClientRect();
         if (box.width === 0 || box.height === 0) continue;
-        const fg = rgb(st.color);
-        const [a, b] = [lum(fg), lum(bgOf(el))];
+        const bg = bgOf(el);
+        const fg = fgOf(st.color, bg);
+        const [a, b] = [lum(fg), lum(bg)];
         const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
         const size = parseFloat(st.fontSize);
         const large = size >= 24 || (size >= 18.66 && Number(st.fontWeight) >= 700);
