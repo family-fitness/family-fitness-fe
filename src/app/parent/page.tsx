@@ -117,7 +117,7 @@ export default function ParentHomePage() {
           weekLogs={calendar?.days}
         />
 
-        <WeekCard days={week.days} logs={calendar?.days} href="/parent/history" />
+        <WeekCard days={week.days} logs={calendar?.days} href="/calendar" />
         <FinderCard />
         <FamilyCard members={members} />
       </Stage>

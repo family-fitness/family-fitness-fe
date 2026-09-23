@@ -105,3 +105,34 @@ export const WEEKDAY_CODE = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] as
 export function weekdayCode(date: string = today()): (typeof WEEKDAY_CODE)[number] {
   return WEEKDAY_CODE[new Date(`${date}T00:00:00`).getDay()];
 }
+
+/** YYYY-MM. 그 날짜가 든 달 */
+export function monthOf(date: string = today()): string {
+  return date.slice(0, 7);
+}
+
+/** 몇 달 앞뒤. `shiftMonth("2026-01", -1)` → `"2025-12"` */
+export function shiftMonth(month: string, by: number): string {
+  const [y, m] = month.split("-").map(Number);
+  return toDateString(new Date(y, m - 1 + by, 1)).slice(0, 7);
+}
+
+/** 「2026년 9월」 */
+export function monthLabel(month: string): string {
+  const [y, m] = month.split("-").map(Number);
+  return `${y}년 ${m}월`;
+}
+
+/**
+ * 한 달 달력 칸. 한 주는 월요일에 시작하고, 앞뒤 빈 칸은 null 이다.
+ * 캘린더가 이 칸 수대로 그린다 — 일곱의 배수로 끝난다.
+ */
+export function monthGrid(month: string): { from: string; to: string; cells: (string | null)[] } {
+  const [y, m] = month.split("-").map(Number);
+  const days = new Date(y, m, 0).getDate();
+  const lead = (new Date(y, m - 1, 1).getDay() + 6) % 7;
+  const cells: (string | null)[] = Array.from({ length: lead }, () => null);
+  for (let d = 1; d <= days; d++) cells.push(toDateString(new Date(y, m - 1, d)));
+  while (cells.length % 7 !== 0) cells.push(null);
+  return { from: `${month}-01`, to: toDateString(new Date(y, m - 1, days)), cells };
+}
