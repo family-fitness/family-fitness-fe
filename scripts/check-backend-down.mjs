@@ -35,7 +35,6 @@ const ROUTES = [
   `/parent/child/${KID}`,
   "/kid",
   "/kid/m/seed-m1",
-  "/kid/done",
   "/kid/praise",
   "/coach/weekly",
   "/videos",

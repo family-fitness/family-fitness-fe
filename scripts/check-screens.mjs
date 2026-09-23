@@ -27,9 +27,7 @@ const ROUTES = [
   "/parent/family",
   `/parent/child/${KID}`,
   "/kid",
-  "/kid/done",
   "/kid/praise",
-  "/kid/me",
   "/kid/m/seed-m1",
   "/kid/m/seed-m1/swap",
   "/coach/weekly",
@@ -73,15 +71,7 @@ const PARENT_WORDS = [
 ];
 
 /** 아이 모드로 열어 보는 경로. 부모 화면은 막히는 게 맞아서 여기 넣지 않는다 */
-const KID_ROUTES = [
-  "/kid",
-  "/kid/done",
-  "/kid/praise",
-  "/kid/me",
-  "/videos",
-  "/settings",
-  `/p/${KID}/result`,
-];
+const KID_ROUTES = ["/kid", "/kid/praise", "/videos", "/settings", `/p/${KID}/result`];
 
 const browser = await chromium.launch({ channel: "chrome" });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
