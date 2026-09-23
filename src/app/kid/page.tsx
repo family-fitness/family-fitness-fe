@@ -17,6 +17,7 @@ import { WeekTower } from "@/components/scene/week-tower";
 import { KiumIsland } from "@/components/scene/kium-island";
 import { NotificationBell } from "@/components/domain/notification-bell";
 import { RecentBadges, RecentStickers } from "@/components/domain/kid-cards";
+import { PlayCard } from "@/components/domain/play-card";
 import type { Mission } from "@/lib/api/types";
 import type { ProfileWithSex } from "@/lib/api/types";
 import {
@@ -222,6 +223,7 @@ export default function KidHomePage() {
           </div>
         </Card>
 
+        <PlayCard level={progress?.level} />
         <RecentStickers cheers={cheers?.cheers} nameOf={nameOf} />
         <RecentBadges achievements={progress?.achievements} />
 
