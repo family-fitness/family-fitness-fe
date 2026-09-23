@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
@@ -9,6 +10,7 @@ import { Stage } from "@/components/app-shell/stage";
 import { Dock } from "@/components/ui/dock";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
+import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorIcon } from "@/components/domain/factor-icon";
 import { FactorRadar } from "@/components/domain/factor-radar";
@@ -24,6 +26,7 @@ import { useSession } from "@/lib/session";
 import { today, weekdayCode } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useRoleStore } from "@/stores/role-store";
+import { useRoutineStore } from "@/stores/routine-store";
 
 /**
  * AI 편성 — 조건 고르기.
@@ -68,6 +71,8 @@ function PlanForm() {
   const [place, setPlace] = useState<"HOME" | "OUTDOOR">("HOME");
   const [quiet, setQuiet] = useState(true);
   const [focus, setFocus] = useState<Factor | null>(null);
+  // 운동 찾기에서 담아 둔 동작 — 있으면 직접 짜기로 바로
+  const gathered = useRoutineStore((s) => s.moves.length);
   // 참여 방식이 「매번 같이」 면 부모도 같이가 기본이다
   const [withParent, setWithParent] = useState(profile?.supportMode === "FULL");
   const [error, setError] = useState<string | null>(null);
@@ -137,10 +142,35 @@ function PlanForm() {
           )}
         </section>
 
+        {/* AI 말고 직접 — 운동 찾기에서 동작을 담아 짠다 */}
+        <NavLink
+          href={gathered > 0 ? "/plan/custom" : "/videos"}
+          className="card press flex min-h-16 items-center gap-3"
+        >
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-extrabold">직접 고를래요</span>
+            <span className="text-caption text-ink-soft mt-0.5 block">
+              {gathered > 0
+                ? `담아 둔 동작 ${gathered}개로 짜기 · 여러 날에 한 번에`
+                : "운동 찾기에서 동작을 담아 짜요 · 여러 날에 한 번에"}
+            </span>
+          </span>
+          <ChevronRight aria-hidden className="text-ink-soft size-5 shrink-0" />
+        </NavLink>
+
         <section className="card">
           <CardHead
             title="몇 분 할까요"
-            meta={todaySlot ? `오늘 적어 둔 시간 ${todaySlot.minutes}분` : undefined}
+            meta={
+              <NavLink
+                href="/settings/schedule"
+                className="press text-signal-deep inline-flex min-h-10 items-center font-bold"
+              >
+                {todaySlot
+                  ? `오늘 적어 둔 시간 ${todaySlot.minutes}분 · 바꾸기`
+                  : "운동할 수 있는 시간 적기"}
+              </NavLink>
+            }
           />
           <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="운동 시간">
             {MINUTES.map((m) => (

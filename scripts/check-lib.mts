@@ -6,8 +6,21 @@
  * AGENTS.md — "lib/*.ts 순수 함수. 여기 있는 건 전부 테스트 가능해야 한다".
  * 테스트 프레임워크를 붙이는 PR 에서 정식 테스트로 옮긴다. 그 전까지는 이 한 파일이다.
  */
+import type { ClipView } from "@/lib/api/types";
 import { projectOrtho, separateLabels } from "@/lib/ortho";
 import { FOLLOW_MOVES, extendSequence, pick } from "@/lib/play";
+import {
+  MAX_MOVES,
+  repeatDates,
+  routineMinutes,
+  routineTitle,
+  setMinutes,
+  shift,
+  tidy,
+  toSessions,
+  toggleMove,
+  upcomingDays,
+} from "@/lib/routine";
 import { UNLOCKS, decorationsAt, isGameOpen, newlyUnlocked, nextUnlock } from "@/lib/unlocks";
 import { josa } from "@/lib/utils";
 
@@ -97,6 +110,84 @@ check(
   "고른 수는 0 이상 n 미만",
   Array.from({ length: 500 }, () => pick(6)).every((n) => n >= 0 && n < 6),
 );
+
+/* ─── 직접 짜기 ──────────────────────────────────────── */
+
+const clip = (id: string, phase: ClipView["phase"]): ClipView => ({
+  clipId: id,
+  videoId: `v-${id}`,
+  startSec: 0,
+  endSec: 30,
+  title: `동작 ${id}`,
+  factor: null,
+  phase,
+  homeOk: true,
+  quiet: true,
+  props: false,
+  favorited: false,
+});
+
+let moves = toggleMove([], clip("a", "MAIN"));
+moves = toggleMove(moves, clip("b", "WARMUP"));
+moves = toggleMove(moves, clip("c", "COOLDOWN"));
+moves = toggleMove(moves, clip("d", "MAIN"));
+check(
+  "본운동은 3분, 준비 · 정리는 1분으로 담긴다",
+  same(
+    moves.map((m) => m.minutes),
+    [3, 1, 1, 3],
+  ),
+);
+check("한 번 더 누르면 뺀다", toggleMove(moves, clip("b", "WARMUP")).length === 3);
+const full = Array.from({ length: 12 }, (_, i) => clip(`x${i}`, "MAIN")).reduce(toggleMove, []);
+check(`${MAX_MOVES}개까지만 담는다`, full.length === MAX_MOVES);
+check(
+  "준비 → 본 → 정리, 같은 단계는 담은 차례대로",
+  same(
+    tidy(moves).map((m) => m.clip.clipId),
+    ["b", "a", "d", "c"],
+  ),
+);
+check(
+  "한 칸 위로",
+  same(
+    shift(moves, 1, -1).map((m) => m.clip.clipId),
+    ["b", "a", "c", "d"],
+  ),
+);
+check("맨 위에서 위로는 그대로", shift(moves, 0, -1) === moves);
+check(
+  "시간은 1~5분",
+  setMinutes(moves, 0, 9)[0].minutes === 5 && setMinutes(moves, 0, 0)[0].minutes === 1,
+);
+check("합한 시간", routineMinutes(moves) === 8);
+const sessions = toSessions(tidy(moves));
+check(
+  "칸 차례는 1부터",
+  same(
+    sessions.map((s) => s.position),
+    [1, 2, 3, 4],
+  ),
+);
+check("영상 구간이 칸에 붙는다", sessions[0].clip?.videoId === "v-b");
+check("제목은 본운동 첫 동작", routineTitle(tidy(moves)) === "동작 a 외 3개");
+check("동작이 없으면 기본 제목", routineTitle([]) === "직접 짠 운동");
+
+check(
+  "오늘부터 이레",
+  same(upcomingDays("2026-09-23", 3), ["2026-09-23", "2026-09-24", "2026-09-25"]),
+);
+check(
+  "고른 요일을 두 주 되풀이",
+  same(repeatDates(["2026-09-23", "2026-09-25"], 2), [
+    "2026-09-23",
+    "2026-09-25",
+    "2026-09-30",
+    "2026-10-02",
+  ]),
+);
+check("되풀이는 4주까지", repeatDates(["2026-09-23"], 9).length === 4);
+check("겹친 날은 한 번만", repeatDates(["2026-09-23", "2026-09-23"], 1).length === 1);
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);

@@ -13,11 +13,11 @@ import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChildSwitch } from "@/components/domain/child-switch";
 import { StickerArt } from "@/components/domain/sticker-art";
-import type { DayLog, ProfileWithSex } from "@/lib/api/types";
-import { useCalendar, useFamilyProfiles, useFitnessMap } from "@/lib/api/queries";
+import type { DayLog, Mission, ProfileWithSex } from "@/lib/api/types";
+import { useCalendar, useFamilyProfiles, useFitnessMap, useMissions } from "@/lib/api/queries";
 import { callName } from "@/lib/family";
 import { VERIFIED_COPY } from "@/lib/mission";
-import { PHASE_LABEL } from "@/lib/session-plan";
+import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { stickerOf } from "@/lib/stickers";
 import { longDate, monthGrid, monthLabel, monthOf, shiftMonth, today } from "@/lib/today";
@@ -33,6 +33,9 @@ import { useRoleStore } from "@/stores/role-store";
  *
  * **아무것도 안 한 날은 빈 칸이다.** 「빠진 날」 이라고 쓰지 않는다 — 쉰 날은 쉰 날이다.
  * 부모는 아이를 골라 보고, 아이는 자기 것만 본다. 달과 날은 주소에 둔다(`?month=&date=`).
+ *
+ * **앞으로의 날에는 잡아 둔 운동이 점선 고리로 보인다** — 직접 짜기에서 여러 날에 넣은 것.
+ * 누르면 그날 할 운동이 나온다. 다음 달까지만 넘겨 본다.
  */
 export default function CalendarPage() {
   return (
@@ -86,6 +89,19 @@ function Calendar() {
     { from: grid.from, to: grid.to },
   );
   const logs = new Map((calendar?.days ?? []).map((d) => [d.date, d]));
+  // 앞으로 잡힌 운동 — 이 아이가 하는 것만. 걸음수는 넣지 않는다(규칙 2)
+  const { data: active } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
+  const planned = new Map<string, Mission[]>();
+  for (const m of active?.missions ?? []) {
+    if (m.targetMetric === "STEPS") continue;
+    if (!m.participants?.some((p) => p.profileId === who?.profileId)) continue;
+    const start = m.startDate ?? "";
+    const end = m.endDate ?? start;
+    // 하루짜리가 대부분이다. 기간이 길면 첫날 · 오늘 이후만 적는다
+    const day = start > now ? start : end >= now ? now : null;
+    if (!day || day > grid.to || day < grid.from) continue;
+    planned.set(day, [...(planned.get(day) ?? []), m]);
+  }
 
   const go = (next: { month?: string; date?: string | null }) => {
     const q = new URLSearchParams();
@@ -165,7 +181,7 @@ function Calendar() {
             <button
               type="button"
               onClick={() => go({ month: shiftMonth(month, 1), date: null })}
-              disabled={month >= monthOf(now)}
+              disabled={month >= shiftMonth(monthOf(now), 1)}
               aria-label="다음 달"
               className="press text-ink-soft grid size-11 place-items-center rounded-full disabled:opacity-30"
             >
@@ -195,6 +211,7 @@ function Calendar() {
                   <DayCell
                     date={date}
                     log={logs.get(date)}
+                    planned={(planned.get(date)?.length ?? 0) > 0}
                     on={date === selected}
                     future={date > now}
                     isToday={date === now}
@@ -211,6 +228,7 @@ function Calendar() {
           <DayDetail
             date={selected}
             log={log}
+            planned={planned.get(selected) ?? []}
             loading={calendarPending}
             future={selected > now}
             nameOf={nameOf}
@@ -230,6 +248,7 @@ function Calendar() {
 function DayCell({
   date,
   log,
+  planned,
   on,
   future,
   isToday,
@@ -238,6 +257,8 @@ function DayCell({
 }: {
   date: string;
   log: DayLog | undefined;
+  /** 잡아 둔 운동이 있다 — 점선 고리 */
+  planned: boolean;
   on: boolean;
   future: boolean;
   isToday: boolean;
@@ -257,15 +278,34 @@ function DayCell({
     <button
       type="button"
       onClick={onPick}
-      disabled={future}
+      disabled={future && !planned}
       aria-pressed={on}
-      aria-label={`${longDate(date)}${moved ? ` · ${moved.minutes}분` : ""}${sticker ? ` · ${sticker.label} 스티커` : ""}`}
+      aria-label={`${longDate(date)}${moved ? ` · ${moved.minutes}분` : ""}${sticker ? ` · ${sticker.label} 스티커` : ""}${planned && !moved ? " · 운동 잡혀 있음" : ""}`}
       className={cn(
         "press relative grid size-11 place-items-center rounded-full",
         on && "bg-signal-soft",
-        future && "opacity-40",
+        future && !planned && "opacity-40",
       )}
     >
+      {planned && !moved && (
+        <svg
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          className="absolute"
+          aria-hidden
+        >
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            stroke="var(--color-signal)"
+            strokeWidth={2}
+            strokeDasharray="3 3"
+          />
+        </svg>
+      )}
       {moved && (
         <svg
           width={size}
@@ -314,6 +354,7 @@ function DayCell({
 function DayDetail({
   date,
   log,
+  planned,
   loading,
   future,
   nameOf,
@@ -321,6 +362,8 @@ function DayDetail({
 }: {
   date: string;
   log: DayLog | undefined;
+  /** 이날 잡아 둔 운동 */
+  planned: Mission[];
   loading: boolean;
   future: boolean;
   nameOf: (profileId: string, fallback: string) => string;
@@ -334,11 +377,30 @@ function DayDetail({
     <Card>
       <CardHead title={longDate(date)} meta={moved ? `${log.minutes}분` : undefined} />
 
-      {!moved && (
+      {!moved && planned.length === 0 && (
         <p className="text-ink-soft mt-1 text-sm">
           {future ? "아직 오지 않은 날이에요" : "이날은 쉬었어요"}
         </p>
       )}
+
+      {/* 잡아 둔 운동 — 아직 안 했다. 한 것처럼 보이지 않게 연하게 */}
+      {!moved &&
+        planned.map((m) => {
+          const sessions = sessionsOf(m);
+          return (
+            <div key={m.missionId} className="border-line mt-3 border-t pt-3 first:border-0">
+              <p className="text-caption text-signal-deep font-extrabold">할 운동</p>
+              <p className="mt-0.5 text-sm font-extrabold">{m.title}</p>
+              <p className="text-caption text-ink-soft mt-0.5">
+                {sessions.length > 0
+                  ? `${sessions.length}개 · ${totalMinutes(sessions)}분`
+                  : `${m.targetValue ?? ""}분`}
+                {(m.participants?.length ?? 0) > 1 &&
+                  ` · ${(m.participants ?? []).map((p) => p.name).join(" · ")} 같이`}
+              </p>
+            </div>
+          );
+        })}
 
       {moved &&
         log.entries.map((entry) => (

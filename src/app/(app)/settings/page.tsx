@@ -12,9 +12,11 @@ import { useAuthStore } from "@/stores/auth-store";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
- * 설정.
+ * 설정 — 계정과 이 기기에 관한 것만.
  *
- * 헬스 앱의 설정처럼 줄을 묶음마다 흰 카드에 담는다 — 가족에 관한 것과 이 기기에 관한 것.
+ * 9/23 "너무 설정에 메뉴가 몰려 있다". 쓰는 자리가 따로 있는 것은 그리로 옮겼다 —
+ * 가족 · 초대 · 참여 방식은 부모 홈의 가족 카드(가족 관리), 운동할 수 있는 시간은 짜는 화면 ·
+ * 직접 짜기 · 캘린더, 즐겨찾기는 운동 찾기. 여기에는 누가 쓰는지 · 동의 · 로그아웃만 남는다.
  * 자녀 프로필에는 없는 줄은 비활성으로 두지 않고 아예 내지 않는다.
  */
 export default function SettingsPage() {
@@ -41,35 +43,6 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {parentView && (
-          <ul className="card divide-rows py-1">
-            <ListRow
-              href="/parent/family"
-              art="icon/menu-family"
-              title="가족 관리 · 초대"
-              description="아이를 등록하고 초대코드를 보내요"
-            />
-            <ListRow
-              href="/settings/schedule"
-              art="icon/menu-schedule"
-              title="운동할 수 있는 시간"
-              description="언제 몇 분 할 수 있는지 적어 두면 AI 가 맞춰 짜요"
-            />
-            <ListRow
-              href="/settings/support-mode"
-              art="icon/menu-support"
-              title="참여 방식"
-              description="얼마나 같이 할지 정해요"
-            />
-            <ListRow
-              href="/settings/consent"
-              art="icon/menu-consent"
-              title="보호자 동의"
-              description="만 14세 미만 가족의 건강정보 동의"
-            />
-          </ul>
-        )}
-
         <ul className="card divide-rows py-1">
           {/* 탭바가 없으니 역할을 바꾸는 길이 여기다 */}
           <ListRow
@@ -78,7 +51,14 @@ export default function SettingsPage() {
             title="누가 쓰는지 바꾸기"
             description="부모 화면과 아이 화면을 오가요"
           />
-          <ListRow href="/videos?list=favorites" art="icon/menu-favorite" title="즐겨찾기한 영상" />
+          {parentView && (
+            <ListRow
+              href="/settings/consent"
+              art="icon/menu-consent"
+              title="보호자 동의"
+              description="만 14세 미만 가족의 건강정보 동의"
+            />
+          )}
         </ul>
 
         {/* 아이 화면에서는 로그아웃을 내지 않는다. 부모 폰을 빌려 쓰다 눌러 버리면 곤란하다 */}

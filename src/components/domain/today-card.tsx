@@ -71,13 +71,22 @@ export function TodayCard({
         <p className="text-ink-soft border-line mt-4 border-t pt-3 text-sm">
           {withJosa(childName, "은는")} 아직 오늘 운동이 없어요
         </p>
-        <Link
-          href="/plan"
-          className="press bg-signal-strong mt-3 flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
-        >
-          <ArtIcon name="icon/menu-ai" className="size-5" />
-          AI 에게 오늘 운동 받기
-        </Link>
+        {/* 두 길 — AI 에게 받거나, 직접 골라 짜거나 */}
+        <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+          <Link
+            href="/plan"
+            className="press bg-signal-strong flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
+          >
+            <ArtIcon name="icon/menu-ai" className="size-5" />
+            AI 에게 받기
+          </Link>
+          <Link
+            href="/videos"
+            className="press bg-sub flex min-h-12 items-center justify-center rounded-2xl px-4 text-sm font-extrabold"
+          >
+            직접 짜기
+          </Link>
+        </div>
       </Card>
     );
   }

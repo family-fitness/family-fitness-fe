@@ -26,6 +26,7 @@ const ROUTES = {
     "/calendar",
     "/notifications",
     "/plan",
+    "/plan/custom",
     "/videos",
     "/videos?list=favorites",
     "/videos?list=recent",
