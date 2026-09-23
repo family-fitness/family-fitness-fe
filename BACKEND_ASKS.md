@@ -68,10 +68,14 @@ kind: "DONE" | "CALL" | "PRAISE"
 
 `latest` 하나만 있어서 **자라는 기록에 추이를 그릴 수 없습니다.**
 "어떻게 자라고 있나" 가 이 서비스의 핵심인데 점 하나만 찍고 있습니다.
+아이 자세히 화면의 **신체 점수 흐름**과 **키 · 몸무게가 자란 만큼**이 이 값으로 그려집니다
+(목 서버로 먼저 만들어 뒀습니다).
 
 ```
 { tests: [{ fitnessTestId, testedOn, overallPercentile, heightCm, weightKg }], nextCursor }
 ```
+
+최근 회차가 먼저 오게 해 주세요. 다시 재기는 **덮어쓰기가 아니라 추가**입니다.
 
 ### `PATCH /profiles/{profileId}/body {heightCm, weightKg}`
 
@@ -81,33 +85,6 @@ kind: "DONE" | "CALL" | "PRAISE"
 ---
 
 ## 3. 코치
-
-### `POST /coach/chat` 응답에 `suggestion?`
-
-대화 중에 코치가 미션을 제안하면, 부모가 **버튼 하나로 미션을 만들 수 있게**
-하려고 합니다. 화면은 이미 만들어 뒀고 값만 오면 카드가 뜹니다.
-안 오면 지금처럼 답변만 보여 줍니다.
-
-```
-suggestion?: {
-  title, targetMetric, targetValue, startDate, endDate,
-  videoId?, videoTitle?, participantProfileIds[], rationale?
-}
-```
-
-값이 그대로 `POST /families/{familyId}/missions` 본문이 되게 맞춰 뒀습니다.
-
-### `POST /coach/chat` 의 `profileId` 는 **누구에 대해 묻는지**입니다
-
-전에는 로그인한 사람의 번호를 보내고 있었습니다. 그러면 은영이 "윗몸일으키기를
-힘들어해요" 라고 물어도 코치가 은영의 측정 기록을 뒤집니다 — 부모가 알고 싶은 건
-아이 이야기인데 답이 자기 이야기로 돌아옵니다.
-
-이제 화면에서 **질문 대상 프로필**을 골라 보냅니다(창 위에 "서준 이야기" 라고
-적혀 있습니다). 그 프로필의 최근 측정·약한 요인·활동을 근거로 답해 주세요.
-보내는 사람이 누구인지는 토큰으로 아실 수 있습니다.
-
----
 
 ### `GET /families/{familyId}/coach/runs/latest`
 
@@ -123,39 +100,74 @@ suggestion?: {
 ### `ProfileSummary` 에 `sex`
 
 가족을 만들 때(`OwnerRequest`)와 구성원을 더할 때(`AddMemberRequest`)는 **받으면서**
-조회 응답에는 돌려주지 않습니다. 그래서 아바타 몸을 프로필 번호 해시로 고르고 있고,
-**아빠가 절반의 확률로 엄마 모습**으로 그려집니다. 국민체력100 규준 자체가 성별로
-나뉘어 있어 어차피 서버가 아는 값입니다.
+조회 응답에는 돌려주지 않습니다. 가족 정보를 고치는 화면에서 성별을 보여 줄 수가 없고,
+국민체력100 규준 자체가 성별로 나뉘어 있어 어차피 서버가 아는 값입니다.
 
 ```
 sex: "M" | "F"
 ```
 
 `GET /families/{familyId}/fitness-map` 의 `members` 에도 같이 넣어 주세요.
-아이 홈과 가족 지도가 그 응답으로 아바타를 그립니다.
 
 ---
 
-## 4. 저장
+## 4. 계속하게 하는 것 — 레벨 · 캘린더
 
-### 프로필당 아바타 한 줄
+9/23 회의에서 **계산은 서버가 하고 프론트는 꾸미기만** 하기로 한 것들입니다.
+두 곳에서 따로 세면 아이 화면과 부모 화면의 레벨이 어긋납니다.
+화면은 목 서버로 먼저 만들어 뒀고, 아래 모양으로 답이 오면 그대로 붙습니다.
 
-아이가 고른 캐릭터 모습(머리·표정·몸)을 기기에만 두고 있어서
-**기기를 바꾸면 처음 모습으로 돌아갑니다.**
+### `GET /families/{familyId}/calendar?profileId=&from=&to=`
 
-```
-avatar?: { hair, face, body }
-```
-
-### 날짜별 활동 요약
-
-아이 홈의 "이번 주 움직인 날" 을 지금은 **칭찬 기록의 날짜로 대신 세고** 있습니다.
-운동은 했는데 알리지 않은 날은 빠집니다.
+캘린더 한 칸과 홈의 **이번 주 막대**가 이것 하나로 그려집니다. 지금 계약에는
+미션의 기간(startDate~endDate)만 있고 **그날 몇 분 했는지**가 없습니다 —
+날짜별 합은 활동 기록(`activityDate`)을 가진 서버만 정확히 냅니다.
 
 ```
-GET /profiles/{profileId}/activity/weekly?weekStart=
-{ days: [{ date, activeMinutes, verifiedMinutes }] }
+{
+  profileId, from, to,
+  days: [{
+    date: "2026-09-22",
+    minutes: 12,              // 그날 확인된 운동 시간(영상 · 타이머로 서버가 아는 것만)
+    plannedMinutes: 12 | null,// 그날 잡혀 있던 시간
+    entries: [{ missionId, title, minutes, verifiedBy, completed,
+                sessions: [{ title, phase, minutes, done }] | null }],
+    stickers: [{ cheerId, stickerId, fromProfileId, fromName, message, missionId, createdAt }]
+  }]
+}
 ```
+
+**아무것도 안 한 날은 `days` 에 넣지 말아 주세요.** 0분으로 채워 오면 화면이 그날을
+빠진 날처럼 그리기 쉽습니다. 날짜는 한국 날짜로 잘라 주세요.
+
+### `GET /profiles/{profileId}/progress`
+
+레벨 · 경험치 · 업적 · 연속. 아이 홈 맨 위의 자라는 캐릭터가 이 값으로 섭니다.
+
+```
+{
+  profileId, level, xp,
+  levelFloorXp,            // 이 레벨이 시작된 경험치
+  nextLevelXp | null,      // 다음 레벨이 되는 경험치. 마지막 레벨이면 null
+  streakDays,              // 며칠 이어서 했나. 오늘 아직이면 어제까지로 센다
+  achievements: [{ code, title, description, earnedAt | null }],
+  recentXp: [{ reason, amount, at }]
+}
+```
+
+목 서버가 쓰는 규칙입니다 — 바꾸셔도 되고, 바꾸시면 알려 주세요.
+
+| 무엇                  | 경험치 |
+| --------------------- | ------ |
+| 운동 한 칸 끝내기     | +5     |
+| 그날 잡힌 것 다 하기  | +20    |
+| 칭찬 스티커 받기      | +10    |
+| 키 · 몸무게 새로 재기 | +20    |
+
+- **경험치는 줄지 않습니다.** 쉰 날에 깎는 규칙은 두지 말아 주세요
+- 레벨 구간은 `0 · 80 · 200 · 360 · 560 · 800 · 1080 · 1400 · 1760 · 2160` (레벨 1~10)
+- 업적은 열두 개입니다(`src/mocks/progress.ts`). **개수를 목표로 하는 칭찬 업적은 두지 않습니다**
+  — 「스티커 10장」 을 두면 못 채운 날이 실패가 됩니다. 첫 스티커 하나만 기념합니다
 
 ---
 
