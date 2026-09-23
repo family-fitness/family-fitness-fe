@@ -310,6 +310,11 @@ export interface ProgressView {
   nextLevelXp: number | null;
   /** 며칠 이어서 했나. 오늘 아직 안 했어도 어제까지 이어졌으면 센다 */
   streakDays: number;
+  /**
+   * 지금까지 운동한 날. 키움 섬의 나무 수다 — 줄지 않는다.
+   * ▲ 요청: `ProgressView.activeDays`. 안 오면 섬에 나무 없이 캐릭터만 선다
+   */
+  activeDays?: number;
   achievements: AchievementView[];
   /** 최근에 경험치가 들어온 까닭 몇 줄 */
   recentXp: XpEvent[];

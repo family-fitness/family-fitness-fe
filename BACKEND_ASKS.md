@@ -150,6 +150,7 @@ sex: "M" | "F"
   levelFloorXp,            // 이 레벨이 시작된 경험치
   nextLevelXp | null,      // 다음 레벨이 되는 경험치. 마지막 레벨이면 null
   streakDays,              // 며칠 이어서 했나. 오늘 아직이면 어제까지로 센다
+  activeDays,              // 지금까지 운동한 날. 아이 홈 「키움 섬」 의 나무 수 — 줄지 않는다
   achievements: [{ code, title, description, earnedAt | null }],
   recentXp: [{ reason, amount, at }]
 }

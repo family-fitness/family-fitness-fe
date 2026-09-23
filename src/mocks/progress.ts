@@ -90,6 +90,7 @@ export function progressOf(profileId: string): ProgressView {
     levelFloorXp: LEVEL_FLOOR[level - 1],
     nextLevelXp: level < LEVEL_FLOOR.length ? LEVEL_FLOOR[level] : null,
     streakDays: streakOf(active),
+    activeDays: active.size,
     achievements: achievementsOf(
       profileId,
       logs,
