@@ -1,7 +1,7 @@
 /** MSW 목 서버 — 백엔드가 안 떠 있을 때 쓴다. */
 import { HttpResponse, http, type PathParams } from "msw";
 
-import type { AgeGroup, FitnessTestResult, ItemResult } from "@/lib/api/types";
+import type { AgeGroup, FitnessTestResult, ItemResult, LatestFitnessTest } from "@/lib/api/types";
 
 import { isVideoDone, serverKnows } from "@/lib/mission";
 import { ageOf, dayOf, toDateString } from "@/lib/today";
@@ -27,6 +27,8 @@ import {
   type MissionRow,
   type Profile,
 } from "./db";
+
+import { history } from "./history";
 
 export { DEMO, setActingProfile } from "./db";
 
@@ -432,6 +434,11 @@ const fitness = [
     return HttpResponse.json(table[ageGroup ?? "유소년"] ?? table["유소년"]);
   }),
 
+  /** ▲ 서버에 아직 없다. 최근 회차가 먼저 온다 */
+  http.get<PathParams>(`${BASE}/profiles/:profileId/fitness-tests`, ({ params }) =>
+    HttpResponse.json({ tests: db.tests[String(params.profileId)] ?? [] }),
+  ),
+
   http.get<PathParams>(`${BASE}/profiles/:profileId/fitness-tests/latest`, ({ params }) => {
     const profileId = String(params.profileId);
     const found = db.latest[profileId];
@@ -517,11 +524,27 @@ const fitness = [
       };
 
       const overall = Math.round(items.reduce((s, i) => s + i.percentile, 0) / items.length);
+      // 레이더는 요인마다 그 요인을 잰 항목의 백분위. 안 잰 요인은 null 이다
+      const radar = [...new Set((catalogue?.items ?? []).map((i) => i.factor))].map((factor) => ({
+        factor,
+        percentile: items.find((i) => factorOf(i.itemCode) === factor)?.percentile ?? null,
+      }));
       db.latest[profileId] = {
         ...result,
-        radar: fixtures.latestByProfile[DEMO.kid].radar,
+        radar: radar as Concrete<LatestFitnessTest>["radar"],
         coachDirection: sorted[0].percentile > 75 ? "STRENGTHEN" : "GROWTH",
       };
+      // 다시 재기는 덮어쓰기가 아니라 추가다(규칙 11)
+      db.tests[profileId] = [
+        {
+          fitnessTestId: result.fitnessTestId,
+          testedOn: body.testedOn,
+          overallPercentile: overall,
+          heightCm: body.heightCm ?? null,
+          weightKg: body.weightKg ?? null,
+        },
+        ...(db.tests[profileId] ?? []),
+      ];
 
       const member = db.fitnessMap.members.find((m) => m.profileId === profileId);
       if (member) {
@@ -853,4 +876,12 @@ const videos = [
   }),
 ];
 
-export const handlers = [...authGate, ...identity, ...fitness, ...coaching, ...missions, ...videos];
+export const handlers = [
+  ...authGate,
+  ...identity,
+  ...fitness,
+  ...coaching,
+  ...missions,
+  ...videos,
+  ...history,
+];

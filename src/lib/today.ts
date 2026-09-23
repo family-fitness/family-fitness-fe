@@ -70,3 +70,31 @@ export function daysBefore(days: number, from: string = today()): string {
   day.setDate(day.getDate() - days);
   return toDateString(day);
 }
+
+/** 요일 글자. `Date.getDay()` 순서(일요일이 0) */
+export const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"] as const;
+
+/**
+ * 그날이 든 주의 월요일~일요일.
+ *
+ * 한 주를 월요일에 시작한다. 주말이 한 주의 끝에 붙어 있어야
+ * "이번 주 주말에 같이" 가 이번 주 안에서 말이 된다.
+ */
+export function weekOf(date: string = today()): { from: string; to: string; days: string[] } {
+  const d = new Date(`${date}T00:00:00`);
+  const back = (d.getDay() + 6) % 7; // 월요일까지 며칠 거슬러 가나
+  const monday = daysBefore(back, date);
+  const days = Array.from({ length: 7 }, (_, i) => daysBefore(-i, monday));
+  return { from: monday, to: days[6], days };
+}
+
+/** "9월 23일 화요일" */
+export function longDate(date: string = today()): string {
+  const d = new Date(`${date}T00:00:00`);
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${WEEKDAY[d.getDay()]}요일`;
+}
+
+/** 그날의 요일 글자 */
+export function weekdayOf(date: string): string {
+  return WEEKDAY[new Date(`${date}T00:00:00`).getDay()];
+}

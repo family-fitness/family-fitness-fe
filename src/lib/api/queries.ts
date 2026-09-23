@@ -6,6 +6,7 @@ import { api, query } from "./client";
 import type {
   AgeGroup,
   AuthResponse,
+  CalendarView,
   Cheer,
   CheerLogList,
   CoachApproveResult,
@@ -13,6 +14,7 @@ import type {
   CoachRun,
   FitnessItems,
   FitnessMap,
+  FitnessTestHistory,
   FitnessTestResult,
   InviteCode,
   InvitePeek,
@@ -44,9 +46,13 @@ export const qk = {
       ["family", familyId, "report", weekStart ?? "current"] as const,
     cheers: (familyId: Uuid, toProfileId?: Uuid) =>
       ["family", familyId, "cheers", toProfileId ?? "all"] as const,
+    /** 앞 세 칸으로 무효화한다 — 한 일이 생기면 그 가족의 달력은 다 다시 받는다 */
+    calendar: (familyId: Uuid, profileId?: Uuid, from?: string, to?: string) =>
+      ["family", familyId, "calendar", profileId ?? "-", from ?? "-", to ?? "-"] as const,
   },
   profile: {
     latestTest: (profileId: Uuid) => ["profile", profileId, "fitness-tests", "latest"] as const,
+    tests: (profileId: Uuid) => ["profile", profileId, "fitness-tests", "list"] as const,
   },
   fitness: {
     items: (ageGroup: AgeGroup | undefined) => ["fitness", "items", ageGroup ?? "all"] as const,
@@ -239,7 +245,8 @@ export function useCreateFitnessTest(profileId: Uuid, familyId: Uuid) {
       items: { itemCode: string; value: number }[];
     }) => api.post<FitnessTestResult>(`/profiles/${profileId}/fitness-tests`, body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.profile.latestTest(profileId) });
+      // 최근 회차와 이력을 같이. 다시 잰 값이 점수 흐름에 바로 한 점 더해져야 한다
+      qc.invalidateQueries({ queryKey: ["profile", profileId, "fitness-tests"] });
       qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId) });
     },
   });
@@ -384,6 +391,7 @@ export function useRecordSteps(missionId: Uuid, familyId: Uuid) {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       // 이번 주 기록의 분·완료 수가 이 값에서 나온다
       qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
     },
   });
 }
@@ -405,6 +413,7 @@ export function useRecordTimer(missionId: Uuid, familyId: Uuid) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
     },
   });
 }
@@ -418,6 +427,7 @@ export function useConfirmParticipant(missionId: Uuid, familyId: Uuid) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
     },
   });
 }
@@ -487,6 +497,8 @@ export function useSendCheer(familyId: Uuid) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
       qc.invalidateQueries({ queryKey: ["family", familyId, "cheers"] });
+      // 붙인 스티커는 그날 칸에 남는다
+      qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
     },
   });
 }
@@ -509,5 +521,37 @@ export function useWeeklyReport(familyId: Uuid | undefined, weekStart?: string) 
     queryFn: () =>
       api.get<WeeklyReport>(`/families/${familyId}/report/weekly${query({ weekStart })}`),
     enabled: Boolean(familyId),
+  });
+}
+
+/**
+ * 날짜별 기록. 캘린더와 주간 막대가 같이 쓴다.
+ * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
+ */
+export function useCalendar(
+  familyId: Uuid | undefined,
+  profileId: Uuid | undefined,
+  range: { from: string; to: string },
+) {
+  return useQuery({
+    queryKey: qk.family.calendar(familyId ?? "", profileId, range.from, range.to),
+    queryFn: () =>
+      api.get<CalendarView>(
+        `/families/${familyId}/calendar${query({ profileId, from: range.from, to: range.to })}`,
+      ),
+    enabled: Boolean(familyId && profileId),
+  });
+}
+
+/**
+ * 측정 이력. 점수 흐름과 키 · 몸무게가 자란 모습을 그린다.
+ * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
+ */
+export function useFitnessTests(profileId: Uuid | undefined) {
+  return useQuery({
+    queryKey: qk.profile.tests(profileId ?? ""),
+    queryFn: () =>
+      api.get<FitnessTestHistory>(`/profiles/${profileId}/fitness-tests${query({ size: 12 })}`),
+    enabled: Boolean(profileId),
   });
 }

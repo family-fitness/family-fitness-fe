@@ -8,6 +8,7 @@ import { HttpResponse } from "msw";
 
 import type {
   CheerLog,
+  FitnessTestSummary,
   ApiErrorBody,
   Band,
   CoachApproveResult,
@@ -51,6 +52,98 @@ export interface Fixtures {
 
 export const fixtures = fixturesJson as unknown as Concrete<Fixtures>;
 
+/**
+ * 시연 가족 아이의 측정을 다섯 요인까지 채운다.
+ *
+ * 픽스처(실제 서버 응답)는 세 항목만 잰 회차라 육각형이 여섯 중 셋만 차서 얇은
+ * 삼각형이 된다 — 첫 화면에서 이 그래프가 무엇을 말하는지 전해지지 않는다.
+ * 두 항목(윗몸말아올리기 · 제자리멀리뛰기)을 더 잰 것으로 둔다.
+ * 반복옆뛰기(민첩성)는 **일부러 안 잰 채로** 둔다 — 안 잰 요인을 비워 그리는 것도
+ * 첫 화면에서 보여야 한다(규칙 8).
+ */
+const KID_ID = "00000000-0000-4000-8000-000000000012";
+const KID_EXTRA = [
+  {
+    itemCode: "009",
+    itemLabel: "윗몸말아올리기",
+    unit: "회",
+    value: 27,
+    percentile: 58,
+    grade: "3등급",
+    band: "steady",
+    topPercentText: "상위 42%",
+  },
+  {
+    itemCode: "022",
+    itemLabel: "제자리멀리뛰기",
+    unit: "cm",
+    value: 156,
+    percentile: 66,
+    grade: "2등급",
+    band: "steady",
+    topPercentText: "상위 34%",
+  },
+];
+
+function demoLatest() {
+  const all = structuredClone(fixtures.latestByProfile);
+  const kid = all[KID_ID];
+  if (!kid) return all;
+  kid.items = [...kid.items, ...(KID_EXTRA as typeof kid.items)];
+  const byFactor: Record<string, number | null> = {
+    심폐지구력: 79,
+    근력: 50,
+    근지구력: 58,
+    유연성: 24,
+    민첩성: null,
+    순발력: 66,
+  };
+  kid.radar = Object.entries(byFactor).map(([factor, percentile]) => ({
+    factor,
+    percentile,
+  })) as typeof kid.radar;
+  return all;
+}
+
+/**
+ * 지난 측정 회차들. 봄 · 여름 · 가을 석 달 간격.
+ *
+ * 마지막 회차는 `latest` 와 같은 날 · 같은 점수여야 한다 — 두 화면이 다른 숫자를
+ * 말하면 어느 쪽도 믿을 수 없다.
+ */
+export function seedTests(): Record<string, FitnessTestSummary[]> {
+  const row = (id: string, testedOn: string, p: number, h: number, w: number) => ({
+    fitnessTestId: id,
+    testedOn,
+    overallPercentile: p,
+    heightCm: h,
+    weightKg: w,
+  });
+  return {
+    [KID_ID]: [
+      row("00000000-0000-4000-8000-0000000000t3", "2026-09-07", 55, 139, 34),
+      row("00000000-0000-4000-8000-0000000000t2", "2026-06-08", 49, 136.4, 32.6),
+      row("00000000-0000-4000-8000-0000000000t1", "2026-03-11", 44, 133.1, 30.9),
+    ],
+    "00000000-0000-4000-8000-000000000011": [
+      row("00000000-0000-4000-8000-0000000000u2", "2026-09-10", 62, 163, 56),
+      row("00000000-0000-4000-8000-0000000000u1", "2026-04-20", 57, 163, 57.4),
+    ],
+  };
+}
+
+/** 다섯 항목 평균 55. 서버가 그러듯 목도 머리말을 같이 바꾼다 */
+function demoMap() {
+  const map = structuredClone(fixtures.fitnessMap);
+  for (const m of map.members) {
+    if (m.profileId === KID_ID && m.latest) {
+      m.latest.overallPercentile = 55;
+      m.headline = "유소년 상위 45%";
+    }
+  }
+  return map;
+}
+
 /** 목 서버가 만들고 고치는 값들. 응답과 같은 모양이어야 화면이 진짜처럼 돈다 */
 /**
  * 목이 돌려주는 프로필.
@@ -85,8 +178,10 @@ export const PAST_RUN_ID = "00000000-0000-4000-8000-0000000000a0";
 /** 새로고침하면 초기 상태로 돌아간다. 시연 중 되돌리기 쉽게 하려는 의도다 */
 export const db = {
   profiles: loadFamily("profiles", fixtures.profiles),
-  fitnessMap: loadFamily("fitnessMap", fixtures.fitnessMap),
-  latest: structuredClone(fixtures.latestByProfile),
+  fitnessMap: loadFamily("fitnessMap", demoMap()),
+  latest: demoLatest(),
+  /** 측정 이력. 점수 흐름과 키 · 몸무게가 자란 모습을 그린다 */
+  tests: seedTests(),
   coachRun: loadCoachRun(),
   /** 이번 주 제안은 아직 0건이다. 심어 둔 것은 지난 회차에서 승인한 미션들이다 */
   missions: loadMissions(),
