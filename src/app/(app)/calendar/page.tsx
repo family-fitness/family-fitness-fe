@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { Card, CardHead } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -96,6 +97,29 @@ function Calendar() {
     );
   }
   if (isPending || mapPending) return <CalendarSkeleton />;
+
+  // 볼 아이가 없다 — 빈 달력을 기다리게 두지 않는다
+  if (!who) {
+    return (
+      <>
+        <AppBar backHref={back} title="캘린더" />
+        <Stage wide>
+          <EmptyState
+            scene="no-record"
+            title={kidView ? "누구인지 골라 주세요" : "아이를 등록하면 캘린더가 차요"}
+            action={
+              <NavLink
+                href={kidView ? "/start" : "/start/child"}
+                className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"
+              >
+                {kidView ? "고르러 가기" : "아이 등록하기"}
+              </NavLink>
+            }
+          />
+        </Stage>
+      </>
+    );
+  }
 
   const days = [...logs.values()].filter((d) => d.minutes > 0);
   const total = days.reduce((sum, d) => sum + d.minutes, 0);
@@ -263,7 +287,8 @@ function DayCell({
       <span
         className={cn(
           "relative text-sm tabular-nums",
-          isToday ? "text-signal-strong font-extrabold" : moved ? "font-bold" : "text-ink-soft",
+          // 오늘은 남색 — 고른 칸의 연한 파랑 위에서도 읽힌다(파랑은 4.4:1 로 모자랐다)
+          isToday ? "text-signal-deep font-extrabold" : moved ? "font-bold" : "text-ink-soft",
           loading && "opacity-50",
         )}
       >
