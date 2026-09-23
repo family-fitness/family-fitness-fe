@@ -165,13 +165,19 @@ export function KiumIsland({
       let dragging: { at: number; last: number; moved: number } | null = null;
       /* 새 나무를 보여 줄 때 섬이 그쪽으로 돌아선다. 새 나무는 캐릭터 오른쪽 앞에 선다 */
       let turn: { from: number; to: number; at: number } | null = null;
+      // 무엇을 보여 주려고 돌아서나 — 레벨이 올라 새 장식이 열렸으면 그 장식(이쪽 조금 오른쪽),
+      // 아니면 오늘 자란 나무(오른쪽 앞). 장식이 레벨 업의 주인공이다
+      const toFace = (angle: number, offset: number) =>
+        Math.atan2(
+          Math.sin(ISLAND.azimuth + offset - angle),
+          Math.cos(ISLAND.azimuth + offset - angle),
+        );
       const facing =
-        grow && island.newest !== null
-          ? Math.atan2(
-              Math.sin(ISLAND.azimuth + 0.75 - island.newest),
-              Math.cos(ISLAND.azimuth + 0.75 - island.newest),
-            )
-          : null;
+        island.unveiled !== null
+          ? toFace(island.unveiled, 0.35)
+          : grow && island.newest !== null
+            ? toFace(island.newest, 0.75)
+            : null;
       if (still && facing !== null) angle = facing;
       /*
         자라는 순간은 **처음 보일 때** 튼다. 지을 때 틀면, 섬이 화면 아래에 있는 동안

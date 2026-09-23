@@ -182,6 +182,8 @@ export interface Island {
   plants: number;
   /** 가장 최근 나무가 섬 위 어느 방향에 있나(라디안). 없으면 null */
   newest: number | null;
+  /** 방금 열린 장식이 섬 위 어느 방향에 있나(라디안). 없으면 null */
+  unveiled: number | null;
   dispose(): void;
 }
 
@@ -490,6 +492,8 @@ export function buildIsland(
     figure,
     plants: shown,
     newest: newestSlot ? Math.atan2(newestSlot.x, newestSlot.z) : null,
+    unveiled:
+      unveil && decorations.includes(unveil) ? decorationSpot(unveil, ISLAND.azimuth).a : null,
     resize(width, height) {
       const perUnit = height / (2 * ISLAND.view);
       kit.setPixelsPerUnit(perUnit);
