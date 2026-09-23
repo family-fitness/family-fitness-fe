@@ -69,6 +69,8 @@ export default function NotificationsPage() {
   const items = data?.items ?? [];
   const fresh = items.filter((n) => !n.read);
   const old = items.filter((n) => n.read);
+  // 받은 스티커마다 「그 사람이 다음 스티커를 붙인 때」 — 고마워요는 그 사이에 보낸 것만 이 스티커 몫이다
+  const until = nextStickerAt(items);
 
   return (
     <>
@@ -85,10 +87,30 @@ export default function NotificationsPage() {
             }
           />
         )}
-        {fresh.length > 0 && <Group title="새로 온 것" items={fresh} kidView={kidView} />}
-        {old.length > 0 && <Group title="지난 것" items={old} kidView={kidView} />}
+        {fresh.length > 0 && (
+          <Group title="새로 온 것" items={fresh} kidView={kidView} until={until} />
+        )}
+        {old.length > 0 && <Group title="지난 것" items={old} kidView={kidView} until={until} />}
       </Stage>
     </>
+  );
+}
+
+/** 스티커 알림마다, 같은 사람이 그다음에 붙인 스티커의 시각. 없으면 무한 */
+function nextStickerAt(items: NotificationView[]): Map<string, number> {
+  const stickers = items
+    .filter((n) => n.kind === "PRAISE" && n.stickerId && n.fromProfileId)
+    .map((n) => ({ n, at: Date.parse(n.createdAt) }));
+  return new Map(
+    stickers.map(({ n, at }) => [
+      n.notificationId,
+      Math.min(
+        Infinity,
+        ...stickers
+          .filter((m) => m.n.fromProfileId === n.fromProfileId && m.at > at)
+          .map((m) => m.at),
+      ),
+    ]),
   );
 }
 
@@ -96,10 +118,12 @@ function Group({
   title,
   items,
   kidView,
+  until,
 }: {
   title: string;
   items: NotificationView[];
   kidView: boolean;
+  until: Map<string, number>;
 }) {
   return (
     <section>
@@ -109,7 +133,11 @@ function Group({
           <li key={n.notificationId}>
             <Row item={n} />
             {kidView && n.kind === "PRAISE" && n.stickerId && n.fromProfileId && (
-              <Thanks item={n} to={n.fromProfileId} />
+              <Thanks
+                item={n}
+                to={n.fromProfileId}
+                until={until.get(n.notificationId) ?? Infinity}
+              />
             )}
           </li>
         ))}
@@ -119,23 +147,27 @@ function Group({
 }
 
 /**
- * 받은 스티커에 고마워요 돌려보내기. 이 스티커를 받은 뒤에 그 사람에게 이미 보냈으면 「보냈어요」.
- * 스티커를 고르기만 해도 간다 — 부모의 스티커 붙이기와 같다.
+ * 받은 스티커에 고마워요 돌려보내기. 한 장에 한 번 — 이 스티커를 받은 뒤, 그 사람이 다음 스티커를
+ * 붙이기 전에 보낸 고마워요가 있으면 「보냈어요」. 스티커를 고르기만 해도 간다.
+ * 보낸 목록을 받기 전에는 단추를 내지 않는다 — 이미 보낸 것을 또 보내지 않게.
  */
-function Thanks({ item, to }: { item: NotificationView; to: string }) {
+function Thanks({ item, to, until }: { item: NotificationView; to: string; until: number }) {
   const { familyId } = useSession();
   const kidId = useRoleStore((s) => s.childProfileId);
-  const { data: given } = useCheers(familyId, to);
+  const { data: given, isPending } = useCheers(familyId, to);
   const send = useSendCheer(familyId ?? "");
   const [open, setOpen] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  /** 방금 보냈다 — 목록을 다시 받기 전에도 「보냈어요」 로 */
+  const [justSent, setJustSent] = useState(false);
 
-  const sent = (given?.cheers ?? []).some(
-    (c) =>
-      c.fromProfileId === kidId &&
-      Boolean(c.stickerId) &&
-      Date.parse(c.createdAt) > Date.parse(item.createdAt),
-  );
+  const from = Date.parse(item.createdAt);
+  const sent =
+    justSent ||
+    (given?.cheers ?? []).some((c) => {
+      const at = Date.parse(c.createdAt);
+      return c.fromProfileId === kidId && Boolean(c.stickerId) && at > from && at < until;
+    });
 
   const pick = async (sticker: Sticker) => {
     if (!kidId) return;
@@ -147,13 +179,14 @@ function Thanks({ item, to }: { item: NotificationView; to: string }) {
         message: `고마워요 · ${sticker.label}`,
         stickerId: sticker.id,
       });
+      setJustSent(true);
       setOpen(false);
     } catch (e) {
       setProblem(errorMessage(e, "보내지 못했어요. 다시 해 볼까요?"));
     }
   };
 
-  if (!kidId) return null;
+  if (!kidId || isPending) return null;
   return (
     <div className="-mt-1 pb-3 pl-15">
       {sent ? (
@@ -176,7 +209,7 @@ function Thanks({ item, to }: { item: NotificationView; to: string }) {
             <button
               key={st.id}
               type="button"
-              disabled={send.isPending}
+              disabled={send.isPending || justSent}
               onClick={() => void pick(st)}
               className="press bg-sub flex min-h-28 flex-col items-center justify-center gap-1.5 rounded-2xl disabled:opacity-60"
             >

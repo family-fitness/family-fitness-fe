@@ -455,12 +455,12 @@ export function useSendCheer(familyId: Uuid) {
       stickerId?: string;
     }) =>
       api.post<Cheer>(path`/families/${familyId}/cheers`, { ...body, emoji: stickerId ?? null }),
-    onSuccess: () => {
+    onSuccess: (_saved, sent) => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "cheers"] });
       // 붙인 스티커는 그날 칸에 남는다
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
-      // 받는 쪽 종에 점이 뜬다
-      qc.invalidateQueries({ queryKey: ["notifications"] });
+      // 받는 쪽 종에 점이 뜬다. 보낸 쪽 알림은 다시 받지 않는다 — 보는 중인 「새로 온 것」 이 비지 않게
+      qc.invalidateQueries({ queryKey: qk.notifications(sent.toProfileId) });
       refreshProgress(qc);
     },
   });
