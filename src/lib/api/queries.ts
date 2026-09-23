@@ -8,6 +8,8 @@ import type {
   AuthResponse,
   Availability,
   AvailabilitySlot,
+  ClipList,
+  MissionSession,
   CalendarView,
   Cheer,
   CheerLogList,
@@ -30,7 +32,6 @@ import type {
   Role,
   SupportMode,
   Uuid,
-  VideoList,
 } from "./types";
 
 /**
@@ -63,8 +64,8 @@ export const qk = {
     run: (runId: Uuid) => ["coach", "runs", runId] as const,
     latest: (familyId: Uuid) => ["coach", "runs", "latest", familyId] as const,
   },
-  videos: (list: string, profileId?: Uuid, ageGroup?: AgeGroup) =>
-    ["videos", list, profileId ?? "-", ageGroup ?? "-"] as const,
+  clips: (filter: Record<string, string | boolean | null | undefined>) =>
+    ["clips", filter] as const,
 };
 
 /**
@@ -392,10 +393,13 @@ export function useCreateMission(familyId: Uuid) {
       targetValue: number;
       videoId?: string | null;
       participantProfileIds: Uuid[];
+      /** ▲ 요청: `CreateMissionRequest.sessions`. 직접 짠 루틴의 칸들 */
+      sessions?: MissionSession[];
     }) => api.post<{ missionId: Uuid }>(`/families/${familyId}/missions`, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       qc.invalidateQueries({ queryKey: ["family", familyId, "fitness-map"] });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
     },
   });
 }
@@ -410,45 +414,6 @@ export function useMissions(
     queryKey: qk.family.missions(familyId ?? "", options.scope, options.status),
     queryFn: () => api.get<MissionList>(`/families/${familyId}/missions${query({ ...options })}`),
     enabled: Boolean(familyId),
-  });
-}
-
-/** 자기 신고다. 목표를 넘겨도 보호자 확인 전에는 완료가 아니다 */
-export function useRecordSteps(missionId: Uuid, familyId: Uuid) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (body: { profileId: string; activityDate: string; steps: number }) =>
-      api.post<{ missionProgress: number; missionCompleted: boolean; needsGuardianCheck: boolean }>(
-        `/missions/${missionId}/activity/steps`,
-        body,
-      ),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
-      qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
-      refreshProgress(qc);
-    },
-  });
-}
-
-/** 서버가 진짜로 아는 값이라 자동 완료 판정에 쓰인다 */
-export function useRecordTimer(missionId: Uuid, familyId: Uuid) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (body: {
-      profileId: string;
-      startedAt: string;
-      endedAt: string;
-      activeMinutes: number;
-    }) =>
-      api.post<{ totalActiveMinutes: number; missionProgress: number; missionCompleted: boolean }>(
-        `/missions/${missionId}/activity/timer`,
-        body,
-      ),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
-      qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
-      refreshProgress(qc);
-    },
   });
 }
 
@@ -467,55 +432,6 @@ export function useConfirmParticipant(missionId: Uuid, familyId: Uuid) {
 }
 
 /* ─── 영상 ─────────────────────────────────────────────────── */
-
-export function useVideos(options: {
-  list?: "ALL" | "FAVORITES" | "RECENT";
-  profileId?: Uuid;
-  ageGroup?: AgeGroup;
-  factor?: string;
-}) {
-  const list = options.list ?? "ALL";
-  return useQuery({
-    queryKey: qk.videos(list, options.profileId, options.ageGroup),
-    queryFn: () => api.get<VideoList>(`/videos${query({ ...options, list, size: 20 })}`),
-    // FAVORITES · RECENT 는 profileId 가 없으면 400 이다
-    enabled: list === "ALL" || Boolean(options.profileId),
-  });
-}
-
-export function useToggleFavorite(profileId: Uuid) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ videoId, favorited }: { videoId: string; favorited: boolean }) =>
-      api.post(`/videos/${videoId}/favorite`, { profileId, favorited }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["videos"] }),
-  });
-}
-
-/**
- * 최대 진행률만 남는다. 처음으로 0.9 를 넘으면 영상 길이만큼 활동시간이 1회 적립된다.
- * 두 번 적립되지 않는다.
- */
-export function useRecordVideoProgress(videoId: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (body: {
-      profileId: string;
-      progress: number;
-      watchedSec: number;
-      missionId?: string;
-    }) =>
-      api.post<{ maxProgress: number; completed: boolean; creditedMinutes: number }>(
-        `/videos/${videoId}/progress`,
-        body,
-      ),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["videos"] });
-      qc.invalidateQueries({ queryKey: ["family"] });
-      refreshProgress(qc);
-    },
-  });
-}
 
 /* ─── 응원 · 리포트 ────────────────────────────────────────── */
 
@@ -643,5 +559,45 @@ export function useSaveAvailability(profileId: Uuid) {
     mutationFn: (slots: AvailabilitySlot[]) =>
       api.put<Availability>(`/profiles/${profileId}/availability`, { slots }),
     onSuccess: (saved) => qc.setQueryData(qk.profile.availability(profileId), saved),
+  });
+}
+
+/**
+ * 운동 클립 찾기 — 키우고 싶은 힘 · 준비/본/정리 · 조용한 것 · 이름 · 즐겨찾기.
+ * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 AI 쪽 클립 표로 답한다.
+ */
+export function useClips(filter: {
+  factor?: string | null;
+  phase?: string | null;
+  quiet?: boolean;
+  q?: string;
+  list?: "ALL" | "FAVORITES";
+  profileId?: Uuid;
+}) {
+  return useQuery({
+    queryKey: qk.clips(filter),
+    queryFn: () =>
+      api.get<ClipList>(
+        `/clips${query({
+          factor: filter.factor ?? undefined,
+          phase: filter.phase ?? undefined,
+          quiet: filter.quiet ? "true" : undefined,
+          q: filter.q || undefined,
+          list: filter.list,
+          profileId: filter.profileId,
+        })}`,
+      ),
+    // 즐겨찾기는 누구의 것인지 알아야 한다
+    enabled: filter.list !== "FAVORITES" || Boolean(filter.profileId),
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useToggleClipFavorite(profileId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ clipId, favorited }: { clipId: string; favorited: boolean }) =>
+      api.post(`/clips/${encodeURIComponent(clipId)}/favorite`, { profileId, favorited }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["clips"] }),
   });
 }

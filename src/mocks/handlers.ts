@@ -26,6 +26,7 @@ import {
   type Profile,
 } from "./db";
 
+import { clips } from "./clips";
 import { coaching } from "./coach";
 import { history } from "./history";
 import { progress } from "./progress";
@@ -642,7 +643,12 @@ const missions = [
       targetValue: number;
       videoId?: string;
       participantProfileIds: string[];
+      /** ▲ 서버에 아직 없다. 직접 짠 루틴의 칸들 */
+      sessions?: unknown[];
     };
+    if (!body.title || !(body.participantProfileIds ?? []).length) {
+      return fail(400, "BAD_REQUEST", "이름과 하는 사람이 필요합니다");
+    }
     const mission: MissionRow = {
       missionId: uuid(),
       title: body.title,
@@ -664,7 +670,8 @@ const missions = [
         verifiedBy: null,
         needsGuardianCheck: false,
       })),
-    };
+      ...(body.sessions?.length ? { sessions: body.sessions } : {}),
+    } as MissionRow;
     db.missions.push(mission);
     saveMissions();
     return HttpResponse.json(mission, { status: 201 });
@@ -831,4 +838,5 @@ export const handlers = [
   ...videos,
   ...history,
   ...progress,
+  ...clips,
 ];
