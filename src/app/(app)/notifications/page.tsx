@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
-import { useEffect } from "react";
+import { Check, ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -9,11 +9,19 @@ import { ArtIcon } from "@/components/ui/art-icon";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
+import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StickerArt } from "@/components/domain/sticker-art";
 import type { NotificationView } from "@/lib/api/types";
-import { useMarkNotificationsRead, useNotifications } from "@/lib/api/queries";
+import {
+  useCheers,
+  useMarkNotificationsRead,
+  useNotifications,
+  useSendCheer,
+} from "@/lib/api/queries";
+import { errorMessage } from "@/lib/errors";
 import { notificationArt, notificationHref, whenOf } from "@/lib/notifications";
+import { THANKS_STICKERS, type Sticker } from "@/lib/stickers";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { useIsKidView } from "@/lib/view-role";
@@ -27,6 +35,9 @@ import { useRoleStore } from "@/stores/role-store";
  *
  * 들어오면 다 읽은 것으로 친다. 이번에 새로 온 것은 이 화면에 있는 동안 점을 그대로 둔다 —
  * 들어오자마자 점이 사라지면 무엇이 새로 왔는지 못 본다.
+ *
+ * 아이는 받은 스티커 아래에서 **고마워요 스티커를 돌려보낼 수 있다**(애플 피트니스 「공유」 의
+ * 주고받기처럼). 칭찬은 부모가 보내고(규칙 12), 아이가 보내는 건 「고마워요」 다. 한 장에 한 번.
  */
 export default function NotificationsPage() {
   const kidView = useIsKidView();
@@ -74,14 +85,22 @@ export default function NotificationsPage() {
             }
           />
         )}
-        {fresh.length > 0 && <Group title="새로 온 것" items={fresh} />}
-        {old.length > 0 && <Group title="지난 것" items={old} />}
+        {fresh.length > 0 && <Group title="새로 온 것" items={fresh} kidView={kidView} />}
+        {old.length > 0 && <Group title="지난 것" items={old} kidView={kidView} />}
       </Stage>
     </>
   );
 }
 
-function Group({ title, items }: { title: string; items: NotificationView[] }) {
+function Group({
+  title,
+  items,
+  kidView,
+}: {
+  title: string;
+  items: NotificationView[];
+  kidView: boolean;
+}) {
   return (
     <section>
       <h2 className="text-caption text-ink-soft mb-2 px-1 font-extrabold">{title}</h2>
@@ -89,10 +108,90 @@ function Group({ title, items }: { title: string; items: NotificationView[] }) {
         {items.map((n) => (
           <li key={n.notificationId}>
             <Row item={n} />
+            {kidView && n.kind === "PRAISE" && n.stickerId && n.fromProfileId && (
+              <Thanks item={n} to={n.fromProfileId} />
+            )}
           </li>
         ))}
       </ul>
     </section>
+  );
+}
+
+/**
+ * 받은 스티커에 고마워요 돌려보내기. 이 스티커를 받은 뒤에 그 사람에게 이미 보냈으면 「보냈어요」.
+ * 스티커를 고르기만 해도 간다 — 부모의 스티커 붙이기와 같다.
+ */
+function Thanks({ item, to }: { item: NotificationView; to: string }) {
+  const { familyId } = useSession();
+  const kidId = useRoleStore((s) => s.childProfileId);
+  const { data: given } = useCheers(familyId, to);
+  const send = useSendCheer(familyId ?? "");
+  const [open, setOpen] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+
+  const sent = (given?.cheers ?? []).some(
+    (c) =>
+      c.fromProfileId === kidId &&
+      Boolean(c.stickerId) &&
+      Date.parse(c.createdAt) > Date.parse(item.createdAt),
+  );
+
+  const pick = async (sticker: Sticker) => {
+    if (!kidId) return;
+    setProblem(null);
+    try {
+      await send.mutateAsync({
+        fromProfileId: kidId,
+        toProfileId: to,
+        message: `고마워요 · ${sticker.label}`,
+        stickerId: sticker.id,
+      });
+      setOpen(false);
+    } catch (e) {
+      setProblem(errorMessage(e, "보내지 못했어요. 다시 해 볼까요?"));
+    }
+  };
+
+  if (!kidId) return null;
+  return (
+    <div className="-mt-1 pb-3 pl-15">
+      {sent ? (
+        <p className="text-caption text-done flex min-h-10 items-center gap-1 font-bold">
+          <Check aria-hidden className="size-4" strokeWidth={3} />
+          고마워요를 보냈어요
+        </p>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="press bg-signal-soft text-signal-deep min-h-10 rounded-full px-4 text-sm font-extrabold"
+        >
+          고마워요 보내기
+        </button>
+      )}
+      <Sheet open={open} onClose={() => setOpen(false)} title="고마워요 스티커">
+        <div className="grid grid-cols-2 gap-2 pb-2">
+          {THANKS_STICKERS.map((st) => (
+            <button
+              key={st.id}
+              type="button"
+              disabled={send.isPending}
+              onClick={() => void pick(st)}
+              className="press bg-sub flex min-h-28 flex-col items-center justify-center gap-1.5 rounded-2xl disabled:opacity-60"
+            >
+              <StickerArt id={st.id} className="size-14" />
+              <span className="text-sm font-extrabold">{st.label}</span>
+            </button>
+          ))}
+        </div>
+        {problem && (
+          <p role="alert" className="text-signal-deep mt-1 text-sm font-semibold">
+            {problem}
+          </p>
+        )}
+      </Sheet>
+    </div>
   );
 }
 
@@ -101,7 +200,7 @@ function Row({ item }: { item: NotificationView }) {
   const inner = (
     <>
       <span className="bg-sub relative grid size-12 shrink-0 place-items-center rounded-2xl">
-        {item.kind === "PRAISE" ? (
+        {item.kind === "PRAISE" || item.kind === "KID_THANKS" ? (
           <StickerArt id={item.stickerId} className="size-8" />
         ) : (
           <ArtIcon name={notificationArt(item)} className="size-8" />
