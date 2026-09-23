@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 /**
  * 얼음땡의 박자 — 파일 없이 브라우저가 소리를 지어 낸다(Web Audio).
@@ -175,5 +175,10 @@ export function useBeat() {
     return ((((performance.now() - quiet.current) / 1000) * BPM) / 60) % 1;
   }, []);
 
-  return { start, stop, freeze, thaw, setMuted, phase };
+  // 한 덩어리로 묶어 둔다 — 화면이 다시 그려질 때마다 새 덩어리면 이걸 보는 effect 가
+  // 매번 다시 돌아 「얼음!」 까지 남은 시간이 처음부터 다시 센다
+  return useMemo(
+    () => ({ start, stop, freeze, thaw, setMuted, phase }),
+    [start, stop, freeze, thaw, setMuted, phase],
+  );
 }
