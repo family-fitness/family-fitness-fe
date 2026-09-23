@@ -126,6 +126,21 @@ await step("스티커만큼 경험치가 들어왔다", async () => {
     .waitFor({ timeout: 8000 });
 });
 
+// 4. 아이 — 받은 스티커에 고마워요를 돌려보낸다
+await step("받은 스티커 아래에서 고마워요를 보낼 수 있다", async () => {
+  await page.goto(B + "/notifications", { waitUntil: "load" });
+  await page.getByRole("button", { name: "고마워요 보내기" }).first().click({ timeout: 8000 });
+  await page.getByRole("button", { name: /사랑해/ }).click({ timeout: 8000 });
+  await page.getByText("고마워요를 보냈어요").first().waitFor({ timeout: 8000 });
+});
+
+// 5. 부모 — 종에 「서준이 고맙대요」
+await become("parent", "/parent");
+await step("부모 종에 아이가 고맙대요가 온다", async () => {
+  await page.getByRole("link", { name: "알림 · 새로 온 것 있음" }).click({ timeout: 10000 });
+  await page.getByText("서준이 고맙대요").first().waitFor({ timeout: 8000 });
+});
+
 await browser.close();
 
 if (errors.length) problems.push(...[...new Set(errors)].map((e) => `터짐: ${e}`));
