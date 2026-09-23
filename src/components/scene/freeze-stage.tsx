@@ -7,7 +7,7 @@ import { LevelBuddy } from "@/components/domain/level-buddy";
 import type { Stage } from "@/lib/levels";
 import { cn } from "@/lib/utils";
 
-import { mascotImage } from "./kium-island";
+import { BUDDY_SCALE, buildPlayStage } from "./play-stage";
 import { useToonScene, type CameraSpec } from "./use-toon-scene";
 
 /**
@@ -21,8 +21,6 @@ import { useToonScene, type CameraSpec } from "./use-toon-scene";
 export type FreezeMode = "idle" | "dance" | "frozen" | "thaw";
 
 const CAMERA: CameraSpec = { elevation: 24, azimuth: 0, target: 0.5, view: 1.55 };
-/** 키움이 키(발끝~머리) */
-const BUDDY = 1.2;
 const ICE = { radius: 0.74, height: 1.72 };
 const SHARDS = 16;
 
@@ -50,53 +48,14 @@ export function FreezeStage({
   const wake = useToonScene(
     host,
     CAMERA,
-    ({ THREE, addons, kit, palette, scene, toward, still, clock, invalidate }) => {
+    (ctx) => {
+      const { THREE, kit, palette, scene, still, clock } = ctx;
       const { keep, toon, solid } = kit;
-      const edge = keep(
-        new addons.LineMaterial({ color: new THREE.Color(palette.line).getHex(), linewidth: 2 }),
-      );
-      const lines = (g: T.BufferGeometry) =>
-        new addons.LineSegments2(
-          keep(
-            new addons.LineSegmentsGeometry().fromEdgesGeometry(
-              keep(new THREE.EdgesGeometry(g, 25)),
-            ),
-          ),
-          edge,
-        );
-
-      /* 무대 — 키움 섬을 줄인 것 */
-      const slab = new THREE.CylinderGeometry(1.3, 1.3, 0.24, 6);
-      slab.translate(0, -0.12, 0);
-      const band = toon(palette.band, palette.bandShade, true);
-      scene.add(solid(slab, [band, toon(palette.top, palette.topShade, true), band]), lines(slab));
-      const under = new THREE.CylinderGeometry(1.24, 0.42, 0.8, 6);
-      under.translate(0, -0.24 - 0.4, 0);
-      scene.add(solid(under, toon(palette.base, palette.baseShade, true, -0.3)), lines(under));
-
-      /* 키움이 */
-      const figure = new THREE.Group();
-      figure.position.copy(toward).multiplyScalar(0.3);
-      scene.add(figure);
       let sprite: T.Sprite | null = null;
-      let gone = false;
-      const stand = standIn.current;
-      if (stand) {
-        void mascotImage(stand).then((image) => {
-          if (!image || gone) return;
-          const texture = keep(new THREE.Texture(image));
-          texture.colorSpace = THREE.SRGBColorSpace;
-          texture.needsUpdate = true;
-          sprite = new THREE.Sprite(
-            keep(new THREE.SpriteMaterial({ map: texture, transparent: true, alphaTest: 0.35 })),
-          );
-          sprite.center.set(0.5, 9 / 160);
-          const tall = BUDDY / ((151 - 54) / 160);
-          sprite.scale.set(tall, tall, 1);
-          figure.add(sprite);
-          invalidate();
-        });
-      }
+      const stage = buildPlayStage(ctx, [standIn.current], ([s]) => {
+        sprite = s ?? null;
+      });
+      const { lines } = stage;
 
       /* 얼음 기둥 — 비치는 연한 파랑, 남색 모서리, 흰 빛줄 둘 */
       const ice = new THREE.Group();
@@ -203,9 +162,8 @@ export function FreezeStage({
               const k = (t - changedAt) / 0.45;
               if (k < 1) hop = Math.sin(Math.PI * k) * 0.35;
             }
-            const tall = BUDDY / ((151 - 54) / 160);
             sprite.position.y = hop;
-            sprite.scale.set(tall * (1 + squash), tall * (1 - squash), 1);
+            sprite.scale.set(BUDDY_SCALE * (1 + squash), BUDDY_SCALE * (1 - squash), 1);
             material.rotation = sway;
           }
 
@@ -227,10 +185,10 @@ export function FreezeStage({
           }
         },
         resize(width, heightPx) {
-          edge.resolution.set(width, heightPx);
+          stage.resize(width, heightPx);
         },
         dispose() {
-          gone = true;
+          stage.dispose();
         },
       };
     },
