@@ -205,16 +205,19 @@ export function KiumIsland({
         dragging = { at: performance.now(), last: e.clientX, moved: 0 };
         turn = null;
         velocity = 0;
-        el.setPointerCapture(e.pointerId);
+        // 손을 섬 밖으로 끌고 나가도 끝까지 돌린다. 못 잡는 기기도 있다 — 그러면 그냥 둔다
+        try {
+          el.setPointerCapture(e.pointerId);
+        } catch {}
       };
       const move = (e: PointerEvent) => {
         if (!dragging) return;
         const dx = e.clientX - dragging.last;
         dragging.last = e.clientX;
         dragging.moved += Math.abs(dx) + Math.abs(e.movementY);
-        const turn = dx * 0.012;
-        angle += turn;
-        velocity = turn * 60;
+        const step = dx * 0.012;
+        angle += step;
+        velocity = step * 60;
         if (!running) draw();
       };
       const up = () => {

@@ -337,7 +337,11 @@ export function buildIsland(
   const hullThin = hullMaterial(thin);
 
   /** 모서리를 합친 매끈한 법선. 뒤집은 껍데기가 모서리에서 갈라지지 않는다 */
+  const hulls = new Map<T.BufferGeometry, T.BufferGeometry>();
   const hullGeometry = (geometry: T.BufferGeometry) => {
+    // 노랑 · 파랑 나무처럼 같은 모양을 두 색이 쓴다. 껍데기는 하나면 된다
+    const found = hulls.get(geometry);
+    if (found) return found;
     const bare = geometry.clone();
     bare.deleteAttribute("normal");
     bare.deleteAttribute("uv");
@@ -345,6 +349,7 @@ export function buildIsland(
     merged.computeVertexNormals();
     merged.clearGroups();
     bare.dispose();
+    hulls.set(geometry, merged);
     return keep(merged);
   };
 
