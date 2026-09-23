@@ -221,11 +221,11 @@ function TodayHero({ mission }: { mission: Mission }) {
       href={`/kid/m/${mission.missionId}`}
       className="press bg-signal-strong shadow-lift block rounded-3xl p-5 text-white"
     >
-      <p className="text-caption font-bold text-white/85">오늘 운동</p>
+      <p className="text-caption font-bold text-white">오늘 운동</p>
       <p className="text-metric mt-1 leading-tight font-extrabold">
         {sessions.length}개 · {minutes}분
       </p>
-      <p className="text-caption mt-1 font-semibold text-white/85">
+      <p className="text-caption mt-1 font-semibold text-white">
         {phases}
         {done > 0 && ` · ${done}개 했어요`}
       </p>

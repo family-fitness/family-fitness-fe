@@ -172,7 +172,7 @@ export default function ResultPage() {
             </p>
             <Link
               href="/kid"
-              className="text-signal-strong mt-1 inline-flex min-h-11 items-center text-sm font-bold"
+              className="text-signal-deep mt-1 inline-flex min-h-11 items-center text-sm font-bold"
             >
               오늘 할 운동 고르기
             </Link>
@@ -190,7 +190,7 @@ export default function ResultPage() {
             </p>
             <Link
               href="/coach/weekly"
-              className="text-signal-strong mt-1 inline-flex min-h-11 items-center text-sm font-bold"
+              className="text-signal-deep mt-1 inline-flex min-h-11 items-center text-sm font-bold"
             >
               이번 주 제안 보기
             </Link>

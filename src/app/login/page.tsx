@@ -9,6 +9,7 @@ import { Illustration } from "@/components/ui/illustration";
 import { errorMessage } from "@/lib/errors";
 import { useDevLogin, useGoogleLogin } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
+import { cn } from "@/lib/utils";
 
 /** 로그인. */
 /**
@@ -122,21 +123,32 @@ function LoginContent() {
         {process.env.NODE_ENV === "development" && (
           <div className="border-line space-y-2 rounded-xl border p-3">
             <p className="text-faint text-caption font-bold">개발용 · 구글 없이 들어가기</p>
-            {DEV_ACCOUNTS.map((account, i) => (
-              <Button
-                key={account.id}
-                size="md"
-                variant={!GOOGLE_CLIENT_ID && i === 0 ? "primary" : "outline"}
-                className="w-full"
-                loading={devLogin.isPending}
-                onClick={() => enter(account.id)}
-              >
-                <span className="min-w-0 flex-1 text-left">
-                  {account.label}
-                  <span className="text-faint ml-1.5 text-xs font-bold">{account.hint}</span>
-                </span>
-              </Button>
-            ))}
+            {DEV_ACCOUNTS.map((account, i) => {
+              const primary = !GOOGLE_CLIENT_ID && i === 0;
+              return (
+                <Button
+                  key={account.id}
+                  size="md"
+                  variant={primary ? "primary" : "outline"}
+                  className="w-full"
+                  loading={devLogin.isPending}
+                  onClick={() => enter(account.id)}
+                >
+                  <span className="min-w-0 flex-1 text-left">
+                    {account.label}
+                    {/* 파랑 단추 위에서 회색 글자는 1:1 로 사라졌다 */}
+                    <span
+                      className={cn(
+                        "ml-1.5 text-xs font-bold",
+                        primary ? "text-white" : "text-ink-soft",
+                      )}
+                    >
+                      {account.hint}
+                    </span>
+                  </span>
+                </Button>
+              );
+            })}
           </div>
         )}
 
