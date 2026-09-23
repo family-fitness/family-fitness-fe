@@ -77,12 +77,22 @@ await expect("시작하면 멈춤 단추가 된다", async () => {
   await page.getByRole("button", { name: "잠깐 멈춤" }).waitFor({ timeout: 3000 });
 });
 
-// 셋째 칸 4분이 지나면 3초 쉬고 넷째 칸이 스스로 시작한다
+// 셋째 칸 4분이 지나면 10초 쉬고 넷째 칸이 스스로 시작한다
 await page.clock.runFor(4 * 60 * 1000 + 600);
 await expect("시간이 다 되면 다음 칸이 곧 시작한다고 말한다", async () => {
   await page.getByText(/곧 시작/).waitFor({ timeout: 3000 });
 });
-await page.clock.runFor(3500);
+await expect("쉬는 동안 더 쉴 수 있다 — +10초", async () => {
+  const more = page.getByRole("button", { name: /초 더 쉬기/ });
+  await more.waitFor({ timeout: 3000 });
+  await more.click();
+});
+await expect("소리 안내를 끌 수 있다", async () => {
+  await page.getByRole("button", { name: /소리 안내 (끄기|켜기)/ }).waitFor({ timeout: 3000 });
+});
+// 더 쉰 10초까지 기다린다
+await page.clock.runFor(10000);
+await page.clock.runFor(10500);
 await expect("쉬고 나면 다음 칸이 스스로 시작한다", async () => {
   await page.getByRole("region", { name: /4번째 운동/ }).waitFor({ timeout: 3000 });
   await page.getByRole("button", { name: "잠깐 멈춤" }).waitFor({ timeout: 3000 });
@@ -91,11 +101,16 @@ await expect("쉬고 나면 다음 칸이 스스로 시작한다", async () => {
 // 나머지 칸들 — 4분 · 1분 · 1분
 for (const minutes of [4, 1, 1]) {
   await page.clock.runFor(minutes * 60 * 1000 + 600);
-  await page.clock.runFor(3500);
+  await page.clock.runFor(10500);
 }
 
 await expect("다 끝나면 다 했어요가 뜬다", async () => {
   await page.getByRole("heading", { name: "오늘 거 다 했어요!" }).waitFor({ timeout: 5000 });
+});
+await expect("다 하고 나면 어땠는지 고를 수 있다", async () => {
+  const good = page.getByRole("button", { name: "딱 좋아요" });
+  await good.click({ timeout: 3000 });
+  if ((await good.getAttribute("aria-pressed")) !== "true") throw new Error("눌리지 않는다");
 });
 await expect("엄마 · 아빠한테 알리기가 있다", async () => {
   await page.getByRole("button", { name: "엄마 · 아빠한테 알리기" }).waitFor({ timeout: 3000 });

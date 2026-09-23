@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Pause, Play, SkipForward } from "lucide-react";
+import { Check, Pause, Play, SkipForward, Volume2, VolumeX } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 
@@ -28,6 +28,8 @@ import { newlyUnlocked } from "@/lib/unlocks";
 import { PHASE_LABEL, clock, sessionsOf } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { cn, withJosa } from "@/lib/utils";
+import { useVoice } from "@/lib/voice";
+import { usePrefsStore } from "@/stores/prefs-store";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
@@ -35,15 +37,23 @@ import { useRoleStore } from "@/stores/role-store";
  *
  * 받은 순서대로 칸이 세로로 이어지고, 왼쪽 선이 길이다(「아래로 향하는 길라잡이」).
  * **지금 칸만 펼친다.** 시범 영상과 타이머가 있고, 시작을 누르면 둘이 같이 돈다.
- * 잡힌 시간이 다 되면 조각이 한 번 터지고, 3초 뒤 화면이 다음 칸으로 스스로 내려가
- * 다음 칸이 시작된다. 영상은 지금 칸 하나만 띄운다 — 여섯 개를 한꺼번에 띄우면 폰이 버벅인다.
+ * 잡힌 시간이 다 되면 조각이 한 번 터지고, 10초 쉰 뒤 화면이 다음 칸으로 스스로 내려가
+ * 다음 칸이 시작된다(쉬는 시간은 「+10초」 · 「바로 시작」). 영상은 지금 칸 하나만 띄운다 —
+ * 여섯 개를 한꺼번에 띄우면 폰이 버벅인다.
+ *
+ * 소리 안내가 켜져 있으면 말로도 알려 준다 — 「스쿼트 시작!」 「10초 남았어요」 「셋 · 둘 · 하나」
+ * 「잘했어요, 다음은 …」(나이키 트레이닝 클럽 · 삼성헬스 운동 코칭). 화면을 안 봐도 따라 할 수 있게.
  *
  * 기록은 `TIMER` 다. 우리가 잰 시간이지 영상 완주가 아니다(규칙 2).
  * 이 화면에 「미션」 이라는 말은 없다 — 아이에게는 「오늘 운동」 이다.
  */
 
-/** 한 칸을 끝내고 다음 칸이 시작되기까지 */
-const REST_SEC = 3;
+/** 한 칸을 끝내고 다음 칸이 시작되기까지 — 자세를 바꾸고 숨 고를 만큼 */
+const REST_SEC = 10;
+/** 쉬는 시간 한 번 늘리기 */
+const REST_MORE = 10;
+/** 말로 셀 때 — 남은 초 */
+const COUNT_WORDS: Record<number, string> = { 3: "셋", 2: "둘", 1: "하나" };
 
 type Status = "idle" | "running" | "paused" | "rest" | "blocked" | "ended";
 
@@ -63,6 +73,11 @@ export default function PlayPage() {
   const [status, setStatus] = useState<Status>("idle");
   const [elapsed, setElapsed] = useState(0);
   const [restLeft, setRestLeft] = useState(0);
+  /** 이번 쉬는 시간 전체(늘리면 같이 는다). 링이 이 만큼을 한 바퀴로 그린다 */
+  const [restTotal, setRestTotal] = useState(REST_SEC);
+  const voiceOn = usePrefsStore((s) => s.voice);
+  const setVoiceOn = usePrefsStore((s) => s.setVoice);
+  const { say } = useVoice(voiceOn);
   const [burst, setBurst] = useState(0);
   const [xp, setXp] = useState(0);
   const startedAt = useRef<string | null>(null);
@@ -122,13 +137,17 @@ export default function PlayPage() {
     );
     const next = nextOpen(position, done);
     if (next == null) {
+      say("다 했어요! 최고예요");
       setStatus("idle");
       return;
     }
-    // 다음 칸을 바로 펼치고 그리로 내려간다. 3초 세고 나서 시작한다
+    const nextTitle = sessions.find((x) => x.position === next)?.title;
+    say(nextTitle ? `잘했어요! 쉬었다가, 다음은 ${nextTitle}` : "잘했어요!");
+    // 다음 칸을 바로 펼치고 그리로 내려간다. 쉬고 나서 시작한다
     setCurrent(next);
     setElapsed(0);
     setRestLeft(REST_SEC);
+    setRestTotal(REST_SEC);
     setStatus("rest");
   });
 
@@ -137,17 +156,27 @@ export default function PlayPage() {
     if (active == null) return;
     const next = elapsed + delta;
     setElapsed(next);
+    // 남은 시간이 그 자리를 지나는 순간에 한 번씩 말한다
+    const before = plannedSec - elapsed;
+    const after = plannedSec - next;
+    if (plannedSec > 20 && before > 10 && after <= 10) say("10초 남았어요");
+    for (const [sec, word] of Object.entries(COUNT_WORDS)) {
+      if (before > Number(sec) && after <= Number(sec)) say(word);
+    }
     if (next >= plannedSec) finishStep(active, next);
   });
 
   /** 쉬는 3초 중 한 번 — 다 세면 펼쳐 둔 다음 칸을 시작한다 */
   const restTick = useEffectEvent(() => {
     if (restLeft > 1) {
+      const word = COUNT_WORDS[restLeft - 1];
+      if (word) say(word);
       setRestLeft(restLeft - 1);
       return;
     }
     setRestLeft(0);
     startedAt.current = new Date().toISOString();
+    if (activeSession) say(`${activeSession.title} 시작!`);
     setStatus("running");
   });
 
@@ -210,6 +239,9 @@ export default function PlayPage() {
   const start = () => {
     if (active == null) return;
     if (levelBefore == null && progress) setLevelBefore(progress.level);
+    if (status === "idle" || status === "rest" || status === "blocked") {
+      if (activeSession) say(`${activeSession.title} 시작!`);
+    }
     if (current == null) setCurrent(active);
     if (status === "idle" || status === "rest") {
       setElapsed(0);
@@ -242,9 +274,24 @@ export default function PlayPage() {
           height={72}
           label={`${sessions.length}칸 중 ${doneCount}칸 건넜어요`}
         />
-        <p className="text-caption text-ink-soft text-center font-bold">
-          {doneCount} / {sessions.length}칸 · {totalMin}분 중 {doneMin}분
-        </p>
+        <div className="relative flex items-center justify-center">
+          <p className="text-caption text-ink-soft text-center font-bold">
+            {doneCount} / {sessions.length}칸 · {totalMin}분 중 {doneMin}분
+          </p>
+          <button
+            type="button"
+            onClick={() => setVoiceOn(!voiceOn)}
+            aria-pressed={voiceOn}
+            aria-label={voiceOn ? "소리 안내 끄기" : "소리 안내 켜기"}
+            className="press text-ink-soft absolute right-0 grid size-10 place-items-center rounded-full"
+          >
+            {voiceOn ? (
+              <Volume2 aria-hidden className="size-5" />
+            ) : (
+              <VolumeX aria-hidden className="size-5" />
+            )}
+          </button>
+        </div>
       </div>
 
       <Stage wide className="pt-1">
@@ -259,6 +306,11 @@ export default function PlayPage() {
               status={s.position === active ? status : "idle"}
               elapsed={s.position === active ? elapsed : 0}
               restLeft={restLeft}
+              restTotal={restTotal}
+              onMoreRest={() => {
+                setRestLeft((r) => r + REST_MORE);
+                setRestTotal((t) => t + REST_MORE);
+              }}
               onStart={start}
               onPause={() => setStatus("paused")}
               onSkip={skip}
@@ -314,6 +366,8 @@ function Step({
   status,
   elapsed,
   restLeft,
+  restTotal,
+  onMoreRest,
   onStart,
   onPause,
   onSkip,
@@ -327,6 +381,8 @@ function Step({
   status: Status;
   elapsed: number;
   restLeft: number;
+  restTotal: number;
+  onMoreRest: () => void;
   onStart: () => void;
   onPause: () => void;
   onSkip: () => void;
@@ -385,8 +441,8 @@ function Step({
 
           <div className="mt-4 flex items-center gap-4">
             <Ring
-              value={status === "rest" ? REST_SEC - restLeft : elapsed}
-              max={status === "rest" ? REST_SEC : planned}
+              value={status === "rest" ? restTotal - restLeft : elapsed}
+              max={status === "rest" ? restTotal : planned}
               size={112}
               stroke={10}
               label={status === "rest" ? `${restLeft}초 뒤에 시작해요` : `${clock(left)} 남았어요`}
@@ -394,7 +450,7 @@ function Step({
               {status === "rest" ? (
                 <span className="text-center leading-none">
                   <span className="text-metric-lg block font-extrabold">{restLeft}</span>
-                  <span className="text-micro text-ink-soft font-bold">곧 시작</span>
+                  <span className="text-micro text-ink-soft font-bold">쉬어요 · 곧 시작</span>
                 </span>
               ) : (
                 <span className="text-center leading-none">
@@ -410,6 +466,15 @@ function Step({
               <p className="text-caption text-ink-soft mt-0.5">
                 영상이 짧으면 처음부터 다시 나와요
               </p>
+              {status === "rest" && (
+                <button
+                  type="button"
+                  onClick={onMoreRest}
+                  className="press bg-sub mt-2 inline-flex min-h-10 items-center rounded-full px-4 text-sm font-extrabold"
+                >
+                  +{REST_MORE}초 더 쉬기
+                </button>
+              )}
             </div>
           </div>
 
@@ -485,7 +550,20 @@ function Step({
   );
 }
 
-/** 끝 칸 — 다 했어요 · 경험치 · 알리기 */
+const FEELS = [
+  { id: "easy", label: "쉬웠어요" },
+  { id: "good", label: "딱 좋아요" },
+  { id: "hard", label: "힘들었어요" },
+] as const;
+type Feel = (typeof FEELS)[number]["id"];
+/** 엄마 · 아빠한테 가는 말에 붙는 한 줄 */
+const FEEL_LINE: Record<Feel, string> = {
+  easy: "쉬웠어요.",
+  good: "딱 좋았어요.",
+  hard: "조금 힘들었어요.",
+};
+
+/** 끝 칸 — 다 했어요 · 경험치 · 어땠어요 · 알리기 */
 function Finish({
   allDone,
   doneCount,
@@ -514,6 +592,8 @@ function Finish({
   const send = useSendCheer(familyId);
   const [told, setTold] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** 어땠어요 — 고르면 엄마 · 아빠한테 가는 말에 붙는다. 안 골라도 된다 */
+  const [feel, setFeel] = useState<Feel | null>(null);
 
   const stage = stageOf(progress?.level);
   const bar = progress ? levelProgress(progress) : null;
@@ -532,7 +612,7 @@ function Finish({
           send.mutateAsync({
             fromProfileId: kidId,
             toProfileId: p.profileId ?? "",
-            message: allDone ? "오늘 운동 다 했어요!" : `오늘 운동 ${doneCount}개 했어요!`,
+            message: `${allDone ? "오늘 운동 다 했어요!" : `오늘 운동 ${doneCount}개 했어요!`}${feel ? ` ${FEEL_LINE[feel]}` : ""}`,
             missionId,
           }),
         ),
@@ -600,6 +680,29 @@ function Finish({
               )}
             </p>
           ))}
+        </div>
+      )}
+
+      {/* 어땠어요 — 한 번 누르면 끝. 애플 피트니스의 「운동 강도」 처럼, 다음에 짤 때 참고가 된다 */}
+      {!told && (
+        <div className="mt-4" role="group" aria-label="오늘 운동 어땠어요">
+          <p className="text-sm font-extrabold">어땠어요?</p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {FEELS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                aria-pressed={feel === f.id}
+                onClick={() => setFeel(feel === f.id ? null : f.id)}
+                className={cn(
+                  "press min-h-12 rounded-2xl text-sm font-extrabold",
+                  feel === f.id ? "bg-signal-soft text-signal-deep ring-signal ring-2" : "bg-sub",
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
