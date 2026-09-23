@@ -16,8 +16,18 @@ import { TodayRings } from "@/components/domain/today-rings";
 import { WeekStrip } from "@/components/domain/week-strip";
 import { KiumIsland } from "@/components/scene/kium-island";
 import { NotificationBell } from "@/components/domain/notification-bell";
+import { RecentBadges, RecentStickers } from "@/components/domain/kid-cards";
 import type { Mission } from "@/lib/api/types";
-import { useCalendar, useFitnessMap, useMissions, useProgress } from "@/lib/api/queries";
+import type { ProfileWithSex } from "@/lib/api/types";
+import {
+  useCalendar,
+  useCheers,
+  useFamilyProfiles,
+  useFitnessMap,
+  useMissions,
+  useProgress,
+} from "@/lib/api/queries";
+import { callName } from "@/lib/family";
 import { levelProgress, stageOf } from "@/lib/levels";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
@@ -49,6 +59,15 @@ export default function KidHomePage() {
   const { data: progress } = useProgress(childProfileId ?? undefined);
   const week = weekOf();
   const { data: calendar } = useCalendar(familyId, childProfileId ?? undefined, week);
+  const { data: cheers } = useCheers(familyId, childProfileId ?? undefined);
+  const { data: family } = useFamilyProfiles(familyId);
+  // 아이에게 부모는 엄마 · 아빠다
+  const nameOf = (profileId: string, fallback: string) =>
+    callName(
+      family?.profiles?.find((p) => p.profileId === profileId) as ProfileWithSex | undefined,
+      fallback,
+      true,
+    );
 
   const me = map?.members?.find((m) => m.profileId === childProfileId);
 
@@ -192,13 +211,18 @@ export default function KidHomePage() {
           <div className="border-line mt-4 border-t pt-3">
             <p className="text-caption text-ink-soft font-bold">
               이번 주
-              {progress && progress.streakDays > 1 && ` · ${progress.streakDays}일 이어서 했어요`}
+              {progress &&
+                progress.streakDays > 1 &&
+                ` · ${progress.streakDays}일째 이어서 하고 있어요`}
             </p>
             <div className="mt-2">
               <WeekStrip days={week.days} logs={calendar?.days} />
             </div>
           </div>
         </Card>
+
+        <RecentStickers cheers={cheers?.cheers} nameOf={nameOf} />
+        <RecentBadges achievements={progress?.achievements} />
 
         {/* 점수 하나는 아이도 본다. 등수로 바꾸지 않고 또래 평균 50 과 같이(규칙 10) */}
         <Card>
