@@ -43,7 +43,7 @@ export default function WhoPage() {
 
         {kids.length === 0 && (
           <EmptyState
-            scene="first-body"
+            scene="no-record"
             title="아직 등록된 아이가 없어요"
             description="부모 화면에서 아이를 먼저 등록해 주세요."
             action={

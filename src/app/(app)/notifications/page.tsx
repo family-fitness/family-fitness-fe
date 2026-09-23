@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useEffect } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -65,7 +65,7 @@ export default function NotificationsPage() {
       <Stage wide className="space-y-4">
         {items.length === 0 && (
           <EmptyState
-            scene="no-cheer"
+            scene="no-alarm"
             title="아직 알림이 없어요"
             description={
               kidView
@@ -104,7 +104,7 @@ function Row({ item }: { item: NotificationView }) {
         {item.kind === "PRAISE" ? (
           <StickerArt id={item.stickerId} className="size-8" />
         ) : (
-          <ArtIcon name={notificationArt(item)} fallback={Bell} className="size-8" />
+          <ArtIcon name={notificationArt(item)} className="size-8" />
         )}
         {!item.read && (
           <span className="bg-signal ring-paper absolute -top-0.5 -right-0.5 size-3 rounded-full ring-2" />

@@ -1,13 +1,16 @@
-import { Illustration } from "@/components/ui/illustration";
 import type { Band, Grade } from "@/lib/api/types";
 import { BAND_COPY } from "@/lib/api/types";
 
-/** 국민체력100 등급. */
-const GRADE_SEAL: Record<Grade, string> = {
-  "1등급": "item/grade-1",
-  "2등급": "item/grade-2",
-  "3등급": "item/grade-3",
-  참가: "item/grade-4",
+/**
+ * 국민체력100 등급 — 숫자를 품은 남색 고리.
+ *
+ * 등급은 같은 색의 **명도로만** 가른다(규칙 8). 옛 도장 그림은 결이 달라 뺐다.
+ * 숫자가 없는 등급(참가 · 기준 없음)은 고리를 그리지 않는다 — 빈 동그라미는 덜 그린 것처럼 보인다.
+ */
+const RING: Record<string, string> = {
+  "1": "border-signal-deep text-signal-deep",
+  "2": "border-signal-strong text-signal-strong",
+  "3": "border-signal text-signal-deep",
 };
 
 export function GradeBadge({
@@ -17,16 +20,9 @@ export function GradeBadge({
   grade: Grade | null | undefined;
   size?: number;
 }) {
-  const seal = grade ? GRADE_SEAL[grade] : "item/grade-5";
   const digit = grade?.match(/^(\d)등급$/)?.[1];
-  // 숫자는 도장 안에 있다. 옆에까지 쓰면 "2 2등급" 으로 읽힌다
-  const label = digit ? "등급" : (grade ?? "기준 없음");
   const full = grade ?? "기준 없음";
 
-  /*
-    숫자가 없는 등급(참가·기준 없음)에는 도장을 그리지 않는다.
-    빈 동그라미만 남아 그림이 덜 그려진 것처럼 보인다.
-  */
   if (!digit) {
     return (
       <span
@@ -41,20 +37,15 @@ export function GradeBadge({
   return (
     <span className="inline-flex shrink-0 items-center gap-1.5" title={full} aria-label={full}>
       <span
-        className="relative grid shrink-0 place-items-center"
-        style={{ width: size, height: size }}
+        aria-hidden
+        className={`grid shrink-0 place-items-center rounded-full border-2 font-extrabold ${RING[digit] ?? RING["3"]}`}
+        style={{ width: size, height: size, fontSize: size * 0.42 }}
       >
-        <Illustration name={seal} size={size} alt="" />
-        <span
-          className="text-signal-deep absolute inset-0 grid place-items-center font-extrabold"
-          style={{ fontSize: size * 0.4 }}
-          aria-hidden
-        >
-          {digit}
-        </span>
+        {digit}
       </span>
+      {/* 숫자는 고리 안에 있다. 옆에까지 쓰면 "2 2등급" 으로 읽힌다 */}
       <span className="text-ink-soft text-xs font-bold" aria-hidden>
-        {label}
+        등급
       </span>
     </span>
   );

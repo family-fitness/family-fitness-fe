@@ -1,6 +1,5 @@
 "use client";
 
-import { TicketCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
@@ -77,7 +76,7 @@ function ClaimContent() {
           aria-hidden
           className="bg-signal-soft text-signal-strong grid size-20 place-items-center rounded-full"
         >
-          <ArtIcon name="icon/menu-invite" fallback={TicketCheck} className="size-11" />
+          <ArtIcon name="icon/menu-invite" className="size-11" />
         </span>
         <h1 className="page-title mt-3">초대코드를 넣어 주세요</h1>
         <p className="text-ink-soft mt-2 text-sm leading-relaxed">

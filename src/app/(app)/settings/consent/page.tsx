@@ -30,7 +30,7 @@ function ConsentPageContent() {
         <PageHeader title="보호자 동의" back />
         <Screen>
           <EmptyState
-            scene="waiting-approval"
+            scene="waiting"
             title="이 설정은 보호자만 있어요"
             description="건강 정보 동의는 보호자가 관리해요."
           />
@@ -52,7 +52,7 @@ function ConsentPageContent() {
         </p>
 
         {needConsent.length === 0 ? (
-          <EmptyState scene="invite" title="동의가 필요한 가족이 없어요" />
+          <EmptyState scene="waiting" title="동의가 필요한 가족이 없어요" />
         ) : (
           <ul className="divide-rows">
             {needConsent.map((child) => (

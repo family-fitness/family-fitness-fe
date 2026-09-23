@@ -8,7 +8,6 @@ import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
-import { Illustration } from "@/components/ui/illustration";
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { errorMessage } from "@/lib/errors";
 import { useCreateProfile } from "@/lib/api/queries";
@@ -180,8 +179,7 @@ export default function AddChildPage() {
             </div>
 
             <Field label="키" hint={rangeHint("heightCm")}>
-              <div className="relative flex items-center gap-3">
-                <Illustration name="item/item-ruler-tall" size={44} />
+              <div className="relative flex items-center">
                 <input
                   type="number"
                   inputMode="decimal"
@@ -198,8 +196,7 @@ export default function AddChildPage() {
             </Field>
 
             <Field label="몸무게" hint={rangeHint("weightKg")}>
-              <div className="relative flex items-center gap-3">
-                <Illustration name="item/item-scale" size={44} />
+              <div className="relative flex items-center">
                 <input
                   type="number"
                   inputMode="decimal"

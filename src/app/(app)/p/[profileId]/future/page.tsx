@@ -83,7 +83,7 @@ export default function FuturePage() {
         <PageHeader title="10년 뒤" back />
         <Screen>
           <EmptyState
-            scene="first-measure"
+            scene="no-record"
             title="측정을 먼저 해 주세요"
             action={
               <Button size="md" onClick={() => router.push(`/p/${profileId}/measure`)}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, HeartHandshake, Plus, Sticker } from "lucide-react";
+import { Check, Copy, Plus } from "lucide-react";
 import { useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -78,7 +78,6 @@ export default function MembersPage() {
           <ListRow
             href="/settings/support-mode"
             art="icon/menu-support"
-            icon={HeartHandshake}
             title="얼마나 같이 할지"
             description={SUPPORT_COPY[mySupportMode ?? "none"]}
           />
@@ -86,7 +85,6 @@ export default function MembersPage() {
             <ListRow
               href={`/parent/sticker/${kid.profileId}`}
               art="icon/menu-cheer"
-              icon={Sticker}
               title="칭찬 스티커 붙이기"
               description={`${kid.name}에게 오늘 한 장`}
             />

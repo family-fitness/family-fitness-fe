@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { Stage } from "@/components/app-shell/stage";
-import { Users } from "lucide-react";
 
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -96,7 +95,7 @@ export default function StartPage() {
               aria-hidden
               className="bg-mark-soft text-ink grid size-20 shrink-0 place-items-center rounded-full"
             >
-              <ArtIcon name="icon/role-parent" fallback={Users} className="size-11" />
+              <ArtIcon name="icon/role-parent" className="size-11" />
             </span>
           }
         />

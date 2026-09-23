@@ -91,7 +91,7 @@ export default function ParentHomePage() {
       <>
         {header}
         <Stage className="flex flex-col items-center pt-10 text-center">
-          <Illustration name="scene/scene-first-body" fallback="scene/scene-invite" size={150} />
+          <Illustration name="scene/kiumi-no-record" size={150} />
           <h2 className="mt-4 text-xl font-extrabold">아이를 등록해 주세요</h2>
           <Button size="md" className="mt-5" onClick={() => router.push("/start/child")}>
             아이 등록하기

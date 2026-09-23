@@ -12,7 +12,7 @@ export interface Sticker {
   id: string;
   /** 붙일 때 같이 가는 한마디 */
   label: string;
-  /** 그림 이름. `sticker/*` 가 오기 전까지는 옛 도장이 대신 선다(`interim-art.ts`) */
+  /** 그림 이름(`ASSET_PROMPTS.md` 2장). 오기 전에는 자리만 비어 있다 */
   art: string;
 }
 

@@ -1,6 +1,5 @@
 "use client";
 
-import { Award } from "lucide-react";
 import { useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -14,7 +13,7 @@ import { LevelBuddy } from "@/components/domain/level-buddy";
 import { KiumMedal } from "@/components/scene/kium-medal";
 import type { AchievementView } from "@/lib/api/types";
 import { useProgress } from "@/lib/api/queries";
-import { artFor } from "@/lib/interim-art";
+import { artFor } from "@/lib/art";
 import { STAGES, badgeArt, levelProgress, stageOf } from "@/lib/levels";
 import { whenOf } from "@/lib/notifications";
 import { cn, formatDate } from "@/lib/utils";
@@ -128,7 +127,6 @@ export default function BadgesPage() {
                   >
                     <ArtIcon
                       name={badgeArt(a.code)}
-                      fallback={Award}
                       className={cn("size-12", !got && "opacity-30 grayscale")}
                     />
                     <span
@@ -189,11 +187,7 @@ export default function BadgesPage() {
                 label={`${open.title} 메달`}
               />
             ) : (
-              <ArtIcon
-                name={badgeArt(open.code)}
-                fallback={Award}
-                className="my-8 size-28 opacity-30 grayscale"
-              />
+              <ArtIcon name={badgeArt(open.code)} className="my-8 size-28 opacity-30 grayscale" />
             )}
             <p className="text-body mt-2 font-bold">{open.description}</p>
             <p className="text-caption text-ink-soft mt-1 font-semibold">
