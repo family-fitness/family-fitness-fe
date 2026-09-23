@@ -127,3 +127,86 @@ export function whyThisVideo(
 export function videoArt(video: Pick<Video, "label">): string {
   return factorPose(labelFactors(video.label)[0]);
 }
+
+/**
+ * 아이가 운동을 바꾸고 싶어 하는 이유.
+ *
+ * **목록을 보여 주지 않는다.** 지금 「다른 운동 고르기」는 연령대에 맞는 영상을
+ * 쭉 나열할 뿐이라, 왜 이게 떴는지 아이도 부모도 모른다. 이유를 받으면 그 이유에
+ * 맞는 것만 골라 올 수 있고, 고른 이유가 다음 편성에도 남는다.
+ */
+export type SwapReason = "hard" | "noise" | "time" | "bored";
+
+export const SWAP_REASONS: { key: SwapReason; label: string }[] = [
+  { key: "hard", label: "너무 힘들어요" },
+  { key: "noise", label: "쿵쿵거려서 안 돼요" },
+  { key: "time", label: "시간이 없어요" },
+  { key: "bored", label: "재미없어요" },
+];
+
+/** 이유마다 무엇을 근거로 골랐는지 한 줄. 아이도 부모도 읽는다 */
+export const SWAP_WHY: Record<SwapReason, string> = {
+  hard: "같은 곳을 키우면서 힘은 한 단계 낮은 것으로 골랐어요",
+  noise: "앉거나 누워서 하는 것만 골랐어요. 발소리가 안 나요",
+  time: "같은 곳을 키우는 것 중에 제일 짧은 걸로 골랐어요",
+  bored: "같은 곳을 키우는데 아직 안 해 본 것으로 골랐어요",
+};
+
+const INTENSITY_RANK: Record<string, number> = { LOW: 0, MID: 1, HIGH: 2 };
+
+/**
+ * 바꿀 운동을 고른다.
+ *
+ * **방향은 그대로 둔다.** 키우려던 요인을 바꾸면 그건 다른 운동이 아니라
+ * 다른 계획이다 — 코치가 짠 한 주가 무너진다.
+ */
+export function pickAlternatives(
+  videos: Video[],
+  options: {
+    reason: SwapReason;
+    /** 지금 하려던 것. 같은 요인 안에서 고르고, 이건 뺀다 */
+    factor?: string | null;
+    currentVideoId?: string | null;
+    currentSeconds?: number | null;
+    /** 이미 완주한 영상 */
+    watched?: Video[];
+  },
+): Video[] {
+  const { reason, factor, currentVideoId, currentSeconds, watched = [] } = options;
+  const doneIds = new Set(watched.filter((v) => isVideoDone(v.maxProgress)).map((v) => v.videoId));
+
+  const sameFactor = videos.filter((v) => {
+    if (v.videoId === currentVideoId) return false;
+    if (!factor) return true;
+    return labelFactors(v.label).includes(factor);
+  });
+  /* 같은 요인이 없으면 요인을 풀되, 그 사실을 화면이 말한다 */
+  const pool =
+    sameFactor.length > 0 ? sameFactor : videos.filter((v) => v.videoId !== currentVideoId);
+
+  const score = (video: Video) => {
+    const label = video.label;
+    let points = 0;
+    if (reason === "hard") {
+      points += 6 - (INTENSITY_RANK[label?.intensity ?? "MID"] ?? 1) * 3;
+    }
+    if (reason === "noise") {
+      if (label?.noise === "QUIET") points += 8;
+      if (label?.space === "SMALL_ROOM") points += 3;
+    }
+    if (reason === "time") {
+      const sec = video.durationSec ?? 0;
+      if (sec > 0 && (currentSeconds == null || sec <= currentSeconds)) points += 6;
+      points += Math.max(0, 6 - Math.floor(sec / 120));
+    }
+    if (reason === "bored") {
+      if (!doneIds.has(video.videoId)) points += 8;
+    }
+    // 어느 이유든 집에서 되는 것이 먼저다
+    if (label?.noise === "QUIET") points += 1;
+    if (label?.space === "SMALL_ROOM") points += 1;
+    return points;
+  };
+
+  return [...pool].sort((a, b) => score(b) - score(a)).slice(0, 2);
+}

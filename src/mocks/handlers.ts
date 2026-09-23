@@ -23,7 +23,7 @@ import type {
 } from "@/lib/api/types";
 
 import { isVideoDone, serverKnows } from "@/lib/mission";
-import { ageOf, today } from "@/lib/today";
+import { ageOf } from "@/lib/today";
 
 import fixturesJson from "./fixtures.json";
 
@@ -51,7 +51,13 @@ interface Fixtures {
 const fixtures = fixturesJson as unknown as Concrete<Fixtures>;
 
 /** 목 서버가 만들고 고치는 값들. 응답과 같은 모양이어야 화면이 진짜처럼 돈다 */
-type Profile = Concrete<ProfileSummary>;
+/**
+ * 목이 돌려주는 프로필.
+ *
+ * `sex` 는 생성된 스키마에 아직 없다 — 가족을 만들 때는 받으면서 조회 응답에는
+ * 안 돌려준다(`BACKEND_ASKS.md`). 목은 요청한 모양대로 돌려준다.
+ */
+type Profile = Concrete<ProfileSummary> & { sex?: "M" | "F" };
 type MapMember = Concrete<FitnessMap>["members"][number];
 type MissionRow = Concrete<Mission>;
 
@@ -60,7 +66,8 @@ const CHEER_KEY = "ff-mock-cheers";
 const MISSION_KEY = "ff-mock-missions";
 const RUN_KEY = "ff-mock-run";
 const ACTING_KEY = "ff-mock-acting";
-const NEWCOMER_KEY = "ff-mock-newcomer";
+const STAGE_KEY = "ff-mock-stage";
+const FAMILY_KEY = "ff-mock-family";
 
 export const DEMO = {
   familyId: "00000000-0000-4000-8000-000000000010",
@@ -76,8 +83,8 @@ const PAST_RUN_ID = "00000000-0000-4000-8000-0000000000a0";
 
 /** 새로고침하면 초기 상태로 돌아간다. 시연 중 되돌리기 쉽게 하려는 의도다 */
 const db = {
-  profiles: structuredClone(fixtures.profiles),
-  fitnessMap: structuredClone(fixtures.fitnessMap),
+  profiles: loadFamily("profiles", fixtures.profiles),
+  fitnessMap: loadFamily("fitnessMap", fixtures.fitnessMap),
   latest: structuredClone(fixtures.latestByProfile),
   coachRun: loadCoachRun(),
   /** 이번 주 제안은 아직 0건이다. 심어 둔 것은 지난 회차에서 승인한 미션들이다 */
@@ -98,25 +105,44 @@ const db = {
    * 새로고침해도 남아야 한다 — 바꾸자마자 되돌아가면 자녀 계정 화면을 볼 수 없다.
    */
   actingProfileId: loadActing(),
+  /** 이 계정이 어디까지 와 있나 — 가족 없음 · 초대 대기 · 가족 있음 */
+  stage: loadStage(),
   /**
-   * 아직 가족에 붙지 않은 계정으로 들어와 있나.
-   * 초대 수락 흐름은 이 상태가 있어야만 걸어 볼 수 있다.
+   * 이번 주 코치 회차를 한 번이라도 돌렸나.
+   * 새로 만든 가족은 아직 안 돌렸다 — `latest` 가 404 여야 「제안 만들기」 가 뜬다.
    */
-  newcomer: loadNewcomer(),
+  hasCoachRun: true,
 };
 
-function loadNewcomer(): boolean {
+/**
+ * 지금 로그인한 계정이 어디까지 와 있나.
+ *
+ * 전에는 "초대받는 계정인가" 불리언 하나였다. 그러면 **가족이 아직 없는 계정**을
+ * 만들 수가 없어서 `POST /families` 로 가는 길이 아예 없었다 — 처음 쓰는 사람의
+ * 경로를 한 번도 못 돌아 본 이유다.
+ *
+ * | 단계    | `/me` 가 주는 nextStep | 무엇                          |
+ * | ------- | ---------------------- | ----------------------------- |
+ * | `fresh` | `CREATE_FAMILY`        | 가족이 없다. 만드는 것부터     |
+ * | `claim` | `CLAIM`                | 초대코드를 넣어야 가족에 붙는다 |
+ * | `home`  | `HOME`                 | 가족이 있다                    |
+ */
+type Stage = "fresh" | "claim" | "home";
+
+function loadStage(): Stage {
   try {
-    return sessionStorage.getItem(NEWCOMER_KEY) === "1";
+    const saved = sessionStorage.getItem(STAGE_KEY);
+    if (saved === "fresh" || saved === "claim" || saved === "home") return saved;
   } catch {
-    return false;
+    return "home";
   }
+  return "home";
 }
 
-function setNewcomer(value: boolean) {
-  db.newcomer = value;
+function setStage(value: Stage) {
+  db.stage = value;
   try {
-    sessionStorage.setItem(NEWCOMER_KEY, value ? "1" : "0");
+    sessionStorage.setItem(STAGE_KEY, value);
   } catch {
     // 브라우저가 아니면 그냥 넘어간다
   }
@@ -205,6 +231,17 @@ function seedCheers(): CheerLog[] {
  * 깐 것이 되고 자라는 기록도 최근 기록도 전부 빈 화면이 된다.
  * 그래서 **지난 코치 회차**에서 나온 미션을 심고, 이번 주 회차는 승인 전으로 둔다.
  */
+/** 영상 속 한 토막. ▲ `endSec` 는 계약에 없다 — 목에서는 준다 */
+function clip(videoId: string, startSec: number, endSec: number, title: string) {
+  return {
+    videoId,
+    startSec,
+    endSec,
+    title,
+    url: `https://www.youtube.com/watch?v=${videoId}`,
+  };
+}
+
 function seedMissions(): MissionRow[] {
   const day = (back: number) => daysAgo(back, 12).slice(0, 10);
   return [
@@ -226,6 +263,43 @@ function seedMissions(): MissionRow[] {
         durationSec: 600,
         startSec: 96,
       },
+      /*
+        ▲ 서버에 아직 없다. 제안 모양으로 답한다.
+        운동처방 하나가 영상 한 편이 아니라 영상 안의 한 토막이라,
+        하루치가 준비·본·정리 셋으로 나뉜다.
+      */
+      sessions: [
+        {
+          position: 1,
+          phase: "WARMUP",
+          title: "팔 벌려 뛰기",
+          factor: "심폐지구력",
+          minutes: 2,
+          clip: clip("IdpXx2gm90o", 12, 130, "팔 벌려 뛰기"),
+          completed: true,
+          verifiedBy: "VIDEO_PROGRESS",
+        },
+        {
+          position: 2,
+          phase: "MAIN",
+          title: "제자리 달리기",
+          factor: "심폐지구력",
+          minutes: 15,
+          clip: clip("IdpXx2gm90o", 186, 340, "제자리 달리기"),
+          completed: false,
+          verifiedBy: null,
+        },
+        {
+          position: 3,
+          phase: "COOLDOWN",
+          title: "나비자세",
+          factor: "유연성",
+          minutes: 3,
+          clip: clip("IdpXx2gm90o", 580, 738, "나비자세"),
+          completed: false,
+          verifiedBy: null,
+        },
+      ],
       participants: [
         {
           profileId: DEMO.kid,
@@ -407,6 +481,31 @@ function saveCoachRun() {
   }
 }
 
+/**
+ * 새로 만든 가족을 탭 저장소에서 되살린다.
+ *
+ * 안 그러면 새로고침 한 번에 방금 만든 가족이 서준이네로 되돌아간다 —
+ * 가입하자마자 남의 집이 뜬다.
+ */
+function loadFamily<T>(key: "profiles" | "fitnessMap", fallback: T): T {
+  try {
+    const saved = sessionStorage.getItem(`${FAMILY_KEY}-${key}`);
+    if (saved) return JSON.parse(saved) as T;
+  } catch {
+    return structuredClone(fallback);
+  }
+  return structuredClone(fallback);
+}
+
+function saveFamily() {
+  try {
+    sessionStorage.setItem(`${FAMILY_KEY}-profiles`, JSON.stringify(db.profiles));
+    sessionStorage.setItem(`${FAMILY_KEY}-fitnessMap`, JSON.stringify(db.fitnessMap));
+  } catch {
+    // 저장이 안 돼도 이번 화면에서는 돈다
+  }
+}
+
 function saveCheers(cheers: CheerLog[]) {
   try {
     sessionStorage.setItem(CHEER_KEY, JSON.stringify(cheers));
@@ -477,20 +576,103 @@ const authGate = [
   }),
 ];
 
-/** 아직 가족이 없는 개발용 계정 */
-const NEWCOMER_ID = "demo-newcomer";
-const NEWCOMER_ME = {
+/** 개발용 계정 셋. 로그인 화면에서 고르는 것과 같은 순서다 */
+const CLAIM_ID = "demo-newcomer";
+const FRESH_ID = "demo-fresh";
+
+/** 초대를 기다리는 계정 — 부모가 낸 자리에 붙는다 */
+const CLAIM_ME = {
   userId: "00000000-0000-4000-8000-000000000002",
   nextStep: "CLAIM",
   profiles: [],
 };
 
+/** 가족이 아예 없는 계정 — 여기서 `POST /families` 로 간다 */
+const FRESH_ME = {
+  userId: "00000000-0000-4000-8000-000000000003",
+  nextStep: "CREATE_FAMILY",
+  profiles: [],
+};
+
+/**
+ * 어떤 계정으로 들어왔나에 따라 단계를 정하고 토큰을 준다.
+ *
+ * 로그인 응답에 `/me` 와 같은 모양을 얹어 준다 — 화면이 들어오자마자
+ * 어디로 갈지 알아야 스플래시에서 한 번 더 왕복하지 않는다.
+ */
+function signIn(providerUserId: string | undefined) {
+  const token = { accessToken: "mock-access-token", refreshToken: "mock-refresh-token" };
+
+  if (providerUserId === CLAIM_ID) {
+    setStage("claim");
+    return { ...token, ...CLAIM_ME };
+  }
+  if (providerUserId === FRESH_ID) {
+    setStage("fresh");
+    return { ...token, ...FRESH_ME };
+  }
+  setStage("home");
+  setActingProfile(DEMO.mom);
+  return { ...token, ...fixtures.me };
+}
+
+/**
+ * 가족을 새로 만든다.
+ *
+ * **서준이네 데이터를 갈아 끼운다.** 안 그러면 방금 가입한 사람이 남의 집
+ * 기록·미션·칭찬을 자기 것으로 본다. 새 가족은 말 그대로 빈 집이어야 한다.
+ */
+function startFamily(familyName: string, owner: Profile) {
+  db.profiles = {
+    familyId: owner.familyId,
+    familyName,
+    profiles: [owner],
+  } as typeof db.profiles;
+  db.fitnessMap = {
+    familyId: owner.familyId,
+    familyName,
+    disclaimer: fixtures.fitnessMap.disclaimer,
+    members: [mapMemberOf(owner)],
+  } as typeof db.fitnessMap;
+  db.missions = [];
+  db.cheers = [];
+  db.latest = {};
+  db.body = {};
+  db.hasCoachRun = false;
+  saveMissions();
+  saveCheers(db.cheers);
+  saveFamily();
+}
+
+/** 프로필 하나를 체력 지도의 한 줄로 */
+function mapMemberOf(profile: Profile): MapMember {
+  return {
+    profileId: profile.profileId,
+    name: profile.name,
+    role: profile.role,
+    ageGroup: profile.ageGroup,
+    sex: profile.sex,
+    hasAccount: profile.hasAccount,
+    supportMode: profile.supportMode,
+    measurable: profile.measurable,
+    consentRequired: profile.consentRequired,
+    consentGiven: profile.consentGiven,
+    headline: null,
+    latest: null,
+  } as MapMember;
+}
+
 const identity = [
   /** 지금 로그인한 계정이 관리하는 프로필. */
   http.get(`${BASE}/me`, () => {
-    if (db.newcomer) return HttpResponse.json(NEWCOMER_ME);
+    if (db.stage === "claim") return HttpResponse.json(CLAIM_ME);
+    if (db.stage === "fresh") return HttpResponse.json(FRESH_ME);
     const me = acting();
-    if (!me || me.profileId === DEMO.mom) return HttpResponse.json(fixtures.me);
+    if (!me) return HttpResponse.json(fixtures.me);
+    // 새로 만든 가족이면 픽스처가 아니라 지금 가족을 돌려준다
+    if (me.profileId === DEMO.mom && db.profiles.familyId === DEMO.familyId) {
+      return HttpResponse.json(fixtures.me);
+    }
     return HttpResponse.json({
       userId: fixtures.me.userId,
       nextStep: "HOME",
@@ -500,15 +682,68 @@ const identity = [
 
   http.post(`${BASE}/auth/dev-login`, async ({ request }) => {
     const body = (await request.json().catch(() => ({}))) as { providerUserId?: string };
-    // 프로필이 아직 없는 계정. 초대코드를 넣어야 가족에 붙는다
-    const newcomer = body.providerUserId === NEWCOMER_ID;
-    setNewcomer(newcomer);
-    if (!newcomer) setActingProfile(DEMO.mom);
-    return HttpResponse.json({
-      accessToken: "mock-access-token",
-      refreshToken: "mock-refresh-token",
-      ...(newcomer ? NEWCOMER_ME : fixtures.me),
-    });
+    return HttpResponse.json(signIn(body.providerUserId));
+  }),
+
+  /**
+   * 구글에서 받은 인가코드를 토큰으로 바꾼다.
+   *
+   * 목에 이게 없어서 요청이 브라우저를 빠져나가 `localhost:8080` 으로 나갔다.
+   * 시연에서는 **가족이 없는 새 계정**으로 본다 — 구글로 처음 들어온 사람이
+   * 실제로 겪는 상태가 그거다.
+   */
+  http.post(`${BASE}/auth/google`, async ({ request }) => {
+    const body = (await request.json().catch(() => ({}))) as { authorizationCode?: string };
+    if (!body.authorizationCode) {
+      return fail(400, "INVALID_CODE", "인가코드가 없습니다");
+    }
+    return HttpResponse.json(signIn(FRESH_ID));
+  }),
+
+  /**
+   * ★ 가족이 생기는 유일한 지점.
+   *
+   * 목에 이 길이 없어서 요청이 브라우저를 빠져나가 `localhost:8080` 으로 나갔다.
+   * 그래서 지금까지 **처음 쓰는 사람의 경로가 한 번도 안 돌았다** — 시연 계정으로만
+   * 앱이 돌고 있었다.
+   */
+  http.post(`${BASE}/families`, async ({ request }) => {
+    const body = (await request.json()) as {
+      familyName?: string;
+      owner?: { name?: string; birthDate?: string; sex?: "M" | "F" };
+    };
+    const familyName = (body.familyName ?? "").trim();
+    const name = (body.owner?.name ?? "").trim();
+    if (!familyName || !name) {
+      return fail(400, "INVALID_INPUT", "가족 이름과 내 이름이 필요합니다");
+    }
+    if (db.stage === "home") {
+      return fail(409, "ALREADY_IN_FAMILY", "이미 가족에 속해 있습니다");
+    }
+
+    const age = ageOf(body.owner?.birthDate) ?? 30;
+    const familyId = uuid();
+    const owner: Profile = {
+      profileId: uuid(),
+      familyId,
+      name,
+      role: "PARENT",
+      ageGroup: ageGroupOf(age),
+      sex: body.owner?.sex ?? "F",
+      hasAccount: true,
+      inviteStatus: "NONE",
+      // 참여 방식은 다음 화면에서 고른다. 서버가 미리 정하지 않는다
+      supportMode: null,
+      measurable: age >= 4,
+      consentRequired: false,
+      consentGiven: true,
+    } as Profile;
+
+    startFamily(familyName, owner);
+    setStage("home");
+    setActingProfile(owner.profileId);
+
+    return HttpResponse.json({ familyId, familyName, ownerProfile: owner }, { status: 201 });
   }),
 
   http.get(`${BASE}/families/:familyId/profiles`, () => HttpResponse.json(db.profiles)),
@@ -555,6 +790,7 @@ const identity = [
       latest: null,
     };
     db.fitnessMap.members.push(mapMember);
+    saveFamily();
     return HttpResponse.json(profile, { status: 201 });
   }),
 
@@ -569,6 +805,28 @@ const identity = [
     ),
   ),
 
+  /**
+   * ▲ 서버에 아직 없다. 제안 모양으로 답한다.
+   * 코드가 어느 **자리**인지 넣기 전에 보여 줘야, 받는 사람이 역할을 고를 수
+   * 없다는 것이 화면에서 사실이 된다.
+   */
+  http.get<PathParams>(`${BASE}/invites/:claimCode`, ({ params }) => {
+    if (String(params.claimCode).toUpperCase() !== "K7M2QT") {
+      return fail(404, "CODE_NOT_FOUND", "코드를 찾을 수 없습니다");
+    }
+    const seat = db.profiles.profiles.find((p) => p.profileId === DEMO.dad);
+    const inviter = db.profiles.profiles.find((p) => p.profileId === DEMO.mom);
+    if (!seat) return fail(404, "CODE_NOT_FOUND", "코드를 찾을 수 없습니다");
+    return HttpResponse.json({
+      familyName: db.profiles.familyName,
+      profileName: seat.name,
+      role: seat.role,
+      ageGroup: seat.ageGroup,
+      invitedByName: inviter?.name ?? null,
+      expiresAt: new Date(Date.now() + 7 * 864e5).toISOString(),
+    });
+  }),
+
   http.post(`${BASE}/profiles/claim`, async ({ request }) => {
     const { claimCode } = (await request.json()) as { claimCode: string };
     if (claimCode?.toUpperCase() !== "K7M2QT") {
@@ -580,7 +838,7 @@ const identity = [
       dad.hasAccount = true;
       dad.inviteStatus = "CLAIMED";
     }
-    setNewcomer(false);
+    setStage("home");
     setActingProfile(DEMO.dad);
     return HttpResponse.json({
       profileId: DEMO.dad,
@@ -602,6 +860,7 @@ const identity = [
 
       profile.supportMode = supportMode as Profile["supportMode"];
       syncMapMember(profile);
+      saveFamily();
       return HttpResponse.json(profile);
     },
   ),
@@ -831,6 +1090,7 @@ const coaching = [
         endDate: week.weekEnd,
       })),
     };
+    db.hasCoachRun = true;
     saveCoachRun();
     // 실행은 비동기다. 접수만 하고 202 를 준다
     return HttpResponse.json(
@@ -846,7 +1106,11 @@ const coaching = [
    * 기기에 든 runId 가 없으면 이번 주 제안을 영영 못 찾아서, 승인 게이트가
    * 통째로 사라진다 — 이 서비스의 핵심 주장을 보여 줄 화면이 없어진다.
    */
-  http.get(`${BASE}/families/:familyId/coach/runs/latest`, () => HttpResponse.json(db.coachRun)),
+  http.get(`${BASE}/families/:familyId/coach/runs/latest`, () => {
+    // 새로 만든 가족은 아직 한 번도 안 돌렸다. 없는 것을 있는 척하지 않는다
+    if (!db.hasCoachRun) return fail(404, "NO_RUN", "이번 주 회차가 없습니다");
+    return HttpResponse.json(db.coachRun);
+  }),
 
   /**
    * ★ 미션이 만들어지는 유일한 지점.
@@ -895,172 +1159,7 @@ const coaching = [
       missionCount: 0,
     });
   }),
-
-  http.post(`${BASE}/coach/chat`, async ({ request }) => {
-    const { question, conversationId, profileId } = (await request.json()) as {
-      question: string;
-      conversationId?: string;
-      profileId?: string;
-    };
-    /* 누구에 대해 묻는지가 답을 가른다. 목에서는 이름을 붙여 그걸 보여 준다 */
-    const about = db.profiles.profiles.find((p) => p.profileId === profileId);
-    // RAG 검색과 생성에 걸리는 시간. 스켈레톤이 실제로 보이게 하려고 넣었다
-    await new Promise((r) => setTimeout(r, 900));
-
-    const topic = topicOf(question);
-    const week = thisWeek();
-    return HttpResponse.json({
-      // 이어지는 대화는 같은 id 를 돌려준다. 매번 새로 주면 대화가 끊긴다
-      conversationId: conversationId ?? uuid(),
-      messageId: uuid(),
-      answer: about?.name ? `${about.name} 기준으로 보면, ${topic.answer}` : topic.answer,
-      // 근거 없는 답변은 버그로 본다. 목에서도 항상 채운다
-      citations: topic.citations,
-      refused: false,
-      refusalReason: null,
-      /*
-        ▲ 백엔드에 요청해 둔 것 — 대화 중 미션 제안.
-        값이 그대로 POST /families/{id}/missions 본문이 되어, 부모가 카드의
-        버튼 한 번으로 미션을 만들 수 있다. 목에서는 운동·시간을 물으면 붙여 준다.
-      */
-      suggestion: topic.mission
-        ? {
-            ...topic.mission,
-            startDate: today(),
-            endDate: week.weekEnd,
-            /* 물어본 사람이 빠진 제안을 내놓지 않는다 */
-            participantProfileIds: [
-              ...new Set([
-                ...(profileId ? [profileId] : []),
-                ...topic.mission.participantProfileIds,
-              ]),
-            ],
-          }
-        : null,
-    });
-  }),
 ];
-
-/**
- * 물음에 맞는 답을 고른다.
- *
- * 전에는 물음을 그대로 앞에 붙이고("… 에 대해,") 늘 같은 문장을 돌려줬다.
- * 무엇을 물어도 같은 답이 오면 대화라기보다 자동응답기로 보인다 — 진짜
- * 코치가 무엇을 하는지 보여 주려면 답이 물음을 따라 달라져야 한다.
- */
-function topicOf(question: string) {
-  const q = question ?? "";
-
-  if (/윗몸|코어|근력|팔굽|스쿼트|플랭크/.test(q)) {
-    return {
-      answer:
-        "윗몸일으키기가 힘들면 바닥에서 완전히 일어나지 않아도 됩니다. 등을 절반만 들었다 내리는 동작으로 열 번씩 세 세트부터 시작해 보세요. 목을 손으로 당기지 않는 것이 중요합니다.",
-      citations: [
-        {
-          index: 1,
-          sourceLabel: "유소년 근지구력 운동처방",
-          excerpt: "부분 윗몸말아올리기는 경추 부담 없이 복부 근지구력을 키우는 데 효과적입니다.",
-          url: null,
-        },
-      ],
-      mission: {
-        title: "코어 10분 놀이",
-        targetMetric: "TIMER_MINUTES",
-        targetValue: 30,
-        videoId: "sample00009",
-        videoTitle: "아이와 마주 보고 하는 코어 놀이",
-        participantProfileIds: [DEMO.kid, DEMO.mom],
-        rationale: "마주 보고 하면 자세를 서로 봐 줄 수 있어 처음 배울 때 좋습니다.",
-      },
-    };
-  }
-
-  if (/층간|소음|아래층|조용/.test(q)) {
-    return {
-      answer:
-        "뛰지 않고도 심박수를 올릴 수 있습니다. 제자리에서 무릎을 들어 올리는 동작과 팔 벌려 높이뛰기 대신 옆으로 발 내딛기를 섞으면 바닥 충격이 크게 줄어듭니다.",
-      citations: [
-        {
-          index: 1,
-          sourceLabel: "가정 내 유산소 운동처방",
-          excerpt: "착지 충격이 적은 동작으로도 중강도 심박수(최대심박수의 64~76%)에 도달합니다.",
-          url: null,
-        },
-      ],
-      mission: {
-        title: "층간소음 없는 유산소",
-        targetMetric: "TIMER_MINUTES",
-        targetValue: 40,
-        videoId: "sample00006",
-        videoTitle: "온 가족 층간소음 없는 유산소 10분",
-        participantProfileIds: [DEMO.kid, DEMO.mom],
-        rationale: "소음이 적어 저녁에도 할 수 있습니다.",
-      },
-    };
-  }
-
-  if (/유연|스트레칭|굽히|뻣뻣/.test(q)) {
-    return {
-      answer:
-        "유연성은 세게 한 번보다 짧게 자주가 낫습니다. 한 자세를 15~30초 유지하고 반동을 주지 않는 것이 핵심이며, 주 4회 이상이면 몇 주 안에 차이가 보입니다.",
-      citations: [
-        {
-          index: 1,
-          sourceLabel: "유소년 유연성 운동처방",
-          excerpt: "정적 스트레칭은 1회 15~30초 유지, 주 4회 이상 반복 시 개선 폭이 큽니다.",
-          url: null,
-        },
-      ],
-      mission: {
-        title: "저녁 10분 스트레칭",
-        targetMetric: "TIMER_MINUTES",
-        targetValue: 40,
-        videoId: "sample00002",
-        videoTitle: "가족이 함께하는 거실 5분 스트레칭",
-        participantProfileIds: [DEMO.kid, DEMO.mom],
-        rationale: "유연성이 또래 평균보다 낮아 짧게 자주 하는 편이 좋습니다.",
-      },
-    };
-  }
-
-  if (/주말|시간|분|바쁘|퇴근|언제/.test(q)) {
-    return {
-      answer:
-        "주말 30분 한 번이 평일 매일보다 지키기 쉽습니다. 처음에는 15분으로 잡고 아이가 끝까지 하면 늘리는 편이 좋습니다. 같이 하는 사람이 있으면 완주율이 눈에 띄게 올라갑니다.",
-      citations: [
-        {
-          index: 1,
-          sourceLabel: "가족 참여형 신체활동 지침",
-          excerpt: "보호자가 함께 참여한 경우 아동의 주간 활동 지속률이 높게 나타났습니다.",
-          url: null,
-        },
-      ],
-      mission: {
-        title: "주말 30분 같이 하기",
-        targetMetric: "TIMER_MINUTES",
-        targetValue: 30,
-        videoId: "sample00002",
-        videoTitle: "가족이 함께하는 거실 5분 스트레칭",
-        participantProfileIds: [DEMO.kid, DEMO.mom],
-        rationale: "평일보다 주말 한 번이 지키기 쉽습니다.",
-      },
-    };
-  }
-
-  return {
-    answer:
-      "국민체력100 측정 결과를 기준으로 답합니다. 어느 항목을 키우고 싶은지, 집에서 할 수 있는 시간이 얼마나 되는지 알려 주시면 더 맞는 운동을 찾아 드릴 수 있어요.",
-    citations: [
-      {
-        index: 1,
-        sourceLabel: "국민체력100 체력측정 안내",
-        excerpt: "체력 요인별 측정 결과에 따라 권장 운동과 강도가 달라집니다.",
-        url: null,
-      },
-    ],
-    mission: null,
-  };
-}
 
 /* ─── 미션 · 활동 · 영상 · 리포트 ──────────────────────────── */
 

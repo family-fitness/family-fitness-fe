@@ -5,9 +5,10 @@ import { Suspense, useEffect, useState } from "react";
 
 import { PlainScreen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
-import { Illustration } from "@/components/ui/illustration";
+import { Avatar, Illustration } from "@/components/ui/illustration";
+import { avatarFor } from "@/lib/avatar";
 import { errorMessage } from "@/lib/errors";
-import { useClaimProfile } from "@/lib/api/queries";
+import { useClaimProfile, useInvitePeek } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
 
 /** 0/O · 1/I 를 뺀 대문자와 숫자 여섯 자리. 링크로 온 코드도 같은 손질을 거친다 */
@@ -34,6 +35,15 @@ function ClaimContent() {
 
   const [code, setCode] = useState(() => normalizeCode(params.get("code") ?? ""));
   const [error, setError] = useState<string | null>(null);
+  /*
+    코드가 어느 **자리**인지 넣기 전에 본다.
+
+    코드는 가족 전체가 아니라 자리 하나에 발급된다. 그런데 화면이 그걸 말하지
+    않아서, 받는 사람은 코드를 넣고 나서야 자기가 누가 됐는지 알았다.
+    「서준이네 · 아빠 자리」 를 먼저 보여 주면 역할을 고를 수 없다는 게 사실이 된다.
+  */
+  const peek = useInvitePeek(code);
+  const seat = peek.data;
 
   // 로그인부터 해야 프로필을 붙일 수 있다. 코드는 들고 간다
   useEffect(() => {
@@ -64,6 +74,9 @@ function ClaimContent() {
       <div className="flex flex-col items-center text-center">
         <Illustration name="scene/scene-invite" size={140} />
         <h1 className="page-title mt-3">초대코드를 넣어 주세요</h1>
+        <p className="text-ink-soft mt-2 text-sm leading-relaxed">
+          어느 자리로 들어올지는 이미 정해져 있어요
+        </p>
       </div>
 
       <div className="space-y-3">
@@ -82,6 +95,31 @@ function ClaimContent() {
           className="border-line focus:border-signal placeholder:text-faint board-num field-focus h-16 w-full rounded-xl border bg-transparent text-center text-2xl tracking-[0.35em]"
         />
 
+        {/* 어느 자리인지. 코드가 맞아야 뜬다 */}
+        {seat && (
+          <div className="border-signal bg-signal-soft flex items-center gap-3 rounded-2xl border p-4">
+            <Avatar
+              parts={avatarFor({ profileId: code, ageGroup: seat.ageGroup ?? undefined })}
+              size={44}
+              className="shrink-0"
+            />
+            <span className="min-w-0 flex-1">
+              <span className="text-body block font-extrabold">
+                {seat.familyName} · {seat.profileName} 자리
+              </span>
+              <span className="text-ink-soft text-caption mt-0.5 block">
+                {seat.invitedByName ? `${seat.invitedByName}님이 보냈어요` : "초대를 받았어요"}
+              </span>
+            </span>
+          </div>
+        )}
+
+        {peek.isError && code.length === 6 && !error && (
+          <p role="alert" className="text-ink-soft text-center text-sm font-bold">
+            없는 코드예요. 다시 확인해 주세요.
+          </p>
+        )}
+
         {error && (
           <p
             role="alert"
@@ -93,11 +131,11 @@ function ClaimContent() {
 
         <Button
           size="block"
-          disabled={code.length !== 6}
+          disabled={code.length !== 6 || !seat}
           loading={claim.isPending}
           onClick={submit}
         >
-          가족으로 들어가기
+          {seat ? `${seat.profileName} 자리로 들어가기` : "가족으로 들어가기"}
         </Button>
       </div>
 

@@ -29,7 +29,7 @@ export default function StartPage() {
   const goParent = () => {
     setMode("parent");
     // 가족이 아직 없으면 만드는 것부터
-    router.push(hasFamily ? "/parent" : "/start/parent");
+    router.push(hasFamily ? "/parent" : "/start/family");
   };
 
   const goKid = () => {

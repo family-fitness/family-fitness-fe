@@ -80,7 +80,6 @@ export type CoachRun = S["CoachRunView"];
 export type CoachProposal = S["ProposalView"];
 export type CoachStep = S["CoachStep"];
 export type CoachApproveResult = S["ApproveCoachRunView"];
-export type CoachChatResult = S["ChatView"];
 export type ChatCitation = S["ChatCitationView"];
 
 export type MissionList = S["MissionListView"];
@@ -115,28 +114,6 @@ export interface CheerLogList {
 }
 
 /**
- * 코치가 대화 중에 내놓는 미션 제안.
- *
- * ▲ 요청: `POST /coach/chat` 응답에 `suggestion?` 을 붙여 주세요.
- * 값이 그대로 `POST /families/{familyId}/missions` 요청 본문이 됩니다 —
- * 부모가 카드의 버튼 한 번으로 미션을 만들 수 있게 하려는 것입니다.
- * 없으면 화면은 지금처럼 답변만 보여 줍니다.
- */
-export interface MissionSuggestion {
-  title: string;
-  targetMetric: TargetMetric;
-  targetValue: number;
-  /** YYYY-MM-DD */
-  startDate: string;
-  endDate: string;
-  videoId?: string | null;
-  videoTitle?: string | null;
-  participantProfileIds: Uuid[];
-  /** 왜 이 미션인지 한 줄 */
-  rationale?: string | null;
-}
-
-/**
  * 측정 회차에 같이 적어 둔 키 · 몸무게.
  *
  * ▲ 요청: `GET /profiles/{profileId}/fitness-tests/latest` 응답에 붙여 주세요.
@@ -159,8 +136,84 @@ export type LatestWithBody = LatestFitnessTest & {
  */
 export type ProfileWithSex = ProfileSummary & { sex?: "M" | "F" | null };
 
-/** 서버 응답에 제안이 붙어 올 수 있다 */
-export type CoachChatAnswer = CoachChatResult & { suggestion?: MissionSuggestion | null };
+/**
+ * 초대코드가 어느 자리인지 미리 보기.
+ *
+ * ▲ 요청: `GET /invites/{claimCode}`.
+ * 코드는 **가족 전체가 아니라 자리 하나**에 발급된다(`POST /profiles/{id}/invite`).
+ * 그런데 받는 쪽 화면은 그걸 모른 채 코드를 넣고 나서야 자기가 누가 됐는지 안다.
+ * 넣기 전에 「서준이네 · 아빠 자리」 를 보여 줘야 **역할을 고를 수 없다**는 것이
+ * 화면에서 사실이 된다.
+ *
+ * 없는 코드는 404, 기한이 지났으면 410 을 주세요.
+ */
+export interface InvitePeek {
+  familyName: string;
+  /** 이 코드가 가리키는 자리 */
+  profileName: string;
+  role: Role;
+  ageGroup?: AgeGroup | null;
+  /** 누가 보냈는지 */
+  invitedByName?: string | null;
+  /** ISO-8601 */
+  expiresAt?: string | null;
+}
+
+/**
+ * 영상 속 **구간**.
+ *
+ * 국민체력100 운동처방 하나가 영상 한 편이 아니라 영상 **안의 한 토막**이다.
+ * 「초등학생 기초체력」 12분짜리 한 편에 준비운동·본운동·정리운동이 다 들어 있다.
+ *
+ * ▲ 요청: `VideoView.chapters[]` 와 `ProposalVideoView.endSec`.
+ * 지금 계약에는 `startSec` 만 있어서 **구간의 끝을 모른다.** 끝을 모르면 구간
+ * 재생도 구간 완주 판정도 안 된다 — 영상 전체 90%를 봐야 완주로 치는 지금
+ * 규칙으로는 90초짜리 구간만 한 아이가 영원히 완주에 못 닿는다.
+ */
+export interface VideoClip {
+  videoId: string;
+  /** 초 단위. 없으면 영상 처음부터 */
+  startSec?: number | null;
+  /** 초 단위. **없으면 구간이 아니라 영상 한 편이다** */
+  endSec?: number | null;
+  title?: string | null;
+  url?: string | null;
+  thumbnailUrl?: string | null;
+}
+
+/** 준비 · 본 · 정리. 하루치 미션이 이 셋으로 나뉜다 */
+export type SessionPhase = "WARMUP" | "MAIN" | "COOLDOWN";
+
+/**
+ * 미션 한 건 안의 세션 하나.
+ *
+ * ▲ 요청: `MissionView.sessions[]` · `ProposalView.sessions[]` ·
+ * `CreateMissionRequest.sessions[]` · `POST /missions/{id}/sessions/{position}/done`.
+ *
+ * **안 오면 지어내지 않는다.** 세션이 없으면 화면은 본운동 한 칸만 그린다 —
+ * 준비운동과 정리운동을 프론트가 만들어 붙이면 코치가 짜지 않은 운동을
+ * 아이에게 시키는 게 된다.
+ */
+export interface MissionSession {
+  /** 1부터. 순서가 곧 하는 차례다 */
+  position: number;
+  phase: SessionPhase;
+  title: string;
+  factor?: string | null;
+  /** 이 세션에 잡힌 시간(분) */
+  minutes?: number | null;
+  clip?: VideoClip | null;
+  completed?: boolean;
+  verifiedBy?: VerifiedBy | null;
+}
+
+/** 서버가 세션을 붙여 줄 수 있다 */
+export type MissionWithSessions = Mission & { sessions?: MissionSession[] | null };
+export type ProposalWithSessions = CoachProposal & {
+  sessions?: MissionSession[] | null;
+  /** 이번 주 어느 요일에 넣을지. ▲ 요청: `ProposalView.days` */
+  days?: string[] | null;
+};
 
 /* ─── 오류 ─────────────────────────────────────────────────── */
 

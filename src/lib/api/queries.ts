@@ -10,12 +10,12 @@ import type {
   CheerLogList,
   CoachApproveResult,
   TargetMetric,
-  CoachChatAnswer,
   CoachRun,
   FitnessItems,
   FitnessMap,
   FitnessTestResult,
   InviteCode,
+  InvitePeek,
   LatestWithBody,
   MeResponse,
   NextStep,
@@ -144,6 +144,24 @@ export function useCreateProfile(familyId: Uuid) {
 export function useOpenInvite() {
   return useMutation({
     mutationFn: (profileId: Uuid) => api.post<InviteCode>(`/profiles/${profileId}/invite`),
+  });
+}
+
+/**
+ * 코드를 넣기 전에 어느 자리인지 본다.
+ *
+ * 여섯 자리가 다 채워져야 묻는다. 한 글자마다 물으면 서버가 코드를 쓸어 보는
+ * 시도를 받아 주는 꼴이 된다.
+ * ▲ 요청: `GET /invites/{claimCode}`. 없으면 화면은 지금처럼 코드만 받는다.
+ */
+export function useInvitePeek(code: string) {
+  const ready = code.length === 6;
+  return useQuery({
+    queryKey: ["invites", code],
+    queryFn: () => api.get<InvitePeek>(`/invites/${code}`),
+    enabled: ready,
+    retry: false,
+    staleTime: 60_000,
   });
 }
 
@@ -317,13 +335,6 @@ export function useRejectCoachRun(runId: Uuid, familyId?: Uuid) {
       qc.invalidateQueries({ queryKey: qk.coach.run(runId) });
       if (familyId) qc.invalidateQueries({ queryKey: qk.coach.latest(familyId) });
     },
-  });
-}
-
-export function useAskCoach(profileId: Uuid) {
-  return useMutation({
-    mutationFn: (body: { question: string; conversationId?: string }) =>
-      api.post<CoachChatAnswer>("/coach/chat", { profileId, ...body }),
   });
 }
 

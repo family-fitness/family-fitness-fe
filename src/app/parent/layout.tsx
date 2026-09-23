@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
-import { ChatDock } from "@/components/domain/chat-dock";
 import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 
@@ -25,7 +24,6 @@ export default function ParentAreaLayout({ children }: { children: ReactNode }) 
   return (
     <>
       <div className="has-dock">{children}</div>
-      <ChatDock />
     </>
   );
 }

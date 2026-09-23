@@ -19,6 +19,7 @@ declare global {
 interface YtPlayer {
   getCurrentTime: () => number;
   getDuration: () => number;
+  pauseVideo: () => void;
   destroy: () => void;
 }
 
@@ -31,13 +32,15 @@ interface YtOptions {
 }
 
 /** 우리가 직접 만드는 임베드 주소. `enablejsapi` 가 있어야 스크립트가 붙을 수 있다 */
-function embedSrc(videoId: string, startSec?: number | null): string {
+function embedSrc(videoId: string, startSec?: number | null, endSec?: number | null): string {
   const params = new URLSearchParams({
     enablejsapi: "1",
     playsinline: "1",
     rel: "0",
     start: String(startSec ?? 0),
   });
+  // 유튜브 자체 end 로 한 겹 더 막는다. 우리 타이머가 늦어도 여기서 선다
+  if (endSec != null) params.set("end", String(Math.ceil(endSec)));
   if (typeof window !== "undefined") params.set("origin", window.location.origin);
   return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?${params}`;
 }
@@ -58,24 +61,44 @@ function loadApi(): Promise<void> {
 export function YouTubePlayer({
   videoId,
   startSec,
+  endSec,
   onProgress,
+  onClipEnd,
 }: {
   videoId: string;
   startSec?: number | null;
-  /** 진행률(0~1) 과 본 초. 재생 중 5초마다, 그리고 끝날 때 한 번 */
+  /**
+   * 구간의 끝(초). **있으면 여기서 멈춘다.**
+   *
+   * 운동처방 하나는 영상 한 편이 아니라 영상 안의 한 토막이다. 끝에서 안 멈추면
+   * 아이가 다음 운동 영상을 그대로 이어 본다 — 코치가 짜지 않은 운동이다.
+   */
+  endSec?: number | null;
+  /**
+   * 진행률과 본 초. 재생 중 5초마다, 그리고 끝날 때 한 번.
+   *
+   * 구간이면 **구간 기준 진행률과 구간 안에서 본 초**를 준다. 영상 전체가 아니다 —
+   * 12분짜리의 90초 구간을 다 본 아이는 진행률 1 이어야 한다.
+   */
   onProgress: (progress: number, watchedSec: number) => void;
+  /** 구간 끝에 닿았을 때 한 번 */
+  onClipEnd?: () => void;
 }) {
   const holder = useRef<HTMLIFrameElement>(null);
   const player = useRef<YtPlayer | null>(null);
   const reported = useRef(0);
+  /** 구간 끝을 한 번만 알린다 */
+  const ended = useRef(false);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
 
   // onProgress 가 매 렌더 새 함수여도 플레이어를 다시 만들지 않게 붙들어 둔다
   const report = useRef(onProgress);
+  const clipEnd = useRef(onClipEnd);
   useEffect(() => {
     report.current = onProgress;
-  }, [onProgress]);
+    clipEnd.current = onClipEnd;
+  }, [onProgress, onClipEnd]);
 
   useEffect(() => {
     let cancelled = false;
@@ -109,24 +132,52 @@ export function YouTubePlayer({
                 if (e.data === window.YT?.PlayerState.ENDED) send();
                 return;
               }
-              ticker = setInterval(send, 5000);
+              // 구간이면 끝을 놓치지 않게 촘촘히 본다. 5초면 최대 5초를 넘겨 재생한다
+              ticker = setInterval(send, endSec != null ? 500 : 5000);
             },
           },
         });
       })
       .catch(() => setFailed(true));
 
+    /**
+     * 얼마나 왔는지 알린다.
+     *
+     * **구간이면 구간 기준으로 잰다.** 영상 전체로 재면 12분짜리의 90초 구간을
+     * 다 본 아이가 12%로 찍히고, 90% 문턱에 영원히 못 닿는다.
+     */
     function send() {
       const p = player.current;
       if (!p) return;
+      const at = p.getCurrentTime();
+      const from = startSec ?? 0;
+
+      if (endSec != null && endSec > from) {
+        const watched = Math.max(0, Math.min(endSec, at) - from);
+        const progress = Math.min(1, watched / (endSec - from));
+        if (progress > reported.current) {
+          reported.current = progress;
+          report.current(progress, Math.round(watched));
+        }
+        // 구간 끝에 닿으면 멈춘다. 다음 운동으로 그냥 넘어가게 두지 않는다
+        if (at >= endSec) {
+          clearInterval(ticker);
+          p.pauseVideo();
+          if (!ended.current) {
+            ended.current = true;
+            clipEnd.current?.();
+          }
+        }
+        return;
+      }
+
       const duration = p.getDuration();
-      const watched = p.getCurrentTime();
       if (!duration) return;
-      const progress = Math.min(1, watched / duration);
+      const progress = Math.min(1, at / duration);
       // 뒤로 감아도 최대치만 의미가 있다. 서버도 최대 진행률만 남긴다
       if (progress <= reported.current) return;
       reported.current = progress;
-      report.current(progress, Math.round(watched));
+      report.current(progress, Math.round(at));
     }
 
     return () => {
@@ -135,7 +186,7 @@ export function YouTubePlayer({
       player.current?.destroy();
       player.current = null;
     };
-  }, [videoId, startSec]);
+  }, [videoId, startSec, endSec]);
 
   /*
     비공개·삭제·임베드 금지, 또는 스크립트를 못 받았을 때.
@@ -149,10 +200,10 @@ export function YouTubePlayer({
         <Illustration name="scene/scene-no-video" size={110} />
         <p className="mt-3 text-lg font-extrabold">지금은 이 영상을 못 봐요</p>
         <NavLink
-          href="/kid/pick"
+          href="/kid"
           className="press bg-signal mt-4 w-full rounded-2xl py-3.5 text-base font-extrabold text-white"
         >
-          다른 운동 고르기
+          홈으로 가기
         </NavLink>
         <a
           href={`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`}
@@ -172,7 +223,7 @@ export function YouTubePlayer({
         <iframe
           ref={holder}
           title="운동 영상"
-          src={embedSrc(videoId, startSec)}
+          src={embedSrc(videoId, startSec, endSec)}
           allow="autoplay; encrypted-media; picture-in-picture; compute-pressure"
           allowFullScreen
           className="size-full border-0"
