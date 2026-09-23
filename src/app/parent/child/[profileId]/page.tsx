@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScoreLine } from "@/components/domain/body-card";
 import { FactorRadar, RadarGapNote } from "@/components/domain/factor-radar";
 import { FactorTable } from "@/components/domain/factor-table";
+import { IslandCard } from "@/components/domain/island-card";
 import { ScoreTrend } from "@/components/domain/score-trend";
 import { REMEASURE_DAYS } from "@/components/domain/update-nudge";
 import type { FitnessTestSummary } from "@/lib/api/types";
@@ -148,6 +149,9 @@ export default function ChildDetailPage() {
           }
           lastTestedOn={latest?.testedOn}
         />
+
+        {/* 아이 화면의 섬을 부모도 본다. 해낸 날이 쌓이는 곳 */}
+        <IslandCard profileId={profileId} name={name} />
 
         <Card href={`/p/${profileId}/future`} label="10년 위 연령대 보기">
           <div className="flex items-center gap-3">
