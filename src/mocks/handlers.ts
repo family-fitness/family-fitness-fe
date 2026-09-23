@@ -739,6 +739,64 @@ const missions = [
     });
   }),
 
+  /**
+   * 한 칸 끝냈다. ▲ 서버에 아직 없다 — `POST /missions/{id}/sessions/{position}/done`.
+   *
+   * 앱 안 타이머로 잰 시간이라 서버가 아는 값이다(`TIMER`). 영상을 끝까지 봤는지가
+   * 아니라 **잡힌 시간 동안 따라 했는지**로 판정한다 — 영상은 동작 시범일 뿐이다(9/23 회의).
+   */
+  http.post<PathParams>(
+    `${BASE}/missions/:missionId/sessions/:position/done`,
+    async ({ params, request }) => {
+      const body = (await request.json()) as { profileId: string; activeSeconds: number };
+      const mission = db.missions.find((m) => m.missionId === String(params.missionId));
+      if (!mission) return fail(404, "MISSION_NOT_FOUND", "미션이 없습니다");
+      const sessions =
+        (
+          mission as unknown as {
+            sessions?: {
+              position: number;
+              minutes?: number | null;
+              completed?: boolean;
+              verifiedBy?: string | null;
+            }[];
+          }
+        ).sessions ?? [];
+      const session = sessions.find((s) => s.position === Number(params.position));
+      if (!session) return fail(404, "SESSION_NOT_FOUND", "그 칸이 없습니다");
+      // 잡힌 시간의 절반도 안 했으면 끝낸 것으로 치지 않는다
+      const planned = (session.minutes ?? 1) * 60;
+      if ((body.activeSeconds ?? 0) < planned * 0.5) {
+        return fail(422, "TOO_SHORT", "잡힌 시간의 절반도 하지 않았습니다");
+      }
+
+      const first = !session.completed;
+      session.completed = true;
+      session.verifiedBy = "TIMER";
+      const total = sessions.reduce((sum, s) => sum + (s.minutes ?? 0), 0) || 1;
+      const done = sessions
+        .filter((s) => s.completed)
+        .reduce((sum, s) => sum + (s.minutes ?? 0), 0);
+      const allDone = sessions.every((s) => s.completed);
+      const me = (mission.participants ?? []).find((p) => p.profileId === body.profileId);
+      if (me) {
+        me.progress = done / total;
+        me.verifiedBy = "TIMER";
+        if (allDone) me.completed = true;
+      }
+      saveMissions();
+
+      return HttpResponse.json({
+        position: session.position,
+        verifiedBy: "TIMER",
+        missionProgress: done / total,
+        missionCompleted: allDone,
+        // 두 번 눌러도 두 번 쌓이지 않는다
+        xpGained: first ? 5 + (allDone ? 20 : 0) : 0,
+      });
+    },
+  ),
+
   http.post(`${BASE}/missions/:missionId/activity/steps`, async ({ request }) => {
     const body = (await request.json()) as { steps: number };
     // 자기 신고다. 목표를 넘겨도 보호자 확인 전에는 완료가 아니다

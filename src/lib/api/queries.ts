@@ -567,3 +567,34 @@ export function useProgress(profileId: Uuid | undefined) {
     enabled: Boolean(profileId),
   });
 }
+
+/**
+ * 한 칸 끝냈다. 앱 안 타이머로 잰 시간이라 `TIMER` 로 남는다.
+ * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
+ */
+export function useCompleteSession(missionId: Uuid, familyId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      position,
+      ...body
+    }: {
+      position: number;
+      profileId: string;
+      activeSeconds: number;
+      startedAt: string;
+      endedAt: string;
+    }) =>
+      api.post<{
+        position: number;
+        missionProgress: number;
+        missionCompleted: boolean;
+        xpGained: number;
+      }>(`/missions/${missionId}/sessions/${position}/done`, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
+      refreshProgress(qc);
+    },
+  });
+}
