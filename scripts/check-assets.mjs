@@ -7,7 +7,7 @@
  *
  *   node scripts/check-assets.mjs
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,7 +19,8 @@ const SPEC = join(ROOT, "ASSET_PROMPTS.md");
 
 /** public/assets 에 실제로 있는 이름들 ("move/move-situp" 꼴) */
 const have = new Set();
-for (const category of readdirSync(ASSET_DIR)) {
+// 새 그림을 기다리는 동안에는 폴더째 없을 수 있다
+for (const category of existsSync(ASSET_DIR) ? readdirSync(ASSET_DIR) : []) {
   const dir = join(ASSET_DIR, category);
   if (!statSync(dir).isDirectory()) continue;
   for (const file of readdirSync(dir)) {
@@ -69,9 +70,9 @@ for (const file of walk(SRC_DIR)) {
   for (const [, name] of text.matchAll(/(?:name|fallback)=["']([a-z0-9-]+\/[a-z0-9-]+)["']/g)) {
     note(relative(ROOT, file), name);
   }
-  // EmptyState 의 scene="no-record" → scene/scene-no-record
+  // EmptyState 의 scene="no-record" → scene/kiumi-no-record (키움이 장면)
   for (const [, scene] of text.matchAll(/scene=["']([a-z0-9-]+)["']/g)) {
-    note(relative(ROOT, file), `scene/scene-${scene}`);
+    note(relative(ROOT, file), `scene/kiumi-${scene}`);
   }
   // "move/move-x" 처럼 따옴표 안에 직접 적힌 것 (fitness-items.ts 의 매핑표)
   for (const [, name] of text.matchAll(
