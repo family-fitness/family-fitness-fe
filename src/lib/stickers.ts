@@ -31,6 +31,14 @@ export const STICKERS: readonly Sticker[] = [
   { id: "kiumi", label: "꼭 안아 줄게", art: "sticker/sticker-kiumi" },
 ];
 
+/**
+ * 아이가 엄마 · 아빠한테 돌려보내는 고마워요 스티커 넷.
+ * 칭찬은 부모가 보낸다(규칙 12) — 아이가 보내는 건 칭찬이 아니라 「고마워요」 다.
+ */
+export const THANKS_STICKERS: readonly Sticker[] = ["heart", "kiumi", "star", "clap"].flatMap(
+  (id) => STICKERS.filter((s) => s.id === id),
+);
+
 /** 코드로 스티커를 찾는다. 모르는 코드면 undefined — 지어내지 않는다 */
 export function stickerOf(id: string | null | undefined): Sticker | undefined {
   return STICKERS.find((s) => s.id === id);

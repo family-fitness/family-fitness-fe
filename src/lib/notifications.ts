@@ -22,6 +22,8 @@ export function notificationHref(n: NotificationView): string | null {
       return n.missionId ? `/kid/m/${n.missionId}` : "/kid";
     case "ACHIEVEMENT":
       return "/kid/badges";
+    case "KID_THANKS":
+      return null;
     default:
       return null;
   }
@@ -40,6 +42,8 @@ export function notificationArt(n: NotificationView): string {
       return "icon/menu-ai";
     case "ACHIEVEMENT":
       return "icon/menu-trophy";
+    case "KID_THANKS":
+      return stickerOf(n.stickerId)?.art ?? "icon/menu-cheer";
     default:
       return "icon/menu-cheer";
   }

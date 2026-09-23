@@ -418,7 +418,9 @@ export type NotificationKind =
   /** 아이에게 — 오늘 운동이 생겼다 */
   | "MISSION_READY"
   /** 아이에게 — 새 업적 */
-  | "ACHIEVEMENT";
+  | "ACHIEVEMENT"
+  /** 부모에게 — 아이가 고마워요 스티커를 보냈다 */
+  | "KID_THANKS";
 
 export interface NotificationView {
   notificationId: string;
@@ -427,6 +429,11 @@ export interface NotificationView {
   body: string | null;
   /** 누구에 관한 알림인가. 부모 알림이면 그 아이 */
   aboutProfileId: Uuid | null;
+  /**
+   * 누가 보냈나 — 스티커 · 칭찬 · 고마워요. 아이가 고마워요를 돌려보낼 곳이다.
+   * ▲ 요청: `NotificationView.fromProfileId`
+   */
+  fromProfileId?: Uuid | null;
   missionId: Uuid | null;
   /** YYYY-MM-DD. 캘린더 그날로 갈 때 */
   date: string | null;

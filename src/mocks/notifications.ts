@@ -48,11 +48,26 @@ function notificationsFor(profileId: string): NotificationView[] {
   const items: Draft[] = [];
 
   if (me.role === "PARENT") {
-    // 아이가 「다 했어요」 를 알렸다
+    // 아이가 「다 했어요」 를 알렸다 · 고마워요 스티커를 보냈다
     for (const c of db.cheers) {
       if (c.toProfileId !== profileId) continue;
       const kid = people.find((p) => p.profileId === c.fromProfileId);
       if (kid?.role !== "CHILD") continue;
+      if (c.stickerId) {
+        items.push({
+          notificationId: `thanks-${c.cheerId}`,
+          kind: "KID_THANKS",
+          title: `${subject(kid.name ?? "아이")} 고맙대요`,
+          body: stickerOf(c.stickerId)?.label ?? c.message,
+          aboutProfileId: kid.profileId ?? null,
+          fromProfileId: kid.profileId ?? null,
+          missionId: null,
+          date: dayOf(c.createdAt),
+          stickerId: c.stickerId,
+          createdAt: c.createdAt,
+        });
+        continue;
+      }
       items.push({
         notificationId: `done-${c.cheerId}`,
         kind: "KID_DONE",
@@ -95,6 +110,7 @@ function notificationsFor(profileId: string): NotificationView[] {
       items.push({
         notificationId: `praise-${c.cheerId}`,
         kind: "PRAISE",
+        fromProfileId: c.fromProfileId,
         title: sticker
           ? `${subject(from)} 스티커를 붙여 줬어요`
           : `${subject(from)} 칭찬을 보냈어요`,
