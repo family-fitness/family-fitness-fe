@@ -321,7 +321,7 @@ export function MoveDice({
         <div className="bg-paper border-signal-deep shadow-card grid size-28 place-items-center rounded-2xl border-4 px-2 text-center">
           <span className="text-sm leading-tight font-extrabold">
             {shown?.name}
-            <span className="text-signal mt-1 block">{shown?.amount}</span>
+            <span className="text-signal-strong mt-1 block">{shown?.amount}</span>
           </span>
         </div>
       </div>
