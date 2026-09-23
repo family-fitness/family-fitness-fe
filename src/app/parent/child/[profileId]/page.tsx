@@ -10,8 +10,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScoreLine } from "@/components/domain/body-card";
-import { FactorRadar, RadarGapNote } from "@/components/domain/factor-radar";
+import { FactorView, ScoreLine } from "@/components/domain/body-card";
+import { RadarGapNote } from "@/components/domain/factor-radar";
 import { FactorTable } from "@/components/domain/factor-table";
 import { IslandCard } from "@/components/domain/island-card";
 import { ScoreTrend } from "@/components/domain/score-trend";
@@ -113,7 +113,7 @@ export default function ChildDetailPage() {
           ) : (
             <p className="text-lead mt-2 font-extrabold">아직 재지 않았어요</p>
           )}
-          <FactorRadar points={latest?.radar} name={name} className="mt-3" />
+          <FactorView points={latest?.radar} name={name} pending={false} />
           <RadarGapNote points={latest?.radar} />
         </Card>
 

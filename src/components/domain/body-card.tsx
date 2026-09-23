@@ -3,11 +3,14 @@
 import Link from "next/link";
 
 import { Card, CardHead } from "@/components/ui/card";
+import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorRadar, RadarGapNote } from "@/components/domain/factor-radar";
+import { FactorPillars } from "@/components/scene/factor-pillars";
 import type { FitnessMapMember } from "@/lib/api/types";
 import { useLatestFitnessTest } from "@/lib/api/queries";
 import { formatDate } from "@/lib/utils";
+import { usePrefsStore, type ChartView } from "@/stores/prefs-store";
 
 /**
  * 부모 홈의 주인공 — 「우리 아이가 이 정도다」.
@@ -33,11 +36,7 @@ export function BodyCard({ child }: { child: FitnessMapMember }) {
 
       {score == null ? <FirstMeasure child={child} /> : <ScoreLine score={score} />}
 
-      {isPending ? (
-        <Skeleton className="mx-auto mt-4 aspect-[320/276] w-full rounded-3xl" />
-      ) : (
-        <FactorRadar points={latest?.radar} name={name} className="mt-3" />
-      )}
+      <FactorView points={latest?.radar} name={name} pending={isPending} />
       <RadarGapNote points={latest?.radar} />
 
       {/* 서버가 준 한 줄을 그대로. 고쳐 쓰면 두 화면이 다른 말을 한다(규칙 9) */}
@@ -93,6 +92,48 @@ function FirstMeasure({ child }: { child: FitnessMapMember }) {
         >
           첫 측정 하기
         </Link>
+      )}
+    </div>
+  );
+}
+
+const VIEWS = [
+  { value: "3d", label: "입체" },
+  { value: "flat", label: "육각형" },
+] as const;
+
+/**
+ * 여섯 요인 — 입체 기둥 또는 평면 육각형. 같은 값을 다르게 볼 뿐이다.
+ * 고른 쪽은 이 기기에 남는다. 표(요인별)는 아이 자세히에 늘 같이 있다.
+ */
+export function FactorView({
+  points,
+  name,
+  pending,
+}: {
+  points: Parameters<typeof FactorRadar>[0]["points"];
+  name: string;
+  pending: boolean;
+}) {
+  const view = usePrefsStore((s) => s.chartView);
+  const setView = usePrefsStore((s) => s.setChartView);
+
+  return (
+    <div className="mt-3">
+      <div className="flex justify-end">
+        <Segmented<ChartView>
+          value={view}
+          options={VIEWS}
+          onChange={setView}
+          label="체력 그래프 보기"
+        />
+      </div>
+      {pending ? (
+        <Skeleton className="mx-auto mt-2 aspect-[320/276] w-full rounded-3xl" />
+      ) : view === "3d" ? (
+        <FactorPillars points={points} name={name} className="mt-1" />
+      ) : (
+        <FactorRadar points={points} name={name} className="mt-1" />
       )}
     </div>
   );
