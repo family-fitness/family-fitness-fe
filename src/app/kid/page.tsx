@@ -223,7 +223,8 @@ export default function KidHomePage() {
           </div>
         </Card>
 
-        <PlayCard level={progress?.level} />
+        {/* 레벨을 받은 뒤에 — 먼저 Lv.1 로 그렸다가 바뀌면 열린 놀이가 줄었다 늘어 보인다 */}
+        {progress && <PlayCard level={progress.level} />}
         <RecentStickers cheers={cheers?.cheers} nameOf={nameOf} />
         <RecentBadges achievements={progress?.achievements} />
 
