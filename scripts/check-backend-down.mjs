@@ -35,6 +35,8 @@ const ROUTES = [
   "/kid",
   "/kid/m/seed-today",
   "/kid/badges",
+  "/kid/play",
+  "/kid/play/dice",
   "/calendar",
   "/notifications",
   "/plan",
