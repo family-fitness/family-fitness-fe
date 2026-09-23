@@ -27,6 +27,7 @@ import { useSession } from "@/lib/session";
 import { daysSince } from "@/lib/today";
 import { useBodyStore } from "@/stores/body-store";
 import { formatDate, withJosa } from "@/lib/utils";
+import { ArtIcon } from "@/components/ui/art-icon";
 
 /**
  * 아이 한 명 자세히 — 어디쯤이고, 어떻게 자라고 있나.
@@ -154,7 +155,7 @@ export default function ChildDetailPage() {
               aria-hidden
               className="bg-signal-soft text-signal-strong grid size-11 shrink-0 place-items-center rounded-2xl"
             >
-              <Telescope className="size-5" />
+              <ArtIcon name="icon/menu-future" fallback={Telescope} className="size-6" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-extrabold">10년 위 연령대는 어디쯤일까</p>
@@ -242,7 +243,7 @@ function BodyGrowth({
             : "press bg-sub text-ink mt-3 flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold"
         }
       >
-        <Ruler aria-hidden className="size-4" />
+        <ArtIcon name="icon/menu-measure" fallback={Ruler} className="size-5" />
         {withJosa(name, "을를")} 새로 재기
       </NavLink>
     </Card>

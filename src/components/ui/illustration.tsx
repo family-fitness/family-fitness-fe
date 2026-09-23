@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState, type CSSProperties } from "react";
 
+import { ASSETS } from "@/lib/asset-list";
 import { cn } from "@/lib/utils";
 
 /** 에셋 그림. 파일이 없으면 조용히 숨는다 */
@@ -28,7 +29,17 @@ export function Illustration({
   // 0 = 원본, 1 = 대체 그림, 2 = 둘 다 없음
   const [stage, setStage] = useState(0);
   if (stage >= 2) return null;
-  const src = stage === 0 ? name : fallback;
+  /*
+    있는 그림 목록에 없는 것은 부르지도 않는다. 불렀다가 실패해서 숨기면 그 사이에
+    빈 상자가 번쩍이고 콘솔에 404 가 쌓인다.
+  */
+  const wanted = stage === 0 ? name : fallback;
+  const src =
+    wanted && ASSETS.has(wanted)
+      ? wanted
+      : stage === 0 && fallback && ASSETS.has(fallback)
+        ? fallback
+        : null;
   if (!src) return null;
 
   // 정사각 상자에 비율을 지켜 앉힌다. 높이를 auto 로 두면 세로로 긴 그림이 폭주한다

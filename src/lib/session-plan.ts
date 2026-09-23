@@ -35,13 +35,7 @@ const PHASE_ORDER: Record<SessionPhase, number> = { WARMUP: 0, MAIN: 1, COOLDOWN
 export function sessionsOf(mission: MissionWithSessions | Mission | undefined): MissionSession[] {
   if (!mission) return [];
   const given = (mission as MissionWithSessions).sessions;
-  if (given && given.length > 0) {
-    return [...given].sort(
-      (a, b) =>
-        (PHASE_ORDER[a.phase] ?? 9) - (PHASE_ORDER[b.phase] ?? 9) ||
-        (a.position ?? 0) - (b.position ?? 0),
-    );
-  }
+  if (given && given.length > 0) return orderSessions(given);
 
   /* 세션이 없는 미션도 하나는 해야 한다. 미션 자체를 본운동 한 칸으로 본다 */
   const me = mission.participants?.[0];
@@ -64,6 +58,15 @@ export function sessionsOf(mission: MissionWithSessions | Mission | undefined): 
       verifiedBy: me?.verifiedBy ?? null,
     },
   ];
+}
+
+/** 준비 → 본 → 정리, 같은 단계 안에서는 받은 차례대로 */
+export function orderSessions(given: MissionSession[] | null | undefined): MissionSession[] {
+  return [...(given ?? [])].sort(
+    (a, b) =>
+      (PHASE_ORDER[a.phase] ?? 9) - (PHASE_ORDER[b.phase] ?? 9) ||
+      (a.position ?? 0) - (b.position ?? 0),
+  );
 }
 
 /** 아직 안 한 것 중 첫 번째. 다 했으면 undefined */

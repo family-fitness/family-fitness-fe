@@ -332,6 +332,59 @@ export interface XpEvent {
   at: string;
 }
 
+/** 요일. 한 주는 월요일에 시작한다 */
+export type Weekday = "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN";
+
+/**
+ * 운동할 수 있는 시간 — 한 사람의 한 주.
+ *
+ * ▲ 요청: `GET · PUT /profiles/{profileId}/availability`
+ * AI 편성이 「몇 분」 의 기본값으로 쓴다. 이 시간이 아니라고 운동을 막지는 않는다 —
+ * 추천이 시간으로 정해지는 게 아니라 언제 하겠다는 약속이다(9/23 회의).
+ */
+export interface AvailabilitySlot {
+  day: Weekday;
+  /** HH:mm, 한국 시각 */
+  start: string;
+  minutes: number;
+}
+
+export interface Availability {
+  profileId: Uuid;
+  slots: AvailabilitySlot[];
+}
+
+/**
+ * 운동 클립 — 영상 속 한 동작.
+ *
+ * ▲ 요청: `GET /clips?factor=&phase=&quiet=&q=&list=&profileId=` · `POST /clips/{clipId}/favorite`
+ * 지금 계약의 영상(`VideoView`)은 한 편 단위라, 한 편 안에 든 여러 동작을 따로 고를 수 없다.
+ * AI 쪽이 이미 영상 48편을 491개 클립으로 끊어 두었다(`video_clips.csv`) — 그 표를 그대로 주세요.
+ */
+export interface ClipView {
+  clipId: string;
+  videoId: string;
+  startSec: number;
+  endSec: number;
+  /** 화면에 뜬 운동 이름 */
+  title: string;
+  factor: FitnessFactor | null;
+  phase: SessionPhase;
+  /** 집에서 할 수 있나 */
+  homeOk: boolean;
+  /** 쿵쿵 소리가 안 나나 */
+  quiet: boolean;
+  /** 도구가 필요한가 */
+  props: boolean;
+  favorited: boolean;
+}
+
+export interface ClipList {
+  clips: ClipView[];
+  /** 조건에 맞는 전체 수. 목록은 앞의 일부만 온다 */
+  total: number;
+}
+
 /* ─── 오류 ─────────────────────────────────────────────────── */
 
 /** 실패는 한 형태다. **봉투가 있다.** */

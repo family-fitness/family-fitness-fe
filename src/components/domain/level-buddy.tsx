@@ -1,10 +1,12 @@
+import { ASSETS } from "@/lib/asset-list";
 import type { Stage } from "@/lib/levels";
 import { cn } from "@/lib/utils";
 
 /*
   레벨 캐릭터 「키움이」.
 
-  그림 파일이 오기 전까지 코드로 그린다(`ASSET_PROMPTS.md` 에 주문해 두었다).
+  그림 파일(`level/level-1` … `level/level-5-cheer`)이 들어오면 그걸 쓰고, 오기 전까지는
+  코드로 그린다(`ASSET_PROMPTS.md` 1장 — 이 코드 그림이 그 주문의 참고 그림이다).
   색은 파랑 · 남색 · 노랑 · 흰색뿐이고 그라데이션 · 그림자가 없다 — 헬스 앱의 단순한 결.
   머리 위 새싹이 단계마다 자란다. 몸은 그대로라 같은 아이가 자라는 것으로 읽힌다.
 
@@ -31,6 +33,22 @@ export function LevelBuddy({
   /** 읽어 줄 이름. 없으면 그림으로만 둔다 */
   label?: string;
 }) {
+  // 주문한 그림이 들어왔으면 그림으로. 목록에 없으면 코드로 그린 모습이 선다
+  const art = `level/level-${stage}${cheer ? "-cheer" : ""}`;
+  if (ASSETS.has(art)) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- 크기가 고정된 작은 그림이다
+      <img
+        src={`/assets/${art}.png`}
+        alt={label ?? ""}
+        aria-hidden={label ? undefined : true}
+        width={size}
+        height={size}
+        className={cn("shrink-0 object-contain", className)}
+      />
+    );
+  }
+
   return (
     <svg
       viewBox="0 0 160 160"

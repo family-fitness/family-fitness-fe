@@ -1,23 +1,27 @@
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { ArtIcon } from "./art-icon";
 import { NavLink } from "./nav-link";
 
 /**
  * 카드 안의 한 줄 — 다른 화면으로 가는 길.
  *
- * 줄마다 그림을 따로 뽑아 붙이던 것을 선 아이콘으로 바꿨다. 봉투 · 운동화 · 메달이
- * 한 목록에 섞이니 굵기도 색도 다 달라서 "중구난방" 의 한 원인이었다.
+ * 줄 앞 그림은 한 결로 새로 주문한 `icon/menu-*` 이다. 예전에는 봉투 · 운동화 · 메달이
+ * 한 목록에 섞여 굵기도 색도 다 달랐다. 그림이 오기 전까지는 선 아이콘이 대신 선다.
  * 목록은 `card` 안에 `divide-rows` 로 담는다.
  */
 export function ListRow({
   href,
-  icon: Icon,
+  art,
+  icon,
   title,
   description,
   trailing,
 }: {
   href: string;
+  /** 그림 이름(`icon/menu-family`). 그림이 오기 전까지 `icon` 이 대신 선다 */
+  art: string;
   icon: LucideIcon;
   title: string;
   description?: string;
@@ -30,7 +34,7 @@ export function ListRow({
           aria-hidden
           className="bg-signal-soft text-signal-strong grid size-9 shrink-0 place-items-center rounded-xl"
         >
-          <Icon className="size-4.5" strokeWidth={2.1} />
+          <ArtIcon name={art} fallback={icon} className="size-5.5" />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-bold">{title}</span>

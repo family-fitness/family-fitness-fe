@@ -6,6 +6,10 @@ import { api, query } from "./client";
 import type {
   AgeGroup,
   AuthResponse,
+  Availability,
+  AvailabilitySlot,
+  ClipList,
+  MissionSession,
   CalendarView,
   Cheer,
   CheerLogList,
@@ -28,7 +32,6 @@ import type {
   Role,
   SupportMode,
   Uuid,
-  VideoList,
 } from "./types";
 
 /**
@@ -52,6 +55,7 @@ export const qk = {
     latestTest: (profileId: Uuid) => ["profile", profileId, "fitness-tests", "latest"] as const,
     tests: (profileId: Uuid) => ["profile", profileId, "fitness-tests", "list"] as const,
     progress: (profileId: Uuid) => ["profile", profileId, "progress"] as const,
+    availability: (profileId: Uuid) => ["profile", profileId, "availability"] as const,
   },
   fitness: {
     items: (ageGroup: AgeGroup | undefined) => ["fitness", "items", ageGroup ?? "all"] as const,
@@ -60,8 +64,8 @@ export const qk = {
     run: (runId: Uuid) => ["coach", "runs", runId] as const,
     latest: (familyId: Uuid) => ["coach", "runs", "latest", familyId] as const,
   },
-  videos: (list: string, profileId?: Uuid, ageGroup?: AgeGroup) =>
-    ["videos", list, profileId ?? "-", ageGroup ?? "-"] as const,
+  clips: (filter: Record<string, string | boolean | null | undefined>) =>
+    ["clips", filter] as const,
 };
 
 /**
@@ -282,13 +286,35 @@ export function useCreatePrediction(profileId: Uuid) {
 /* ─── 코치 ─────────────────────────────────────────────────── */
 
 /** 비동기다. 202 로 접수만 되고 status 가 RUNNING 으로 시작한다 */
+/**
+ * 오늘 운동을 짜 달라고 한다. 채팅이 아니라 **고른 조건**을 보낸다(9/23 회의).
+ *
+ * ▲ 계약의 요청은 한 주 단위(`weekStart` · `daysPerWeek` · `minutesPerSession`)다.
+ * 하루 단위와 조건 칸을 요청해 두었다(`BACKEND_ASKS.md`). `minutesPerSession` 은
+ * 지금 서버도 알아듣게 같이 보낸다.
+ */
+export interface PlanRequest {
+  /** 누구의 운동인지 */
+  profileId: string;
+  /** YYYY-MM-DD. 그날 하루 */
+  date: string;
+  minutes: number;
+  /** 아랫집이 신경 쓰이면 뛰는 동작을 뺀다 */
+  quiet: boolean;
+  place: "HOME" | "OUTDOOR";
+  /** 부모가 고른 힘. null 이면 코치가 가장 낮은 요인을 고른다 */
+  focusFactor: string | null;
+  /** 부모도 같이 하나. 참여 방식에서 기본값이 온다 */
+  withParent: boolean;
+}
+
 export function useStartCoachRun(familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { daysPerWeek?: number; minutesPerSession?: number } = {}) =>
+    mutationFn: (body: PlanRequest) =>
       api.post<{ coachRunId: string; status: string; pollAfterMs: number }>(
         `/families/${familyId}/coach/runs`,
-        body,
+        { ...body, minutesPerSession: body.minutes },
       ),
     onSuccess: (run) => {
       qc.invalidateQueries({ queryKey: qk.coach.run(run.coachRunId) });
@@ -304,7 +330,8 @@ export function useCoachRun(runId: Uuid | undefined) {
     queryKey: qk.coach.run(runId ?? ""),
     queryFn: () => api.get<CoachRun>(`/coach/runs/${runId}`),
     enabled: Boolean(runId),
-    refetchInterval: (q) => (q.state.data?.status === "RUNNING" ? 1500 : false),
+    // 짜는 동안은 촘촘히 — 단계가 하나씩 차오르는 것이 이 화면의 전부다
+    refetchInterval: (q) => (q.state.data?.status === "RUNNING" ? 700 : false),
   });
 }
 
@@ -366,10 +393,13 @@ export function useCreateMission(familyId: Uuid) {
       targetValue: number;
       videoId?: string | null;
       participantProfileIds: Uuid[];
+      /** ▲ 요청: `CreateMissionRequest.sessions`. 직접 짠 루틴의 칸들 */
+      sessions?: MissionSession[];
     }) => api.post<{ missionId: Uuid }>(`/families/${familyId}/missions`, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       qc.invalidateQueries({ queryKey: ["family", familyId, "fitness-map"] });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
     },
   });
 }
@@ -384,45 +414,6 @@ export function useMissions(
     queryKey: qk.family.missions(familyId ?? "", options.scope, options.status),
     queryFn: () => api.get<MissionList>(`/families/${familyId}/missions${query({ ...options })}`),
     enabled: Boolean(familyId),
-  });
-}
-
-/** 자기 신고다. 목표를 넘겨도 보호자 확인 전에는 완료가 아니다 */
-export function useRecordSteps(missionId: Uuid, familyId: Uuid) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (body: { profileId: string; activityDate: string; steps: number }) =>
-      api.post<{ missionProgress: number; missionCompleted: boolean; needsGuardianCheck: boolean }>(
-        `/missions/${missionId}/activity/steps`,
-        body,
-      ),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
-      qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
-      refreshProgress(qc);
-    },
-  });
-}
-
-/** 서버가 진짜로 아는 값이라 자동 완료 판정에 쓰인다 */
-export function useRecordTimer(missionId: Uuid, familyId: Uuid) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (body: {
-      profileId: string;
-      startedAt: string;
-      endedAt: string;
-      activeMinutes: number;
-    }) =>
-      api.post<{ totalActiveMinutes: number; missionProgress: number; missionCompleted: boolean }>(
-        `/missions/${missionId}/activity/timer`,
-        body,
-      ),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
-      qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
-      refreshProgress(qc);
-    },
   });
 }
 
@@ -441,55 +432,6 @@ export function useConfirmParticipant(missionId: Uuid, familyId: Uuid) {
 }
 
 /* ─── 영상 ─────────────────────────────────────────────────── */
-
-export function useVideos(options: {
-  list?: "ALL" | "FAVORITES" | "RECENT";
-  profileId?: Uuid;
-  ageGroup?: AgeGroup;
-  factor?: string;
-}) {
-  const list = options.list ?? "ALL";
-  return useQuery({
-    queryKey: qk.videos(list, options.profileId, options.ageGroup),
-    queryFn: () => api.get<VideoList>(`/videos${query({ ...options, list, size: 20 })}`),
-    // FAVORITES · RECENT 는 profileId 가 없으면 400 이다
-    enabled: list === "ALL" || Boolean(options.profileId),
-  });
-}
-
-export function useToggleFavorite(profileId: Uuid) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ videoId, favorited }: { videoId: string; favorited: boolean }) =>
-      api.post(`/videos/${videoId}/favorite`, { profileId, favorited }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["videos"] }),
-  });
-}
-
-/**
- * 최대 진행률만 남는다. 처음으로 0.9 를 넘으면 영상 길이만큼 활동시간이 1회 적립된다.
- * 두 번 적립되지 않는다.
- */
-export function useRecordVideoProgress(videoId: string) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (body: {
-      profileId: string;
-      progress: number;
-      watchedSec: number;
-      missionId?: string;
-    }) =>
-      api.post<{ maxProgress: number; completed: boolean; creditedMinutes: number }>(
-        `/videos/${videoId}/progress`,
-        body,
-      ),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["videos"] });
-      qc.invalidateQueries({ queryKey: ["family"] });
-      refreshProgress(qc);
-    },
-  });
-}
 
 /* ─── 응원 · 리포트 ────────────────────────────────────────── */
 
@@ -565,5 +507,97 @@ export function useProgress(profileId: Uuid | undefined) {
     queryKey: qk.profile.progress(profileId ?? ""),
     queryFn: () => api.get<ProgressView>(`/profiles/${profileId}/progress`),
     enabled: Boolean(profileId),
+  });
+}
+
+/**
+ * 한 칸 끝냈다. 앱 안 타이머로 잰 시간이라 `TIMER` 로 남는다.
+ * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
+ */
+export function useCompleteSession(missionId: Uuid, familyId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      position,
+      ...body
+    }: {
+      position: number;
+      profileId: string;
+      activeSeconds: number;
+      startedAt: string;
+      endedAt: string;
+    }) =>
+      api.post<{
+        position: number;
+        missionProgress: number;
+        missionCompleted: boolean;
+        xpGained: number;
+      }>(`/missions/${missionId}/sessions/${position}/done`, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
+      refreshProgress(qc);
+    },
+  });
+}
+
+/**
+ * 운동할 수 있는 시간. AI 편성의 「몇 분」 기본값이 여기서 나온다.
+ * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
+ */
+export function useAvailability(profileId: Uuid | undefined) {
+  return useQuery({
+    queryKey: qk.profile.availability(profileId ?? ""),
+    queryFn: () => api.get<Availability>(`/profiles/${profileId}/availability`),
+    enabled: Boolean(profileId),
+  });
+}
+
+export function useSaveAvailability(profileId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (slots: AvailabilitySlot[]) =>
+      api.put<Availability>(`/profiles/${profileId}/availability`, { slots }),
+    onSuccess: (saved) => qc.setQueryData(qk.profile.availability(profileId), saved),
+  });
+}
+
+/**
+ * 운동 클립 찾기 — 키우고 싶은 힘 · 준비/본/정리 · 조용한 것 · 이름 · 즐겨찾기.
+ * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 AI 쪽 클립 표로 답한다.
+ */
+export function useClips(filter: {
+  factor?: string | null;
+  phase?: string | null;
+  quiet?: boolean;
+  q?: string;
+  list?: "ALL" | "FAVORITES";
+  profileId?: Uuid;
+}) {
+  return useQuery({
+    queryKey: qk.clips(filter),
+    queryFn: () =>
+      api.get<ClipList>(
+        `/clips${query({
+          factor: filter.factor ?? undefined,
+          phase: filter.phase ?? undefined,
+          quiet: filter.quiet ? "true" : undefined,
+          q: filter.q || undefined,
+          list: filter.list,
+          profileId: filter.profileId,
+        })}`,
+      ),
+    // 즐겨찾기는 누구의 것인지 알아야 한다
+    enabled: filter.list !== "FAVORITES" || Boolean(filter.profileId),
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useToggleClipFavorite(profileId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ clipId, favorited }: { clipId: string; favorited: boolean }) =>
+      api.post(`/clips/${encodeURIComponent(clipId)}/favorite`, { profileId, favorited }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["clips"] }),
   });
 }

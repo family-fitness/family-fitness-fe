@@ -15,12 +15,13 @@ import { BodyCard } from "@/components/domain/body-card";
 import { ChildSwitch } from "@/components/domain/child-switch";
 import { FamilyCard } from "@/components/domain/family-card";
 import { FinderCard } from "@/components/domain/finder-card";
+import { ProposalNudge } from "@/components/domain/proposal-nudge";
 import { TodayCard } from "@/components/domain/today-card";
 import { UpdateNudge } from "@/components/domain/update-nudge";
 import { WeekCard } from "@/components/domain/week-card";
 import { useCalendar, useFitnessMap, useMissions } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
-import { longDate, today, weekOf } from "@/lib/today";
+import { longDate, weekOf } from "@/lib/today";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
@@ -52,7 +53,6 @@ export default function ParentHomePage() {
 
   const week = weekOf();
   const { data: calendar } = useCalendar(familyId, child?.profileId, week);
-  const todayLog = calendar?.days.find((d) => d.date === today());
 
   const header = (
     <HomeHeader
@@ -106,13 +106,15 @@ export default function ParentHomePage() {
         <BodyCard child={child} />
         <UpdateNudge child={child} />
 
+        <ProposalNudge familyId={familyId} />
+
         <TodayCard
           familyId={familyId ?? ""}
           parentProfileId={profile?.profileId ?? ""}
           childProfileId={child.profileId ?? ""}
           childName={child.name ?? "아이"}
           missions={missions?.missions}
-          todayLog={todayLog}
+          weekLogs={calendar?.days}
         />
 
         <WeekCard days={week.days} logs={calendar?.days} href="/parent/history" />

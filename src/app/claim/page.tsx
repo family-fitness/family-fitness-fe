@@ -10,6 +10,7 @@ import { errorMessage } from "@/lib/errors";
 import { useClaimProfile, useInvitePeek } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
 import { Initial } from "@/components/ui/initial";
+import { ArtIcon } from "@/components/ui/art-icon";
 
 /** 0/O · 1/I 를 뺀 대문자와 숫자 여섯 자리. 링크로 온 코드도 같은 손질을 거친다 */
 const normalizeCode = (raw: string) =>
@@ -76,7 +77,7 @@ function ClaimContent() {
           aria-hidden
           className="bg-signal-soft text-signal-strong grid size-20 place-items-center rounded-full"
         >
-          <TicketCheck className="size-9" strokeWidth={1.8} />
+          <ArtIcon name="icon/menu-invite" fallback={TicketCheck} className="size-11" />
         </span>
         <h1 className="page-title mt-3">초대코드를 넣어 주세요</h1>
         <p className="text-ink-soft mt-2 text-sm leading-relaxed">

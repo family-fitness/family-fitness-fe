@@ -22,6 +22,7 @@ import { today } from "@/lib/today";
 import { bodyError, bodyValue, rangeHint } from "@/lib/body";
 import { useBodyStore } from "@/stores/body-store";
 import { cn, withJosa } from "@/lib/utils";
+import { ArtIcon } from "@/components/ui/art-icon";
 
 /** 체력 측정 입력. */
 
@@ -309,7 +310,7 @@ export default function MeasurePage() {
                   aria-hidden
                   className="bg-sub text-ink-soft grid size-10 shrink-0 place-items-center rounded-xl"
                 >
-                  <Wrench className="size-4.5" />
+                  <ArtIcon name="icon/menu-equipment" fallback={Wrench} className="size-6" />
                 </span>
                 <span className="flex-1">
                   <span className="block text-sm font-bold">장비가 있으면 더 정확해요</span>

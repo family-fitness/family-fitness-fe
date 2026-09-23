@@ -1,6 +1,6 @@
 import { Card, CardHead } from "@/components/ui/card";
 import { NavLink } from "@/components/ui/nav-link";
-import { FACTOR_ICON } from "@/components/domain/factor-icon";
+import { FactorIcon } from "@/components/domain/factor-icon";
 import { FACTORS } from "@/lib/fitness-factors";
 
 /**
@@ -15,14 +15,13 @@ export function FinderCard() {
       <CardHead title="키우고 싶은 힘으로 찾기" href="/videos" />
       <ul className="mt-2 grid grid-cols-3 gap-2">
         {FACTORS.map((f) => {
-          const Icon = FACTOR_ICON[f];
           return (
             <li key={f}>
               <NavLink
                 href={`/videos?factor=${encodeURIComponent(f)}`}
                 className="press bg-sub flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2.5"
               >
-                <Icon aria-hidden className="text-signal-strong size-5" strokeWidth={2.2} />
+                <FactorIcon factor={f} className="text-signal-strong size-7" />
                 <span className="text-caption font-bold">{f}</span>
               </NavLink>
             </li>

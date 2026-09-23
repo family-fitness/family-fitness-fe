@@ -27,6 +27,7 @@ import type {
 
 import { dayOf, toDateString } from "@/lib/today";
 
+import clipsJson from "./clips.json";
 import fixturesJson from "./fixtures.json";
 
 /** 픽스처의 모양. */
@@ -51,6 +52,9 @@ export interface Fixtures {
 }
 
 export const fixtures = fixturesJson as unknown as Concrete<Fixtures>;
+
+/** 클립 목록. `db` 를 채우기 전에 있어야 한다 — 오늘 미션을 이걸로 짠다 */
+export const catalog = clipsJson as CatalogClip[];
 
 /**
  * 시연 가족 아이의 측정을 다섯 요인까지 채운다.
@@ -132,6 +136,22 @@ export function seedTests(): Record<string, FitnessTestSummary[]> {
   };
 }
 
+/** 아이는 월 · 수 · 금 저녁과 토요일 오전, 엄마는 토요일 오전에 같이 */
+export function seedAvailability(): Record<
+  string,
+  { day: string; start: string; minutes: number }[]
+> {
+  return {
+    [KID_ID]: [
+      { day: "MON", start: "19:00", minutes: 20 },
+      { day: "WED", start: "19:00", minutes: 20 },
+      { day: "FRI", start: "19:00", minutes: 20 },
+      { day: "SAT", start: "10:00", minutes: 30 },
+    ],
+    "00000000-0000-4000-8000-000000000011": [{ day: "SAT", start: "10:00", minutes: 30 }],
+  };
+}
+
 /** 다섯 항목 평균 55. 서버가 그러듯 목도 머리말을 같이 바꾼다 */
 function demoMap() {
   const map = structuredClone(fixtures.fitnessMap);
@@ -182,6 +202,8 @@ export const db = {
   latest: demoLatest(),
   /** 측정 이력. 점수 흐름과 키 · 몸무게가 자란 모습을 그린다 */
   tests: seedTests(),
+  /** 운동할 수 있는 시간. 사람마다 한 주 */
+  availability: seedAvailability(),
   coachRun: loadCoachRun(),
   /** 이번 주 제안은 아직 0건이다. 심어 둔 것은 지난 회차에서 승인한 미션들이다 */
   missions: loadMissions(),
@@ -294,16 +316,12 @@ export function daysAgo(days: number, hour: number): string {
 export function seedCheers(): CheerLog[] {
   type Row = { from: string; to: string; msg: string; mission: string | null; days: number };
   const rows: Row[] = [
-    // 오늘 — 아이가 알렸고 부모는 아직 답하지 않았다
-    { from: DEMO.kid, to: DEMO.mom, msg: "줄넘기 2분 다 했어요!", mission: "seed-m1", days: 0 },
-    { from: DEMO.kid, to: DEMO.dad, msg: "줄넘기 2분 다 했어요!", mission: "seed-m1", days: 0 },
-    // 어제 — 알리고 받았다
-    { from: DEMO.kid, to: DEMO.mom, msg: "같이 스트레칭 다 했어요!", mission: "seed-m2", days: 1 },
-    { from: DEMO.mom, to: DEMO.kid, msg: "끝까지 한 게 제일 멋있어", mission: "seed-m2", days: 1 },
-    { from: DEMO.dad, to: DEMO.kid, msg: "아빠보다 오래 하던데?", mission: "seed-m2", days: 1 },
+    // 어제 — 아이가 다 했다고 알렸고 엄마 · 아빠가 답했다
+    { from: DEMO.kid, to: DEMO.mom, msg: "오늘 운동 다 했어요!", mission: null, days: 1 },
+    { from: DEMO.mom, to: DEMO.kid, msg: "끝까지 한 게 제일 멋있어", mission: null, days: 1 },
+    { from: DEMO.dad, to: DEMO.kid, msg: "아빠보다 오래 하던데?", mission: null, days: 1 },
     // 사흘 전
-    { from: DEMO.kid, to: DEMO.mom, msg: "제자리 뛰기 다 했어요!", mission: "seed-m3", days: 3 },
-    { from: DEMO.mom, to: DEMO.kid, msg: "오늘 진짜 잘했어", mission: "seed-m3", days: 3 },
+    { from: DEMO.mom, to: DEMO.kid, msg: "오늘 진짜 잘했어", mission: null, days: 3 },
   ];
   const nameOf = (id: string) =>
     fixtures.profiles.profiles.find((p) => p.profileId === id)?.name ?? "가족";
@@ -320,133 +338,128 @@ export function seedCheers(): CheerLog[] {
 }
 
 /**
- * 이미 승인해서 돌아가고 있는 미션들.
+ * 운동 클립 목록 — 영상 속 한 동작.
  *
- * "승인해야 미션이 된다" 는 **이번 주 제안**에 대한 말이다(도메인 규칙 1).
- * 지난주에 승인한 미션까지 없는 척하면, 시연을 여는 가족은 이 앱을 오늘 처음
- * 깐 것이 되고 자라는 기록도 최근 기록도 전부 빈 화면이 된다.
- * 그래서 **지난 코치 회차**에서 나온 미션을 심고, 이번 주 회차는 승인 전으로 둔다.
+ * AI 쪽이 국민체력100 유튜브 영상 48편을 화면 글자로 읽어 끊어 낸 491개다
+ * (`family-fitness-ai` develop, `data/release/video_clips.csv` + `clip_labels.csv`).
+ * 유튜브 아이디 · 시작 · 끝이 진짜라 시연에서 영상이 그대로 돈다.
  */
+export interface CatalogClip {
+  id: string;
+  videoId: string;
+  startSec: number;
+  endSec: number;
+  title: string;
+  factor: string | null;
+  phase: "WARMUP" | "MAIN" | "COOLDOWN";
+  homeOk: boolean;
+  quiet: boolean;
+  props: boolean;
+}
+
 /** 영상 속 한 토막. ▲ `endSec` 는 계약에 없다 — 목에서는 준다 */
-export function clip(videoId: string, startSec: number, endSec: number, title: string) {
+export function clip(c: Pick<CatalogClip, "videoId" | "startSec" | "endSec" | "title">) {
   return {
-    videoId,
-    startSec,
-    endSec,
-    title,
-    url: `https://www.youtube.com/watch?v=${videoId}`,
+    videoId: c.videoId,
+    startSec: c.startSec,
+    endSec: c.endSec,
+    title: c.title,
+    url: `https://www.youtube.com/watch?v=${c.videoId}`,
+    thumbnailUrl: `https://i.ytimg.com/vi/${c.videoId}/mqdefault.jpg`,
   };
 }
 
+/**
+ * 조건에 맞는 클립을 n 개. 같은 이름은 한 번만 — 「거북이 스트레칭」 이 여러 영상에
+ * 되풀이되는데, 한 번에 두 번 시키면 짜 놓은 운동이 아니라 반복이다.
+ * `skip` 만큼 건너뛰어 같은 조건이라도 날마다 다른 것을 고를 수 있게 한다.
+ */
+export function pickClips(where: (c: CatalogClip) => boolean, n: number, skip = 0): CatalogClip[] {
+  const seen = new Set<string>();
+  const out: CatalogClip[] = [];
+  const pool = catalog.filter(where);
+  for (let i = 0; i < pool.length && out.length < n; i++) {
+    const c = pool[(i + skip) % pool.length];
+    if (seen.has(c.title)) continue;
+    // 20초짜리 토막은 따라 하기엔 너무 짧다
+    if (c.endSec - c.startSec < 35) continue;
+    seen.add(c.title);
+    out.push(c);
+  }
+  return out;
+}
+
+/**
+ * 오늘 한 칸씩. 준비 2 · 본 2 · 정리 2 로 짜는 것이 AI 편성의 기본 모양이다(9/23 회의).
+ * 칸마다 **잡힌 시간**이 있고 영상은 그 동안 따라 할 시범이다 — 영상이 1분이어도
+ * 4분을 하라고 하면 4분 동안 되풀이된다.
+ */
+export function sessionsFor(
+  focus: string,
+  minutes: number,
+  options: { quiet?: boolean; skip?: number } = {},
+) {
+  const { quiet = true, skip = 0 } = options;
+  const ok = (c: CatalogClip) => c.homeOk && !c.props && (!quiet || c.quiet);
+  // 본운동은 시간이 길수록 가짓수를 늘린다 — 한 동작을 13분씩 되풀이시키지 않는다.
+  // 준비 2 · 정리 2 에 본운동 2~6, 모두 열 칸을 넘기지 않는다(회의: 열 개 넘으면 짜증난다)
+  const mainCount = Math.min(6, Math.max(2, Math.round((minutes - 4) / 4)));
+  const warm = pickClips((c) => ok(c) && c.phase === "WARMUP" && c.factor === "유연성", 2, skip);
+  const main = pickClips((c) => ok(c) && c.phase === "MAIN" && c.factor === focus, mainCount, skip);
+  const cool = pickClips((c) => ok(c) && c.phase === "COOLDOWN", 2, skip);
+  // 준비 · 정리는 1분씩, 남는 시간을 본운동이 나눈다. 나머지는 앞 칸부터 1분씩 더한다
+  const mainTotal = Math.max(main.length, minutes - warm.length - cool.length);
+  const base = Math.floor(mainTotal / Math.max(1, main.length));
+  const extra = mainTotal - base * main.length;
+  const rows = [
+    ...warm.map((c) => ({ c, minutes: 1 })),
+    ...main.map((c, i) => ({ c, minutes: base + (i < extra ? 1 : 0) })),
+    ...cool.map((c) => ({ c, minutes: 1 })),
+  ];
+  return rows.map(({ c, minutes: m }, i) => ({
+    position: i + 1,
+    phase: c.phase,
+    title: c.title,
+    factor: c.factor,
+    minutes: m,
+    clip: clip(c),
+    completed: false,
+    verifiedBy: null,
+  }));
+}
+
+/**
+ * 오늘 돌아가는 미션.
+ *
+ * 아이는 오늘 운동 여섯 칸 중 준비운동 둘을 끝내 둔 상태다 — 아이 홈에는 「이어서 하기」,
+ * 부모 홈에는 링이 조금 찬 모습이 뜬다. 직접 적은 걸음수 기록 하나는 보호자 확인을
+ * 기다린다(규칙 2). 지난날의 기록은 `history.ts` 가 날짜별로 따로 답한다.
+ */
 export function seedMissions(): MissionRow[] {
-  const day = (back: number) => dayOf(daysAgo(back, 12));
+  const today = dayOf(daysAgo(0, 12));
+  const sessions = sessionsFor("유연성", 12).map((s, i) =>
+    i < 2 ? { ...s, completed: true, verifiedBy: "TIMER" } : s,
+  );
   return [
     {
-      missionId: "seed-m1",
-      title: "줄넘기 2분",
+      missionId: "seed-today",
+      title: "유연성 키우기 12분",
       origin: "COACH",
       coachRunId: PAST_RUN_ID,
       targetMetric: "TIMER_MINUTES",
-      targetValue: 20,
+      targetValue: 12,
       serverVerifiable: true,
-      startDate: day(6),
-      endDate: day(0),
-      rationale: "심폐지구력은 짧게 자주가 길게 한 번보다 낫습니다.",
-      video: {
-        videoId: "IdpXx2gm90o",
-        title: "초등학생의 기초체력향상과 운동능력발달을 위한 운동",
-        url: "https://www.youtube.com/watch?v=IdpXx2gm90o",
-        durationSec: 600,
-        startSec: 96,
-      },
-      /*
-        ▲ 서버에 아직 없다. 제안 모양으로 답한다.
-        운동처방 하나가 영상 한 편이 아니라 영상 안의 한 토막이라,
-        하루치가 준비·본·정리 셋으로 나뉜다.
-      */
-      sessions: [
-        {
-          position: 1,
-          phase: "WARMUP",
-          title: "팔 벌려 뛰기",
-          factor: "심폐지구력",
-          minutes: 2,
-          clip: clip("IdpXx2gm90o", 12, 130, "팔 벌려 뛰기"),
-          completed: true,
-          verifiedBy: "VIDEO_PROGRESS",
-        },
-        {
-          position: 2,
-          phase: "MAIN",
-          title: "제자리 달리기",
-          factor: "심폐지구력",
-          minutes: 15,
-          clip: clip("IdpXx2gm90o", 186, 340, "제자리 달리기"),
-          completed: false,
-          verifiedBy: null,
-        },
-        {
-          position: 3,
-          phase: "COOLDOWN",
-          title: "나비자세",
-          factor: "유연성",
-          minutes: 3,
-          clip: clip("IdpXx2gm90o", 580, 738, "나비자세"),
-          completed: false,
-          verifiedBy: null,
-        },
-      ],
+      startDate: today,
+      endDate: today,
+      rationale: "유연성이 가장 낮아요. 늘이는 동작을 준비와 정리에 같이 넣었어요.",
+      video: null,
+      sessions,
       participants: [
         {
           profileId: DEMO.kid,
           name: "서준",
-          progress: 0.7,
+          progress: 2 / 12,
           completed: false,
-          verifiedBy: "TIMER",
-          needsGuardianCheck: false,
-        },
-        {
-          profileId: DEMO.mom,
-          name: "은영",
-          progress: 0.3,
-          completed: false,
-          verifiedBy: "TIMER",
-          needsGuardianCheck: false,
-        },
-      ],
-    },
-    {
-      missionId: "seed-m2",
-      title: "같이 스트레칭",
-      origin: "COACH",
-      coachRunId: PAST_RUN_ID,
-      targetMetric: "TIMER_MINUTES",
-      targetValue: 30,
-      serverVerifiable: true,
-      startDate: day(9),
-      endDate: day(3),
-      rationale: "유연성은 매일 조금씩 늘려 가는 영역입니다.",
-      video: {
-        videoId: "IdpXx2gm90o",
-        title: "온 가족이 함께하는 스트레칭",
-        url: "https://www.youtube.com/watch?v=IdpXx2gm90o",
-        durationSec: 480,
-        startSec: 0,
-      },
-      participants: [
-        {
-          profileId: DEMO.kid,
-          name: "서준",
-          progress: 1,
-          completed: true,
-          verifiedBy: "VIDEO_PROGRESS",
-          needsGuardianCheck: false,
-        },
-        {
-          profileId: DEMO.mom,
-          name: "은영",
-          progress: 1,
-          completed: true,
           verifiedBy: "TIMER",
           needsGuardianCheck: false,
         },
@@ -455,18 +468,18 @@ export function seedMissions(): MissionRow[] {
     {
       /*
         직접 적은 기록. **목표를 넘겨도 완료가 아니다** — 보호자가 확인해야
-        완료가 된다(도메인 규칙 2). 그래서 completed 는 false 로 둔다.
-        부모 홈에 "확인해 주기" 가 하나 떠 있어야 이 규칙이 화면에서 보인다.
+        완료가 된다(도메인 규칙 2). 부모 홈에 "확인해 주기" 가 하나 떠 있어야
+        이 규칙이 화면에서 보인다.
       */
-      missionId: "seed-m3",
-      title: "제자리 뛰기 100번",
+      missionId: "seed-steps",
+      title: "학교까지 걸어가기",
       origin: "PARENT",
       coachRunId: null,
       targetMetric: "STEPS",
       targetValue: 3000,
       serverVerifiable: false,
-      startDate: day(4),
-      endDate: day(0),
+      startDate: dayOf(daysAgo(2, 12)),
+      endDate: today,
       rationale: null,
       video: null,
       participants: [
@@ -477,38 +490,6 @@ export function seedMissions(): MissionRow[] {
           completed: false,
           verifiedBy: "SELF_REPORT",
           needsGuardianCheck: true,
-        },
-      ],
-    },
-    {
-      /* 지지난주. 지난 기록에 한 줄 더 있어야 목록이 목록으로 보인다 */
-      missionId: "seed-m0",
-      title: "저녁 산책 20분",
-      origin: "PARENT",
-      coachRunId: null,
-      targetMetric: "TIMER_MINUTES",
-      targetValue: 60,
-      serverVerifiable: true,
-      startDate: day(20),
-      endDate: day(14),
-      rationale: null,
-      video: null,
-      participants: [
-        {
-          profileId: DEMO.kid,
-          name: "서준",
-          progress: 1,
-          completed: true,
-          verifiedBy: "TIMER",
-          needsGuardianCheck: false,
-        },
-        {
-          profileId: DEMO.dad,
-          name: "도현",
-          progress: 1,
-          completed: true,
-          verifiedBy: "TIMER",
-          needsGuardianCheck: false,
         },
       ],
     },

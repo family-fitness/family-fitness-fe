@@ -171,6 +171,82 @@ sex: "M" | "F"
 
 ---
 
+## 4-2. 오늘 운동 짜기 · 하기
+
+9/23 회의 — **짧은 구간(2분 안팎) 여러 개를 차례로** 틀고, 한 칸이 끝나면 다음 칸으로
+내려가는 방식으로 정했습니다. 아래가 있어야 그 흐름이 서버와 이어집니다.
+
+### 미션 · 제안에 `sessions[]` — 준비 · 본 · 정리 칸
+
+`MissionView.sessions[]` · `ProposalView.sessions[]` · `CreateMissionRequest.sessions[]`
+
+```
+sessions: [{
+  position: 1,                       // 1부터. 하는 차례
+  phase: "WARMUP" | "MAIN" | "COOLDOWN",
+  title: "팔 벌려 뛰기",
+  factor: "민첩성" | null,
+  minutes: 2 | null,
+  clip: { videoId, startSec, endSec, title } | null,
+  completed: false,
+  verifiedBy: "TIMER" | "VIDEO_PROGRESS" | null
+}]
+```
+
+**`endSec` 이 꼭 있어야 합니다.** 끝을 모르면 구간만 틀 수도, 다 했는지 잴 수도 없습니다.
+세션이 안 오면 프론트는 미션 전체를 본운동 한 칸으로 그립니다 — 준비 · 정리를 지어내지 않습니다.
+
+### `POST /missions/{missionId}/sessions/{position}/done`
+
+한 칸 끝. 앱 안 타이머로 잰 시간이라 `verifiedBy: TIMER` 로 남겨 주세요.
+
+```
+요청 { profileId, activeSeconds, startedAt, endedAt }
+응답 { position, missionProgress, missionCompleted, xpGained }
+```
+
+마지막 칸이면 미션 완료 · 부모 알림까지 같이 처리해 주시면 됩니다.
+
+### 코치 실행에 조건 — `POST /families/{familyId}/coach/runs`
+
+부모가 고른 조건을 같이 보냅니다. 지금은 `minutesPerSession` 만 받습니다.
+
+```
+{
+  profileId,            // 누구의 운동인지
+  date: "2026-09-23",   // 그날 하루
+  minutes: 20,          // 기본값은 아래 「운동할 수 있는 시간」 에서
+  quiet: true,          // 아랫집이 신경 쓰이면 뛰는 동작 빼기
+  place: "HOME" | "OUTDOOR",
+  focusFactor: "유연성" | null,  // null 이면 코치가 가장 낮은 요인을 고름
+  withParent: true      // 부모도 같이 하나
+}
+```
+
+### `GET · PUT /profiles/{profileId}/availability` — 운동할 수 있는 시간
+
+사람마다 한 주. AI 편성의 「몇 분」 기본값과 홈 링의 「이번 주 며칠」 목표가 여기서 나옵니다.
+**운동을 막는 데 쓰지 않습니다** — 적어 둔 날이 아니어도 운동은 됩니다.
+
+```
+{ profileId, slots: [{ day: "MON" … "SUN", start: "19:00", minutes: 20 }] }
+```
+
+### `GET /clips?factor=&phase=&quiet=&q=&list=&profileId=` · `POST /clips/{clipId}/favorite`
+
+「키우고 싶은 힘으로 찾기」 화면. AI 쪽이 영상 48편을 491개 클립으로 끊어 둔 표
+(`video_clips.csv`)를 그대로 주시면 됩니다. `list=FAVORITE` 는 즐겨찾기만.
+
+```
+{
+  clips: [{ clipId, videoId, startSec, endSec, title,
+            factor, phase, homeOk, quiet, props, favorited }],
+  total
+}
+```
+
+---
+
 ## 5. 보안
 
 ### HttpOnly 쿠키 토큰

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { Illustration } from "@/components/ui/illustration";
+import { LevelBuddy } from "@/components/domain/level-buddy";
 import { useMe } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRoleStore } from "@/stores/role-store";
@@ -54,7 +54,7 @@ export default function SplashPage() {
 
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-4">
-      <Illustration name="anim/pose-cheer" size={140} priority />
+      <LevelBuddy stage={3} size={140} />
       <p className="page-title text-center">우리가족 체력키움</p>
       <p className="text-ink-soft text-sm">국민체력100 공개데이터로 만든 가족 체력 서비스</p>
     </div>

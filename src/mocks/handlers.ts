@@ -15,12 +15,10 @@ import {
   fail,
   fixtures,
   saveCheers,
-  saveCoachRun,
   saveFamily,
   saveMissions,
   setActingProfile,
   setStage,
-  thisWeek,
   uuid,
   type Concrete,
   type MapMember,
@@ -28,6 +26,8 @@ import {
   type Profile,
 } from "./db";
 
+import { clips } from "./clips";
+import { coaching } from "./coach";
 import { history } from "./history";
 import { progress } from "./progress";
 
@@ -435,6 +435,35 @@ const fitness = [
     return HttpResponse.json(table[ageGroup ?? "유소년"] ?? table["유소년"]);
   }),
 
+  /** ▲ 서버에 아직 없다. 운동할 수 있는 시간 */
+  http.get<PathParams>(`${BASE}/profiles/:profileId/availability`, ({ params }) =>
+    HttpResponse.json({
+      profileId: String(params.profileId),
+      slots: db.availability[String(params.profileId)] ?? [],
+    }),
+  ),
+
+  http.put<PathParams>(`${BASE}/profiles/:profileId/availability`, async ({ params, request }) => {
+    const me = acting();
+    if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자만 바꿀 수 있습니다");
+    const body = (await request.json()) as {
+      slots?: { day: string; start: string; minutes: number }[];
+    };
+    const days = new Set(["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]);
+    const slots = (body.slots ?? []).filter(
+      (s) =>
+        days.has(s.day) &&
+        /^([01]\d|2[0-3]):[0-5]\d$/.test(s.start) &&
+        s.minutes >= 5 &&
+        s.minutes <= 120,
+    );
+    if (slots.length !== (body.slots ?? []).length) {
+      return fail(400, "INVALID_SLOT", "요일 · 시각 · 시간 중 맞지 않는 값이 있습니다");
+    }
+    db.availability[String(params.profileId)] = slots;
+    return HttpResponse.json({ profileId: String(params.profileId), slots });
+  }),
+
   /** ▲ 서버에 아직 없다. 최근 회차가 먼저 온다 */
   http.get<PathParams>(`${BASE}/profiles/:profileId/fitness-tests`, ({ params }) =>
     HttpResponse.json({ tests: db.tests[String(params.profileId)] ?? [] }),
@@ -573,90 +602,6 @@ const fitness = [
 
 /* ─── 코치 — 승인 게이트 ───────────────────────────────────── */
 
-const coaching = [
-  http.post(`${BASE}/families/:familyId/coach/runs`, async () => {
-    /* 제안도 오늘이 속한 주로 만든다. 픽스처 날짜를 그대로 쓰면 지난주 제안이 뜬다 */
-    const week = thisWeek();
-    db.coachRun = {
-      ...structuredClone(fixtures.coachRun),
-      weekStart: week.weekStart,
-      proposals: structuredClone(fixtures.coachRun.proposals ?? []).map((p) => ({
-        ...p,
-        startDate: week.weekStart,
-        endDate: week.weekEnd,
-      })),
-    };
-    db.hasCoachRun = true;
-    saveCoachRun();
-    // 실행은 비동기다. 접수만 하고 202 를 준다
-    return HttpResponse.json(
-      { coachRunId: db.coachRun.coachRunId, status: "RUNNING", pollAfterMs: 1500 },
-      { status: 202 },
-    );
-  }),
-
-  http.get<PathParams>(`${BASE}/coach/runs/:runId`, () => HttpResponse.json(db.coachRun)),
-
-  /**
-   * ▲ 서버에 아직 없다. 제안 모양으로 답한다.
-   * 기기에 든 runId 가 없으면 이번 주 제안을 영영 못 찾아서, 승인 게이트가
-   * 통째로 사라진다 — 이 서비스의 핵심 주장을 보여 줄 화면이 없어진다.
-   */
-  http.get(`${BASE}/families/:familyId/coach/runs/latest`, () => {
-    // 새로 만든 가족은 아직 한 번도 안 돌렸다. 없는 것을 있는 척하지 않는다
-    if (!db.hasCoachRun) return fail(404, "NO_RUN", "이번 주 회차가 없습니다");
-    return HttpResponse.json(db.coachRun);
-  }),
-
-  /**
-   * ★ 미션이 만들어지는 유일한 지점.
-   * 승인 전까지 db.missions 는 0건이고, 그게 이 서비스의 핵심 주장이다.
-   */
-  http.post(`${BASE}/coach/runs/:runId/approve`, () => {
-    const me = acting();
-    if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자가 아닙니다");
-    if (db.coachRun.status === "APPROVED")
-      return fail(409, "ALREADY_APPROVED", "이미 승인했습니다");
-    if (db.coachRun.status !== "AWAITING_APPROVAL") {
-      return fail(409, "INVALID_STATE", "승인할 수 없는 상태입니다");
-    }
-
-    db.coachRun.status = "APPROVED";
-    /* 지난 회차에서 승인해 둔 미션은 그대로 두고 **이번 회차 것만 더한다** */
-    const born = structuredClone(fixtures.missionsAfterApproval.missions).map((m) => ({
-      ...m,
-      coachRunId: db.coachRun.coachRunId,
-      startDate: thisWeek().weekStart,
-      endDate: thisWeek().weekEnd,
-    }));
-    db.missions = [...db.missions, ...born];
-    db.coachRun.missionCount = born.length;
-    saveMissions();
-    saveCoachRun();
-    return HttpResponse.json(fixtures.coachApprove);
-  }),
-
-  http.post(`${BASE}/coach/runs/:runId/reject`, async ({ request }) => {
-    const me = acting();
-    if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자가 아닙니다");
-    if (db.coachRun.status !== "AWAITING_APPROVAL") {
-      return fail(409, "INVALID_STATE", "처리할 수 없는 상태입니다");
-    }
-
-    const { reason } = (await request.json()) as { reason?: string };
-    db.coachRun.status = "REJECTED";
-    db.coachRun.rejectedReason = reason ?? null;
-    saveCoachRun();
-    // 거절해도 미션은 0건 유지
-    return HttpResponse.json({
-      coachRunId: db.coachRun.coachRunId,
-      status: "REJECTED",
-      rejectedReason: reason ?? null,
-      missionCount: 0,
-    });
-  }),
-];
-
 /* ─── 미션 · 활동 · 영상 · 리포트 ──────────────────────────── */
 
 const missions = [
@@ -698,7 +643,12 @@ const missions = [
       targetValue: number;
       videoId?: string;
       participantProfileIds: string[];
+      /** ▲ 서버에 아직 없다. 직접 짠 루틴의 칸들 */
+      sessions?: unknown[];
     };
+    if (!body.title || !(body.participantProfileIds ?? []).length) {
+      return fail(400, "BAD_REQUEST", "이름과 하는 사람이 필요합니다");
+    }
     const mission: MissionRow = {
       missionId: uuid(),
       title: body.title,
@@ -720,7 +670,8 @@ const missions = [
         verifiedBy: null,
         needsGuardianCheck: false,
       })),
-    };
+      ...(body.sessions?.length ? { sessions: body.sessions } : {}),
+    } as MissionRow;
     db.missions.push(mission);
     saveMissions();
     return HttpResponse.json(mission, { status: 201 });
@@ -738,6 +689,64 @@ const missions = [
       missionCompleted: body.activeMinutes >= 45,
     });
   }),
+
+  /**
+   * 한 칸 끝냈다. ▲ 서버에 아직 없다 — `POST /missions/{id}/sessions/{position}/done`.
+   *
+   * 앱 안 타이머로 잰 시간이라 서버가 아는 값이다(`TIMER`). 영상을 끝까지 봤는지가
+   * 아니라 **잡힌 시간 동안 따라 했는지**로 판정한다 — 영상은 동작 시범일 뿐이다(9/23 회의).
+   */
+  http.post<PathParams>(
+    `${BASE}/missions/:missionId/sessions/:position/done`,
+    async ({ params, request }) => {
+      const body = (await request.json()) as { profileId: string; activeSeconds: number };
+      const mission = db.missions.find((m) => m.missionId === String(params.missionId));
+      if (!mission) return fail(404, "MISSION_NOT_FOUND", "미션이 없습니다");
+      const sessions =
+        (
+          mission as unknown as {
+            sessions?: {
+              position: number;
+              minutes?: number | null;
+              completed?: boolean;
+              verifiedBy?: string | null;
+            }[];
+          }
+        ).sessions ?? [];
+      const session = sessions.find((s) => s.position === Number(params.position));
+      if (!session) return fail(404, "SESSION_NOT_FOUND", "그 칸이 없습니다");
+      // 잡힌 시간의 절반도 안 했으면 끝낸 것으로 치지 않는다
+      const planned = (session.minutes ?? 1) * 60;
+      if ((body.activeSeconds ?? 0) < planned * 0.5) {
+        return fail(422, "TOO_SHORT", "잡힌 시간의 절반도 하지 않았습니다");
+      }
+
+      const first = !session.completed;
+      session.completed = true;
+      session.verifiedBy = "TIMER";
+      const total = sessions.reduce((sum, s) => sum + (s.minutes ?? 0), 0) || 1;
+      const done = sessions
+        .filter((s) => s.completed)
+        .reduce((sum, s) => sum + (s.minutes ?? 0), 0);
+      const allDone = sessions.every((s) => s.completed);
+      const me = (mission.participants ?? []).find((p) => p.profileId === body.profileId);
+      if (me) {
+        me.progress = done / total;
+        me.verifiedBy = "TIMER";
+        if (allDone) me.completed = true;
+      }
+      saveMissions();
+
+      return HttpResponse.json({
+        position: session.position,
+        verifiedBy: "TIMER",
+        missionProgress: done / total,
+        missionCompleted: allDone,
+        // 두 번 눌러도 두 번 쌓이지 않는다
+        xpGained: first ? 5 + (allDone ? 20 : 0) : 0,
+      });
+    },
+  ),
 
   http.post(`${BASE}/missions/:missionId/activity/steps`, async ({ request }) => {
     const body = (await request.json()) as { steps: number };
@@ -829,4 +838,5 @@ export const handlers = [
   ...videos,
   ...history,
   ...progress,
+  ...clips,
 ];

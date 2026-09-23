@@ -5,19 +5,21 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { Card, CardHead } from "@/components/ui/card";
-import { Ring } from "@/components/ui/ring";
 import { PraisePicker } from "@/components/domain/praise-picker";
+import { TodayRings } from "@/components/domain/today-rings";
 import type { DayLog, Mission } from "@/lib/api/types";
 import { useCheers } from "@/lib/api/queries";
 import { VERIFIED_COPY } from "@/lib/mission";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { dayOf, today } from "@/lib/today";
 import { cn, withJosa } from "@/lib/utils";
+import { ArtIcon } from "@/components/ui/art-icon";
 
 /**
  * 부모 홈 — 아이의 오늘.
  *
- * 링 하나가 "오늘 잡힌 시간 중 얼마나" 를 말한다(애플 피트니스의 링).
+ * 링 셋이 "오늘 얼마나 · 몇 개 · 이번 주 며칠" 을 말한다(애플 피트니스의 링).
+ * 아이 홈과 같은 링이다 — 같은 날을 두 화면이 다르게 세지 않는다.
  * 아이가 다 했으면 이 카드가 **칭찬을 보내는 자리**가 된다 — 알림을 받고
  * 들어온 부모가 가장 먼저 보는 곳이다(규칙 12).
  */
@@ -27,14 +29,15 @@ export function TodayCard({
   childProfileId,
   childName,
   missions,
-  todayLog,
+  weekLogs,
 }: {
   familyId: string;
   parentProfileId: string;
   childProfileId: string;
   childName: string;
   missions: Mission[] | undefined;
-  todayLog: DayLog | undefined;
+  /** 이번 주 기록. 링이 오늘 칸과 이번 주를 같이 본다 */
+  weekLogs: DayLog[] | undefined;
 }) {
   const [picking, setPicking] = useState<{ mission: Mission | null } | null>(null);
   const { data: given } = useCheers(familyId, childProfileId);
@@ -51,18 +54,29 @@ export function TodayCard({
   const timed = mine.filter((m) => m.targetMetric !== "STEPS");
   const reported = mine.filter((m) => m.targetMetric === "STEPS");
 
+  const rings = (
+    <TodayRings
+      profileId={childProfileId}
+      missions={missions}
+      weekLogs={weekLogs}
+      size={112}
+      className="mt-2"
+    />
+  );
+
   if (mine.length === 0) {
     return (
       <Card>
-        <CardHead title="오늘 운동" />
-        <p className="text-ink-soft mt-1 text-sm">
+        <CardHead title="오늘 운동" meta={childName} />
+        {rings}
+        <p className="text-ink-soft border-line mt-4 border-t pt-3 text-sm">
           {withJosa(childName, "은는")} 아직 오늘 운동이 없어요
         </p>
         <Link
-          href="/coach/weekly"
+          href="/plan"
           className="press bg-signal-strong mt-3 flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
         >
-          <Sparkles aria-hidden className="size-4" />
+          <ArtIcon name="icon/menu-ai" fallback={Sparkles} className="size-5" />
           AI 에게 오늘 운동 받기
         </Link>
       </Card>
@@ -71,8 +85,7 @@ export function TodayCard({
 
   const main = timed[0];
   const sessions = main ? sessionsOf(main) : [];
-  const planned = todayLog?.plannedMinutes ?? (main ? totalMinutes(sessions) : 0);
-  const moved = todayLog?.minutes ?? 0;
+  const minutes = totalMinutes(sessions);
   const doneCount = sessions.filter((s) => s.completed).length;
   const me = main?.participants?.find((p) => p.profileId === childProfileId);
   const finished = Boolean(me?.completed) || (sessions.length > 0 && doneCount === sessions.length);
@@ -89,40 +102,27 @@ export function TodayCard({
 
   return (
     <Card>
-      <CardHead title="오늘 운동" meta={`${childName}`} />
+      <CardHead title="오늘 운동" meta={childName} />
+      {rings}
 
       {main && (
-        <div className="mt-2 flex items-center gap-4">
-          <Ring
-            value={moved}
-            max={planned || 1}
-            size={76}
-            stroke={9}
-            label={`오늘 ${planned}분 중 ${moved}분`}
+        <div className="border-line mt-4 border-t pt-3">
+          <p className="text-lead truncate font-extrabold">{main.title}</p>
+          <p className="text-caption text-ink-soft mt-0.5">
+            {sessions.length}개 · {minutes}분{phases && ` · ${phases}`}
+          </p>
+          <p
+            className={cn(
+              "text-caption mt-1.5 font-bold",
+              finished ? "text-done" : "text-ink-soft",
+            )}
           >
-            <span className="text-center leading-none">
-              <span className="block text-lg font-extrabold">{moved}</span>
-              <span className="text-micro text-ink-soft font-bold">/{planned}분</span>
-            </span>
-          </Ring>
-          <div className="min-w-0 flex-1">
-            <p className="text-lead truncate font-extrabold">{main.title}</p>
-            <p className="text-caption text-ink-soft mt-0.5">
-              {sessions.length}칸 · {planned}분{phases && ` · ${phases}`}
-            </p>
-            <p
-              className={cn(
-                "text-caption mt-1.5 font-bold",
-                finished ? "text-done" : "text-ink-soft",
-              )}
-            >
-              {finished
-                ? `${withJosa(childName, "이가")} 다 했어요`
-                : doneCount > 0
-                  ? `${doneCount}칸 했어요 · ${sessions.length - doneCount}칸 남음`
-                  : "아직 시작 전이에요"}
-            </p>
-          </div>
+            {finished
+              ? `${withJosa(childName, "이가")} 다 했어요`
+              : doneCount > 0
+                ? `${doneCount}개 했어요 · ${sessions.length - doneCount}개 남음`
+                : "아직 시작 전이에요"}
+          </p>
         </div>
       )}
 
