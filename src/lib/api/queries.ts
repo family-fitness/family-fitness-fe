@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api, query } from "./client";
+import { api, path, query } from "./client";
 import type {
   AgeGroup,
   AuthResponse,
@@ -22,6 +22,7 @@ import type {
   FitnessTestResult,
   InviteCode,
   InvitePeek,
+  NotificationList,
   LatestWithBody,
   MeResponse,
   NextStep,
@@ -57,6 +58,7 @@ export const qk = {
     progress: (profileId: Uuid) => ["profile", profileId, "progress"] as const,
     availability: (profileId: Uuid) => ["profile", profileId, "availability"] as const,
   },
+  notifications: (profileId: Uuid) => ["notifications", profileId] as const,
   fitness: {
     items: (ageGroup: AgeGroup | undefined) => ["fitness", "items", ageGroup ?? "all"] as const,
   },
@@ -124,7 +126,7 @@ export function useFamilyProfiles(familyId: Uuid | undefined) {
     queryKey: qk.family.profiles(familyId ?? ""),
     queryFn: () =>
       api.get<{ familyId: string; familyName: string; profiles: ProfileSummary[] }>(
-        `/families/${familyId}/profiles`,
+        path`/families/${familyId}/profiles`,
       ),
     enabled: Boolean(familyId),
   });
@@ -151,7 +153,7 @@ export function useCreateProfile(familyId: Uuid) {
       role: "PARENT" | "CHILD";
       // 만 14세 미만은 이게 없으면 422 CONSENT_REQUIRED. 서버가 자동으로 찍지 않는다
       guardianConsent?: { personalData: boolean; healthData: boolean };
-    }) => api.post<ProfileSummary>(`/families/${familyId}/profiles`, body),
+    }) => api.post<ProfileSummary>(path`/families/${familyId}/profiles`, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.family.profiles(familyId) });
       qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId) });
@@ -162,7 +164,7 @@ export function useCreateProfile(familyId: Uuid) {
 /** 가족 단위가 아니라 프로필 단위 코드. 계정이 안 붙은 프로필에만 발급된다 */
 export function useOpenInvite() {
   return useMutation({
-    mutationFn: (profileId: Uuid) => api.post<InviteCode>(`/profiles/${profileId}/invite`),
+    mutationFn: (profileId: Uuid) => api.post<InviteCode>(path`/profiles/${profileId}/invite`),
   });
 }
 
@@ -177,7 +179,7 @@ export function useInvitePeek(code: string) {
   const ready = code.length === 6;
   return useQuery({
     queryKey: ["invites", code],
-    queryFn: () => api.get<InvitePeek>(`/invites/${code}`),
+    queryFn: () => api.get<InvitePeek>(path`/invites/${code}`),
     enabled: ready,
     retry: false,
     staleTime: 60_000,
@@ -201,7 +203,7 @@ export function useUpdateSupportMode(profileId: Uuid, familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (supportMode: SupportMode) =>
-      api.patch<ProfileSummary>(`/profiles/${profileId}/support-mode`, { supportMode }),
+      api.patch<ProfileSummary>(path`/profiles/${profileId}/support-mode`, { supportMode }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.family.profiles(familyId) });
       qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId) });
@@ -216,7 +218,7 @@ export function useUpdateConsent(profileId: Uuid, familyId: Uuid) {
   return useMutation({
     mutationFn: (body: { personalData: boolean; healthData: boolean }) =>
       api.patch<{ consentGiven: boolean; measurable: boolean }>(
-        `/profiles/${profileId}/consent`,
+        path`/profiles/${profileId}/consent`,
         body,
       ),
     onSuccess: () => {
@@ -232,7 +234,7 @@ export function useUpdateConsent(profileId: Uuid, familyId: Uuid) {
 export function useFitnessItems(ageGroup: AgeGroup | undefined) {
   return useQuery({
     queryKey: qk.fitness.items(ageGroup),
-    queryFn: () => api.get<FitnessItems>(`/fitness/items${query({ ageGroup })}`),
+    queryFn: () => api.get<FitnessItems>(path`/fitness/items${query({ ageGroup })}`),
     enabled: Boolean(ageGroup),
     staleTime: Infinity,
   });
@@ -242,7 +244,7 @@ export function useFitnessItems(ageGroup: AgeGroup | undefined) {
 export function useLatestFitnessTest(profileId: Uuid | undefined) {
   return useQuery({
     queryKey: qk.profile.latestTest(profileId ?? ""),
-    queryFn: () => api.get<LatestWithBody>(`/profiles/${profileId}/fitness-tests/latest`),
+    queryFn: () => api.get<LatestWithBody>(path`/profiles/${profileId}/fitness-tests/latest`),
     enabled: Boolean(profileId),
   });
 }
@@ -256,7 +258,7 @@ export function useCreateFitnessTest(profileId: Uuid, familyId: Uuid) {
       heightCm?: number;
       weightKg?: number;
       items: { itemCode: string; value: number }[];
-    }) => api.post<FitnessTestResult>(`/profiles/${profileId}/fitness-tests`, body),
+    }) => api.post<FitnessTestResult>(path`/profiles/${profileId}/fitness-tests`, body),
     onSuccess: () => {
       // 최근 회차와 이력을 같이. 다시 잰 값이 점수 흐름에 바로 한 점 더해져야 한다
       qc.invalidateQueries({ queryKey: ["profile", profileId, "fitness-tests"] });
@@ -270,7 +272,7 @@ export function useCreateFitnessTest(profileId: Uuid, familyId: Uuid) {
 export function useFitnessMap(familyId: Uuid | undefined) {
   return useQuery({
     queryKey: qk.family.fitnessMap(familyId ?? ""),
-    queryFn: () => api.get<FitnessMap>(`/families/${familyId}/fitness-map`),
+    queryFn: () => api.get<FitnessMap>(path`/families/${familyId}/fitness-map`),
     enabled: Boolean(familyId),
   });
 }
@@ -279,7 +281,7 @@ export function useFitnessMap(familyId: Uuid | undefined) {
 export function useCreatePrediction(profileId: Uuid) {
   return useMutation({
     mutationFn: (body: { horizonYears?: number; itemCode?: string } = {}) =>
-      api.post<PredictionResult>(`/profiles/${profileId}/predictions`, body),
+      api.post<PredictionResult>(path`/profiles/${profileId}/predictions`, body),
   });
 }
 
@@ -313,7 +315,7 @@ export function useStartCoachRun(familyId: Uuid) {
   return useMutation({
     mutationFn: (body: PlanRequest) =>
       api.post<{ coachRunId: string; status: string; pollAfterMs: number }>(
-        `/families/${familyId}/coach/runs`,
+        path`/families/${familyId}/coach/runs`,
         { ...body, minutesPerSession: body.minutes },
       ),
     onSuccess: (run) => {
@@ -328,7 +330,7 @@ export function useStartCoachRun(familyId: Uuid) {
 export function useCoachRun(runId: Uuid | undefined) {
   return useQuery({
     queryKey: qk.coach.run(runId ?? ""),
-    queryFn: () => api.get<CoachRun>(`/coach/runs/${runId}`),
+    queryFn: () => api.get<CoachRun>(path`/coach/runs/${runId}`),
     enabled: Boolean(runId),
     // 짜는 동안은 촘촘히 — 단계가 하나씩 차오르는 것이 이 화면의 전부다
     refetchInterval: (q) => (q.state.data?.status === "RUNNING" ? 700 : false),
@@ -349,7 +351,7 @@ export function useCoachRun(runId: Uuid | undefined) {
 export function useLatestCoachRun(familyId: Uuid | undefined) {
   return useQuery({
     queryKey: qk.coach.latest(familyId ?? ""),
-    queryFn: () => api.get<CoachRun>(`/families/${familyId}/coach/runs/latest`),
+    queryFn: () => api.get<CoachRun>(path`/families/${familyId}/coach/runs/latest`),
     enabled: Boolean(familyId),
     retry: false,
   });
@@ -359,7 +361,7 @@ export function useLatestCoachRun(familyId: Uuid | undefined) {
 export function useApproveCoachRun(runId: Uuid, familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => api.post<CoachApproveResult>(`/coach/runs/${runId}/approve`),
+    mutationFn: () => api.post<CoachApproveResult>(path`/coach/runs/${runId}/approve`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.coach.run(runId) });
       qc.invalidateQueries({ queryKey: qk.coach.latest(familyId) });
@@ -373,7 +375,8 @@ export function useApproveCoachRun(runId: Uuid, familyId: Uuid) {
 export function useRejectCoachRun(runId: Uuid, familyId?: Uuid) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (reason?: string) => api.post<CoachRun>(`/coach/runs/${runId}/reject`, { reason }),
+    mutationFn: (reason?: string) =>
+      api.post<CoachRun>(path`/coach/runs/${runId}/reject`, { reason }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.coach.run(runId) });
       if (familyId) qc.invalidateQueries({ queryKey: qk.coach.latest(familyId) });
@@ -395,7 +398,7 @@ export function useCreateMission(familyId: Uuid) {
       participantProfileIds: Uuid[];
       /** ▲ 요청: `CreateMissionRequest.sessions`. 직접 짠 루틴의 칸들 */
       sessions?: MissionSession[];
-    }) => api.post<{ missionId: Uuid }>(`/families/${familyId}/missions`, body),
+    }) => api.post<{ missionId: Uuid }>(path`/families/${familyId}/missions`, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       qc.invalidateQueries({ queryKey: ["family", familyId, "fitness-map"] });
@@ -412,7 +415,8 @@ export function useMissions(
 ) {
   return useQuery({
     queryKey: qk.family.missions(familyId ?? "", options.scope, options.status),
-    queryFn: () => api.get<MissionList>(`/families/${familyId}/missions${query({ ...options })}`),
+    queryFn: () =>
+      api.get<MissionList>(path`/families/${familyId}/missions${query({ ...options })}`),
     enabled: Boolean(familyId),
   });
 }
@@ -422,7 +426,7 @@ export function useConfirmParticipant(missionId: Uuid, familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (profileId: string) =>
-      api.post(`/missions/${missionId}/participants/${profileId}/confirm`),
+      api.post(path`/missions/${missionId}/participants/${profileId}/confirm`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
@@ -439,16 +443,24 @@ export function useConfirmParticipant(missionId: Uuid, familyId: Uuid) {
 export function useSendCheer(familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: {
+    mutationFn: ({
+      stickerId,
+      ...body
+    }: {
       fromProfileId: string;
       toProfileId: string;
       message?: string;
       missionId?: string;
-    }) => api.post<Cheer>(`/families/${familyId}/cheers`, body),
+      /** 붙일 스티커. ▲ 계약에 칸이 없어 `emoji` 에 싣는다 */
+      stickerId?: string;
+    }) =>
+      api.post<Cheer>(path`/families/${familyId}/cheers`, { ...body, emoji: stickerId ?? null }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "cheers"] });
       // 붙인 스티커는 그날 칸에 남는다
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
+      // 받는 쪽 종에 점이 뜬다
+      qc.invalidateQueries({ queryKey: ["notifications"] });
       refreshProgress(qc);
     },
   });
@@ -461,7 +473,8 @@ export function useSendCheer(familyId: Uuid) {
 export function useCheers(familyId: Uuid | undefined, toProfileId?: Uuid) {
   return useQuery({
     queryKey: qk.family.cheers(familyId ?? "", toProfileId),
-    queryFn: () => api.get<CheerLogList>(`/families/${familyId}/cheers${query({ toProfileId })}`),
+    queryFn: () =>
+      api.get<CheerLogList>(path`/families/${familyId}/cheers${query({ toProfileId })}`),
     enabled: Boolean(familyId),
   });
 }
@@ -479,7 +492,7 @@ export function useCalendar(
     queryKey: qk.family.calendar(familyId ?? "", profileId, range.from, range.to),
     queryFn: () =>
       api.get<CalendarView>(
-        `/families/${familyId}/calendar${query({ profileId, from: range.from, to: range.to })}`,
+        path`/families/${familyId}/calendar${query({ profileId, from: range.from, to: range.to })}`,
       ),
     enabled: Boolean(familyId && profileId),
   });
@@ -493,7 +506,7 @@ export function useFitnessTests(profileId: Uuid | undefined) {
   return useQuery({
     queryKey: qk.profile.tests(profileId ?? ""),
     queryFn: () =>
-      api.get<FitnessTestHistory>(`/profiles/${profileId}/fitness-tests${query({ size: 12 })}`),
+      api.get<FitnessTestHistory>(path`/profiles/${profileId}/fitness-tests${query({ size: 12 })}`),
     enabled: Boolean(profileId),
   });
 }
@@ -505,7 +518,7 @@ export function useFitnessTests(profileId: Uuid | undefined) {
 export function useProgress(profileId: Uuid | undefined) {
   return useQuery({
     queryKey: qk.profile.progress(profileId ?? ""),
-    queryFn: () => api.get<ProgressView>(`/profiles/${profileId}/progress`),
+    queryFn: () => api.get<ProgressView>(path`/profiles/${profileId}/progress`),
     enabled: Boolean(profileId),
   });
 }
@@ -532,7 +545,7 @@ export function useCompleteSession(missionId: Uuid, familyId: Uuid) {
         missionProgress: number;
         missionCompleted: boolean;
         xpGained: number;
-      }>(`/missions/${missionId}/sessions/${position}/done`, body),
+      }>(path`/missions/${missionId}/sessions/${position}/done`, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
@@ -548,7 +561,7 @@ export function useCompleteSession(missionId: Uuid, familyId: Uuid) {
 export function useAvailability(profileId: Uuid | undefined) {
   return useQuery({
     queryKey: qk.profile.availability(profileId ?? ""),
-    queryFn: () => api.get<Availability>(`/profiles/${profileId}/availability`),
+    queryFn: () => api.get<Availability>(path`/profiles/${profileId}/availability`),
     enabled: Boolean(profileId),
   });
 }
@@ -557,7 +570,7 @@ export function useSaveAvailability(profileId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (slots: AvailabilitySlot[]) =>
-      api.put<Availability>(`/profiles/${profileId}/availability`, { slots }),
+      api.put<Availability>(path`/profiles/${profileId}/availability`, { slots }),
     onSuccess: (saved) => qc.setQueryData(qk.profile.availability(profileId), saved),
   });
 }
@@ -578,7 +591,7 @@ export function useClips(filter: {
     queryKey: qk.clips(filter),
     queryFn: () =>
       api.get<ClipList>(
-        `/clips${query({
+        path`/clips${query({
           factor: filter.factor ?? undefined,
           phase: filter.phase ?? undefined,
           quiet: filter.quiet ? "true" : undefined,
@@ -597,7 +610,38 @@ export function useToggleClipFavorite(profileId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ clipId, favorited }: { clipId: string; favorited: boolean }) =>
-      api.post(`/clips/${encodeURIComponent(clipId)}/favorite`, { profileId, favorited }),
+      api.post(path`/clips/${clipId}/favorite`, { profileId, favorited }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["clips"] }),
+  });
+}
+
+/* ─── 알림 ────────────────────────────────────────────────── */
+
+/**
+ * 한 사람의 알림. 종의 점과 알림 화면이 같이 쓴다.
+ * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
+ */
+export function useNotifications(profileId: Uuid | undefined) {
+  return useQuery({
+    queryKey: qk.notifications(profileId ?? ""),
+    queryFn: () => api.get<NotificationList>(path`/notifications${query({ profileId })}`),
+    enabled: Boolean(profileId),
+    // 아이가 「다 했어요」 를 누르면 부모 종에 점이 떠야 한다. 푸시가 없는 동안은 가끔 묻는다
+    refetchInterval: 60_000,
+  });
+}
+
+/**
+ * 다 읽었다. **목록은 다시 받지 않고 점만 끈다** — 들어오자마자 목록을 다시 받으면
+ * 이번에 새로 온 것의 표시가 사라져 무엇이 새로 왔는지 못 본다.
+ */
+export function useMarkNotificationsRead(profileId: Uuid | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<void>(path`/notifications/read`, { profileId }),
+    onSuccess: () =>
+      qc.setQueryData<NotificationList>(qk.notifications(profileId ?? ""), (old) =>
+        old ? { ...old, unread: 0 } : old,
+      ),
   });
 }

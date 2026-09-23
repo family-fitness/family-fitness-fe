@@ -185,7 +185,7 @@ function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
                 <span
                   className={cn(
                     "grid h-10 w-full place-items-center rounded-xl text-xs font-extrabold",
-                    s ? "bg-signal text-white" : "bg-sub text-faint",
+                    s ? "bg-signal-strong text-white" : "bg-sub text-faint",
                   )}
                 >
                   {s ? s.minutes : ""}
@@ -243,17 +243,23 @@ function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
                   onClick={() =>
                     setDay(d.code, s ? null : { day: d.code, start: "19:00", minutes: 20 })
                   }
-                  className={cn(
-                    "press relative h-8 w-13 shrink-0 rounded-full transition-colors",
-                    s ? "bg-signal-strong" : "bg-bar",
-                  )}
+                  className="press grid h-11 w-14 shrink-0 place-items-center"
                 >
+                  {/* 보이는 것은 작아도 누르는 자리는 44px — 아이 손가락이 닿아야 한다 */}
                   <span
+                    aria-hidden
                     className={cn(
-                      "bg-paper absolute top-1 size-6 rounded-full shadow transition-[left]",
-                      s ? "left-6" : "left-1",
+                      "relative h-8 w-13 rounded-full transition-colors",
+                      s ? "bg-signal-strong" : "bg-bar",
                     )}
-                  />
+                  >
+                    <span
+                      className={cn(
+                        "bg-paper absolute top-1 size-6 rounded-full shadow transition-[left]",
+                        s ? "left-6" : "left-1",
+                      )}
+                    />
+                  </span>
                 </button>
               </div>
 

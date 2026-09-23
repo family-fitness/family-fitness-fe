@@ -26,6 +26,7 @@
     "check:down": "node scripts/check-backend-down.mjs",
     "clean:smudge": "node scripts/clean-smudge.mjs",
     "check:play": "node scripts/check-play.mjs",
+    "check:loop": "node scripts/check-loop.mjs",
     "assets:list": "node scripts/list-assets.mjs"
   },
   "dependencies": {

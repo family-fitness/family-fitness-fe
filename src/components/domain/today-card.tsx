@@ -2,10 +2,8 @@
 
 import { Check, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
 
 import { Card, CardHead } from "@/components/ui/card";
-import { PraisePicker } from "@/components/domain/praise-picker";
 import { TodayRings } from "@/components/domain/today-rings";
 import type { DayLog, Mission } from "@/lib/api/types";
 import { useCheers } from "@/lib/api/queries";
@@ -39,8 +37,9 @@ export function TodayCard({
   /** 이번 주 기록. 링이 오늘 칸과 이번 주를 같이 본다 */
   weekLogs: DayLog[] | undefined;
 }) {
-  const [picking, setPicking] = useState<{ mission: Mission | null } | null>(null);
   const { data: given } = useCheers(familyId, childProfileId);
+  const stickerHref = (missionId?: string) =>
+    `/parent/sticker/${childProfileId}${missionId ? `?missionId=${missionId}` : ""}`;
 
   const now = today();
   const mine = (missions ?? []).filter(
@@ -132,16 +131,15 @@ export function TodayCard({
           {praisedToday ? (
             <p className="bg-done-soft text-done flex min-h-11 items-center justify-center gap-1.5 rounded-2xl text-sm font-bold">
               <Check aria-hidden className="size-4" strokeWidth={3} />
-              오늘 칭찬을 보냈어요
+              오늘 스티커를 붙였어요
             </p>
           ) : (
-            <button
-              type="button"
-              onClick={() => setPicking({ mission: main })}
+            <Link
+              href={stickerHref(main.missionId)}
               className="press bg-signal-strong flex min-h-12 w-full items-center justify-center rounded-2xl text-sm font-extrabold text-white"
             >
-              칭찬 보내기
-            </button>
+              칭찬 스티커 붙이기
+            </Link>
           )}
         </div>
       )}
@@ -158,27 +156,16 @@ export function TodayCard({
               </p>
             </div>
             {p?.needsGuardianCheck && (
-              <button
-                type="button"
-                onClick={() => setPicking({ mission: m })}
+              <Link
+                href={stickerHref(m.missionId)}
                 className="press bg-sub text-ink grid min-h-11 shrink-0 place-items-center rounded-xl px-3.5 text-xs font-extrabold"
               >
                 확인해 주기
-              </button>
+              </Link>
             )}
           </div>
         );
       })}
-
-      <PraisePicker
-        open={Boolean(picking)}
-        onClose={() => setPicking(null)}
-        familyId={familyId}
-        fromProfileId={parentProfileId}
-        toProfileId={childProfileId}
-        toName={childName}
-        mission={picking?.mission ?? null}
-      />
     </Card>
   );
 }

@@ -37,3 +37,8 @@ export function levelProgress(p: Pick<ProgressView, "xp" | "levelFloorXp" | "nex
   const into = Math.max(0, p.xp - p.levelFloorXp);
   return { ratio: Math.min(1, into / span), left: Math.max(0, p.nextLevelXp - p.xp) };
 }
+
+/** 업적 코드의 배지 그림. `STREAK_3` → `badge/badge-streak-3` (ASSET_PROMPTS.md 3장) */
+export function badgeArt(code: string): string {
+  return `badge/badge-${code.toLowerCase().replace(/_/g, "-")}`;
+}

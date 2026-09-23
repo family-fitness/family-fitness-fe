@@ -27,13 +27,6 @@ export function formatDate(iso: string): string {
   return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
-/** 초를 "5:12" 로 */
-export function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = Math.floor(seconds % 60);
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
 /** 한국어 조사를 앞말에 맞춰 고른다. */
 const JOSA = {
   이가: ["이", "가"],

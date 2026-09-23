@@ -17,9 +17,11 @@
 import { HttpResponse, http, type PathParams } from "msw";
 
 import type { AchievementView, DayLog, ProgressView, XpEvent } from "@/lib/api/types";
+import { callName } from "@/lib/family";
 import { daysBefore, today } from "@/lib/today";
+import { josa } from "@/lib/utils";
 
-import { BASE, db } from "./db";
+import { BASE, db, type Profile } from "./db";
 import { dayLogFor } from "./history";
 
 export const XP = { SESSION: 5, DAY_DONE: 20, STICKER: 10, MEASURE: 20 } as const;
@@ -58,18 +60,22 @@ export function progressOf(profileId: string): ProgressView {
     .filter((l): l is DayLog => l !== null && l.minutes > 0);
   const active = new Set(logs.map((l) => l.date));
   const tests = db.tests[profileId] ?? [];
-  const stickers = db.cheers.filter(
-    (c) => c.toProfileId === profileId && (c as { stickerId?: string | null }).stickerId,
-  );
+  const stickers = db.cheers.filter((c) => c.toProfileId === profileId && c.stickerId);
+  // 이 경험치 줄은 그 사람이 읽는다. 아이에게 부모는 엄마 · 아빠다
+  const people = db.profiles.profiles ?? [];
+  const forKid = people.find((p) => p.profileId === profileId)?.role === "CHILD";
+  const fromOf = (id: string, fallback: string) =>
+    callName(people.find((p) => p.profileId === id) as Profile | undefined, fallback, forKid);
 
   const events: XpEvent[] = [
     ...logs.map((l) => ({
-      reason: l.entries.every((e) => e.completed) ? "오늘 운동을 다 했어요" : "운동을 했어요",
+      reason: l.entries.every((e) => e.completed) ? "운동을 다 했어요" : "운동을 했어요",
       amount: dayXp(l),
-      at: `${l.date}T19:00:00+09:00`,
+      // 오늘 것은 지금 시각. 저녁 7시로 적으면 낮에 열었을 때 아직 오지 않은 시각이 된다
+      at: l.date === today() ? new Date().toISOString() : `${l.date}T19:00:00+09:00`,
     })),
     ...stickers.map((c) => ({
-      reason: `${c.fromName}의 칭찬 스티커`,
+      reason: `${fromOf(c.fromProfileId, c.fromName)}${josa(fromOf(c.fromProfileId, c.fromName), "이가")} 붙여 준 스티커`,
       amount: XP.STICKER,
       at: c.createdAt,
     })),
@@ -97,7 +103,8 @@ export function progressOf(profileId: string): ProgressView {
       tests.length,
       stickers.map((c) => c.createdAt),
     ),
-    recentXp: events.sort((a, b) => b.at.localeCompare(a.at)).slice(0, 5),
+    // 시각이 「Z」 와 「+09:00」 으로 섞여 온다 — 글자가 아니라 시각으로 줄 세운다
+    recentXp: events.sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, 5),
   };
 }
 

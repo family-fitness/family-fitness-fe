@@ -1,10 +1,4 @@
-import type {
-  Mission,
-  MissionSession,
-  MissionWithSessions,
-  SessionPhase,
-  VideoClip,
-} from "./api/types";
+import type { Mission, MissionSession, MissionWithSessions, SessionPhase } from "./api/types";
 
 /**
  * 하루치 미션을 **세션 셋**으로 읽는 곳.
@@ -69,56 +63,11 @@ export function orderSessions(given: MissionSession[] | null | undefined): Missi
   );
 }
 
-/** 아직 안 한 것 중 첫 번째. 다 했으면 undefined */
-export function nextSession(sessions: MissionSession[]): MissionSession | undefined {
-  return sessions.find((s) => !s.completed);
-}
-
-/** 구간 길이(초). 끝을 모르면 null — 모르는 걸 아는 척하지 않는다 */
-export function clipSeconds(clip: VideoClip | null | undefined): number | null {
-  if (!clip) return null;
-  const start = clip.startSec ?? 0;
-  const end = clip.endSec;
-  if (end == null || end <= start) return null;
-  return end - start;
-}
-
-/**
- * 구간을 끝까지 봤나.
- *
- * **영상 전체가 아니라 구간 길이의 90%다.** 지금 앱은 영상 전체 90%를 완주로
- * 쳐서, 12분짜리 영상의 90초 구간만 하는 아이는 영원히 완주에 못 닿았다.
- *
- * 끝을 모르는 구간(= 영상 한 편)은 전과 같이 전체 기준으로 본다.
- */
-export const CLIP_DONE_AT = 0.9;
-
-export function isClipDone(watchedSec: number, clip: VideoClip | null | undefined): boolean {
-  const length = clipSeconds(clip);
-  if (length == null) return false;
-  return watchedSec >= length * CLIP_DONE_AT;
-}
-
-/** 구간 안에서 얼마나 왔나. 0~1 */
-export function clipProgress(watchedSec: number, clip: VideoClip | null | undefined): number {
-  const length = clipSeconds(clip);
-  if (length == null || length <= 0) return 0;
-  return Math.max(0, Math.min(1, watchedSec / length));
-}
-
 /** 0:12 처럼 */
 export function clock(totalSec: number | null | undefined): string {
   if (totalSec == null || !Number.isFinite(totalSec)) return "";
   const s = Math.max(0, Math.round(totalSec));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-}
-
-/** 0:12–2:10. 끝을 모르면 시작만 */
-export function clipRange(clip: VideoClip | null | undefined): string {
-  if (!clip) return "";
-  const start = clock(clip.startSec ?? 0);
-  if (clip.endSec == null) return start;
-  return `${start}–${clock(clip.endSec)}`;
 }
 
 /** 세션들의 시간을 합친다. 화면 제목에 쓰는 값 */

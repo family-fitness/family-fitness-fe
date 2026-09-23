@@ -22,13 +22,23 @@ import { dayOf, daysBefore, today } from "@/lib/today";
 
 import { BASE, DEMO, db, fail, type MissionRow } from "./db";
 
-/** 같은 글자에는 늘 같은 0~1. FNV-1a */
+/**
+ * 같은 글자에는 늘 같은 0~1. FNV-1a 에 마무리 섞기(MurmurHash3 fmix32)를 더했다.
+ *
+ * FNV-1a 만으로는 끝 글자만 다른 날짜들(`…-09-01`, `…-09-02`)이 거의 같은 값을 받아서,
+ * 시연 가족이 보름을 내리 운동하다 열흘을 통째로 쉬는 달이 됐다. 섞어야 날마다 고르게 흩어진다.
+ */
 function roll(seed: string): number {
   let h = 2166136261;
   for (let i = 0; i < seed.length; i++) {
     h ^= seed.charCodeAt(i);
     h = Math.imul(h, 16777619);
   }
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
   return (h >>> 0) / 4294967296;
 }
 
@@ -156,15 +166,10 @@ export function dayLogFor(profileId: string, date: string): DayLog | null {
 /** 그날 받은 스티커. 칭찬 목록에서 스티커가 붙은 것만 */
 function stickersOn(profileId: string, date: string): StickerLog[] {
   return db.cheers
-    .filter(
-      (c) =>
-        c.toProfileId === profileId &&
-        (c as { stickerId?: string | null }).stickerId &&
-        dayOf(c.createdAt) === date,
-    )
+    .filter((c) => c.toProfileId === profileId && c.stickerId && dayOf(c.createdAt) === date)
     .map((c) => ({
       cheerId: c.cheerId,
-      stickerId: (c as { stickerId?: string }).stickerId ?? "",
+      stickerId: c.stickerId ?? "",
       fromProfileId: c.fromProfileId,
       fromName: c.fromName,
       message: c.message,

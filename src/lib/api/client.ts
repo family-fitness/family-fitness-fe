@@ -64,8 +64,23 @@ function currentToken(): string | null {
 
 type Options = Omit<RequestInit, "body"> & { body?: unknown };
 
+/**
+ * 경로 조각에 「.」 · 「..」 가 섞이면 브라우저가 경로를 접어서 다른 엔드포인트로 간다.
+ * `path` 가 값을 인코딩하지만, 손으로 이은 주소가 섞여도 여기서 한 번 더 막는다.
+ */
+function traverses(path: string): boolean {
+  return path
+    .split(/[?#]/)[0]
+    .split("/")
+    .some((seg) => {
+      const plain = seg.replace(/%2e/gi, ".");
+      return plain === "." || plain === "..";
+    });
+}
+
 async function request<T>(path: string, options: Options = {}): Promise<T> {
   const { body, headers, ...rest } = options;
+  if (traverses(path)) throw new ApiError(400, "BAD_PATH", `경로가 올바르지 않습니다: ${path}`);
   const token = currentToken();
 
   const res = await fetch(`${BASE}${path}`, {
@@ -92,6 +107,27 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
   }
 
   return res.json() as Promise<T>;
+}
+
+/**
+ * API 경로. 끼워 넣는 값(아이디)은 인코딩한다.
+ *
+ * 주소창에서 온 값이 경로 조각이 되는 화면이 있다(`/parent/sticker/[id]?missionId=`).
+ * 그 값이 `../` 나 `?` 를 품고 있으면 부모 권한으로 다른 엔드포인트를 부르게 된다.
+ * `?` 로 시작하는 값은 `query()` 가 만든 조회 문자열이라 그대로 둔다.
+ *
+ *   api.post(path`/missions/${missionId}/participants/${profileId}/confirm`)
+ */
+export function path(
+  strings: TemplateStringsArray,
+  ...values: (string | number | null | undefined)[]
+): string {
+  // 첫 조각이 처음 값이 되고, i 는 1 부터 돈다
+  return strings.reduce((out, piece, i) => {
+    const value = String(values[i - 1] ?? "");
+    const safe = value === "" || value.startsWith("?") ? value : encodeURIComponent(value);
+    return out + safe + piece;
+  });
 }
 
 /** 쿼리스트링을 만든다. undefined 인 값은 빼서 빈 파라미터가 안 붙게 한다 */

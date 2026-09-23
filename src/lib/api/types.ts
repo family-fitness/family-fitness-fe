@@ -80,7 +80,6 @@ export type CoachRun = S["CoachRunView"];
 export type CoachProposal = S["ProposalView"];
 export type CoachStep = S["CoachStep"];
 export type CoachApproveResult = S["ApproveCoachRunView"];
-export type ChatCitation = S["ChatCitationView"];
 
 export type MissionList = S["MissionListView"];
 export type Mission = S["MissionView"];
@@ -103,6 +102,11 @@ export interface CheerLog {
   toProfileId: Uuid;
   message: string | null;
   missionId: Uuid | null;
+  /**
+   * 붙인 스티커(`STICKERS` 의 id). 글로만 보낸 칭찬이면 null.
+   * ▲ 요청: `CheerRequest.stickerId` · 조회 응답에도. 지금은 계약의 `emoji` 칸에 싣는다
+   */
+  stickerId?: string | null;
   /** ISO-8601 */
   createdAt: string;
 }
@@ -395,4 +399,45 @@ export interface ClipList {
 /** 실패는 한 형태다. **봉투가 있다.** */
 export interface ApiErrorBody {
   error: { code: string; message: string };
+}
+
+/**
+ * 알림 한 줄.
+ *
+ * ▲ 요청: `GET /notifications?profileId=` · `POST /notifications/read {profileId}`
+ * 문구(`title` · `body`)는 서버가 짓고 화면은 그대로 내보낸다(규칙 9). 어느 화면으로 갈지는
+ * `kind` 와 참조(`aboutProfileId` · `missionId` · `date`)로 화면이 정한다.
+ */
+export type NotificationKind =
+  /** 부모에게 — 아이가 운동을 마쳤다 */
+  | "KID_DONE"
+  /** 부모에게 — 측정한 지 한 달이 지났다 */
+  | "REMEASURE"
+  /** 아이에게 — 스티커 · 칭찬을 받았다 */
+  | "PRAISE"
+  /** 아이에게 — 오늘 운동이 생겼다 */
+  | "MISSION_READY"
+  /** 아이에게 — 새 업적 */
+  | "ACHIEVEMENT";
+
+export interface NotificationView {
+  notificationId: string;
+  kind: NotificationKind;
+  title: string;
+  body: string | null;
+  /** 누구에 관한 알림인가. 부모 알림이면 그 아이 */
+  aboutProfileId: Uuid | null;
+  missionId: Uuid | null;
+  /** YYYY-MM-DD. 캘린더 그날로 갈 때 */
+  date: string | null;
+  stickerId: string | null;
+  /** ISO-8601 */
+  createdAt: string;
+  read: boolean;
+}
+
+export interface NotificationList {
+  items: NotificationView[];
+  /** 안 읽은 수. 화면은 숫자를 쓰지 않고 점 하나만 찍는다 */
+  unread: number;
 }

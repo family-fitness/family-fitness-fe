@@ -170,6 +170,50 @@ sex: "M" | "F"
 - 업적은 열두 개입니다(`src/mocks/progress.ts`). **개수를 목표로 하는 칭찬 업적은 두지 않습니다**
   — 「스티커 10장」 을 두면 못 채운 날이 실패가 됩니다. 첫 스티커 하나만 기념합니다
 
+### 칭찬에 `stickerId` — 부모가 붙이는 스티커
+
+`CheerRequest.stickerId` · 조회 응답(`GET .../cheers`, 캘린더 `stickers[]`)에도.
+지금은 계약의 `emoji` 칸에 스티커 코드를 싣고 있습니다(화면에 이모지를 쓰지 않아서 비어 있던 칸).
+
+```
+stickerId: "star" | "thumb" | "medal" | "heart" | "crown" | "flag"
+         | "sprout" | "sparkle" | "clap" | "rocket" | "sun" | "kiumi" | null
+```
+
+**고르기만 해도 보내집니다** — `message` 가 비어 오면 스티커 이름(「최고야」)이 한마디입니다.
+스티커 개수를 세는 업적은 두지 말아 주세요. 첫 스티커 하나만 기념합니다.
+
+### `GET /notifications?profileId=` · `POST /notifications/read`
+
+설정 톱니 옆 종. 안 읽은 게 있으면 점 하나가 뜹니다(숫자는 쓰지 않습니다).
+**문구는 서버가 지어 주세요** — 화면은 그대로 내보냅니다. 어느 화면으로 갈지는 `kind` 와 참조로 화면이 정합니다.
+
+```
+{
+  items: [{
+    notificationId, kind, title, body | null,
+    aboutProfileId | null,   // 누구에 관한 알림인가 (부모 알림이면 그 아이)
+    missionId | null,
+    date | null,             // YYYY-MM-DD — 캘린더 그날로 갈 때
+    stickerId | null,
+    createdAt, read
+  }],
+  unread
+}
+POST /notifications/read  { profileId }   // 이 사람 것을 다 읽음으로
+```
+
+| `kind`          | 누구에게 | 언제                              | 문구 예                           |
+| --------------- | -------- | --------------------------------- | --------------------------------- |
+| `KID_DONE`      | 부모     | 아이가 「다 했어요」 를 알렸을 때 | 서준이 오늘 운동을 마쳤어요       |
+| `REMEASURE`     | 부모     | 측정한 지 한 달                   | 서준 키 · 몸무게를 새로 재 볼까요 |
+| `PRAISE`        | 아이     | 스티커 · 칭찬을 받았을 때         | 은영이 스티커를 붙여 줬어요       |
+| `MISSION_READY` | 아이     | 오늘 운동이 등록됐을 때           | 오늘 운동이 생겼어요              |
+| `ACHIEVEMENT`   | 아이     | 새 업적                           | 새 업적 — 사흘 이어서             |
+
+- 「오래됐어요」 · 「안 했어요」 처럼 탓하는 말은 쓰지 말아 주세요(규칙 2 · 11)
+- 앱 밖 푸시(웹 푸시)는 그다음입니다. 푸시를 꺼 둔 사람도 앱에 들어오면 여기서 봅니다
+
 ---
 
 ## 4-2. 오늘 운동 짜기 · 하기

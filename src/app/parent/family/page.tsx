@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, HeartHandshake, MessageCircleHeart, Plus } from "lucide-react";
+import { Check, Copy, HeartHandshake, Plus, Sticker } from "lucide-react";
 import { useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -20,12 +20,14 @@ import { useCreateProfile, useFamilyProfiles, useOpenInvite } from "@/lib/api/qu
 import { useSession } from "@/lib/session";
 import { ageOf, today } from "@/lib/today";
 import { cn } from "@/lib/utils";
+import { useRoleStore } from "@/stores/role-store";
 import { Initial } from "@/components/ui/initial";
 
 /** 가족 더하기. */
 export default function MembersPage() {
   const { profile, familyId, isPending: sessionPending } = useSession();
   const { data: family, isPending, error, refetch } = useFamilyProfiles(familyId);
+  const childProfileId = useRoleStore((s) => s.childProfileId);
 
   const [adding, setAdding] = useState(false);
 
@@ -44,6 +46,10 @@ export default function MembersPage() {
   }
 
   const profiles = family?.profiles ?? [];
+  // 스티커는 지금 보고 있는 아이에게. 고른 적이 없으면 첫째
+  const kid =
+    profiles.find((p) => p.profileId === childProfileId) ??
+    profiles.find((p) => p.role === "CHILD");
   const mySupportMode = profile?.supportMode ?? undefined;
 
   return (
@@ -76,13 +82,15 @@ export default function MembersPage() {
             title="얼마나 같이 할지"
             description={SUPPORT_COPY[mySupportMode ?? "none"]}
           />
-          <ListRow
-            href="/family/cheer"
-            art="icon/menu-cheer"
-            icon={MessageCircleHeart}
-            title="응원 보내기"
-            description="가족끼리 한마디"
-          />
+          {kid?.profileId && (
+            <ListRow
+              href={`/parent/sticker/${kid.profileId}`}
+              art="icon/menu-cheer"
+              icon={Sticker}
+              title="칭찬 스티커 붙이기"
+              description={`${kid.name}에게 오늘 한 장`}
+            />
+          )}
         </ul>
 
         <AddMemberSheet open={adding} onClose={() => setAdding(false)} familyId={familyId ?? ""} />
