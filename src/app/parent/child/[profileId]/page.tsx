@@ -12,6 +12,7 @@ import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorView, ScoreLine } from "@/components/domain/body-card";
 import { RadarGapNote } from "@/components/domain/factor-radar";
+import { GrowthPole } from "@/components/scene/growth-pole";
 import { FactorTable } from "@/components/domain/factor-table";
 import { IslandCard } from "@/components/domain/island-card";
 import { ScoreTrend } from "@/components/domain/score-trend";
@@ -23,7 +24,9 @@ import {
   useFitnessMap,
   useFitnessTests,
   useLatestFitnessTest,
+  useProgress,
 } from "@/lib/api/queries";
+import { stageOf } from "@/lib/levels";
 import { useSession } from "@/lib/session";
 import { daysSince } from "@/lib/today";
 import { useBodyStore } from "@/stores/body-store";
@@ -207,6 +210,13 @@ function BodyGrowth({
       ? Math.round((now.heightCm - first.heightCm) * 10) / 10
       : null;
   const due = (daysSince(lastTestedOn) ?? 0) >= REMEASURE_DAYS;
+  const { data: progress } = useProgress(profileId);
+  // 잰 키를 오래된 것부터. 이력이 아직 없으면 기기에 적어 둔 한 번이라도
+  const records = withBody.length
+    ? withBody.map((t) => ({ date: t.testedOn, heightCm: t.heightCm as number }))
+    : fallback
+      ? [{ date: fallback.measuredOn, heightCm: fallback.heightCm }]
+      : [];
 
   return (
     <Card>
@@ -233,6 +243,9 @@ function BodyGrowth({
         </div>
       ) : (
         <p className="text-ink-soft mt-1 text-sm">아직 안 적었어요</p>
+      )}
+      {records.length > 0 && (
+        <GrowthPole records={records} stage={stageOf(progress?.level).stage} className="mt-2" />
       )}
       {grew != null && grew > 0 && first && (
         <p className="text-caption text-ink-soft mt-2.5 font-semibold">

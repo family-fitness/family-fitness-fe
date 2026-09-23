@@ -308,7 +308,7 @@ export function KiumIsland({
  * 레벨 그림 파일이 있으면 그 파일을, 아직이면 코드로 그린 SVG 를 옮겨 그린다.
  * SVG 안의 색은 CSS 변수라 그림 파일 안에서는 풀리지 않는다 — 값으로 바꿔 넣는다.
  */
-async function mascotImage(stand: HTMLElement): Promise<HTMLImageElement | null> {
+export async function mascotImage(stand: HTMLElement): Promise<HTMLImageElement | null> {
   const img = stand.querySelector("img");
   if (img) return load(img.src);
 
