@@ -373,34 +373,17 @@ function DayDetail({
   if (loading) return <Skeleton className="h-40 w-full rounded-3xl" />;
 
   const moved = log && log.minutes > 0;
+  // 잡아 둔 운동 중 그날 기록에 아직 없는 것 — 한 가지를 했어도 남은 것은 보여야 한다
+  const waiting = planned.filter((m) => !log?.entries.some((e) => e.missionId === m.missionId));
   return (
     <Card>
       <CardHead title={longDate(date)} meta={moved ? `${log.minutes}분` : undefined} />
 
-      {!moved && planned.length === 0 && (
+      {!moved && waiting.length === 0 && (
         <p className="text-ink-soft mt-1 text-sm">
           {future ? "아직 오지 않은 날이에요" : "이날은 쉬었어요"}
         </p>
       )}
-
-      {/* 잡아 둔 운동 — 아직 안 했다. 한 것처럼 보이지 않게 연하게 */}
-      {!moved &&
-        planned.map((m) => {
-          const sessions = sessionsOf(m);
-          return (
-            <div key={m.missionId} className="border-line mt-3 border-t pt-3 first:border-0">
-              <p className="text-caption text-signal-deep font-extrabold">할 운동</p>
-              <p className="mt-0.5 text-sm font-extrabold">{m.title}</p>
-              <p className="text-caption text-ink-soft mt-0.5">
-                {sessions.length > 0
-                  ? `${sessions.length}개 · ${totalMinutes(sessions)}분`
-                  : `${m.targetValue ?? ""}분`}
-                {(m.participants?.length ?? 0) > 1 &&
-                  ` · ${(m.participants ?? []).map((p) => p.name).join(" · ")} 같이`}
-              </p>
-            </div>
-          );
-        })}
 
       {moved &&
         log.entries.map((entry) => (
@@ -428,6 +411,26 @@ function DayDetail({
             )}
           </div>
         ))}
+
+      {/* 잡아 둔 운동 — 아직 안 했다. 한 것처럼 보이지 않게 연하게 */}
+      {waiting.map((m) => {
+        const sessions = sessionsOf(m);
+        return (
+          <div key={m.missionId} className="border-line mt-3 border-t pt-3 first:border-0">
+            <p className="text-caption text-signal-deep font-extrabold">할 운동</p>
+            <p className="mt-0.5 text-sm font-extrabold">{m.title}</p>
+            <p className="text-caption text-ink-soft mt-0.5">
+              {sessions.length > 0
+                ? `${sessions.length}개 · ${totalMinutes(sessions)}분`
+                : `${m.targetValue ?? ""}분`}
+              {(m.participants?.length ?? 0) > 1 &&
+                ` · ${(m.participants ?? [])
+                  .map((p) => nameOf(p.profileId ?? "", p.name ?? ""))
+                  .join(" · ")} 같이`}
+            </p>
+          </div>
+        );
+      })}
 
       {log?.stickers.map((st) => {
         const sticker = stickerOf(st.stickerId);
