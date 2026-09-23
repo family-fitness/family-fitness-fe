@@ -11,8 +11,8 @@ import { NavLink } from "@/components/ui/nav-link";
 import { Ring } from "@/components/ui/ring";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClipPlayer } from "@/components/domain/clip-player";
-import { LevelBuddy } from "@/components/domain/level-buddy";
 import { Confetti } from "@/components/scene/confetti";
+import { KiumIsland } from "@/components/scene/kium-island";
 import type { MissionSession } from "@/lib/api/types";
 import {
   useCompleteSession,
@@ -507,7 +507,9 @@ function Finish({
   kidId: string;
   missionId: string;
 }) {
-  const { data: progress } = useProgress(kidId || undefined);
+  // 다 한 직후에는 서버가 나무 수를 새로 센다. 옛 값으로 섬을 지었다가 다시 지으면
+  // 나무가 두 번 자란다 — 새 값이 올 때까지 캐릭터만 세워 둔다
+  const { data: progress, isFetching } = useProgress(kidId || undefined);
   const { data: family } = useFamilyProfiles(familyId);
   const send = useSendCheer(familyId);
   const [told, setTold] = useState(false);
@@ -540,12 +542,22 @@ function Finish({
 
   return (
     <section className="card-hero text-center" aria-live="polite">
-      <LevelBuddy stage={stage.stage} size={132} cheer className="mx-auto" label={stage.name} />
+      <KiumIsland
+        stage={stage.stage}
+        plants={progress && !isFetching ? (progress.activeDays ?? 0) : null}
+        seed={kidId || "kid"}
+        cheer
+        grow
+        height={230}
+        label={`${stage.name}의 섬. 오늘 나무가 하나 자랐어요`}
+        className="-mt-3 -mb-1"
+      />
       <h2 className="page-title mt-1">
         {allDone ? "오늘 거 다 했어요!" : `${doneCount}개 했어요!`}
       </h2>
       <p className="text-caption text-ink-soft mt-1 font-semibold">
-        {minutes}분 움직였어요{!allDone && ` · ${total - doneCount}개는 다음에`}
+        {minutes}분 움직였어요 · 섬에 나무가 자랐어요
+        {!allDone && ` · ${total - doneCount}개는 다음에`}
       </p>
 
       {progress && (
