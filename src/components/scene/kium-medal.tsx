@@ -157,6 +157,7 @@ export function KiumMedal({
       resize();
 
       /* 나타나기 — 작게 시작해 튀어 오르고, 한 바퀴 반 돌아 앞을 본다 */
+      let visible = true;
       const clock = () => performance.now() / 1000;
       const born = clock();
       let spin = 0; // 손으로 돌린 만큼
@@ -177,8 +178,8 @@ export function KiumMedal({
           scale =
             p >= 1 ? 1 : Math.pow(2, -9 * p) * Math.sin((p * 8 - 0.75) * ((2 * Math.PI) / 3)) + 1;
         }
-        const rock = still ? 0 : Math.sin(t * 0.9) * 0.22 * Math.min(1, Math.max(0, t - 1.3));
-        medal.rotation.y = reveal + spin + rock;
+        // 다 나타난 뒤에는 가만히 앞을 본다 — 제자리에서 흔들리며 떠 있지 않는다(9/23 「호버링은 제거」)
+        medal.rotation.y = reveal + spin;
         medal.scale.setScalar(Math.max(0.001, scale));
         renderer.render(scene, camera);
       };
@@ -195,7 +196,18 @@ export function KiumMedal({
           }
         }
         draw();
-        if (running) raf = requestAnimationFrame(frame);
+        if (!running) return;
+        // 나타나기가 끝나고 손을 놓은 채 앞면에 섰으면 쉰다 — 가만히 있는 메달을 계속 그리지 않는다
+        const settled =
+          !dragging &&
+          clock() - born > 1.3 &&
+          Math.abs(velocity) < 0.01 &&
+          Math.abs(spin - Math.round(spin / (2 * Math.PI)) * 2 * Math.PI) < 0.001;
+        if (settled) {
+          running = false;
+          return;
+        }
+        raf = requestAnimationFrame(frame);
       };
       const start = () => {
         if (running || still || disposed) return;
@@ -211,6 +223,8 @@ export function KiumMedal({
       const down = (e: PointerEvent) => {
         dragging = { last: e.clientX };
         velocity = 0;
+        // 쉬던 메달을 다시 깨운다 — 손을 놓은 뒤 앞면으로 돌아오는 것까지 그린다
+        if (visible && !document.hidden) start();
         try {
           el.setPointerCapture(e.pointerId);
         } catch {}
@@ -239,7 +253,6 @@ export function KiumMedal({
       canvas.classList.replace("opacity-0", "opacity-100");
       stand.style.opacity = "0";
 
-      let visible = true;
       const observer = new IntersectionObserver(([entry]) => {
         visible = entry.isIntersecting;
         if (visible && !document.hidden) start();
