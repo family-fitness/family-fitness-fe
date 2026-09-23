@@ -17,6 +17,7 @@ import { WeekTower } from "@/components/scene/week-tower";
 import { KiumIsland } from "@/components/scene/kium-island";
 import { NotificationBell } from "@/components/domain/notification-bell";
 import { RecentBadges, RecentStickers } from "@/components/domain/kid-cards";
+import { FamilyWeekCard } from "@/components/domain/family-week-card";
 import { PlayCard } from "@/components/domain/play-card";
 import type { Mission } from "@/lib/api/types";
 import type { ProfileWithSex } from "@/lib/api/types";
@@ -222,6 +223,13 @@ export default function KidHomePage() {
             </div>
           </div>
         </Card>
+
+        {/* 가족이 같이 짓는 다리 — 합만. 아이 화면에서는 목표를 고르지 않는다 */}
+        <FamilyWeekCard
+          familyId={familyId ?? undefined}
+          profileIds={(family?.profiles ?? []).flatMap((p) => (p.profileId ? [p.profileId] : []))}
+          stage={stage.stage}
+        />
 
         {/* 레벨을 받은 뒤에 — 먼저 Lv.1 로 그렸다가 바뀌면 열린 놀이가 줄었다 늘어 보인다 */}
         {progress && <PlayCard level={progress.level} />}
