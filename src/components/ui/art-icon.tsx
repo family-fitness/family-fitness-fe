@@ -1,7 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 
-import { ASSETS } from "@/lib/asset-list";
-import { INTERIM } from "@/lib/interim-art";
+import { artFor } from "@/lib/interim-art";
 import { cn } from "@/lib/utils";
 
 /**
@@ -25,11 +24,7 @@ export function ArtIcon({
   className?: string;
 }) {
   // 새 그림 → 옛 그림 → 선 아이콘 순으로 선다
-  const art = ASSETS.has(name)
-    ? name
-    : INTERIM[name] && ASSETS.has(INTERIM[name])
-      ? INTERIM[name]
-      : null;
+  const art = artFor(name);
   if (art) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- 작은 아이콘이라 최적화 이득보다 한 번 더 도는 요청이 크다

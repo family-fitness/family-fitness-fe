@@ -1,3 +1,5 @@
+import { ASSETS } from "./asset-list";
+
 /**
  * 새 그림이 오기 전까지 **있는 그림**으로 대신 선다.
  *
@@ -41,6 +43,8 @@ export const INTERIM: Readonly<Record<string, string>> = {
   "sticker/sticker-clap": "stamp/stamp-clap",
   "sticker/sticker-sprout": "stamp/stamp-flower",
   "sticker/sticker-sun": "stamp/stamp-smile",
+  "sticker/sticker-flag": "scene/scene-done",
+  "sticker/sticker-sparkle": "deco/deco-sparkle",
 
   // 업적 배지
   "badge/badge-first-step": "item/item-shoes",
@@ -63,3 +67,13 @@ export const INTERIM: Readonly<Record<string, string>> = {
   "scene/kiumi-done": "scene/scene-done",
   "scene/kiumi-rest": "scene/scene-rest-day",
 };
+
+/**
+ * 그림 이름을 실제로 있는 파일로 — 새 그림 → 옛 그림 → 없음(null).
+ * 목록에 없는 그림은 부르지 않는다. 없는 파일을 불렀다 숨기면 빈 상자가 한 번 번쩍인다.
+ */
+export function artFor(name: string): string | null {
+  if (ASSETS.has(name)) return name;
+  const interim = INTERIM[name];
+  return interim && ASSETS.has(interim) ? interim : null;
+}
