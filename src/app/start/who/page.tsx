@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
-import { Avatar } from "@/components/ui/illustration";
+
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFamilyProfiles } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
-import { avatarFor } from "@/lib/avatar";
 import { useRoleStore } from "@/stores/role-store";
+import { Initial } from "@/components/ui/initial";
 
 /** 형제 중 누구인지. */
 export default function WhoPage() {
@@ -65,7 +65,7 @@ export default function WhoPage() {
                 }}
                 className="press border-line flex w-full items-center gap-4 rounded-3xl border-2 p-4 text-left"
               >
-                <Avatar parts={avatarFor(kid)} size={64} />
+                <Initial name={kid.name} size="lg" />
                 <span className="text-xl font-extrabold">{kid.name}</span>
               </button>
             </li>

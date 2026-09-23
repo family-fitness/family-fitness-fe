@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { NavLink } from "@/components/ui/nav-link";
-import { Backdrop } from "@/components/ui/backdrop";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -112,7 +111,6 @@ export default function MissionPage() {
       <>
         <AppBar back title="다 했어요" />
         <Stage wide className="relative">
-          <Backdrop name="bg/bg-confetti" />
           <DoneCard
             familyId={familyId ?? ""}
             childProfileId={childProfileId ?? ""}

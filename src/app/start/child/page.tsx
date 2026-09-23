@@ -9,8 +9,7 @@ import { Stage } from "@/components/app-shell/stage";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Illustration } from "@/components/ui/illustration";
-import { KidCharacter } from "@/components/domain/kid-character";
-import { Backdrop } from "@/components/ui/backdrop";
+import { LevelBuddy } from "@/components/domain/level-buddy";
 import { errorMessage } from "@/lib/errors";
 import { useCreateProfile } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
@@ -305,8 +304,8 @@ export default function AddChildPage() {
         */}
         {step === 2 && (
           <section className="relative flex flex-col items-center py-6 text-center">
-            <Backdrop name="bg/bg-confetti" />
-            <KidCharacter motion="cheer" size={170} />
+            {/* 새로 온 아이는 씨앗부터. 운동을 하면서 자란다 */}
+            <LevelBuddy stage={1} size={150} cheer />
             <h2 className="mt-3 text-2xl font-extrabold">{name} 등록 완료!</h2>
             <p className="text-ink-soft mt-2 text-sm leading-relaxed">
               이제 {withJosa(name || "아이", "와과")} 얼마나 같이 할지 정해요

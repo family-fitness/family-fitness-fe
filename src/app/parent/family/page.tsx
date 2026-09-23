@@ -11,15 +11,15 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar } from "@/components/ui/illustration";
+
 import { Field } from "@/components/ui/field";
 import { errorMessage } from "@/lib/errors";
 import type { ProfileSummary } from "@/lib/api/types";
 import { useCreateProfile, useFamilyProfiles, useOpenInvite } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
-import { avatarFor } from "@/lib/avatar";
 import { ageOf, today } from "@/lib/today";
 import { cn } from "@/lib/utils";
+import { Initial } from "@/components/ui/initial";
 
 /** 가족 더하기. */
 export default function MembersPage() {
@@ -106,7 +106,7 @@ function MemberRow({ profile }: { profile: ProfileSummary }) {
   return (
     <li className="py-3.5">
       <div className="flex items-center gap-3">
-        <Avatar parts={avatarFor(profile)} size={44} />
+        <Initial name={profile.name} tone={profile.role === "CHILD" ? "signal" : "mark"} />
         <div className="min-w-0 flex-1">
           <p className="text-body font-bold">{profile.name}</p>
           <p className="text-faint mt-0.5 text-xs">

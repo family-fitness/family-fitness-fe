@@ -4,8 +4,9 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { Stage } from "@/components/app-shell/stage";
-import { Avatar } from "@/components/ui/illustration";
-import { KidCharacter } from "@/components/domain/kid-character";
+import { Users } from "lucide-react";
+
+import { LevelBuddy } from "@/components/domain/level-buddy";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFamilyProfiles } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
@@ -76,7 +77,7 @@ export default function StartPage() {
         description="오늘 할 운동 바로 시작하기"
         tone="kid"
         onClick={goKid}
-        art={<KidCharacter motion="wave" size={96} />}
+        art={<LevelBuddy stage={2} size={92} />}
       />
 
       {childAccount ? (
@@ -89,27 +90,19 @@ export default function StartPage() {
           description="아이 체력 보고 칭찬 보내기"
           tone="parent"
           onClick={goParent}
-          /* 어른 아바타를 조립해 쓴다. 1차 에셋의 move/* 는 다 아이 체형이라
-             그대로 쓰면 「부모」 칸에 아이가 앉아 있다 */
-          art={<Avatar parts={PARENT_AVATAR} size={92} />}
+          art={
+            <span
+              aria-hidden
+              className="bg-mark-soft text-ink grid size-20 shrink-0 place-items-center rounded-full"
+            >
+              <Users className="size-9" strokeWidth={1.8} />
+            </span>
+          }
         />
       )}
     </Stage>
   );
 }
-
-/**
- * 부모 칸에 세울 어른.
- *
- * `hair-bob` 은 아이 머리라 어른 몸에 얹으면 큰 아이처럼 보였다. 옷(`top`)은
- * 층에서 뺐다 — `body-*` 가 이미 옷을 입고 있어 겹치면 옷 위에 옷이 된다.
- */
-const PARENT_AVATAR = {
-  // Avatar 가 "char/" 를 스스로 붙인다. 여기서 또 붙이면 char/char/… 이 되어 사라진다
-  body: "body-adult-f",
-  hair: "hair-mom-long",
-  face: "face-parent-1",
-};
 
 /** 고르는 칸. */
 function RoleCard({

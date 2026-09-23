@@ -5,11 +5,11 @@ import { Suspense, useEffect, useState } from "react";
 
 import { PlainScreen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
-import { Avatar, Illustration } from "@/components/ui/illustration";
-import { avatarFor } from "@/lib/avatar";
+import { Illustration } from "@/components/ui/illustration";
 import { errorMessage } from "@/lib/errors";
 import { useClaimProfile, useInvitePeek } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
+import { Initial } from "@/components/ui/initial";
 
 /** 0/O · 1/I 를 뺀 대문자와 숫자 여섯 자리. 링크로 온 코드도 같은 손질을 거친다 */
 const normalizeCode = (raw: string) =>
@@ -98,10 +98,10 @@ function ClaimContent() {
         {/* 어느 자리인지. 코드가 맞아야 뜬다 */}
         {seat && (
           <div className="border-signal bg-signal-soft flex items-center gap-3 rounded-2xl border p-4">
-            <Avatar
-              parts={avatarFor({ profileId: code, ageGroup: seat.ageGroup ?? undefined })}
-              size={44}
-              className="shrink-0"
+            <Initial
+              name={seat.profileName}
+              tone={seat.role === "CHILD" ? "signal" : "mark"}
+              size="lg"
             />
             <span className="min-w-0 flex-1">
               <span className="text-body block font-extrabold">
