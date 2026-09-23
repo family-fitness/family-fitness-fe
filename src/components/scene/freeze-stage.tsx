@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type * as T from "three";
 
 import { LevelBuddy } from "@/components/domain/level-buddy";
@@ -40,6 +40,8 @@ export function FreezeStage({
 }) {
   const host = useRef<HTMLDivElement>(null);
   const standIn = useRef<HTMLDivElement>(null);
+  /** 입체가 섰다 — 그 전 · WebGL 이 없을 때는 키움이 그림이 무대 자리에 선다 */
+  const [ready, setReady] = useState(false);
   const live = useRef({ mode, phase });
   useEffect(() => {
     live.current = { mode, phase };
@@ -193,6 +195,7 @@ export function FreezeStage({
       };
     },
     [stage],
+    () => setReady(true),
   );
 
   // 무대가 바뀌면 깨운다 — 춤 · 얼음 · 땡
@@ -207,6 +210,15 @@ export function FreezeStage({
       className={cn("relative w-full touch-pan-y select-none", className)}
       style={{ height }}
     >
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-0 flex items-end justify-center pb-[12%] transition-opacity duration-500",
+          ready && "opacity-0",
+        )}
+      >
+        <LevelBuddy stage={stage} size={Math.round(height * 0.55)} />
+      </div>
       <div ref={standIn} className="hidden">
         <LevelBuddy stage={stage} size={160} />
       </div>

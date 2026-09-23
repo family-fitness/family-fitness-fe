@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import type { Stage } from "@/lib/levels";
@@ -38,6 +38,8 @@ export function GrowthPole({
 }) {
   const host = useRef<HTMLDivElement>(null);
   const standIn = useRef<HTMLDivElement>(null);
+  /** 입체가 섰다 — 그 전 · WebGL 이 없을 때는 키움이 그림이 자 자리 옆에 선다 */
+  const [ready, setReady] = useState(false);
   const cms = records.map((r) => r.heightCm);
   const lo = Math.floor((Math.min(...cms) - 8) / 10) * 10;
   const hi = Math.max(lo + 20, Math.ceil((Math.max(...cms) + 6) / 10) * 10);
@@ -147,6 +149,7 @@ export function GrowthPole({
       };
     },
     [key],
+    () => setReady(true),
   );
 
   const width = useWidth(host, REF_WIDTH);
@@ -159,6 +162,15 @@ export function GrowthPole({
       className={cn("relative w-full select-none", className)}
       style={{ aspectRatio: `${REF_WIDTH} / ${height}` }}
     >
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-y-0 left-[12%] flex items-end pb-[8%] transition-opacity duration-500",
+          ready && "opacity-0",
+        )}
+      >
+        <LevelBuddy stage={stage} size={Math.round(tall * 0.6)} />
+      </div>
       {/* 섬 위에 세울 키움이 그림의 원본. 화면에는 보이지 않는다 */}
       <div ref={standIn} aria-hidden className="hidden">
         <LevelBuddy stage={stage} size={160} />

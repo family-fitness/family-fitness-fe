@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type * as T from "three";
 
 import type { DayLog } from "@/lib/api/types";
@@ -47,6 +47,8 @@ export function WeekTower({
   className?: string;
 }) {
   const host = useRef<HTMLDivElement>(null);
+  /** 입체가 섰다 — 그 전 · WebGL 이 없을 때는 같은 자리에 납작한 막대가 선다 */
+  const [ready, setReady] = useState(false);
   const minutes = days.map((d) => logs?.find((l) => l.date === d)?.minutes ?? 0);
   const top = Math.max(FLOOR_MINUTES, ...minutes);
   const heights = minutes.map((m) => (m > 0 ? Math.max(0.12, (m / top) * TALL) : 0));
@@ -125,6 +127,7 @@ export function WeekTower({
       };
     },
     [key],
+    () => setReady(true),
   );
 
   // 글자 자리 — 캔버스와 같은 셈으로 먼저 세운다
@@ -143,6 +146,30 @@ export function WeekTower({
       className={cn("relative w-full touch-pan-y select-none", className)}
       style={{ aspectRatio: `${REF_WIDTH} / ${height}` }}
     >
+      {/* 입체가 오기 전 · 없을 때 — 기둥 자리에 같은 높이의 납작한 막대 */}
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-0 transition-opacity duration-500",
+          ready && "opacity-0",
+        )}
+      >
+        {days.map((date, i) => {
+          const x = (i - 3) * GAP;
+          const base = projectOrtho(SPEC, [x, 0, 0], width, tall);
+          const top = projectOrtho(SPEC, [x, Math.max(heights[i], 0.06), 0], width, tall);
+          return (
+            <span
+              key={date}
+              className={cn(
+                "absolute w-4 -translate-x-1/2 rounded-t-md",
+                date === today ? "bg-mark" : heights[i] > 0 ? "bg-signal" : "bg-bar",
+              )}
+              style={{ left: base.x, top: top.y, height: Math.max(3, base.y - top.y) }}
+            />
+          );
+        })}
+      </div>
       <Labels
         days={days}
         minutes={minutes}
