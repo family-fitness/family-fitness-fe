@@ -58,7 +58,7 @@ export default function ResultPage() {
             action={
               <Link
                 href={`/p/${profileId}/measure`}
-                className="press bg-signal text-body mt-1 rounded-xl px-5 py-3 font-bold text-white"
+                className="press bg-signal-strong text-body mt-1 rounded-xl px-5 py-3 font-bold text-white"
               >
                 측정 입력하기
               </Link>
@@ -90,7 +90,7 @@ export default function ResultPage() {
       />
 
       <Screen className="space-y-8">
-        {radar.length >= 3 && <FactorRadar points={radar} />}
+        {radar.length >= 3 && <FactorRadar points={radar} name={profile?.name ?? "나"} />}
 
         {/** 잘하는 것을 먼저 말한다. 약한 것부터 들이밀면 아이가 화면을 닫는다. */}
         {onlyOneFactor ? (
@@ -172,7 +172,7 @@ export default function ResultPage() {
             </p>
             <Link
               href="/kid"
-              className="text-signal mt-1 inline-flex min-h-11 items-center text-sm font-bold"
+              className="text-signal-strong mt-1 inline-flex min-h-11 items-center text-sm font-bold"
             >
               오늘 할 운동 고르기
             </Link>
@@ -190,7 +190,7 @@ export default function ResultPage() {
             </p>
             <Link
               href="/coach/weekly"
-              className="text-signal mt-1 inline-flex min-h-11 items-center text-sm font-bold"
+              className="text-signal-strong mt-1 inline-flex min-h-11 items-center text-sm font-bold"
             >
               이번 주 제안 보기
             </Link>
@@ -203,14 +203,14 @@ export default function ResultPage() {
               href={`/p/${profileId}/future`}
               className="press border-line flex items-center gap-2 rounded-xl border px-4 py-3.5"
             >
-              <LineChart className="text-signal size-4" aria-hidden />
+              <LineChart className="text-signal-strong size-4" aria-hidden />
               <span className="text-sm font-bold">10년 후 보기</span>
             </Link>
             <Link
               href={`/p/${profileId}/measure`}
               className="press border-line flex items-center gap-2 rounded-xl border px-4 py-3.5"
             >
-              <Ruler className="text-signal size-4" aria-hidden />
+              <Ruler className="text-signal-strong size-4" aria-hidden />
               <span className="text-sm font-bold">다시 측정</span>
             </Link>
           </div>
