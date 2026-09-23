@@ -39,6 +39,9 @@ export function josa(word: string, kind: keyof typeof JOSA): string {
   const last = word.trimEnd().at(-1);
   if (!last) return JOSA[kind][1];
 
+  // 숫자는 읽는 소리로 — 영 · 일 · 삼 · 육 · 칠 · 팔(십)은 받침이 있고 이 · 사 · 오 · 구는 없다
+  if (/[0-9]/.test(last)) return JOSA[kind]["013678".includes(last) ? 0 : 1];
+
   const code = last.charCodeAt(0);
   // 한글 음절 영역이 아니면(숫자 · 영문 등) 받침 없음으로 본다
   if (code < 0xac00 || code > 0xd7a3) return JOSA[kind][1];

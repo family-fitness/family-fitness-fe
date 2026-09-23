@@ -105,6 +105,7 @@ function LoginContent() {
       <div className="flex flex-col items-center text-center">
         <KiumIsland
           stage={3}
+          level={9}
           plants={16}
           seed="kium-login"
           cheer

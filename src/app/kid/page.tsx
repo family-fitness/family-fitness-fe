@@ -17,6 +17,7 @@ import { WeekTower } from "@/components/scene/week-tower";
 import { KiumIsland } from "@/components/scene/kium-island";
 import { NotificationBell } from "@/components/domain/notification-bell";
 import { RecentBadges, RecentStickers } from "@/components/domain/kid-cards";
+import { PlayCard } from "@/components/domain/play-card";
 import type { Mission } from "@/lib/api/types";
 import type { ProfileWithSex } from "@/lib/api/types";
 import {
@@ -139,6 +140,7 @@ export default function KidHomePage() {
         <section className="flex flex-col items-center pb-2 text-center">
           <KiumIsland
             stage={stage.stage}
+            level={progress?.level}
             plants={progress ? trees : null}
             seed={childProfileId ?? "kid"}
             label={`${me.name}의 섬. 운동한 날마다 나무가 하나씩 자라요. 지금 ${trees}그루`}
@@ -221,6 +223,8 @@ export default function KidHomePage() {
           </div>
         </Card>
 
+        {/* 레벨을 받은 뒤에 — 먼저 Lv.1 로 그렸다가 바뀌면 열린 놀이가 줄었다 늘어 보인다 */}
+        {progress && <PlayCard level={progress.level} />}
         <RecentStickers cheers={cheers?.cheers} nameOf={nameOf} />
         <RecentBadges achievements={progress?.achievements} />
 

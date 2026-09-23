@@ -10,6 +10,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LevelBuddy } from "@/components/domain/level-buddy";
+import { UnlockLadder } from "@/components/domain/unlock-ladder";
 import { KiumMedal } from "@/components/scene/kium-medal";
 import type { AchievementView } from "@/lib/api/types";
 import { useProgress } from "@/lib/api/queries";
@@ -111,6 +112,8 @@ export default function BadgesPage() {
             })}
           </ol>
         </section>
+
+        <UnlockLadder level={progress.level} />
 
         <Card>
           <CardHead title="업적" meta="누르면 크게 볼 수 있어요" />

@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import type { Stage } from "@/lib/levels";
+import { decorationsAt, type DecorationId } from "@/lib/unlocks";
 import { cn } from "@/lib/utils";
 
 import { ISLAND, buildIsland, footRatio, type Island } from "./island";
@@ -28,11 +29,17 @@ export function KiumIsland({
   cheer = false,
   grow = false,
   spin = "drag",
+  level = null,
+  unveil = null,
   height = 280,
   label,
   className,
 }: {
   stage: Stage;
+  /** 레벨 — 이 레벨까지 열린 장식이 섬에 선다. 모르면 장식 없이 */
+  level?: number | null;
+  /** 방금 열린 장식 — 나무가 자란 뒤에 튀어나온다(레벨 업 순간) */
+  unveil?: DecorationId | null;
   /** 세울 나무 수 — 지금까지 운동한 날. 아직 모르면 null — 캐릭터만 세워 두고 기다린다 */
   plants: number | null;
   /** 나무 자리를 정하는 씨앗. 프로필 id */
@@ -51,6 +58,7 @@ export function KiumIsland({
   const host = useRef<HTMLDivElement>(null);
   const standIn = useRef<HTMLDivElement>(null);
   const mascotSize = Math.round(height * ISLAND.mascot);
+  const decorKey = decorationsAt(level).join();
 
   useEffect(() => {
     const el = host.current;
@@ -107,6 +115,9 @@ export function KiumIsland({
         island = buildIsland(THREE, addons, {
           plants: count,
           seed,
+          decorations: decorKey ? (decorKey.split(",") as DecorationId[]) : [],
+          // 움직임 줄이기면 튀어나오지 않는다 — 처음부터 서 있다
+          unveil: still ? null : unveil,
           palette: readPalette(),
           mascot,
           light,
@@ -224,6 +235,7 @@ export function KiumIsland({
       el.addEventListener("pointercancel", cancel);
 
       if (grow && !still) island.sprout(clock());
+      if (unveil && !still) island.reveal(clock());
 
       draw();
       // 첫 장면을 그린 뒤에 바꿔 낀다. 캐릭터는 같은 자리에 있으니 섬만 나타난다
@@ -276,7 +288,7 @@ export function KiumIsland({
       disposed = true;
       teardown();
     };
-  }, [plants, seed, grow, spin, stage, cheer]);
+  }, [plants, seed, grow, spin, stage, cheer, decorKey, unveil]);
 
   return (
     <div

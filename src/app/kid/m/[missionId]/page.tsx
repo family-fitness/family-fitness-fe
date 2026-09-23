@@ -24,9 +24,10 @@ import {
 } from "@/lib/api/queries";
 import { errorMessage } from "@/lib/errors";
 import { levelProgress, stageOf } from "@/lib/levels";
+import { newlyUnlocked } from "@/lib/unlocks";
 import { PHASE_LABEL, clock, sessionsOf } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
-import { cn } from "@/lib/utils";
+import { cn, withJosa } from "@/lib/utils";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
@@ -517,6 +518,9 @@ function Finish({
   const stage = stageOf(progress?.level);
   const bar = progress ? levelProgress(progress) : null;
   const leveledUp = progress != null && levelBefore != null && progress.level > levelBefore;
+  const opened = newlyUnlocked(levelBefore, progress?.level);
+  // 섬에 새로 선 장식이 있으면 나무 다음에 튀어나온다
+  const unveil = opened.flatMap((u) => (u.kind === "decoration" ? [u.id] : [])).at(-1) ?? null;
   const parents = (family?.profiles ?? []).filter((p) => p.role === "PARENT");
 
   const tell = async () => {
@@ -543,6 +547,8 @@ function Finish({
     <section className="card-hero text-center" aria-live="polite">
       <KiumIsland
         stage={stage.stage}
+        level={progress?.level}
+        unveil={unveil}
         plants={progress && !isFetching ? (progress.activeDays ?? 0) : null}
         seed={kidId || "kid"}
         cheer
@@ -577,6 +583,23 @@ function Finish({
             {stage.name}
             {bar?.left != null && ` · 다음 레벨까지 ${bar.left}`}
           </p>
+          {/* 레벨이 올라 새로 열린 것. 섬 장식은 위 섬에 방금 섰고, 놀이는 놀이터로 가는 길 */}
+          {opened.map((u) => (
+            <p key={u.id} className="border-line mt-3 border-t pt-3 text-sm">
+              <b className="font-extrabold">새로 열렸어요 · {u.name}</b>
+              <span className="text-ink-soft mt-0.5 block text-xs">
+                {u.kind === "decoration" ? `섬에 ${withJosa(u.name, "이가")} 섰어요` : u.line}
+              </span>
+              {u.kind === "game" && (
+                <NavLink
+                  href={`/kid/play/${u.id}`}
+                  className="press text-signal-deep mt-1 inline-flex min-h-10 items-center text-sm font-extrabold"
+                >
+                  {u.name} 하러 가기
+                </NavLink>
+              )}
+            </p>
+          ))}
         </div>
       )}
 

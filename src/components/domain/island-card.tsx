@@ -25,6 +25,7 @@ export function IslandCard({ profileId, name }: { profileId: string; name: strin
       />
       <KiumIsland
         stage={stage.stage}
+        level={progress?.level}
         plants={progress ? trees : null}
         seed={profileId}
         height={220}
