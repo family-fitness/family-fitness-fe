@@ -140,6 +140,7 @@ export function FactorPillars({
       );
 
       return {
+        busy: () => seen() < 0.8,
         update() {
           if (still) return;
           // 보이는 순간 다 같이 솟는다

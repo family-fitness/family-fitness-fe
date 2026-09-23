@@ -101,7 +101,10 @@ export function WeekTower({
         return { group, height: h > 0 ? h : 0.06 };
       });
 
+      // 마지막 기둥까지 다 솟는 데 걸리는 시간
+      const growFor = (pillars.length - 1) * 0.06 + 0.55;
       return {
+        busy: () => seen() < growFor,
         update() {
           if (still) return;
           // 보이는 순간 왼쪽부터 차례로 솟는다 — 한 번만

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, type RefObject } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, type RefObject } from "react";
 import type * as T from "three";
 
 import {
@@ -53,6 +53,11 @@ export interface SceneContext {
 export interface SceneHandle {
   /** 매 장면. 움직임 줄이기면 처음 한 번과 invalidate 때만 불린다 */
   update?(t: number, dt: number): void;
+  /**
+   * 아직 움직이는 중인가. 없으면 늘 움직인다(떠 있는 섬처럼).
+   * `false` 면 다음 `wake` 까지 그리기를 쉰다 — 다 자란 그래프가 배터리를 먹지 않게
+   */
+  busy?(): boolean;
   /** 크기가 바뀌었다 — 외곽선 굵기 · 글자 자리 */
   resize?(width: number, height: number): void;
   /** 손가락. 가로로 민 만큼(dx) · 톡(tap) */
@@ -72,6 +77,10 @@ export interface CameraSpec {
   view: number;
 }
 
+/**
+ * 돌려주는 것은 `wake` — 장면이 쉬고 있을 때 다시 움직이게 한다. 받은 값이 바뀌어
+ * 장면을 새로 짓지 않고 움직임만 주고 싶을 때(징검다리 건너기) 부른다.
+ */
 export function useToonScene(
   host: RefObject<HTMLDivElement | null>,
   camera: CameraSpec,
@@ -82,6 +91,7 @@ export function useToonScene(
 ) {
   const ready = useEffectEvent(() => onReady?.());
   const make = useEffectEvent((ctx: SceneContext) => build(ctx));
+  const waker = useRef<() => void>(() => {});
 
   useEffect(() => {
     const el = host.current;
@@ -205,7 +215,13 @@ export function useToonScene(
         const dt = Math.min(0.05, (now - last) / 1000);
         last = now;
         draw(dt);
-        if (running) raf = requestAnimationFrame(frame);
+        if (!running) return;
+        // 다 움직였으면 쉰다. 깨우면(wake) 다시 돈다
+        if (handle?.busy && !handle.busy()) {
+          running = false;
+          return;
+        }
+        raf = requestAnimationFrame(frame);
       };
       const start = () => {
         if (running || still || disposed) return;
@@ -264,6 +280,11 @@ export function useToonScene(
       ready();
 
       let visible = true;
+      waker.current = () => {
+        if (disposed) return;
+        if (still || !visible || document.hidden) invalidate();
+        else start();
+      };
       const observer = new IntersectionObserver(([entry]) => {
         visible = entry.isIntersecting;
         if (visible && !document.hidden) start();
@@ -287,6 +308,7 @@ export function useToonScene(
 
       teardown = () => {
         stop();
+        waker.current = () => {};
         observer.disconnect();
         resizer.disconnect();
         document.removeEventListener("visibilitychange", onVisibility);
@@ -310,4 +332,6 @@ export function useToonScene(
     // 카메라는 처음 값으로 고정한다. 장면이 바뀌어야 하면 deps 로 다시 짓는다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
+
+  return useCallback(() => waker.current(), []);
 }

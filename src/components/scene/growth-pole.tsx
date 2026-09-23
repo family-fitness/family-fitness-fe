@@ -133,6 +133,8 @@ export function GrowthPole({
       }
 
       return {
+        // 움직이는 것이 없다. 그림이 도착하면 한 번 더 그린다(invalidate)
+        busy: () => false,
         resize(width, heightPx) {
           navy.resolution.set(width, heightPx);
         },
