@@ -383,17 +383,19 @@ export function sessionsFor(
 ) {
   const { quiet = true, skip = 0 } = options;
   const ok = (c: CatalogClip) => c.homeOk && !c.props && (!quiet || c.quiet);
+  // 본운동은 시간이 길수록 가짓수를 늘린다 — 한 동작을 13분씩 되풀이시키지 않는다.
+  // 준비 2 · 정리 2 에 본운동 2~6, 모두 열 칸을 넘기지 않는다(회의: 열 개 넘으면 짜증난다)
+  const mainCount = Math.min(6, Math.max(2, Math.round((minutes - 4) / 4)));
   const warm = pickClips((c) => ok(c) && c.phase === "WARMUP" && c.factor === "유연성", 2, skip);
-  const main = pickClips((c) => ok(c) && c.phase === "MAIN" && c.factor === focus, 2, skip);
+  const main = pickClips((c) => ok(c) && c.phase === "MAIN" && c.factor === focus, mainCount, skip);
   const cool = pickClips((c) => ok(c) && c.phase === "COOLDOWN", 2, skip);
-  // 준비 · 정리는 1분씩, 남는 시간을 본운동 둘이 나눈다
-  const mainEach = Math.max(
-    1,
-    Math.floor((minutes - warm.length - cool.length) / Math.max(1, main.length)),
-  );
+  // 준비 · 정리는 1분씩, 남는 시간을 본운동이 나눈다. 나머지는 앞 칸부터 1분씩 더한다
+  const mainTotal = Math.max(main.length, minutes - warm.length - cool.length);
+  const base = Math.floor(mainTotal / Math.max(1, main.length));
+  const extra = mainTotal - base * main.length;
   const rows = [
     ...warm.map((c) => ({ c, minutes: 1 })),
-    ...main.map((c) => ({ c, minutes: mainEach })),
+    ...main.map((c, i) => ({ c, minutes: base + (i < extra ? 1 : 0) })),
     ...cool.map((c) => ({ c, minutes: 1 })),
   ];
   return rows.map(({ c, minutes: m }, i) => ({

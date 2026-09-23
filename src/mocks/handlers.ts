@@ -15,12 +15,10 @@ import {
   fail,
   fixtures,
   saveCheers,
-  saveCoachRun,
   saveFamily,
   saveMissions,
   setActingProfile,
   setStage,
-  thisWeek,
   uuid,
   type Concrete,
   type MapMember,
@@ -28,6 +26,7 @@ import {
   type Profile,
 } from "./db";
 
+import { coaching } from "./coach";
 import { history } from "./history";
 import { progress } from "./progress";
 
@@ -572,90 +571,6 @@ const fitness = [
 ];
 
 /* ─── 코치 — 승인 게이트 ───────────────────────────────────── */
-
-const coaching = [
-  http.post(`${BASE}/families/:familyId/coach/runs`, async () => {
-    /* 제안도 오늘이 속한 주로 만든다. 픽스처 날짜를 그대로 쓰면 지난주 제안이 뜬다 */
-    const week = thisWeek();
-    db.coachRun = {
-      ...structuredClone(fixtures.coachRun),
-      weekStart: week.weekStart,
-      proposals: structuredClone(fixtures.coachRun.proposals ?? []).map((p) => ({
-        ...p,
-        startDate: week.weekStart,
-        endDate: week.weekEnd,
-      })),
-    };
-    db.hasCoachRun = true;
-    saveCoachRun();
-    // 실행은 비동기다. 접수만 하고 202 를 준다
-    return HttpResponse.json(
-      { coachRunId: db.coachRun.coachRunId, status: "RUNNING", pollAfterMs: 1500 },
-      { status: 202 },
-    );
-  }),
-
-  http.get<PathParams>(`${BASE}/coach/runs/:runId`, () => HttpResponse.json(db.coachRun)),
-
-  /**
-   * ▲ 서버에 아직 없다. 제안 모양으로 답한다.
-   * 기기에 든 runId 가 없으면 이번 주 제안을 영영 못 찾아서, 승인 게이트가
-   * 통째로 사라진다 — 이 서비스의 핵심 주장을 보여 줄 화면이 없어진다.
-   */
-  http.get(`${BASE}/families/:familyId/coach/runs/latest`, () => {
-    // 새로 만든 가족은 아직 한 번도 안 돌렸다. 없는 것을 있는 척하지 않는다
-    if (!db.hasCoachRun) return fail(404, "NO_RUN", "이번 주 회차가 없습니다");
-    return HttpResponse.json(db.coachRun);
-  }),
-
-  /**
-   * ★ 미션이 만들어지는 유일한 지점.
-   * 승인 전까지 db.missions 는 0건이고, 그게 이 서비스의 핵심 주장이다.
-   */
-  http.post(`${BASE}/coach/runs/:runId/approve`, () => {
-    const me = acting();
-    if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자가 아닙니다");
-    if (db.coachRun.status === "APPROVED")
-      return fail(409, "ALREADY_APPROVED", "이미 승인했습니다");
-    if (db.coachRun.status !== "AWAITING_APPROVAL") {
-      return fail(409, "INVALID_STATE", "승인할 수 없는 상태입니다");
-    }
-
-    db.coachRun.status = "APPROVED";
-    /* 지난 회차에서 승인해 둔 미션은 그대로 두고 **이번 회차 것만 더한다** */
-    const born = structuredClone(fixtures.missionsAfterApproval.missions).map((m) => ({
-      ...m,
-      coachRunId: db.coachRun.coachRunId,
-      startDate: thisWeek().weekStart,
-      endDate: thisWeek().weekEnd,
-    }));
-    db.missions = [...db.missions, ...born];
-    db.coachRun.missionCount = born.length;
-    saveMissions();
-    saveCoachRun();
-    return HttpResponse.json(fixtures.coachApprove);
-  }),
-
-  http.post(`${BASE}/coach/runs/:runId/reject`, async ({ request }) => {
-    const me = acting();
-    if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자가 아닙니다");
-    if (db.coachRun.status !== "AWAITING_APPROVAL") {
-      return fail(409, "INVALID_STATE", "처리할 수 없는 상태입니다");
-    }
-
-    const { reason } = (await request.json()) as { reason?: string };
-    db.coachRun.status = "REJECTED";
-    db.coachRun.rejectedReason = reason ?? null;
-    saveCoachRun();
-    // 거절해도 미션은 0건 유지
-    return HttpResponse.json({
-      coachRunId: db.coachRun.coachRunId,
-      status: "REJECTED",
-      rejectedReason: reason ?? null,
-      missionCount: 0,
-    });
-  }),
-];
 
 /* ─── 미션 · 활동 · 영상 · 리포트 ──────────────────────────── */
 
