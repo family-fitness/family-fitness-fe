@@ -55,7 +55,11 @@ export default function ParentHomePage() {
   const child = children.find((c) => c.profileId === childProfileId) ?? children[0];
 
   const week = weekOf();
-  const { data: calendar } = useCalendar(familyId, child?.profileId, week);
+  const { data: calendar, isPending: calendarPending } = useCalendar(
+    familyId,
+    child?.profileId,
+    week,
+  );
   // 가족 다리를 건너는 키움이는 지금 보는 아이의 모습
   const { data: progress } = useProgress(child?.profileId ?? undefined);
 
@@ -125,7 +129,12 @@ export default function ParentHomePage() {
           weekLogs={calendar?.days}
         />
 
-        <WeekCard days={week.days} logs={calendar?.days} href="/calendar" />
+        <WeekCard
+          days={week.days}
+          logs={calendar?.days}
+          loading={calendarPending}
+          href="/calendar"
+        />
         <FamilyWeekCard
           familyId={familyId ?? undefined}
           profileIds={members.flatMap((m) => (m.profileId ? [m.profileId] : []))}
