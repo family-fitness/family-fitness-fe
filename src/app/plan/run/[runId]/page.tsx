@@ -8,7 +8,7 @@ import { AppBar } from "@/components/app-shell/app-bar";
 import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Stage } from "@/components/app-shell/stage";
 import { ErrorState } from "@/components/ui/error-state";
-import { LevelBuddy } from "@/components/domain/level-buddy";
+import { StoneTrail } from "@/components/scene/stone-trail";
 import { useCoachRun } from "@/lib/api/queries";
 import { cn } from "@/lib/utils";
 
@@ -19,7 +19,8 @@ import { cn } from "@/lib/utils";
  * 남는다 — 측정 읽기 · 키울 힘 찾기 · 또래 처방 찾기 · 클립 고르기 · 순서 짜기.
  * 나중에 「왜 이 운동이지?」 를 되짚을 수 있는 근거다. 한 줄 한 줄은 서버 문장 그대로다.
  *
- * 움직이는 것은 하나 — 지금 밟고 있는 단계의 고리만 돈다.
+ * 위에는 징검다리 — 단계마다 돌 하나, 한 단계를 마치면 키움이가 다음 돌로 건너간다.
+ * 계속 움직이는 것은 하나 — 지금 밟고 있는 단계의 고리만 돈다. 건너는 건 그 순간 한 번이다.
  * 다 짜면 제안 화면으로 스스로 넘어간다.
  */
 
@@ -73,13 +74,24 @@ function PlanRun() {
   const names = [...new Set([...PLANNED, ...steps.map((s) => s.name ?? "")])].filter(Boolean);
   const done = steps.filter((s) => s.status === "ok").length;
   const finished = status != null && status !== "RUNNING";
+  const doneAt = names.flatMap((n, i) => (byName.get(n)?.status === "ok" ? [i] : []));
+  const nowAt = names.findIndex((n) => byName.get(n)?.status !== "ok");
 
   return (
     <>
       <AppBar backHref="/plan" title="짜는 중" />
       <Stage wide className="space-y-3">
         <section className="card-hero flex flex-col items-center text-center">
-          <LevelBuddy stage={3} size={112} cheer={finished} />
+          <StoneTrail
+            layout="zigzag"
+            count={names.length}
+            done={doneAt}
+            current={finished || nowAt < 0 ? null : nowAt}
+            stage={3}
+            height={150}
+            label={`${names.length}단계 중 ${done}단계를 마쳤어요`}
+            className="-mt-2"
+          />
           <h2 className="text-lead mt-2 font-extrabold" aria-live="polite">
             {finished ? "다 짰어요" : "코치가 오늘 운동을 짜고 있어요"}
           </h2>

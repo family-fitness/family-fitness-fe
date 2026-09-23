@@ -1,10 +1,10 @@
 import { Card, CardHead } from "@/components/ui/card";
-import { MiniBars } from "@/components/ui/mini-bars";
+import { WeekTower } from "@/components/scene/week-tower";
 import type { DayLog } from "@/lib/api/types";
-import { today, weekdayOf } from "@/lib/today";
+import { today } from "@/lib/today";
 
 /**
- * 이번 주 움직인 시간. 월~일 막대 일곱 칸.
+ * 이번 주 움직인 시간. 월~일 블록 탑 — 요일마다 기둥 하나(키움 섬과 같은 결).
  *
  * 빈 날을 「빠진 날」 이라고 쓰지 않는다. 움직인 날 수만 센다 — 쉰 날은 셀 것이 아니다.
  * 카드 전체가 캘린더로 가는 길이다.
@@ -28,21 +28,14 @@ export function WeekCard({
   return (
     <Card href={href} label={`이번 주 ${total}분, ${active}일 움직였어요. 캘린더 보기`}>
       <CardHead title="이번 주" chevron />
-      <div className="mt-1 flex items-end justify-between gap-4">
-        <div className="shrink-0">
-          <p className="metric-value text-metric">
-            {total}
-            <span className="metric-unit">분</span>
-          </p>
-          <p className="text-caption text-ink-soft mt-1 font-semibold">{active}일 움직였어요</p>
-        </div>
-        <MiniBars
-          values={values}
-          labels={days.map(weekdayOf)}
-          highlight={days.indexOf(now)}
-          className="max-w-44"
-        />
+      <div className="mt-1 flex items-baseline gap-3">
+        <p className="metric-value text-metric">
+          {total}
+          <span className="metric-unit">분</span>
+        </p>
+        <p className="text-caption text-ink-soft font-semibold">{active}일 움직였어요</p>
       </div>
+      <WeekTower days={days} logs={logs} today={now} height={150} className="-mx-1 mt-1" />
     </Card>
   );
 }

@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ClipPlayer } from "@/components/domain/clip-player";
 import { Confetti } from "@/components/scene/confetti";
 import { KiumIsland } from "@/components/scene/kium-island";
+import { StoneTrail } from "@/components/scene/stone-trail";
 import type { MissionSession } from "@/lib/api/types";
 import {
   useCompleteSession,
@@ -87,6 +88,7 @@ export default function PlayPage() {
   const firstOpen = sessions.find((s) => !s.completed)?.position ?? null;
   const active = status === "ended" ? null : (current ?? firstOpen);
   const activeSession = sessions.find((s) => s.position === active);
+  const activeIndex = sessions.findIndex((s) => s.position === active);
   const plannedSec = (activeSession?.minutes ?? 1) * 60;
   const doneCount = sessions.filter((s) => s.completed).length;
   const allDone = sessions.length > 0 && doneCount === sessions.length;
@@ -229,20 +231,17 @@ export default function PlayPage() {
       <AppBar backHref="/kid" title="오늘 운동" />
       <Confetti fire={burst} pieces={allDone ? 120 : 50} from={allDone ? "top" : "bottom"} />
 
-      {/* 위에 붙는 진행. 몇 칸째인지 늘 보인다 */}
-      <div className="bg-ground/95 sticky top-14 z-20 px-4 pt-1 pb-3 backdrop-blur-sm">
-        <div className="flex gap-1" aria-hidden>
-          {sessions.map((s) => (
-            <span
-              key={s.position}
-              className={cn(
-                "h-1.5 flex-1 rounded-full",
-                s.completed ? "bg-signal" : s.position === active ? "bg-signal/40" : "bg-bar",
-              )}
-            />
-          ))}
-        </div>
-        <p className="text-caption text-ink-soft mt-1.5 font-bold">
+      {/* 위에 붙는 징검다리. 몇 칸째인지 늘 보이고, 한 칸 끝내면 키움이가 건너간다 */}
+      <div className="bg-ground/95 sticky top-14 z-20 px-4 pb-2 backdrop-blur-sm">
+        <StoneTrail
+          count={sessions.length}
+          done={sessions.flatMap((s, i) => (s.completed ? [i] : []))}
+          current={activeIndex >= 0 ? activeIndex : null}
+          stage={stageOf(progress?.level).stage}
+          height={72}
+          label={`${sessions.length}칸 중 ${doneCount}칸 건넜어요`}
+        />
+        <p className="text-caption text-ink-soft text-center font-bold">
           {doneCount} / {sessions.length}칸 · {totalMin}분 중 {doneMin}분
         </p>
       </div>
@@ -276,7 +275,7 @@ export default function PlayPage() {
             />
           ))}
 
-          <li id="step-end" className="scroll-mt-32 pt-2 pb-6">
+          <li id="step-end" className="scroll-mt-40 pt-2 pb-6">
             {finished ? (
               <Finish
                 allDone={allDone}
@@ -338,7 +337,7 @@ function Step({
   const clip = s.clip;
 
   return (
-    <li id={`step-${s.position}`} className="relative scroll-mt-32 pb-3 pl-11">
+    <li id={`step-${s.position}`} className="relative scroll-mt-40 pb-3 pl-11">
       {/* 길. 끝낸 칸까지는 파랑, 그 아래는 회색 */}
       {!last && (
         <span

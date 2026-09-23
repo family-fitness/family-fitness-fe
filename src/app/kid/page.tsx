@@ -13,7 +13,7 @@ import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InviteParent } from "@/components/domain/invite-parent";
 import { TodayRings } from "@/components/domain/today-rings";
-import { WeekStrip } from "@/components/domain/week-strip";
+import { WeekTower } from "@/components/scene/week-tower";
 import { KiumIsland } from "@/components/scene/kium-island";
 import { NotificationBell } from "@/components/domain/notification-bell";
 import { RecentBadges, RecentStickers } from "@/components/domain/kid-cards";
@@ -216,7 +216,7 @@ export default function KidHomePage() {
                 ` · ${progress.streakDays}일째 이어서 하고 있어요`}
             </p>
             <div className="mt-2">
-              <WeekStrip days={week.days} logs={calendar?.days} />
+              <WeekTower days={week.days} logs={calendar?.days} today={now} height={150} />
             </div>
           </div>
         </Card>
