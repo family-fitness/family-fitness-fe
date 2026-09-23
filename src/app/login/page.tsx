@@ -5,7 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 
 import { PlainScreen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
-import { LevelBuddy } from "@/components/domain/level-buddy";
+import { KiumIsland } from "@/components/scene/kium-island";
 import { errorMessage } from "@/lib/errors";
 import { useDevLogin, useGoogleLogin } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
@@ -103,8 +103,16 @@ function LoginContent() {
   return (
     <PlainScreen className="flex min-h-dvh flex-col justify-center gap-8">
       <div className="flex flex-col items-center text-center">
-        <LevelBuddy stage={3} size={140} cheer />
-        <h1 className="page-title mt-3">우리가족 체력키움</h1>
+        <KiumIsland
+          stage={3}
+          plants={16}
+          seed="kium-login"
+          cheer
+          spin="auto"
+          height={250}
+          label="키움 섬 — 운동한 날마다 나무가 하나씩 자라요"
+        />
+        <h1 className="page-title -mt-1">우리가족 체력키움</h1>
         <p className="text-ink-soft mt-2 text-sm leading-relaxed">
           국민체력100 측정 기록으로 우리 아이 체력을 한눈에 보고,
           <br />
