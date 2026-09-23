@@ -12,8 +12,9 @@ import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChildSwitch } from "@/components/domain/child-switch";
 import { StickerArt } from "@/components/domain/sticker-art";
-import type { DayLog } from "@/lib/api/types";
-import { useCalendar, useFitnessMap } from "@/lib/api/queries";
+import type { DayLog, ProfileWithSex } from "@/lib/api/types";
+import { useCalendar, useFamilyProfiles, useFitnessMap } from "@/lib/api/queries";
+import { callName } from "@/lib/family";
 import { VERIFIED_COPY } from "@/lib/mission";
 import { PHASE_LABEL } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
@@ -48,6 +49,14 @@ function Calendar() {
   const kidView = useIsKidView();
   const { familyId, isPending, error: sessionError } = useSession();
   const { data: map, isPending: mapPending, error: mapError, refetch } = useFitnessMap(familyId);
+  const { data: family } = useFamilyProfiles(familyId);
+  // 아이에게 부모는 엄마 · 아빠다
+  const nameOf = (profileId: string, fallback: string) =>
+    callName(
+      family?.profiles?.find((p) => p.profileId === profileId) as ProfileWithSex | undefined,
+      fallback,
+      kidView,
+    );
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
 
@@ -169,6 +178,7 @@ function Calendar() {
             log={log}
             loading={calendarPending}
             future={selected > now}
+            nameOf={nameOf}
             stickerHref={
               !kidView && selected === now && who?.profileId
                 ? `/parent/sticker/${who.profileId}`
@@ -270,12 +280,14 @@ function DayDetail({
   log,
   loading,
   future,
+  nameOf,
   stickerHref,
 }: {
   date: string;
   log: DayLog | undefined;
   loading: boolean;
   future: boolean;
+  nameOf: (profileId: string, fallback: string) => string;
   /** 부모 · 오늘 · 아직 스티커가 없을 때만 */
   stickerHref: string | null;
 }) {
@@ -326,7 +338,9 @@ function DayDetail({
             <StickerArt id={st.stickerId} className="size-12 shrink-0" />
             <div className="min-w-0">
               <p className="text-sm font-extrabold">{st.message || sticker?.label || "칭찬"}</p>
-              <p className="text-micro text-ink-soft mt-0.5 font-semibold">{st.fromName}</p>
+              <p className="text-micro text-ink-soft mt-0.5 font-semibold">
+                {nameOf(st.fromProfileId, st.fromName)}
+              </p>
             </div>
           </div>
         );
