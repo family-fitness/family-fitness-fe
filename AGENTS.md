@@ -64,6 +64,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 /parent              부모 홈 — 체력 육각형, 오늘 운동, 이번 주, 레벨
 /parent/child/[id]   아이 한 명 자세히 — 육각형, 요인 표, 점수 추이, 키 · 몸무게
 /plan/*              AI 편성 — 조건 → 짜는 과정 → 제안 → 오늘 운동으로 등록
+/plan/custom         직접 짜기 — 담은 동작 · 누가 · 언제(여러 날 · 몇 주) → 등록
 
 /kid                 아이 홈 — 레벨 캐릭터, 오늘 운동 하나
 /kid/m/[id]          운동하기 — 타이머 + 영상, 한 칸 끝나면 아래로
@@ -73,7 +74,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 /calendar            캘린더 — 부모 · 아이 둘 다
 /notifications       알림
 /videos              운동 찾기 — 키우고 싶은 힘으로
-/settings            설정 — 운동할 수 있는 시간, 역할 바꾸기, 동의, 로그아웃
+/settings            설정 — 역할 바꾸기, 동의, 로그아웃. 쓰는 자리가 있는 건 거기에 둔다
 ```
 
 전체 지도와 화면마다의 모양은 `SPEC.md` 에 있다.
