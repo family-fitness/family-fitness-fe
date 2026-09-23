@@ -1,7 +1,6 @@
 "use client";
 
 import { Check, Play, Timer, Footprints } from "lucide-react";
-import Link from "next/link";
 
 import type { Mission, MissionParticipant } from "@/lib/api/types";
 import { VERIFIED_COPY, progressPercent, serverKnows, targetCopy } from "@/lib/mission";
@@ -13,7 +12,12 @@ const METRIC_ICON = {
   STEPS: Footprints,
 } as const;
 
-/** 미션 하나. */
+/**
+ * 끝낸 운동 하나.
+ *
+ * 누르는 줄이 아니다 — 미션 하나를 따로 보는 화면(`/missions/[id]`)은 운동하기 개편 때
+ * 없어졌다. 날짜별로 보는 캘린더가 이 목록을 대신할 때까지 읽기만 한다.
+ */
 export function MissionRow({ mission }: { mission: Mission }) {
   const Icon = METRIC_ICON[mission.targetMetric ?? "TIMER_MINUTES"] ?? Timer;
   const participants = mission.participants ?? [];
@@ -21,7 +25,7 @@ export function MissionRow({ mission }: { mission: Mission }) {
 
   return (
     <li>
-      <Link href={`/missions/${mission.missionId}`} className="press block py-4">
+      <div className="py-4">
         <div className="flex items-start gap-3">
           <span
             className={cn(
@@ -49,7 +53,7 @@ export function MissionRow({ mission }: { mission: Mission }) {
             <ParticipantProgress key={p.profileId} participant={p} />
           ))}
         </ul>
-      </Link>
+      </div>
     </li>
   );
 }
