@@ -16,6 +16,7 @@ import { ChildSwitch } from "@/components/domain/child-switch";
 import { FamilyCard } from "@/components/domain/family-card";
 import { FamilyWeekCard } from "@/components/domain/family-week-card";
 import { FinderCard } from "@/components/domain/finder-card";
+import { LastWeekCard } from "@/components/domain/last-week-card";
 import { NotificationBell } from "@/components/domain/notification-bell";
 import { ProposalNudge } from "@/components/domain/proposal-nudge";
 import { TodayCard } from "@/components/domain/today-card";
@@ -117,6 +118,12 @@ export default function ParentHomePage() {
 
         <BodyCard child={child} />
         <UpdateNudge child={child} />
+        {/* 한 주가 시작되면 지난주를 짧게. 닫으면 다음 주까지 안 뜬다 */}
+        <LastWeekCard
+          familyId={familyId ?? undefined}
+          childProfileId={child.profileId ?? undefined}
+          childName={child.name ?? "아이"}
+        />
 
         <ProposalNudge familyId={familyId} />
 
