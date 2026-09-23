@@ -1,6 +1,5 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
@@ -189,7 +188,7 @@ function PlanForm() {
                 focus === null ? "bg-signal-strong text-white" : "bg-sub",
               )}
             >
-              <ArtIcon name="icon/menu-ai" fallback={Sparkles} className="size-5" />
+              <ArtIcon name="icon/menu-ai" className="size-5" />
               알아서 골라 주세요
             </button>
             {FACTORS.map((f) => (
@@ -240,7 +239,7 @@ function PlanForm() {
           disabled={start.isPending || !kid}
           className="press bg-signal-strong shadow-lift flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white disabled:opacity-60"
         >
-          <ArtIcon name="icon/menu-ai" fallback={Sparkles} className="size-5" />
+          <ArtIcon name="icon/menu-ai" className="size-5" />
           {start.isPending ? "코치에게 보내는 중" : `AI 에게 ${minutes}분 짜 달라기`}
         </button>
       </Dock>

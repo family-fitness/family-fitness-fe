@@ -3,7 +3,6 @@
 import { Check } from "lucide-react";
 import { useState } from "react";
 
-import { Illustration } from "@/components/ui/illustration";
 import { useFamilyProfiles, useSendCheer } from "@/lib/api/queries";
 import { errorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
@@ -73,7 +72,6 @@ export function InviteParent({
         }}
         className="press border-line flex w-full items-center gap-3 rounded-2xl border p-4 text-left disabled:opacity-55"
       >
-        <Illustration name="scene/scene-together" size={44} className="shrink-0" />
         <span className="min-w-0 flex-1">
           <span className="block text-base font-extrabold">같이 하자고 하기</span>
           <span className="text-ink-soft text-caption block">

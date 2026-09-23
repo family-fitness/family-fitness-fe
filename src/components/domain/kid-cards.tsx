@@ -1,7 +1,5 @@
 "use client";
 
-import { Award } from "lucide-react";
-
 import { ArtIcon } from "@/components/ui/art-icon";
 import { Card, CardHead } from "@/components/ui/card";
 import { StickerArt } from "@/components/domain/sticker-art";
@@ -64,7 +62,7 @@ export function RecentBadges({ achievements }: { achievements: AchievementView[]
         <ul className="mt-2 grid grid-cols-3 gap-2">
           {recent.map((a) => (
             <li key={a.code} className="bg-sub flex flex-col items-center gap-1 rounded-2xl p-2">
-              <ArtIcon name={badgeArt(a.code)} fallback={Award} className="size-12" />
+              <ArtIcon name={badgeArt(a.code)} className="size-12" />
               <span className="text-micro truncate font-bold">{a.title}</span>
             </li>
           ))}

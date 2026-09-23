@@ -91,7 +91,7 @@ export default function KidHomePage() {
       <>
         <AppBar title="안녕!" />
         <Stage wide className="flex flex-col items-center pt-10 text-center">
-          <Illustration name="scene/scene-pick-role" fallback="scene/scene-invite" size={150} />
+          <Illustration name="scene/kiumi-waiting" size={150} />
           <p className="mt-4 text-xl font-extrabold">누구인지 골라 주세요</p>
           <button
             type="button"

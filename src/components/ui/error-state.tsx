@@ -22,7 +22,7 @@ export function ErrorState({
 
   return (
     <div className="flex flex-col items-center py-10 text-center">
-      <Illustration name="scene/scene-error" size={140} />
+      <Illustration name="scene/kiumi-rest" size={140} />
       <p className="mt-4 text-lg font-extrabold">
         {unauthorized ? "다시 로그인해 주세요" : "불러오지 못했어요"}
       </p>

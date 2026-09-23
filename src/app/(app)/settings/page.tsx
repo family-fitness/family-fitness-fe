@@ -1,6 +1,5 @@
 "use client";
 
-import { Clock, Heart, HeartHandshake, Repeat, ShieldCheck, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -47,28 +46,24 @@ export default function SettingsPage() {
             <ListRow
               href="/parent/family"
               art="icon/menu-family"
-              icon={Users}
               title="가족 관리 · 초대"
               description="아이를 등록하고 초대코드를 보내요"
             />
             <ListRow
               href="/settings/schedule"
               art="icon/menu-schedule"
-              icon={Clock}
               title="운동할 수 있는 시간"
               description="언제 몇 분 할 수 있는지 적어 두면 AI 가 맞춰 짜요"
             />
             <ListRow
               href="/settings/support-mode"
               art="icon/menu-support"
-              icon={HeartHandshake}
               title="참여 방식"
               description="얼마나 같이 할지 정해요"
             />
             <ListRow
               href="/settings/consent"
               art="icon/menu-consent"
-              icon={ShieldCheck}
               title="보호자 동의"
               description="만 14세 미만 가족의 건강정보 동의"
             />
@@ -80,16 +75,10 @@ export default function SettingsPage() {
           <ListRow
             href="/start"
             art="icon/menu-switch"
-            icon={Repeat}
             title="누가 쓰는지 바꾸기"
             description="부모 화면과 아이 화면을 오가요"
           />
-          <ListRow
-            href="/videos?list=favorites"
-            art="icon/menu-favorite"
-            icon={Heart}
-            title="즐겨찾기한 영상"
-          />
+          <ListRow href="/videos?list=favorites" art="icon/menu-favorite" title="즐겨찾기한 영상" />
         </ul>
 
         {/* 아이 화면에서는 로그아웃을 내지 않는다. 부모 폰을 빌려 쓰다 눌러 버리면 곤란하다 */}

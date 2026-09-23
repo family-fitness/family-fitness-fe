@@ -192,7 +192,7 @@ export default function PlayPage() {
         <AppBar backHref="/kid" title="오늘 운동" />
         <Stage wide>
           <EmptyState
-            scene="no-video"
+            scene="no-mission"
             title="운동을 찾지 못했어요"
             description="홈으로 돌아가서 다시 골라 주세요."
           />

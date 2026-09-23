@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, LineChart, Ruler } from "lucide-react";
+import { Activity } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
@@ -172,16 +172,10 @@ export default function ResultPage() {
               <ListRow
                 href={`/p/${profileId}/future`}
                 art="icon/menu-future"
-                icon={LineChart}
                 title="10년 위 연령대 보기"
                 description="지금과 같은 조건의 10년 위 연령대"
               />
-              <ListRow
-                href={`/p/${profileId}/measure`}
-                art="icon/menu-measure"
-                icon={Ruler}
-                title="다시 재기"
-              />
+              <ListRow href={`/p/${profileId}/measure`} art="icon/menu-measure" title="다시 재기" />
             </ul>
           </>
         )}

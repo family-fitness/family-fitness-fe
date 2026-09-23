@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Check, Megaphone, Users, type LucideIcon } from "lucide-react";
+import { Check } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
@@ -30,9 +30,8 @@ const MODES: {
   description: string;
   /** 고르면 **아이 화면에 이렇게 뜬다**. 이게 이 화면의 전부다 */
   kid: string;
-  /** 그림 이름. 그림이 오기 전까지 `icon` 이 대신 선다 */
+  /** 그림 이름. 오기 전에는 자리만 비어 있다 */
   art: string;
-  icon: LucideIcon;
 }[] = [
   {
     value: "CHEER_ONLY",
@@ -40,7 +39,6 @@ const MODES: {
     description: "미션 편성에서 빠지고 응원을 보내요",
     kid: "엄마가 보고 있어요",
     art: "icon/mode-cheer",
-    icon: Megaphone,
   },
   {
     value: "WEEKEND",
@@ -48,7 +46,6 @@ const MODES: {
     description: "코치가 주말 미션에 같이 넣어 줘요",
     kid: "토요일에 같이 나가요",
     art: "icon/mode-weekend",
-    icon: CalendarDays,
   },
   {
     value: "FULL",
@@ -56,7 +53,6 @@ const MODES: {
     description: "코치가 모든 미션에 동반자로 넣어 줘요",
     kid: "엄마도 오늘 같이 해요",
     art: "icon/mode-full",
-    icon: Users,
   },
 ];
 
@@ -127,7 +123,7 @@ function SupportModePageContent() {
                     aria-hidden
                     className="bg-signal-soft text-signal-strong grid size-11 shrink-0 place-items-center rounded-2xl"
                   >
-                    <ArtIcon name={mode.art} fallback={mode.icon} className="size-6" />
+                    <ArtIcon name={mode.art} className="size-6" />
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="text-body block font-bold">{mode.title}</span>

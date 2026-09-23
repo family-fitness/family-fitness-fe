@@ -1,7 +1,5 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
-
 import { ArtIcon } from "@/components/ui/art-icon";
 import { Card, CardHead } from "@/components/ui/card";
 import { useLatestCoachRun } from "@/lib/api/queries";
@@ -24,7 +22,7 @@ export function ProposalNudge({ familyId }: { familyId: string | undefined }) {
           aria-hidden
           className="bg-signal-soft text-signal-strong grid size-11 shrink-0 place-items-center rounded-2xl"
         >
-          <ArtIcon name="icon/menu-ai" fallback={Sparkles} className="size-6" />
+          <ArtIcon name="icon/menu-ai" className="size-6" />
         </span>
         <div className="min-w-0 flex-1">
           <CardHead title="AI 제안이 와 있어요" chevron />

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Sparkles } from "lucide-react";
+import { Check } from "lucide-react";
 import Link from "next/link";
 
 import { Card, CardHead } from "@/components/ui/card";
@@ -75,7 +75,7 @@ export function TodayCard({
           href="/plan"
           className="press bg-signal-strong mt-3 flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
         >
-          <ArtIcon name="icon/menu-ai" fallback={Sparkles} className="size-5" />
+          <ArtIcon name="icon/menu-ai" className="size-5" />
           AI 에게 오늘 운동 받기
         </Link>
       </Card>

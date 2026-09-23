@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronUp, Wrench } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -112,7 +112,7 @@ export default function MeasurePage() {
         <PageHeader title="체력 측정" back />
         <Screen>
           <EmptyState
-            scene="invite"
+            scene="waiting"
             title="찾을 수 없는 프로필이에요"
             description="다른 가족의 프로필이거나 지워진 프로필일 수 있어요."
           />
@@ -128,7 +128,7 @@ export default function MeasurePage() {
         <PageHeader title="체력 측정" back />
         <Screen>
           <EmptyState
-            scene="too-young"
+            scene="rest"
             title="만 4세부터 측정할 수 있어요"
             description={`${withJosa(profile.name ?? "", "은는")} 아직 국민체력100 기준이 없어요.`}
             action={
@@ -149,7 +149,7 @@ export default function MeasurePage() {
         <PageHeader title="체력 측정" back />
         <Screen>
           <EmptyState
-            scene="waiting-approval"
+            scene="waiting"
             title="보호자 동의가 필요해요"
             description="건강 정보를 저장하려면 보호자 동의가 있어야 해요."
             action={
@@ -310,7 +310,7 @@ export default function MeasurePage() {
                   aria-hidden
                   className="bg-sub text-ink-soft grid size-10 shrink-0 place-items-center rounded-xl"
                 >
-                  <ArtIcon name="icon/menu-equipment" fallback={Wrench} className="size-6" />
+                  <ArtIcon name="icon/menu-equipment" className="size-6" />
                 </span>
                 <span className="flex-1">
                   <span className="block text-sm font-bold">장비가 있으면 더 정확해요</span>
