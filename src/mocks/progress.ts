@@ -21,7 +21,7 @@ import { callName } from "@/lib/family";
 import { daysBefore, today } from "@/lib/today";
 import { josa } from "@/lib/utils";
 
-import { BASE, db, type Profile } from "./db";
+import { BASE, DEMO, db, type Profile } from "./db";
 import { dayLogFor } from "./history";
 
 export const XP = { SESSION: 5, DAY_DONE: 20, STICKER: 10, MEASURE: 20 } as const;
@@ -31,6 +31,12 @@ export const LEVEL_FLOOR = [0, 80, 200, 360, 560, 800, 1080, 1400, 1760, 2160] a
 
 /** 경험치를 셀 날들. 목의 기록은 지난 3주까지다 */
 const WINDOW = 21;
+
+/**
+ * 시연 — 서준이는 오늘 운동을 다 하면 레벨이 오를 만큼(30 모자란 채로) 서 있다.
+ * 레벨이 오르는 순간(섬에 새 장식이 튀어나오고 「새로 열렸어요」)을 시연에서 볼 수 있게. 목에만 있다
+ */
+const DEMO_SHORT = 30;
 
 function levelOf(xp: number) {
   let level = 1;
@@ -85,6 +91,21 @@ export function progressOf(profileId: string): ProgressView {
       at: `${t.testedOn}T10:00:00+09:00`,
     })),
   ].filter((e) => e.amount > 0);
+
+  // 목의 기록은 지난 3주뿐이라 그 전에 한 운동이 경험치에서 빠진다. 시연 가족의 아이는 그 몫을 한 줄로
+  // 더해, 오늘 것을 빼고 셌을 때 Lv.6(연못) 이상 다음 레벨에 딱 30 모자라게 선다
+  if (profileId === DEMO.kid && db.profiles.familyId === DEMO.familyId) {
+    const todayXp = logs.filter((l) => l.date === today()).reduce((sum, l) => sum + dayXp(l), 0);
+    const base = events.reduce((sum, e) => sum + e.amount, 0) - todayXp;
+    const next = LEVEL_FLOOR.find((floor) => floor >= LEVEL_FLOOR[5] && floor - DEMO_SHORT >= base);
+    if (next !== undefined && next - DEMO_SHORT > base) {
+      events.push({
+        reason: "3주 전까지 한 운동",
+        amount: next - DEMO_SHORT - base,
+        at: `${daysBefore(WINDOW + 1)}T19:00:00+09:00`,
+      });
+    }
+  }
 
   const xp = events.reduce((sum, e) => sum + e.amount, 0);
   const level = levelOf(xp);
