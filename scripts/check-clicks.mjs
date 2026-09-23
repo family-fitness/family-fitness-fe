@@ -113,6 +113,11 @@ async function checkRoute(mode, route) {
       }
       await el.click({ timeout: 6000 });
       await page.waitForTimeout(1500);
+      // 여럿이 한꺼번에 도는 동안에는 다음 화면이 자리 잡기(skeleton)로 조금 더 머물 수 있다.
+      // 글자가 설 때까지 조금 더 기다린 뒤에 「빈 화면」 을 판단한다
+      await page
+        .waitForFunction(() => document.body.innerText.trim().length >= 6, null, { timeout: 5000 })
+        .catch(() => {});
       const text = (await page.locator("body").innerText()).trim();
       if (text.length < 6) bad.push(`누르니 빈 화면 (${new URL(page.url()).pathname})`);
     } catch (e) {

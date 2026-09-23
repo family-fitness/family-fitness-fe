@@ -81,6 +81,12 @@ export default function MembersPage() {
             title="얼마나 같이 할지"
             description={SUPPORT_COPY[mySupportMode ?? "none"]}
           />
+          <ListRow
+            href="/settings/schedule"
+            art="icon/menu-schedule"
+            title="운동할 수 있는 시간"
+            description="적어 두면 AI 편성 · 직접 짜기가 그 날에 맞춘다"
+          />
           {kid?.profileId && (
             <ListRow
               href={`/parent/sticker/${kid.profileId}`}
