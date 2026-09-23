@@ -36,7 +36,7 @@ export function AppBar({
       href={backHref}
       transitionTypes={["nav-back"]}
       aria-label="뒤로"
-      className="press text-ink-soft hover:text-ink grid size-10 shrink-0 place-items-center rounded-full"
+      className="press text-ink-soft grid size-10 shrink-0 place-items-center rounded-full"
     >
       <ChevronLeft className="size-6" />
     </Link>
@@ -45,7 +45,7 @@ export function AppBar({
       type="button"
       onClick={() => (onBack ? onBack() : router.back())}
       aria-label="뒤로"
-      className="press text-ink-soft hover:text-ink grid size-10 shrink-0 place-items-center rounded-full"
+      className="press text-ink-soft grid size-10 shrink-0 place-items-center rounded-full"
     >
       <ChevronLeft className="size-6" />
     </button>

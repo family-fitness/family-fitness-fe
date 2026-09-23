@@ -11,6 +11,9 @@
  *   - 캐릭터는 입체로 만들지 않는다. 2D 캐릭터를 종이 인형처럼 세운다
  *
  * 나무는 줄지 않는다. 쉰 날에 시든 나무를 그리면 벌이 된다.
+ *
+ * **섬은 제자리에 있다.** 둥실 떠다니지 않고(9/23 「호버링은 제거」), 구름 · 나무 · 풍차도 멈춰 있다.
+ * 움직이는 건 손으로 돌릴 때, 누르면 캐릭터가 뛸 때, 나무가 자라고 장식이 튀어나오는 순간뿐이다.
  */
 import type * as T from "three";
 
@@ -166,7 +169,9 @@ export interface Island {
   /** 캔버스 크기가 바뀌면 부른다 — 외곽선 굵기를 픽셀로 맞춘다 */
   resize(width: number, height: number): void;
   /** 매 장면. t 는 초 */
-  update(t: number, still: boolean): void;
+  update(t: number): void;
+  /** 아직 움직이는 중인가(뛰기 · 자라기 · 튀어나오기). 아니면 그리기를 쉰다 */
+  busy(): boolean;
   /** 캐릭터가 한 번 뛴다 */
   hop(t: number): void;
   /** 가장 최근 나무가 자라난다(다 했어요 순간) */
@@ -366,7 +371,7 @@ export function buildIsland(
 
   /** 나무 자리를 다시 셈한다. 흔들림 · 자라남이 없으면 한 번이면 된다 */
   let plantsDirty = true;
-  const placePlants = (t: number, still: boolean) => {
+  const placePlants = (t: number) => {
     plantState.forEach((p, i) => {
       let grow = 1;
       if (p.grownAt !== null) {
@@ -374,7 +379,7 @@ export function buildIsland(
         grow = Math.max(0.0001, popOut(k));
         if (k >= 1) p.grownAt = null;
       }
-      euler.set(0, p.phase, still ? 0 : Math.sin(t * 1.3 + p.phase) * 0.035);
+      euler.set(0, p.phase, 0);
       quaternion.setFromEuler(euler);
       position.set(p.x, 0, p.z);
       scale.setScalar(p.size * grow);
@@ -420,8 +425,8 @@ export function buildIsland(
       .addScaledVector(toward, depth);
   // 받침 왼쪽 앞에 하나, 오른쪽 뒤에 하나 — 섬이 구름 위에 떠 있다
   const cloudSpots = [
-    { spot: onScreen(-1.45, -2.2, 2.2), size: 1, speed: 0.35, phase: 0 },
-    { spot: onScreen(2.05, -1.55, -2.2), size: 0.85, speed: 0.3, phase: 1.7 },
+    { spot: onScreen(-1.45, -2.2, 2.2), size: 1 },
+    { spot: onScreen(2.05, -1.55, -2.2), size: 0.85 },
   ];
   const PUFFS: [number, number, number, number][] = [
     [0, 0, 0, 1],
@@ -441,11 +446,11 @@ export function buildIsland(
   const clouds = new THREE.Group();
   clouds.add(puffs, puffOutline);
   const noTurn = new THREE.Quaternion();
-  const placeClouds = (t: number, still: boolean) => {
+  // 구름도 제자리 — 떠다니는 것은 이 섬에 없다. 한 번 놓으면 끝
+  const placeClouds = () => {
     cloudSpots.forEach((c, i) => {
-      const drift = still ? 0 : Math.sin(t * c.speed + c.phase) * 0.16;
       PUFFS.forEach(([bx, by, bz, bs], j) => {
-        position.copy(c.spot).addScaledVector(right, drift);
+        position.copy(c.spot);
         position.x += bx * c.size;
         position.y += by * c.size;
         position.z += bz * c.size;
@@ -490,9 +495,7 @@ export function buildIsland(
       kit.setPixelsPerUnit(perUnit);
       edgeMaterial.resolution.set(width, height);
     },
-    update(t, still) {
-      // 숨 쉬듯 떠 있다. 움직임 줄이기면 제자리
-      island.position.y = still ? 0 : Math.sin(t * 1.6) * 0.05;
+    update(t) {
       if (sprite) {
         let jump = 0;
         if (hopAt !== null) {
@@ -500,22 +503,21 @@ export function buildIsland(
           if (k >= 1) hopAt = null;
           else if (k > 0) jump = Math.sin(k * Math.PI) * 0.55;
         }
-        sprite.position.y = island.position.y + jump;
+        sprite.position.y = jump;
       }
       for (const d of decor) {
-        if (!still) d.piece.update?.(t);
         if (d.shownAt === null || d.shownAt === Infinity) continue;
         const k = (t - d.shownAt) / 0.9;
         d.piece.group.scale.setScalar(Math.max(0.0001, popOut(k)));
         if (k >= 1) d.shownAt = null;
       }
       const growing = plantState.some((p) => p.grownAt !== null);
-      if (!still || growing || plantsDirty) {
-        placePlants(t, still);
+      if (growing || plantsDirty) {
+        placePlants(t);
         plantsDirty = false;
       }
-      if (!still || !cloudsPlaced) {
-        placeClouds(t, still);
+      if (!cloudsPlaced) {
+        placeClouds();
         cloudsPlaced = true;
       }
       if (ringAt !== null) {
@@ -527,6 +529,15 @@ export function buildIsland(
           ringMaterial.opacity = 1 - k;
         }
       }
+    },
+    busy() {
+      return (
+        hopAt !== null ||
+        ringAt !== null ||
+        plantState.some((p) => p.grownAt !== null) ||
+        // 튀어나오기를 기다리는(∞) 장식은 아직 움직이지 않는다
+        decor.some((d) => d.shownAt !== null && d.shownAt !== Infinity)
+      );
     },
     hop(t) {
       if (hopAt === null) hopAt = t;

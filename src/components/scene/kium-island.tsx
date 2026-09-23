@@ -14,7 +14,8 @@ import { loadThree, readPalette } from "./toon";
  * 키움 섬 — 아이 홈 맨 위.
  *
  * 운동한 날마다 섬에 나무가 하나씩 자란다. 가운데에 레벨 캐릭터가 선다.
- * 손가락으로 섬을 돌리고, 누르면 캐릭터가 한 번 뛴다.
+ * 손가락으로 섬을 돌리고, 누르면 캐릭터가 한 번 뛴다. 그 밖에는 **멈춰 있다** — 떠다니지 않고,
+ * 움직일 것이 없으면 그리기도 쉰다(첫 화면의 천천히 도는 섬만 계속 돈다).
  *
  * three 는 늦게 받는다. 받기 전에는 **캐릭터만 먼저 같은 자리에** 서 있다가 섬이
  * 뒤에서 나타난다 — 빈 칸이 먼저 뜨지 않는다. WebGL 이 없거나 받지 못하면 캐릭터만 남는다.
@@ -152,25 +153,39 @@ export function KiumIsland({
       let velocity = 0;
       let raf = 0;
       let running = false;
+      let visible = true;
       let last = performance.now();
       const clock = () => performance.now() / 1000;
 
       const draw = () => {
         island.root.rotation.y = angle;
-        island.update(clock(), still);
+        island.update(clock());
         renderer.render(scene, camera);
       };
       let dragging: { at: number; last: number; moved: number } | null = null;
       /* 새 나무를 보여 줄 때 섬이 그쪽으로 돌아선다. 새 나무는 캐릭터 오른쪽 앞에 선다 */
       let turn: { from: number; to: number; at: number } | null = null;
-      if (grow && island.newest !== null) {
-        const to = Math.atan2(
-          Math.sin(ISLAND.azimuth + 0.75 - island.newest),
-          Math.cos(ISLAND.azimuth + 0.75 - island.newest),
-        );
-        if (still) angle = to;
-        else turn = { from: 0, to, at: clock() };
-      }
+      const facing =
+        grow && island.newest !== null
+          ? Math.atan2(
+              Math.sin(ISLAND.azimuth + 0.75 - island.newest),
+              Math.cos(ISLAND.azimuth + 0.75 - island.newest),
+            )
+          : null;
+      if (still && facing !== null) angle = facing;
+      /*
+        자라는 순간은 **처음 보일 때** 튼다. 지을 때 틀면, 섬이 화면 아래에 있는 동안
+        아무도 안 보는 데서 나무가 다 자라 버린다(다 했어요 카드가 늦게 내려올 때).
+      */
+      let armed = grow && !still;
+      const fire = () => {
+        if (!armed) return;
+        armed = false;
+        const now = clock();
+        if (facing !== null) turn = { from: angle, to: facing, at: now };
+        island.sprout(now);
+        if (unveil) island.reveal(now);
+      };
       const frame = (now: number) => {
         const dt = Math.min(0.05, (now - last) / 1000);
         last = now;
@@ -184,10 +199,22 @@ export function KiumIsland({
           if (spin === "auto") angle += dt * 0.22;
         }
         draw();
-        if (running) raf = requestAnimationFrame(frame);
+        if (!running) return;
+        // 돌리는 손도, 도는 힘도, 자라는 나무도 없으면 쉰다. 누르면 다시 깨어난다
+        const idle =
+          !dragging && !turn && Math.abs(velocity) < 0.002 && spin !== "auto" && !island.busy();
+        if (idle) {
+          running = false;
+          return;
+        }
+        raf = requestAnimationFrame(frame);
+      };
+      const wake = () => {
+        if (visible && !document.hidden) start();
       };
       const start = () => {
         if (running || still || disposed) return;
+        fire();
         running = true;
         last = performance.now();
         raf = requestAnimationFrame(frame);
@@ -202,6 +229,7 @@ export function KiumIsland({
         dragging = { at: performance.now(), last: e.clientX, moved: 0 };
         turn = null;
         velocity = 0;
+        wake();
         // 손을 섬 밖으로 끌고 나가도 끝까지 돌린다. 못 잡는 기기도 있다 — 그러면 그냥 둔다
         try {
           el.setPointerCapture(e.pointerId);
@@ -224,6 +252,7 @@ export function KiumIsland({
         if (tap && !still) island.hop(clock());
         if (still) velocity = 0;
         if (!running) draw();
+        wake();
       };
       // 화면을 내리려던 손이면 뛰지 않는다
       const cancel = () => {
@@ -234,15 +263,11 @@ export function KiumIsland({
       el.addEventListener("pointerup", up);
       el.addEventListener("pointercancel", cancel);
 
-      if (grow && !still) island.sprout(clock());
-      if (unveil && !still) island.reveal(clock());
-
       draw();
       // 첫 장면을 그린 뒤에 바꿔 낀다. 캐릭터는 같은 자리에 있으니 섬만 나타난다
       canvas.classList.replace("opacity-0", "opacity-100");
       stand.style.opacity = "0";
 
-      let visible = true;
       const observer = new IntersectionObserver(([entry]) => {
         visible = entry.isIntersecting;
         if (visible && !document.hidden) start();
