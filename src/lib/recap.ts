@@ -6,6 +6,8 @@ import { dayOf } from "./today";
  *
  * **해낸 것만 적는다.** 지난주보다 적었다 · 빠진 날이 있었다 같은 말은 셈하지도 않는다
  * (죄책감을 주지 않는다). 움직인 날 · 분 · 가장 많이 한 날 · 받은 스티커 · 새 업적.
+ * 적을 것이 하나도 없으면(`isEmpty`) 카드를 띄우지 않는다 — 「쉬었다」 고도 말하지 않는다.
+ * 쉬었는지 이제 막 온 집인지 우리는 모른다.
  */
 export interface WeekRecap {
   /** 움직인 날 */
@@ -26,8 +28,11 @@ export function weekRecap(
   const inWeek = logs.filter((l) => l.date >= range.from && l.date <= range.to);
   const moved = inWeek.filter((l) => l.minutes > 0);
   const best = moved.reduce<{ date: string; minutes: number } | null>(
-    // 같은 분이면 이른 날 — 늘 같은 답이 나오게
-    (top, l) => (!top || l.minutes > top.minutes ? { date: l.date, minutes: l.minutes } : top),
+    // 같은 분이면 이른 날 — 받은 차례와 상관없이 늘 같은 답이 나오게
+    (top, l) =>
+      !top || l.minutes > top.minutes || (l.minutes === top.minutes && l.date < top.date)
+        ? { date: l.date, minutes: l.minutes }
+        : top,
     null,
   );
   const badges = achievements
@@ -40,6 +45,11 @@ export function weekRecap(
     stickers: inWeek.reduce((sum, l) => sum + l.stickers.length, 0),
     badges,
   };
+}
+
+/** 적을 것이 하나도 없나 */
+export function isEmpty(recap: WeekRecap): boolean {
+  return recap.days === 0 && recap.stickers === 0 && recap.badges.length === 0;
 }
 
 /** 「9월 14일 ~ 20일」 · 달이 바뀌면 「8월 31일 ~ 9월 6일」 */

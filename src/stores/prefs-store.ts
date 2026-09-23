@@ -23,9 +23,9 @@ interface PrefsState {
   /** 이번 주 가족 다리 목표. ▲ 요청: 가족 목표를 서버에(기기가 바뀌어도 남게) */
   familyGoal: FamilyGoal;
   setFamilyGoal: (goal: FamilyGoal) => void;
-  /** 지난주 돌아보기를 닫은 주(그 주 월요일). 다음 주가 되면 다시 뜬다 */
-  recapClosed: string | null;
-  closeRecap: (week: string) => void;
+  /** 아이마다 지난주 돌아보기를 닫은 주(그 주 월요일). 다음 주가 되면 다시 뜬다 */
+  recapClosed: Record<string, string>;
+  closeRecap: (profileId: string, week: string) => void;
 }
 
 export const usePrefsStore = create<PrefsState>()(
@@ -37,8 +37,15 @@ export const usePrefsStore = create<PrefsState>()(
       setVoice: (voice) => set({ voice }),
       familyGoal: 90,
       setFamilyGoal: (familyGoal) => set({ familyGoal }),
-      recapClosed: null,
-      closeRecap: (recapClosed) => set({ recapClosed }),
+      recapClosed: {},
+      closeRecap: (profileId, week) =>
+        set((s) => ({
+          // 예전에 한 값(아이 구분 없는 글자)이 남아 있으면 버리고 아이마다 새로 적는다
+          recapClosed: {
+            ...(s.recapClosed && typeof s.recapClosed === "object" ? s.recapClosed : {}),
+            [profileId]: week,
+          },
+        })),
     }),
     { name: "ff-prefs" },
   ),

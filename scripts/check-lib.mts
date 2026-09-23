@@ -22,7 +22,7 @@ import {
   toggleMove,
   upcomingDays,
 } from "@/lib/routine";
-import { rangeLabel, weekRecap } from "@/lib/recap";
+import { isEmpty, rangeLabel, weekRecap } from "@/lib/recap";
 import { UNLOCKS, decorationsAt, isGameOpen, newlyUnlocked, nextUnlock } from "@/lib/unlocks";
 import { josa } from "@/lib/utils";
 
@@ -233,6 +233,12 @@ check(
 check("그 주에 받은 스티커", recap.stickers === 3);
 check("그 주에 받은 업적만", same(recap.badges, ["사흘 이어서"]));
 check("하루도 없으면 가장 많이 한 날도 없다", weekRecap([], [], week).best === null);
+check(
+  "같은 분이면 이른 날 — 늦은 날부터 받아도",
+  weekRecap([log("2026-09-18", 25), log("2026-09-16", 25)], [], week).best?.date === "2026-09-16",
+);
+check("적을 것이 없으면 비었다", isEmpty(weekRecap([log("2026-09-15", 0)], [], week)));
+check("스티커만 받은 주는 비지 않았다", !isEmpty(weekRecap([log("2026-09-15", 0, 1)], [], week)));
 check("같은 달 범위", rangeLabel("2026-09-14", "2026-09-20") === "9월 14일 ~ 20일");
 check("달이 바뀌는 범위", rangeLabel("2026-08-31", "2026-09-06") === "8월 31일 ~ 9월 6일");
 
