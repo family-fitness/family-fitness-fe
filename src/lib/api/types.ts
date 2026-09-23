@@ -90,8 +90,6 @@ export type VideoList = S["VideoListView"];
 export type Video = S["VideoView"];
 export type VideoLabel = S["VideoLabel"];
 
-export type WeeklyReport = S["WeeklyReportView"];
-
 /* ─── 아직 서버에 없는 것 ──────────────────────────────────── */
 
 /**

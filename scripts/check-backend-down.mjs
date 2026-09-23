@@ -39,7 +39,6 @@ const ROUTES = [
   "/coach/weekly",
   "/videos",
   "/family/cheer",
-  "/family/report",
   "/settings",
   "/settings/support-mode",
   "/settings/consent",

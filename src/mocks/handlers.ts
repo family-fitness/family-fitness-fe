@@ -3,8 +3,8 @@ import { HttpResponse, http, type PathParams } from "msw";
 
 import type { AgeGroup, FitnessTestResult, ItemResult, LatestFitnessTest } from "@/lib/api/types";
 
-import { isVideoDone, serverKnows } from "@/lib/mission";
-import { ageOf, dayOf, toDateString } from "@/lib/today";
+import { isVideoDone } from "@/lib/mission";
+import { ageOf, toDateString } from "@/lib/today";
 
 import {
   BASE,
@@ -762,63 +762,6 @@ const missions = [
       verifiedBy: "SELF_REPORT",
       confirmedBy: db.actingProfileId,
       verifiedAt: new Date().toISOString(),
-    });
-  }),
-
-  /**
-   * 주간 기록은 **지금 서버 상태에서 센다.**
-   *
-   * 픽스처를 그대로 돌려주면 미션을 하고 칭찬을 주고받아도 화면은 늘 0분이라
-   * "이번 주는 이제 시작이에요" 에 머문다. 시연에서 방금 한 일이 다음 화면에
-   * 안 보이는 게 가장 나쁘다.
-   */
-  http.get(`${BASE}/families/:familyId/report/weekly`, () => {
-    const week = thisWeek();
-    const inWeek = (date: string | null | undefined) =>
-      Boolean(date) && date! >= week.weekStart && date! <= week.weekEnd;
-
-    const missions = db.missions.filter((m) => inWeek(m.endDate));
-    const members = db.profiles.profiles.map((profile) => {
-      const mine = missions.flatMap((m) =>
-        (m.participants ?? [])
-          .filter((p) => p.profileId === profile.profileId)
-          .map((p) => ({ m, p })),
-      );
-      /* 진행률 × 목표 분. 걸음수 미션은 분으로 세지 않는다 */
-      const minutes = mine.reduce(
-        (sum, { m, p }) =>
-          sum +
-          (m.targetMetric === "TIMER_MINUTES"
-            ? Math.round((p.progress ?? 0) * (m.targetValue ?? 0))
-            : 0),
-        0,
-      );
-      const verified = mine.reduce(
-        (sum, { m, p }) =>
-          sum +
-          (m.targetMetric === "TIMER_MINUTES" && serverKnows(p.verifiedBy)
-            ? Math.round((p.progress ?? 0) * (m.targetValue ?? 0))
-            : 0),
-        0,
-      );
-      return {
-        profileId: profile.profileId,
-        name: profile.name,
-        activeMinutes: minutes,
-        verifiedMinutes: verified,
-        completedMissions: mine.filter(({ p }) => p.completed).length,
-      };
-    });
-
-    return HttpResponse.json({
-      ...week,
-      summary: null,
-      missionStats: {
-        total: missions.length,
-        completed: missions.filter((m) => (m.participants ?? []).every((p) => p.completed)).length,
-      },
-      members,
-      cheerCount: db.cheers.filter((c) => inWeek(dayOf(c.createdAt)) && c.message).length,
     });
   }),
 ];

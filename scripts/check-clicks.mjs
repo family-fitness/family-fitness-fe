@@ -28,7 +28,6 @@ const ROUTES = {
     "/videos?list=favorites",
     "/videos?list=recent",
     "/family/cheer",
-    "/family/report",
     "/settings",
     "/settings/support-mode",
     "/settings/consent",

@@ -29,7 +29,6 @@ import type {
   SupportMode,
   Uuid,
   VideoList,
-  WeeklyReport,
 } from "./types";
 
 /**
@@ -43,8 +42,6 @@ export const qk = {
     fitnessMap: (familyId: Uuid) => ["family", familyId, "fitness-map"] as const,
     missions: (familyId: Uuid, scope?: string, status?: string) =>
       ["family", familyId, "missions", scope ?? "ALL", status ?? "ALL"] as const,
-    report: (familyId: Uuid, weekStart?: string) =>
-      ["family", familyId, "report", weekStart ?? "current"] as const,
     cheers: (familyId: Uuid, toProfileId?: Uuid) =>
       ["family", familyId, "cheers", toProfileId ?? "all"] as const,
     /** 앞 세 칸으로 무효화한다 — 한 일이 생기면 그 가족의 달력은 다 다시 받는다 */
@@ -341,7 +338,6 @@ export function useApproveCoachRun(runId: Uuid, familyId: Uuid) {
       qc.invalidateQueries({ queryKey: qk.coach.latest(familyId) });
       // 승인으로 미션이 생성됐다
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
-      qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
     },
   });
 }
@@ -402,8 +398,6 @@ export function useRecordSteps(missionId: Uuid, familyId: Uuid) {
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
-      // 이번 주 기록의 분·완료 수가 이 값에서 나온다
-      qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
       refreshProgress(qc);
     },
@@ -426,7 +420,6 @@ export function useRecordTimer(missionId: Uuid, familyId: Uuid) {
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
-      qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
       refreshProgress(qc);
     },
@@ -441,7 +434,6 @@ export function useConfirmParticipant(missionId: Uuid, familyId: Uuid) {
       api.post(`/missions/${missionId}/participants/${profileId}/confirm`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
-      qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
       refreshProgress(qc);
     },
@@ -512,7 +504,6 @@ export function useSendCheer(familyId: Uuid) {
       missionId?: string;
     }) => api.post<Cheer>(`/families/${familyId}/cheers`, body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
       qc.invalidateQueries({ queryKey: ["family", familyId, "cheers"] });
       // 붙인 스티커는 그날 칸에 남는다
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
@@ -529,15 +520,6 @@ export function useCheers(familyId: Uuid | undefined, toProfileId?: Uuid) {
   return useQuery({
     queryKey: qk.family.cheers(familyId ?? "", toProfileId),
     queryFn: () => api.get<CheerLogList>(`/families/${familyId}/cheers${query({ toProfileId })}`),
-    enabled: Boolean(familyId),
-  });
-}
-
-export function useWeeklyReport(familyId: Uuid | undefined, weekStart?: string) {
-  return useQuery({
-    queryKey: qk.family.report(familyId ?? "", weekStart),
-    queryFn: () =>
-      api.get<WeeklyReport>(`/families/${familyId}/report/weekly${query({ weekStart })}`),
     enabled: Boolean(familyId),
   });
 }
