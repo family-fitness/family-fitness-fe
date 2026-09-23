@@ -2,7 +2,7 @@
 
 import { ArrowDown, ArrowUp, Minus, Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { ParentOnly } from "@/components/app-shell/parent-only";
@@ -13,6 +13,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Initial } from "@/components/ui/initial";
 import { NavLink } from "@/components/ui/nav-link";
 import { Segmented } from "@/components/ui/segmented";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAvailability, useCreateMission, useFamilyProfiles } from "@/lib/api/queries";
 import type { Uuid } from "@/lib/api/types";
 import { errorMessage } from "@/lib/errors";
@@ -30,7 +31,7 @@ import { useSession } from "@/lib/session";
 import { WEEKDAY, today, weekdayCode } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useRoleStore } from "@/stores/role-store";
-import { useRoutineStore } from "@/stores/routine-store";
+import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
 /**
  * 직접 짜기 — 담은 동작을 세우고, 누가 · 언제 할지 정해 등록한다.
@@ -62,6 +63,7 @@ function CustomPlan() {
   const { data: family } = useFamilyProfiles(familyId);
   const { data: availability } = useAvailability(childProfileId ?? undefined);
   const moves = useRoutineStore((s) => s.moves);
+  const ready = useRoutineReady();
   const { shift, setMinutes, remove, tidy, clear } = useRoutineStore();
   const create = useCreateMission(familyId ?? "");
 
@@ -77,9 +79,20 @@ function CustomPlan() {
   const [saving, setSaving] = useState(false);
   /** 등록을 마쳤다 — 떠나는 사이 담은 동작이 비어 「아직 없어요」 가 번쩍 뜨지 않게 */
   const [sent, setSent] = useState(false);
+  /** 이미 등록한 날 — 중간에 실패해 다시 누르면 이 날들은 건너뛴다(두 번 생기지 않게) */
+  const [created, setCreated] = useState<string[]>([]);
+  /** 화면을 떠났나 — 등록이 끝나도 떠난 사람을 캘린더로 끌고 가지 않는다 */
+  const here = useRef(true);
+  useEffect(() => {
+    here.current = true;
+    return () => {
+      here.current = false;
+    };
+  }, []);
 
   const minutes = routineMinutes(moves);
   const dates = repeatDates(days, Number(weeks));
+  const pending = dates.filter((d) => !created.includes(d));
   const free = new Set((availability?.slots ?? []).map((s) => s.day));
   const upcoming = upcomingDays(now);
 
@@ -89,13 +102,14 @@ function CustomPlan() {
     setDays((list) => (list.includes(d) ? list.filter((x) => x !== d) : [...list, d].sort()));
 
   const submit = async () => {
-    if (moves.length === 0 || chosen.length === 0 || dates.length === 0) return;
+    if (moves.length === 0 || chosen.length === 0 || pending.length === 0) return;
     setProblem(null);
     setSaving(true);
     const sessions = toSessions(moves);
+    const done: string[] = [];
     try {
-      // 날마다 따로 — 한 날을 못 해도 다른 날은 그대로 남는다
-      for (const date of dates) {
+      // 날마다 따로 — 한 날을 못 해도 다른 날은 그대로 남는다. 이미 된 날은 건너뛴다
+      for (const date of pending) {
         await create.mutateAsync({
           title: routineTitle(moves),
           startDate: date,
@@ -105,20 +119,28 @@ function CustomPlan() {
           participantProfileIds: chosen,
           sessions,
         });
+        done.push(date);
       }
-      setSent(true);
+      // 다 등록했다. 담아 둔 동작은 비운다 — 떠난 뒤라도
       clear();
+      if (!here.current) return;
+      setSent(true);
       router.push(dates.length === 1 && dates[0] === now ? "/parent" : "/calendar");
     } catch (e) {
+      const made = [...created, ...done];
+      setCreated(made);
+      const reason = errorMessage(
+        e,
+        { NOT_A_PARENT: "보호자만 운동을 만들 수 있어요." },
+        "등록하지 못했어요. 잠시 후 다시 해 주세요.",
+      );
       setProblem(
-        errorMessage(
-          e,
-          { NOT_A_PARENT: "보호자만 운동을 만들 수 있어요." },
-          "등록하지 못했어요. 잠시 후 다시 해 주세요.",
-        ),
+        made.length > 0
+          ? `${made.length}일은 등록됐어요. 남은 날은 다시 눌러 주세요 — ${reason}`
+          : reason,
       );
     } finally {
-      setSaving(false);
+      if (here.current) setSaving(false);
     }
   };
 
@@ -130,6 +152,20 @@ function CustomPlan() {
           <p className="card-hero text-center text-sm font-extrabold" role="status">
             등록했어요
           </p>
+        </Stage>
+      </>
+    );
+  }
+
+  // 탭 저장소를 읽기 전에는 빈 루틴이 아니라 기다리는 모양 — 「아직 없어요」 가 번쩍 뜨지 않게
+  if (!ready) {
+    return (
+      <>
+        <AppBar back title="직접 짜기" />
+        <Stage wide className="space-y-3">
+          <Skeleton className="h-72 w-full rounded-3xl" />
+          <Skeleton className="h-28 w-full rounded-3xl" />
+          <Skeleton className="h-40 w-full rounded-3xl" />
         </Stage>
       </>
     );
@@ -159,7 +195,11 @@ function CustomPlan() {
   }
 
   const label =
-    dates.length === 1 && dates[0] === now ? "오늘 운동으로 등록" : `${dates.length}일에 등록`;
+    dates.length === 1 && dates[0] === now
+      ? "오늘 운동으로 등록"
+      : created.length > 0
+        ? `남은 ${pending.length}일 등록`
+        : `${dates.length}일에 등록`;
 
   return (
     <>
@@ -357,7 +397,7 @@ function CustomPlan() {
           <button
             type="button"
             onClick={() => void submit()}
-            disabled={saving || chosen.length === 0 || dates.length === 0}
+            disabled={saving || chosen.length === 0 || pending.length === 0}
             className="press bg-signal-strong mt-2 flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white disabled:opacity-50"
           >
             {saving ? "등록하는 중" : label}

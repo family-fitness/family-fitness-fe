@@ -26,7 +26,7 @@ import { useSession } from "@/lib/session";
 import { today, weekdayCode } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useRoleStore } from "@/stores/role-store";
-import { useRoutineStore } from "@/stores/routine-store";
+import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
 /**
  * AI 편성 — 조건 고르기.
@@ -73,6 +73,7 @@ function PlanForm() {
   const [focus, setFocus] = useState<Factor | null>(null);
   // 운동 찾기에서 담아 둔 동작 — 있으면 직접 짜기로 바로
   const gathered = useRoutineStore((s) => s.moves.length);
+  useRoutineReady();
   // 참여 방식이 「매번 같이」 면 부모도 같이가 기본이다
   const [withParent, setWithParent] = useState(profile?.supportMode === "FULL");
   const [error, setError] = useState<string | null>(null);
