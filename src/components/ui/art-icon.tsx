@@ -1,10 +1,12 @@
 import type { LucideIcon } from "lucide-react";
 
 import { ASSETS } from "@/lib/asset-list";
+import { INTERIM } from "@/lib/interim-art";
 import { cn } from "@/lib/utils";
 
 /**
- * 그림 아이콘. 그림이 있으면 그림, 아직 없으면 선 아이콘이 대신 선다.
+ * 그림 아이콘. 새 그림이 있으면 새 그림, 아직이면 옛 그림(`INTERIM`), 그것도 없으면
+ * 선 아이콘이 대신 선다.
  *
  * 내용을 가리키는 자리(요인 · 메뉴 · 참여 방식)는 그림으로 간다(9/23 요청 —
  * "이모트는 쓰지 말고 이미지로"). 그림은 `ASSET_PROMPTS.md` 5장에 주문해 두었고,
@@ -22,11 +24,17 @@ export function ArtIcon({
   /** 크기. 그림이든 아이콘이든 같은 상자에 앉힌다 */
   className?: string;
 }) {
-  if (ASSETS.has(name)) {
+  // 새 그림 → 옛 그림 → 선 아이콘 순으로 선다
+  const art = ASSETS.has(name)
+    ? name
+    : INTERIM[name] && ASSETS.has(INTERIM[name])
+      ? INTERIM[name]
+      : null;
+  if (art) {
     return (
       // eslint-disable-next-line @next/next/no-img-element -- 작은 아이콘이라 최적화 이득보다 한 번 더 도는 요청이 크다
       <img
-        src={`/assets/${name}.png`}
+        src={`/assets/${art}.png`}
         alt=""
         aria-hidden
         className={cn("object-contain", className)}
