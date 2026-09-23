@@ -75,7 +75,7 @@ for (const file of walk(SRC_DIR)) {
   }
   // "move/move-x" 처럼 따옴표 안에 직접 적힌 것 (fitness-items.ts 의 매핑표)
   for (const [, name] of text.matchAll(
-    /["']((?:anim|deco|item|move|scene|level|sticker|badge)\/[a-z0-9-]+)["']/g,
+    /["']((?:deco|item|scene|level|sticker|badge|icon)\/[a-z0-9-]+)["']/g,
   )) {
     note(relative(ROOT, file), name);
   }
@@ -86,6 +86,28 @@ const unused = [...have].filter((n) => !used.has(n)).sort();
 if (missing.length > 0) {
   console.error("명세에도 없고 파일도 없다 — 이름이 틀렸다:");
   for (const [file, name] of missing) console.error(`  ${file} → ${name}`);
+}
+
+/*
+  있는 그림 목록(src/lib/asset-list.ts)이 파일과 맞나.
+
+  화면은 목록에 있는 그림만 부른다. 그림을 넣고 목록을 안 고치면 파일은 있는데
+  아이콘이 그대로 서 있고, 그림을 지우고 목록을 안 고치면 빈 상자가 뜬다.
+*/
+const listed = new Set(
+  [
+    ...readFileSync(join(ROOT, "src/lib/asset-list.ts"), "utf8").matchAll(
+      /"([a-z0-9-]+\/[a-z0-9-]+)"/g,
+    ),
+  ].map((m) => m[1]),
+);
+const notListed = [...have].filter((n) => !listed.has(n));
+const gone = [...listed].filter((n) => !have.has(n));
+if (notListed.length > 0 || gone.length > 0) {
+  console.error("그림 목록이 낡았다 — npm run assets:list 를 돌려 주세요");
+  if (notListed.length) console.error(`  목록에 없는 파일: ${notListed.join(", ")}`);
+  if (gone.length) console.error(`  파일이 없는 목록: ${gone.join(", ")}`);
+  process.exit(1);
 }
 
 const usedOnDisk = [...used].filter((n) => have.has(n)).length;

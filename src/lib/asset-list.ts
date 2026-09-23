@@ -1,0 +1,38 @@
+/**
+ * 있는 그림 목록. **손으로 고치지 않는다** — `npm run assets:list` 가 public/assets 를 보고 쓴다.
+ * 화면은 여기 있는 그림만 부른다. 없으면 대신 설 것(아이콘 · 코드 그림)을 처음부터 그린다.
+ */
+export const ASSETS: ReadonlySet<string> = new Set([
+  "deco/deco-confetti",
+  "deco/deco-sparkle",
+  "deco/deco-star",
+  "item/grade-1",
+  "item/grade-2",
+  "item/grade-3",
+  "item/grade-4",
+  "item/grade-5",
+  "item/item-cone",
+  "item/item-grip",
+  "item/item-mat",
+  "item/item-medal",
+  "item/item-ruler-tall",
+  "item/item-scale",
+  "item/item-shoes",
+  "item/item-stopwatch",
+  "item/item-tape",
+  "item/item-target",
+  "scene/scene-done",
+  "scene/scene-error",
+  "scene/scene-first-body",
+  "scene/scene-first-measure",
+  "scene/scene-invite",
+  "scene/scene-no-cheer",
+  "scene/scene-no-mission",
+  "scene/scene-no-record",
+  "scene/scene-no-video",
+  "scene/scene-pick-role",
+  "scene/scene-together",
+  "scene/scene-too-young",
+  "scene/scene-waiting-approval",
+  "scene/scene-waiting-stamp",
+]);

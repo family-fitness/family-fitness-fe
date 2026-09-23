@@ -15,7 +15,7 @@
     "prepare": "husky",
     "check:mocks": "tsx scripts/check-mocks.mts",
     "shot": "node scripts/screenshot.mjs",
-    "assets": "node scripts/prepare-assets.mjs",
+    "assets": "node scripts/prepare-assets.mjs && node scripts/list-assets.mjs",
     "api:types": "openapi-typescript http://localhost:8080/v3/api-docs -o src/lib/api/schema.ts",
     "api:fixtures": "node scripts/capture-fixtures.mjs",
     "check:assets": "node scripts/check-assets.mjs",
@@ -25,7 +25,8 @@
     "check:clicks": "node scripts/check-clicks.mjs",
     "check:down": "node scripts/check-backend-down.mjs",
     "clean:smudge": "node scripts/clean-smudge.mjs",
-    "check:play": "node scripts/check-play.mjs"
+    "check:play": "node scripts/check-play.mjs",
+    "assets:list": "node scripts/list-assets.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
