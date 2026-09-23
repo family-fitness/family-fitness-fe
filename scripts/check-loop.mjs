@@ -79,6 +79,17 @@ await step("다 하면 엄마 · 아빠한테 알린다", async () => {
 });
 await page.clock.resume();
 
+/** 레벨과 업적 화면의 「경험치 N」 */
+const xpNow = async () => {
+  await page.goto(B + "/kid/badges", { waitUntil: "load" });
+  const text = await page
+    .getByText(/경험치 \d+/)
+    .first()
+    .innerText({ timeout: 10000 });
+  return Number(/경험치 (\d+)/.exec(text)?.[1] ?? NaN);
+};
+const xpBefore = await xpNow();
+
 // 2. 부모 — 종에 점, 알림을 누르면 스티커 붙이기로
 await become("parent", "/parent");
 await step("부모 종에 새 알림 점이 뜬다", async () => {
@@ -118,12 +129,13 @@ await step("누르면 캘린더 오늘 칸에 그 스티커가 있다", async ()
   await page.waitForURL(/\/calendar/, { timeout: 8000 });
   await page.getByText("최고야").first().waitFor({ timeout: 8000 });
 });
-await step("스티커만큼 경험치가 들어왔다", async () => {
-  await page.goto(B + "/kid/badges", { waitUntil: "load" });
+await step("스티커만큼 경험치가 들어왔다 — 목록에도, 숫자에도", async () => {
+  const after = await xpNow();
   await page
     .getByText(/엄마가 붙여 준 스티커/)
     .first()
     .waitFor({ timeout: 8000 });
+  if (!(after === xpBefore + 10)) throw new Error(`경험치 ${xpBefore} → ${after} (10 늘어야 한다)`);
 });
 
 // 4. 아이 — 받은 스티커에 고마워요를 돌려보낸다

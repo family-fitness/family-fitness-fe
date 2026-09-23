@@ -18,7 +18,7 @@ import { HttpResponse, http, type PathParams } from "msw";
 
 import type { AchievementView, DayLog, ProgressView, XpEvent } from "@/lib/api/types";
 import { callName } from "@/lib/family";
-import { daysBefore, today } from "@/lib/today";
+import { dayOf, daysBefore, today } from "@/lib/today";
 import { josa } from "@/lib/utils";
 
 import { BASE, DEMO, db, type Profile } from "./db";
@@ -95,8 +95,8 @@ export function progressOf(profileId: string): ProgressView {
   // 목의 기록은 지난 3주뿐이라 그 전에 한 운동이 경험치에서 빠진다. 시연 가족의 아이는 그 몫을 한 줄로
   // 더해, 오늘 것을 빼고 셌을 때 Lv.6(연못) 이상 다음 레벨에 딱 30 모자라게 선다
   if (profileId === DEMO.kid && db.profiles.familyId === DEMO.familyId) {
-    const todayXp = logs.filter((l) => l.date === today()).reduce((sum, l) => sum + dayXp(l), 0);
-    const base = events.reduce((sum, e) => sum + e.amount, 0) - todayXp;
+    // 어제까지 받은 것만 센다 — 오늘 받은 것(운동 · 스티커 · 다시 재기)은 시연 몫에 먹히지 않고 그대로 는다
+    const base = events.filter((e) => dayOf(e.at) < today()).reduce((sum, e) => sum + e.amount, 0);
     const next = LEVEL_FLOOR.find((floor) => floor >= LEVEL_FLOOR[5] && floor - DEMO_SHORT >= base);
     if (next !== undefined && next - DEMO_SHORT > base) {
       events.push({
