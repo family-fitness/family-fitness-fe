@@ -1,19 +1,22 @@
 "use client";
 
-import { LineChart, Ruler } from "lucide-react";
+import { Activity, LineChart, Ruler } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
+import { Stage } from "@/components/app-shell/stage";
+import { CardHead } from "@/components/ui/card";
+import { ListRow } from "@/components/ui/list-row";
 import { BandChip, GradeBadge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
-import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FactorRadar } from "@/components/domain/factor-radar";
+import { FACTOR_ICON } from "@/components/domain/factor-icon";
+import { FactorRadar, RadarGapNote } from "@/components/domain/factor-radar";
 import { RecordRow } from "@/components/domain/record-bar";
-import { factorPose, itemPose } from "@/lib/fitness-items";
+import { isFactor } from "@/lib/fitness-factors";
 import { useFamilyProfiles, useLatestFitnessTest } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { useIsKidView } from "@/lib/view-role";
@@ -89,56 +92,35 @@ export default function ResultPage() {
         }
       />
 
-      <Screen className="space-y-8">
-        {radar.length >= 3 && <FactorRadar points={radar} name={profile?.name ?? "나"} />}
-
-        {/** 잘하는 것을 먼저 말한다. 약한 것부터 들이밀면 아이가 화면을 닫는다. */}
-        {onlyOneFactor ? (
-          <section className="flex items-center gap-3">
-            <Illustration name={factorPose(strongest?.factor)} size={48} />
-            <div className="min-w-0">
-              <p className="text-faint text-caption font-bold">지금 재 본 영역</p>
-              <p className="text-body font-bold">{strongest?.factor}</p>
-            </div>
+      <Stage wide className="space-y-3">
+        {/* 육각형은 부모 화면에만. 안쪽으로 들어간 꼭지점이 곧 약한 요인이다(규칙 10) */}
+        {!kidView && radar.length > 0 && (
+          <section className="card-hero">
+            <CardHead title="요인별 모양" />
+            <FactorRadar points={radar} name={profile?.name ?? "나"} className="mt-2" />
+            <RadarGapNote points={radar} />
           </section>
-        ) : (
-          (strongest || weakest) && (
-            <section className="divide-rows">
-              {strongest && (
-                <div className="flex items-center gap-3 py-3">
-                  <Illustration name={factorPose(strongest.factor)} size={48} />
-                  <div className="min-w-0">
-                    <p className="text-faint text-caption font-bold">잘하고 있는 영역</p>
-                    <p className="text-body font-bold">{strongest.factor}</p>
-                  </div>
-                </div>
-              )}
-              {/* 약한 요인은 아이에게 말하지 않는다 */}
-              {weakest && !kidView && (
-                <div className="flex items-center gap-3 py-3">
-                  <Illustration name={factorPose(weakest.factor)} size={48} />
-                  <div className="min-w-0">
-                    <p className="text-faint text-caption font-bold">지금 키우기 좋은 영역</p>
-                    <p className="text-body font-bold">{weakest.factor}</p>
-                  </div>
-                </div>
-              )}
-            </section>
-          )
         )}
 
-        <section className="space-y-5">
-          <div className="section-head">
-            <h2>항목별</h2>
-          </div>
-          {items.map((entry, index) => (
-            <div key={entry.itemCode} className="flex items-start gap-3">
-              <Illustration
-                name={itemPose({ itemCode: entry.itemCode, factor: undefined })}
-                size={52}
-                className="mt-1"
-              />
-              <div className="min-w-0 flex-1">
+        {/** 잘하는 것을 먼저 말한다. 약한 것부터 들이밀면 아이가 화면을 닫는다. */}
+        {(strongest || weakest) && (
+          <section className="card divide-rows py-1">
+            <FactorLine
+              label={onlyOneFactor ? "지금 재 본 영역" : "잘하고 있는 영역"}
+              factor={strongest?.factor}
+            />
+            {/* 약한 요인은 아이에게 말하지 않는다 */}
+            {!onlyOneFactor && weakest && !kidView && (
+              <FactorLine label="지금 키우기 좋은 영역" factor={weakest.factor} />
+            )}
+          </section>
+        )}
+
+        <section className="card">
+          <CardHead title="항목별" meta={`${items.length}개`} />
+          <div className="divide-rows">
+            {items.map((entry, index) => (
+              <div key={entry.itemCode} className="py-3.5">
                 <RecordRow
                   label={entry.itemLabel ?? entry.itemCode ?? ""}
                   value={`${entry.value}${entry.unit ?? ""}`}
@@ -153,74 +135,56 @@ export default function ResultPage() {
                   <BandChip band={entry.band} />
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </section>
 
         {/* 다음에 뭘 할지. 서버가 정한 방향을 그대로 따른다.
-            승인·미션·보호자는 부모의 말이라 아이 화면에서는 통째로 뺀다 */}
+            제안 · 미션 · 보호자는 부모의 말이라 아이 화면에서는 통째로 뺀다 */}
         {kidView ? (
-          <div className="bg-signal-soft rounded-2xl p-4">
-            <p className="text-signal-deep text-sm font-bold">
+          <Link href="/kid" className="card press bg-signal-soft block">
+            <p className="text-signal-deep text-sm font-extrabold">
               {onlyOneFactor
                 ? "더 재 보면 더 잘 맞는 운동을 찾아 줄게"
                 : test.coachDirection === "STRENGTHEN"
                   ? "잘하는 걸 더 키워 볼까"
                   : strongest
                     ? `${withJosa(strongest.factor ?? "", "이가")} 좋아지고 있어`
-                    : "오늘 할 운동을 골라 볼까"}
+                    : "오늘 할 운동을 해 볼까"}
             </p>
-            <Link
-              href="/kid"
-              className="text-signal-deep mt-1 inline-flex min-h-11 items-center text-sm font-bold"
-            >
-              오늘 할 운동 고르기
-            </Link>
-          </div>
+            <p className="text-signal-deep mt-1 text-sm font-bold">오늘 운동 하러 가기</p>
+          </Link>
         ) : (
-          <div className="bg-signal-soft rounded-2xl p-4">
-            <p className="text-signal-deep text-sm font-bold">
-              {onlyOneFactor
-                ? "항목을 더 재면 더 잘 맞는 운동을 찾아요"
-                : test.coachDirection === "STRENGTHEN"
-                  ? "잘하는 영역을 더 키울 때예요"
-                  : weakest
-                    ? `${withJosa(weakest.factor ?? "", "을를")} 키우기 좋은 때예요`
-                    : "이번 주 운동을 찾아볼까요"}
-            </p>
-            <Link
-              href="/coach/weekly"
-              className="text-signal-deep mt-1 inline-flex min-h-11 items-center text-sm font-bold"
-            >
-              이번 주 제안 보기
+          <>
+            <Link href="/coach/weekly" className="card press bg-signal-soft block">
+              <p className="text-signal-deep text-sm font-extrabold">
+                {onlyOneFactor
+                  ? "항목을 더 재면 더 잘 맞는 운동을 찾아요"
+                  : test.coachDirection === "STRENGTHEN"
+                    ? "잘하는 영역을 더 키울 때예요"
+                    : weakest
+                      ? `${withJosa(weakest.factor ?? "", "을를")} 키우기 좋은 때예요`
+                      : "이번 주 운동을 찾아볼까요"}
+              </p>
+              <p className="text-signal-deep mt-1 text-sm font-bold">AI 에게 운동 받기</p>
             </Link>
-          </div>
-        )}
-
-        {!kidView && (
-          <div className="grid grid-cols-2 gap-3">
-            <Link
-              href={`/p/${profileId}/future`}
-              className="press border-line flex items-center gap-2 rounded-xl border px-4 py-3.5"
-            >
-              <LineChart className="text-signal-strong size-4" aria-hidden />
-              <span className="text-sm font-bold">10년 후 보기</span>
-            </Link>
-            <Link
-              href={`/p/${profileId}/measure`}
-              className="press border-line flex items-center gap-2 rounded-xl border px-4 py-3.5"
-            >
-              <Ruler className="text-signal-strong size-4" aria-hidden />
-              <span className="text-sm font-bold">다시 측정</span>
-            </Link>
-          </div>
+            <ul className="card divide-rows py-1">
+              <ListRow
+                href={`/p/${profileId}/future`}
+                icon={LineChart}
+                title="10년 위 연령대 보기"
+                description="지금과 같은 조건의 10년 위 연령대"
+              />
+              <ListRow href={`/p/${profileId}/measure`} icon={Ruler} title="다시 재기" />
+            </ul>
+          </>
         )}
 
         {/* 서버가 준 고지 문구. 줄이거나 접지 않는다 */}
         {test.disclaimer && (
-          <p className="text-faint text-caption leading-relaxed">{test.disclaimer}</p>
+          <p className="text-caption text-ink-soft px-1 leading-relaxed">{test.disclaimer}</p>
         )}
-      </Screen>
+      </Stage>
     </>
   );
 }
@@ -245,5 +209,24 @@ function ResultSkeleton() {
         ))}
       </Screen>
     </>
+  );
+}
+
+/** 한 요인 한 줄 — 요인 아이콘과 이름 */
+function FactorLine({ label, factor }: { label: string; factor: string | undefined }) {
+  const Icon = isFactor(factor) ? FACTOR_ICON[factor] : Activity;
+  return (
+    <div className="flex items-center gap-3 py-3">
+      <span
+        aria-hidden
+        className="bg-signal-soft text-signal-strong grid size-10 shrink-0 place-items-center rounded-xl"
+      >
+        <Icon className="size-5" strokeWidth={2.1} />
+      </span>
+      <div className="min-w-0">
+        <p className="text-caption text-ink-soft font-bold">{label}</p>
+        <p className="text-body font-extrabold">{factor ?? "-"}</p>
+      </div>
+    </div>
   );
 }
