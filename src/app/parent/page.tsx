@@ -21,7 +21,7 @@ import { UpdateNudge } from "@/components/domain/update-nudge";
 import { WeekCard } from "@/components/domain/week-card";
 import { useCalendar, useFitnessMap, useMissions } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
-import { longDate, today, weekOf } from "@/lib/today";
+import { longDate, weekOf } from "@/lib/today";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
@@ -53,7 +53,6 @@ export default function ParentHomePage() {
 
   const week = weekOf();
   const { data: calendar } = useCalendar(familyId, child?.profileId, week);
-  const todayLog = calendar?.days.find((d) => d.date === today());
 
   const header = (
     <HomeHeader
@@ -115,7 +114,7 @@ export default function ParentHomePage() {
           childProfileId={child.profileId ?? ""}
           childName={child.name ?? "아이"}
           missions={missions?.missions}
-          todayLog={todayLog}
+          weekLogs={calendar?.days}
         />
 
         <WeekCard days={week.days} logs={calendar?.days} href="/parent/history" />

@@ -44,6 +44,8 @@
   --color-signal-strong: #1a6fd1;
   --color-signal-deep: #1b2574;
   --color-signal-soft: #eaf3fd;
+  /* 남색 링의 빈 자리 */
+  --color-deep-soft: #e4e7f2;
 
   /* 또래 평균 선. 눈금(line)보다 진하고 글자(faint)보다 연하다 — 기준선도 하나의
      계열이라 흰 바탕에서 3:1 은 넘긴다 */

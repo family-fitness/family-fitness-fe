@@ -13,6 +13,7 @@ import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InviteParent } from "@/components/domain/invite-parent";
 import { LevelBuddy } from "@/components/domain/level-buddy";
+import { TodayRings } from "@/components/domain/today-rings";
 import { WeekStrip } from "@/components/domain/week-strip";
 import type { Mission } from "@/lib/api/types";
 import { useCalendar, useFitnessMap, useMissions, useProgress } from "@/lib/api/queries";
@@ -163,17 +164,24 @@ export default function KidHomePage() {
           </div>
         )}
 
+        {/* 오늘 한 만큼 — 부모 홈과 같은 링. 비어 있어도 탓하지 않는다 */}
         <Card>
-          <CardHead
-            title="이번 주"
-            meta={
-              progress && progress.streakDays > 1
-                ? `${progress.streakDays}일 이어서 했어요`
-                : undefined
-            }
+          <CardHead title="오늘 움직인 만큼" />
+          <TodayRings
+            profileId={childProfileId ?? undefined}
+            missions={missions?.missions}
+            weekLogs={calendar?.days}
+            size={124}
+            className="mt-2"
           />
-          <div className="mt-2">
-            <WeekStrip days={week.days} logs={calendar?.days} />
+          <div className="border-line mt-4 border-t pt-3">
+            <p className="text-caption text-ink-soft font-bold">
+              이번 주
+              {progress && progress.streakDays > 1 && ` · ${progress.streakDays}일 이어서 했어요`}
+            </p>
+            <div className="mt-2">
+              <WeekStrip days={week.days} logs={calendar?.days} />
+            </div>
           </div>
         </Card>
 
