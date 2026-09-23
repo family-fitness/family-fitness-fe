@@ -1,6 +1,7 @@
 import type { CheerLog, FitnessMapMember, Mission, Video } from "./api/types";
 import { isVideoDone, serverKnows } from "./mission";
 import { today } from "./today";
+import { dayOf } from "@/lib/today";
 
 /**
  * 기념 표시.
@@ -91,7 +92,7 @@ export function earnedBadges(input: {
   }
 
   /* 이번 주에 움직인 날. 연속이 아니라 **합계**다 — 끊겼다고 0 이 되지 않는다 */
-  const movedDays = new Set(told.map((c) => c.createdAt.slice(0, 10)));
+  const movedDays = new Set(told.map((c) => dayOf(c.createdAt)));
   if (movedDays.size >= 3) {
     badges.push({
       id: "three-days",
@@ -100,7 +101,7 @@ export function earnedBadges(input: {
       fallback: "stamp/stamp-flower",
     });
   }
-  if (told.some((c) => c.createdAt.slice(0, 10) === today())) {
+  if (told.some((c) => dayOf(c.createdAt) === today())) {
     badges.push({
       id: "today",
       label: "오늘도",

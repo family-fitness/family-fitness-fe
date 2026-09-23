@@ -2,7 +2,7 @@
 
 import type { CheerLog } from "@/lib/api/types";
 import { Illustration } from "@/components/ui/illustration";
-import { today } from "@/lib/today";
+import { dayOf, toDateString, today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 
 /**
@@ -29,13 +29,11 @@ export function WeekDots({
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(sunday);
     d.setDate(sunday.getDate() + i);
-    return d.toISOString().slice(0, 10);
+    return toDateString(d);
   });
 
   const moved = new Set(
-    (cheers ?? [])
-      .filter((c) => c.fromProfileId === fromProfileId)
-      .map((c) => c.createdAt.slice(0, 10)),
+    (cheers ?? []).filter((c) => c.fromProfileId === fromProfileId).map((c) => dayOf(c.createdAt)),
   );
   const count = days.filter((d) => moved.has(d)).length;
   const todayKey = today();

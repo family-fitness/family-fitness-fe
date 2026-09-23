@@ -12,7 +12,7 @@ import { BadgeStrip } from "@/components/domain/badge-row";
 import { RecordList } from "@/components/domain/record-list";
 import { earnedBadges } from "@/lib/badges";
 import { FactorRow, RecentForm, StatStrip } from "@/components/domain/stat-strip";
-import { daysBefore, daysSince } from "@/lib/today";
+import { dayOf, daysBefore, daysSince } from "@/lib/today";
 import {
   useCheers,
   useFamilyProfiles,
@@ -125,7 +125,7 @@ export default function ChildDetailPage() {
     0,
   );
   const recentPraise = (cheers?.cheers ?? []).filter(
-    (c) => c.toProfileId === profileId && c.message && c.createdAt.slice(0, 10) >= sevenDaysAgo,
+    (c) => c.toProfileId === profileId && c.message && dayOf(c.createdAt) >= sevenDaysAgo,
   ).length;
   /*
     서버가 돌려주면 서버 값을 쓴다. 기기에 들고 있는 값은 **서버가 아직 안

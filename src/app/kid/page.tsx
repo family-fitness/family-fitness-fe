@@ -30,7 +30,7 @@ import {
 import { useSession } from "@/lib/session";
 import { earnedBadges } from "@/lib/badges";
 import { isVideoDone } from "@/lib/mission";
-import { today } from "@/lib/today";
+import { dayOf, today } from "@/lib/today";
 import { labelBadges, pickTodayVideo, videoArt, whyThisVideo } from "@/lib/video-label";
 import { useRoleStore } from "@/stores/role-store";
 
@@ -120,7 +120,7 @@ export default function KidHomePage() {
     남았는데 "다 했어요" 라고 쓰면 화면이 거짓말을 한다.
   */
   const toldToday = allCheers.some(
-    (c) => c.fromProfileId === childProfileId && c.createdAt.slice(0, 10) === today(),
+    (c) => c.fromProfileId === childProfileId && dayOf(c.createdAt) === today(),
   );
   const finishedToday = toldToday && !todo;
   const praises = allCheers.filter((c) => c.toProfileId === childProfileId && c.message);

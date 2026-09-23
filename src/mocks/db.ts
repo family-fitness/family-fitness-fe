@@ -24,6 +24,8 @@ import type {
   VideoList,
 } from "@/lib/api/types";
 
+import { dayOf, toDateString } from "@/lib/today";
+
 import fixturesJson from "./fixtures.json";
 
 /** 픽스처의 모양. */
@@ -242,7 +244,7 @@ export function clip(videoId: string, startSec: number, endSec: number, title: s
 }
 
 export function seedMissions(): MissionRow[] {
-  const day = (back: number) => daysAgo(back, 12).slice(0, 10);
+  const day = (back: number) => dayOf(daysAgo(back, 12));
   return [
     {
       missionId: "seed-m1",
@@ -543,8 +545,7 @@ export function thisWeek(): { weekStart: string; weekEnd: string } {
   sunday.setDate(now.getDate() - now.getDay());
   const saturday = new Date(sunday);
   saturday.setDate(sunday.getDate() + 6);
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
-  return { weekStart: iso(sunday), weekEnd: iso(saturday) };
+  return { weekStart: toDateString(sunday), weekEnd: toDateString(saturday) };
 }
 
 export function uuid() {

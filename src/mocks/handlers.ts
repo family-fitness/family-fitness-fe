@@ -4,7 +4,7 @@ import { HttpResponse, http, type PathParams } from "msw";
 import type { AgeGroup, FitnessTestResult, ItemResult } from "@/lib/api/types";
 
 import { isVideoDone, serverKnows } from "@/lib/mission";
-import { ageOf } from "@/lib/today";
+import { ageOf, dayOf, toDateString } from "@/lib/today";
 
 import {
   BASE,
@@ -644,7 +644,7 @@ const missions = [
     const params = new URL(request.url).searchParams;
     const scope = params.get("scope") ?? "ALL";
     const status = params.get("status");
-    const today = new Date().toISOString().slice(0, 10);
+    const today = toDateString(new Date());
 
     const missions = db.missions.filter((m) => {
       const parts = m.participants ?? [];
@@ -706,7 +706,7 @@ const missions = [
     const body = (await request.json()) as { activeMinutes: number };
     // 서버가 진짜로 아는 값이다
     return HttpResponse.json({
-      activityDate: new Date().toISOString().slice(0, 10),
+      activityDate: toDateString(new Date()),
       source: "TIMER",
       serverVerified: true,
       totalActiveMinutes: body.activeMinutes,
@@ -794,7 +794,7 @@ const missions = [
         completed: missions.filter((m) => (m.participants ?? []).every((p) => p.completed)).length,
       },
       members,
-      cheerCount: db.cheers.filter((c) => inWeek(c.createdAt.slice(0, 10)) && c.message).length,
+      cheerCount: db.cheers.filter((c) => inWeek(dayOf(c.createdAt)) && c.message).length,
     });
   }),
 ];

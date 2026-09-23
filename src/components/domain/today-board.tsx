@@ -11,7 +11,7 @@ import { Illustration } from "@/components/ui/illustration";
 import { PraisePicker } from "@/components/domain/praise-picker";
 import { progressPercent, targetCopy } from "@/lib/mission";
 import { useCheers } from "@/lib/api/queries";
-import { today } from "@/lib/today";
+import { dayOf, today } from "@/lib/today";
 import { cn, withJosa } from "@/lib/utils";
 
 /** 아이가 오늘 한 일 — **칭찬을 보내는 자리**. */
@@ -33,7 +33,7 @@ export function TodayBoard({
   const { data: inbox } = useCheers(familyId, parentProfileId);
   const { data: given } = useCheers(familyId, childProfileId);
   const [picking, setPicking] = useState<{ mission: Mission | null } | null>(null);
-  const isToday = (c: CheerLog) => c.createdAt.slice(0, 10) === today();
+  const isToday = (c: CheerLog) => dayOf(c.createdAt) === today();
 
   const told = (inbox?.cheers ?? [])
     .filter((c) => c.fromProfileId === childProfileId && isToday(c))

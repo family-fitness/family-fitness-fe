@@ -9,6 +9,7 @@ import { useCheers } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 import { formatDate } from "@/lib/utils";
+import { dayOf } from "@/lib/today";
 
 /** 받은 칭찬. */
 export default function KidPraisePage() {
@@ -65,7 +66,7 @@ export default function KidPraisePage() {
             </p>
           </div>
           <p className="text-faint text-micro mt-1 text-right">
-            {newest.fromName} · {formatDate(newest.createdAt.slice(0, 10))}
+            {newest.fromName} · {formatDate(dayOf(newest.createdAt))}
           </p>
         </div>
 
@@ -78,7 +79,7 @@ export default function KidPraisePage() {
                   {cheer.message}
                 </p>
                 <p className="text-faint text-micro mt-1 ml-1">
-                  {cheer.fromName} · {formatDate(cheer.createdAt.slice(0, 10))}
+                  {cheer.fromName} · {formatDate(dayOf(cheer.createdAt))}
                 </p>
               </li>
             ))}
