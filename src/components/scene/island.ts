@@ -14,14 +14,7 @@
  */
 import type * as T from "three";
 
-type Three = typeof T;
-
-export interface Addons {
-  mergeVertices: typeof import("three/addons/utils/BufferGeometryUtils.js").mergeVertices;
-  LineSegments2: typeof import("three/addons/lines/LineSegments2.js").LineSegments2;
-  LineSegmentsGeometry: typeof import("three/addons/lines/LineSegmentsGeometry.js").LineSegmentsGeometry;
-  LineMaterial: typeof import("three/addons/lines/LineMaterial.js").LineMaterial;
-}
+import { type Addons, type Palette, type Three, toonKit } from "./toon";
 
 /** 섬의 치수와 카메라. 캐릭터가 설 자리를 three 없이도 셀 수 있게 밖에 둔다 */
 export const ISLAND = {
@@ -54,44 +47,6 @@ export const MAX_PLANTS = 28;
 export function footRatio() {
   const up = (0 - ISLAND.target) * Math.cos(ISLAND.elevation);
   return 0.5 - up / (2 * ISLAND.view);
-}
-
-export interface Palette {
-  top: string;
-  topShade: string;
-  band: string;
-  bandShade: string;
-  base: string;
-  baseShade: string;
-  line: string;
-  yellow: string;
-  yellowShade: string;
-  blue: string;
-  blueShade: string;
-  white: string;
-  whiteShade: string;
-}
-
-/** 색은 CSS 토큰에서 읽는다. 코드에 따로 적으면 토큰을 바꿔도 섬만 옛 색으로 남는다 */
-export function readPalette(): Palette {
-  const css = getComputedStyle(document.documentElement);
-  // 토큰이 비어 있을 때만 쓰는 값. globals.css 와 같은 값이다
-  const v = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
-  return {
-    top: v("--color-paper", "#ffffff"),
-    topShade: v("--color-sub", "#f1f3f6"),
-    band: v("--color-signal", "#2784e6"),
-    bandShade: v("--color-signal-strong", "#1a6fd1"),
-    base: v("--color-signal-soft", "#eaf3fd"),
-    baseShade: v("--color-signal-pale", "#d4e5f9"),
-    line: v("--color-signal-deep", "#1b2574"),
-    yellow: v("--color-mark", "#ffb800"),
-    yellowShade: v("--color-mark-shade", "#e0a100"),
-    blue: v("--color-signal", "#2784e6"),
-    blueShade: v("--color-signal-strong", "#1a6fd1"),
-    white: v("--color-paper", "#ffffff"),
-    whiteShade: v("--color-sub", "#f1f3f6"),
-  };
 }
 
 /* ─── 흔들리지 않는 난수 ───────────────────────────────────────
@@ -186,61 +141,6 @@ function popOut(k: number) {
   return Math.pow(2, -9 * k) * Math.sin((k * 8 - 0.75) * ((2 * Math.PI) / 3)) + 1;
 }
 
-/* ─── 재질 ─────────────────────────────────────────────────
-   나무 · 꽃 · 구름은 같은 모양을 여러 번 그린다 — 인스턴스로 한 번에 그린다.
-   셰이더가 instanceMatrix 를 알아야 한다(three 가 USE_INSTANCING 을 켜 준다). */
-
-const LOCAL = /* glsl */ `
-  #ifdef USE_INSTANCING
-    mat4 local = instanceMatrix;
-  #else
-    mat4 local = mat4(1.0);
-  #endif
-`;
-
-const TOON_VERTEX = /* glsl */ `
-  varying vec3 vNormal;
-  void main() {
-    ${LOCAL}
-    vNormal = normalize(mat3(modelMatrix) * mat3(local) * normal);
-    gl_Position = projectionMatrix * modelViewMatrix * local * vec4(position, 1.0);
-  }
-`;
-
-/** 밝은 면과 그늘 면 두 톤. 빛 방향은 카메라에 붙어 있어서 섬을 돌려도 왼쪽 위가 밝다 */
-const TOON_FRAGMENT = /* glsl */ `
-  uniform vec3 lit;
-  uniform vec3 shade;
-  uniform vec3 light;
-  uniform float cut;
-  varying vec3 vNormal;
-  void main() {
-    float d = dot(normalize(vNormal), light);
-    gl_FragColor = vec4(d > cut ? lit : shade, 1.0);
-    #include <colorspace_fragment>
-  }
-`;
-
-/** 뒤집은 껍데기를 화면 쪽으로만 밀어 외곽선을 낸다. 정사영이라 굵기가 어디서나 같다 */
-const HULL_VERTEX = /* glsl */ `
-  uniform float thickness;
-  void main() {
-    ${LOCAL}
-    vec3 n = normalize(normalMatrix * mat3(local) * normal);
-    vec4 mv = modelViewMatrix * local * vec4(position, 1.0);
-    mv.xy += n.xy * thickness;
-    gl_Position = projectionMatrix * mv;
-  }
-`;
-
-const HULL_FRAGMENT = /* glsl */ `
-  uniform vec3 color;
-  void main() {
-    gl_FragColor = vec4(color, 1.0);
-    #include <colorspace_fragment>
-  }
-`;
-
 export interface Island {
   /** 돌아가는 섬. 나무가 여기에 붙는다 */
   root: T.Group;
@@ -288,78 +188,8 @@ export function buildIsland(
     toward: T.Vector3;
   },
 ): Island {
-  const disposables: { dispose(): void }[] = [];
-  const keep = <D extends { dispose(): void }>(d: D) => {
-    disposables.push(d);
-    return d;
-  };
-
-  const lightUniform = { value: light };
-  const thickness = { value: 0.06 };
-  const thin = { value: 0.045 };
-
-  const toons = new Map<string, T.ShaderMaterial>();
-  /** cut — 이보다 빛을 받아야 밝은 면. 아래를 보는 받침은 낮춰야 두 톤이 보인다 */
-  const toon = (lit: string, shade: string, offset = false, cut = 0.12) => {
-    const key = `${lit}/${shade}/${offset}/${cut}`;
-    const found = toons.get(key);
-    if (found) return found;
-    const material = keep(
-      new THREE.ShaderMaterial({
-        uniforms: {
-          lit: { value: new THREE.Color(lit) },
-          shade: { value: new THREE.Color(shade) },
-          light: lightUniform,
-          cut: { value: cut },
-        },
-        vertexShader: TOON_VERTEX,
-        fragmentShader: TOON_FRAGMENT,
-        // 면을 살짝 뒤로 — 모서리 선이 면에 파묻히지 않게
-        polygonOffset: offset,
-        polygonOffsetFactor: offset ? 1 : 0,
-        polygonOffsetUnits: offset ? 1 : 0,
-      }),
-    );
-    toons.set(key, material);
-    return material;
-  };
-
-  const hullMaterial = (width: { value: number }) =>
-    keep(
-      new THREE.ShaderMaterial({
-        uniforms: { color: { value: new THREE.Color(palette.line) }, thickness: width },
-        vertexShader: HULL_VERTEX,
-        fragmentShader: HULL_FRAGMENT,
-        side: THREE.BackSide,
-      }),
-    );
-  const hull = hullMaterial(thickness);
-  const hullThin = hullMaterial(thin);
-
-  /** 모서리를 합친 매끈한 법선. 뒤집은 껍데기가 모서리에서 갈라지지 않는다 */
-  const hulls = new Map<T.BufferGeometry, T.BufferGeometry>();
-  const hullGeometry = (geometry: T.BufferGeometry) => {
-    // 노랑 · 파랑 나무처럼 같은 모양을 두 색이 쓴다. 껍데기는 하나면 된다
-    const found = hulls.get(geometry);
-    if (found) return found;
-    const bare = geometry.clone();
-    bare.deleteAttribute("normal");
-    bare.deleteAttribute("uv");
-    const merged = addons.mergeVertices(bare);
-    merged.computeVertexNormals();
-    merged.clearGroups();
-    bare.dispose();
-    hulls.set(geometry, merged);
-    return keep(merged);
-  };
-
-  /** 면 + 외곽선 한 벌 */
-  const solid = (geometry: T.BufferGeometry, material: T.Material | T.Material[]) => {
-    keep(geometry);
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.add(new THREE.Mesh(hullGeometry(geometry), hull));
-    return mesh;
-  };
+  const kit = toonKit(THREE, addons, palette, light);
+  const { keep, toon, hullThin, hullGeometry, solid } = kit;
 
   const root = new THREE.Group();
   const island = new THREE.Group();
@@ -478,7 +308,8 @@ export function buildIsland(
     outline.frustumCulled = false;
     island.add(fill, outline);
     instanced.set(kind, fill);
-    disposables.push(fill, outline);
+    keep(fill);
+    keep(outline);
   }
 
   const plantState = slots.slice(0, shown).map((s) => ({
@@ -567,7 +398,8 @@ export function buildIsland(
   const puffOutline = new THREE.InstancedMesh(hullGeometry(puff), hullThin, puffCount);
   puffOutline.instanceMatrix = puffs.instanceMatrix;
   puffOutline.frustumCulled = false;
-  disposables.push(puffs, puffOutline);
+  keep(puffs);
+  keep(puffOutline);
   const clouds = new THREE.Group();
   clouds.add(puffs, puffOutline);
   const noTurn = new THREE.Quaternion();
@@ -617,8 +449,7 @@ export function buildIsland(
     newest: newestSlot ? Math.atan2(newestSlot.x, newestSlot.z) : null,
     resize(width, height) {
       const perUnit = height / (2 * ISLAND.view);
-      thickness.value = 3 / perUnit;
-      thin.value = 2.2 / perUnit;
+      kit.setPixelsPerUnit(perUnit);
       edgeMaterial.resolution.set(width, height);
     },
     update(t, still) {
@@ -667,7 +498,7 @@ export function buildIsland(
       hopAt = start + 0.1;
     },
     dispose() {
-      for (const d of disposables) d.dispose();
+      kit.dispose();
     },
   };
 }

@@ -6,7 +6,8 @@ import { LevelBuddy } from "@/components/domain/level-buddy";
 import type { Stage } from "@/lib/levels";
 import { cn } from "@/lib/utils";
 
-import { ISLAND, buildIsland, footRatio, readPalette, type Island } from "./island";
+import { ISLAND, buildIsland, footRatio, type Island } from "./island";
+import { loadThree, readPalette } from "./toon";
 
 /**
  * 키움 섬 — 아이 홈 맨 위.
@@ -63,21 +64,15 @@ export function KiumIsland({
     let teardown = () => {};
 
     void (async () => {
-      let mods;
+      let loaded;
       try {
-        mods = await Promise.all([
-          import("three"),
-          import("three/addons/utils/BufferGeometryUtils.js"),
-          import("three/addons/lines/LineSegments2.js"),
-          import("three/addons/lines/LineSegmentsGeometry.js"),
-          import("three/addons/lines/LineMaterial.js"),
-        ]);
+        loaded = await loadThree();
       } catch {
         return; // 받지 못하면 캐릭터만 남는다
       }
       const mascot = await mascotImage(stand);
       if (disposed) return;
-      const [THREE, utils, ls2, lsg, lm] = mods;
+      const { THREE, addons } = loaded;
 
       let renderer: InstanceType<typeof THREE.WebGLRenderer>;
       try {
@@ -109,26 +104,17 @@ export function KiumIsland({
       const scene = new THREE.Scene();
       let island: Island;
       try {
-        island = buildIsland(
-          THREE,
-          {
-            mergeVertices: utils.mergeVertices,
-            LineSegments2: ls2.LineSegments2,
-            LineSegmentsGeometry: lsg.LineSegmentsGeometry,
-            LineMaterial: lm.LineMaterial,
-          },
-          {
-            plants: count,
-            seed,
-            palette: readPalette(),
-            mascot,
-            light,
-            toward: camera.position
-              .clone()
-              .sub(new THREE.Vector3(0, ISLAND.target, 0))
-              .normalize(),
-          },
-        );
+        island = buildIsland(THREE, addons, {
+          plants: count,
+          seed,
+          palette: readPalette(),
+          mascot,
+          light,
+          toward: camera.position
+            .clone()
+            .sub(new THREE.Vector3(0, ISLAND.target, 0))
+            .normalize(),
+        });
       } catch {
         renderer.dispose();
         canvas.remove();
