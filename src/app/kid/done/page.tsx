@@ -53,7 +53,7 @@ export default function DonePage() {
           <p className="mt-4 text-xl font-extrabold">아직 본 영상이 없어요</p>
           <NavLink
             href="/kid"
-            className="press bg-signal mt-6 rounded-2xl px-7 py-4 text-lg font-extrabold text-white"
+            className="press bg-signal-strong mt-6 rounded-2xl px-7 py-4 text-lg font-extrabold text-white"
           >
             홈으로 가기
           </NavLink>

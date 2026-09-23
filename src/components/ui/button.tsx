@@ -15,7 +15,7 @@ const button = cva(
   {
     variants: {
       variant: {
-        primary: "bg-signal text-white",
+        primary: "bg-signal-strong text-white",
         soft: "bg-signal-soft text-signal-deep",
         outline: "border-line text-ink border-1.5 border",
         ghost: "text-ink-soft",

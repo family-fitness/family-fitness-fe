@@ -64,7 +64,7 @@ export default function MembersPage() {
           onClick={() => setAdding(true)}
           className="press border-line flex w-full items-center gap-2 rounded-xl border border-dashed px-4 py-4"
         >
-          <Plus className="text-signal size-4" aria-hidden />
+          <Plus className="text-signal-strong size-4" aria-hidden />
           <span className="text-sm font-bold">가족 더하기</span>
         </button>
 
@@ -154,7 +154,7 @@ function MemberRow({ profile }: { profile: ProfileSummary }) {
                 setTimeout(() => setCopied(false), 1500);
               });
             }}
-            className="press text-signal flex items-center gap-1 text-xs font-bold"
+            className="press text-signal-strong flex items-center gap-1 text-xs font-bold"
           >
             {copied ? (
               <Check className="size-3.5" aria-hidden />

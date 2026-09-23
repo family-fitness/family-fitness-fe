@@ -201,7 +201,7 @@ export function YouTubePlayer({
         <p className="mt-3 text-lg font-extrabold">지금은 이 영상을 못 봐요</p>
         <NavLink
           href="/kid"
-          className="press bg-signal mt-4 w-full rounded-2xl py-3.5 text-base font-extrabold text-white"
+          className="press bg-signal-strong mt-4 w-full rounded-2xl py-3.5 text-base font-extrabold text-white"
         >
           홈으로 가기
         </NavLink>

@@ -250,7 +250,7 @@ export default function ChildDetailPage() {
               <h2>최근 기록</h2>
               <Link
                 href="/parent/history"
-                className="text-signal -mr-3 inline-flex min-h-11 min-w-11 items-center justify-center px-3 text-xs font-bold"
+                className="text-signal-strong -mr-3 inline-flex min-h-11 min-w-11 items-center justify-center px-3 text-xs font-bold"
               >
                 전체
               </Link>
@@ -262,7 +262,7 @@ export default function ChildDetailPage() {
         <section className="grid grid-cols-2 gap-2">
           <Link
             href={`/p/${profileId}/measure`}
-            className="press bg-signal col-span-2 block rounded-2xl py-4 text-center text-base font-extrabold text-white"
+            className="press bg-signal-strong col-span-2 block rounded-2xl py-4 text-center text-base font-extrabold text-white"
           >
             {withJosa(profile.name ?? "아이", "을를")} 다시 재기
           </Link>

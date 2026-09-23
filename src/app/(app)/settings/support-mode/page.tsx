@@ -129,7 +129,7 @@ function SupportModePageContent() {
                   <span
                     className={cn(
                       "mt-0.5 grid size-6 shrink-0 place-items-center rounded-full border",
-                      on ? "bg-signal border-signal text-white" : "border-line",
+                      on ? "bg-signal-strong border-signal-strong text-white" : "border-line",
                     )}
                     aria-hidden
                   >

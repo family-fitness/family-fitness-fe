@@ -113,7 +113,7 @@ export function TodayBoard({
                         mission: mine.find((m) => m.missionId === cheer.missionId) ?? null,
                       })
                     }
-                    className="press bg-signal grid min-h-11 shrink-0 place-items-center rounded-xl px-3.5 text-xs font-extrabold text-white"
+                    className="press bg-signal-strong grid min-h-11 shrink-0 place-items-center rounded-xl px-3.5 text-xs font-extrabold text-white"
                   >
                     {isCall ? "답하기" : "칭찬하기"}
                   </button>
@@ -169,7 +169,7 @@ export function TodayBoard({
                         e.preventDefault();
                         setPicking({ mission });
                       }}
-                      className="press bg-signal grid min-h-11 shrink-0 place-items-center rounded-xl px-3.5 text-xs font-extrabold text-white"
+                      className="press bg-signal-strong grid min-h-11 shrink-0 place-items-center rounded-xl px-3.5 text-xs font-extrabold text-white"
                     >
                       확인해 주기
                     </button>

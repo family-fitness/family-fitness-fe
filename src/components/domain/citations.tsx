@@ -38,7 +38,7 @@ export function Citations({
         const href = safeUrl(c.url);
         return (
           <li key={c.index ?? i} className="flex gap-1.5 py-1">
-            <span className="text-signal text-caption shrink-0 font-extrabold tabular-nums">
+            <span className="text-signal-strong text-caption shrink-0 font-extrabold tabular-nums">
               [{c.index ?? i + 1}]
             </span>
             <span className="min-w-0">

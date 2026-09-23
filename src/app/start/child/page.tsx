@@ -246,7 +246,7 @@ export default function AddChildPage() {
                         aria-hidden
                         className={cn(
                           "mt-0.5 grid size-5 shrink-0 place-items-center rounded-md border-2",
-                          on ? "bg-signal border-signal text-white" : "border-line",
+                          on ? "bg-signal-strong border-signal-strong text-white" : "border-line",
                         )}
                       >
                         {on && <Check className="size-3" strokeWidth={3.5} />}

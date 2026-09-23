@@ -60,8 +60,8 @@ export function WeekDots({
               <span
                 className={cn(
                   "grid aspect-square w-full place-items-center rounded-xl text-xs font-extrabold",
-                  on && "day-on bg-signal text-white",
-                  !on && isToday && "border-signal text-signal border-2",
+                  on && "day-on bg-signal-strong text-white",
+                  !on && isToday && "border-signal text-signal-strong border-2",
                   !on && !isToday && "bg-sub text-faint",
                   future && "opacity-45",
                 )}

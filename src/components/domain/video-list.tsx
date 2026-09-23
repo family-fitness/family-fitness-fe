@@ -153,7 +153,10 @@ function VideoRow({ video }: { video: Video }) {
           className="press grid size-11 shrink-0 place-items-center self-start rounded-lg"
         >
           <Heart
-            className={cn("size-4.5", video.favorited ? "fill-signal text-signal" : "text-faint")}
+            className={cn(
+              "size-4.5",
+              video.favorited ? "fill-signal text-signal-strong" : "text-faint",
+            )}
             aria-hidden
           />
         </button>

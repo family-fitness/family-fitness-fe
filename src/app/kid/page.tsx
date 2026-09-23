@@ -88,7 +88,7 @@ export default function KidHomePage() {
           <button
             type="button"
             onClick={() => router.push("/start")}
-            className="press bg-signal mt-5 rounded-2xl px-6 py-4 text-lg font-extrabold text-white"
+            className="press bg-signal-strong mt-5 rounded-2xl px-6 py-4 text-lg font-extrabold text-white"
           >
             고르러 가기
           </button>
@@ -317,7 +317,7 @@ function BigAction({
   motion: "jump" | "stretch";
 }) {
   return (
-    <NavLink href={href} className="press bg-signal block rounded-3xl p-5 text-white">
+    <NavLink href={href} className="press bg-signal-strong block rounded-3xl p-5 text-white">
       <div className="flex items-center gap-3">
         {thumbnail ? (
           <span className="relative block w-28 shrink-0 self-start overflow-hidden rounded-xl">
@@ -349,7 +349,7 @@ function BigAction({
         </div>
       </div>
       {/* 흰 바탕에 파란 글씨. 파랑 위의 반투명 흰색은 눌리는 것으로 안 읽힌다 */}
-      <span className="text-signal mt-4 flex items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-xl font-extrabold">
+      <span className="text-signal-strong mt-4 flex items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-xl font-extrabold">
         <Play className="size-5 fill-current" aria-hidden />
         시작하기
       </span>

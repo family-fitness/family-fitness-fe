@@ -43,7 +43,7 @@ export function PeerCompare({
         {profileId && (
           <Link
             href={`/p/${profileId}/measure`}
-            className="press bg-signal mt-3 block rounded-xl py-3 text-center text-sm font-extrabold text-white"
+            className="press bg-signal-strong mt-3 block rounded-xl py-3 text-center text-sm font-extrabold text-white"
           >
             {withJosa(name, "은는")} 지금 재기
           </Link>
@@ -87,7 +87,7 @@ export function PeerCompare({
   return (
     <Link href={`/parent/child/${profileId}`} className="press block" aria-label={`${name} 기록`}>
       {body}
-      <span className="text-signal mt-1.5 flex items-center gap-0.5 text-xs font-bold">
+      <span className="text-signal-strong mt-1.5 flex items-center gap-0.5 text-xs font-bold">
         자라는 기록 보기
         <ChevronRight className="size-3.5" aria-hidden />
       </span>

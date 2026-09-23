@@ -126,7 +126,7 @@ export default function ParentHomePage() {
             action={
               <NavLink
                 href="/parent/history"
-                className="text-signal -mr-2 inline-flex min-h-11 items-center px-2 text-xs font-bold"
+                className="text-signal-strong -mr-2 inline-flex min-h-11 items-center px-2 text-xs font-bold"
               >
                 지난 기록
               </NavLink>
@@ -224,7 +224,7 @@ function HomeLink({
         {description && <span className="text-ink-soft mt-0.5 block text-xs">{description}</span>}
       </span>
       {badge && (
-        <span className="bg-signal text-micro shrink-0 rounded-full px-2.5 py-1 font-extrabold text-white">
+        <span className="bg-signal-strong text-micro shrink-0 rounded-full px-2.5 py-1 font-extrabold text-white">
           {badge}
         </span>
       )}

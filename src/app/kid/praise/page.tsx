@@ -60,7 +60,7 @@ export default function KidPraisePage() {
         <div>
           <div className="flex items-end gap-1">
             <KidCharacter motion="cheer" size={92} className="shrink-0" />
-            <p className="bg-signal text-lead mb-3 min-w-0 flex-1 rounded-2xl rounded-bl-md px-4 py-3.5 leading-relaxed font-extrabold text-white">
+            <p className="bg-signal-strong text-lead mb-3 min-w-0 flex-1 rounded-2xl rounded-bl-md px-4 py-3.5 leading-relaxed font-extrabold text-white">
               {newest.message}
             </p>
           </div>

@@ -37,7 +37,7 @@ export function FamilyMap({
         {manageHref && (
           <Link
             href={manageHref}
-            className="text-signal -mr-3 inline-flex min-h-11 min-w-11 items-center justify-center px-3 text-xs font-bold"
+            className="text-signal-strong -mr-3 inline-flex min-h-11 min-w-11 items-center justify-center px-3 text-xs font-bold"
           >
             관리
           </Link>

@@ -207,7 +207,7 @@ export default function MissionPage() {
             <button
               type="button"
               onClick={() => setRunning(next)}
-              className="press bg-signal w-full rounded-2xl py-5 text-xl font-extrabold text-white"
+              className="press bg-signal-strong w-full rounded-2xl py-5 text-xl font-extrabold text-white"
             >
               {PHASE_LABEL[next.phase]} 시작
             </button>
@@ -222,7 +222,7 @@ export default function MissionPage() {
           <button
             type="button"
             onClick={() => setFinished(true)}
-            className="press bg-signal w-full rounded-2xl py-5 text-xl font-extrabold text-white"
+            className="press bg-signal-strong w-full rounded-2xl py-5 text-xl font-extrabold text-white"
           >
             다 했어요!
           </button>

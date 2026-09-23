@@ -149,10 +149,52 @@ for (const route of ROUTES) {
       );
       if (unnamed.length > 0) out.push(`이름 없는 버튼 ${unnamed.length}개`);
 
-      // 화면 색은 흰색 하나로 간다
+      // 바탕은 연회색 하나로 간다(--color-ground). 화면마다 바탕을 따로 칠하면
+      // 흰 카드가 떠 보이지 않는다
       const frame = document.querySelector(".app-frame");
-      if (frame && getComputedStyle(frame).backgroundColor !== "rgb(255, 255, 255)") {
-        out.push("앱 배경이 흰색이 아님");
+      if (frame && getComputedStyle(frame).backgroundColor !== "rgb(244, 245, 247)") {
+        out.push("앱 바탕이 --color-ground 가 아님");
+      }
+
+      /*
+        글자 대비. 작은 글씨는 4.5:1, 큰 글씨(24px · 굵은 19px 이상)는 3:1.
+        연한 회색 글자가 흰 카드 위에서 2.8:1 로 햇빛 아래 사라지고 있었다.
+        바탕은 글자에서 위로 올라가며 처음 만나는 칠한 면으로 본다.
+      */
+      const rgb = (c) => (c.match(/[\d.]+/g) ?? []).map(Number);
+      const lum = ([r, g, b]) => {
+        const f = (v) => {
+          v /= 255;
+          return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+        };
+        return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+      };
+      const bgOf = (el) => {
+        for (let n = el; n; n = n.parentElement) {
+          const c = rgb(getComputedStyle(n).backgroundColor);
+          if (c.length >= 3 && (c[3] ?? 1) > 0.9) return c;
+        }
+        return [255, 255, 255];
+      };
+      const faint = [];
+      for (const el of document.querySelectorAll("body *")) {
+        const own = [...el.childNodes].some((t) => t.nodeType === 3 && t.textContent.trim());
+        if (!own) continue;
+        const st = getComputedStyle(el);
+        if (st.visibility === "hidden" || Number(st.opacity) < 0.5) continue;
+        const box = el.getBoundingClientRect();
+        if (box.width === 0 || box.height === 0) continue;
+        const fg = rgb(st.color);
+        const [a, b] = [lum(fg), lum(bgOf(el))];
+        const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+        const size = parseFloat(st.fontSize);
+        const large = size >= 24 || (size >= 18.66 && Number(st.fontWeight) >= 700);
+        if (ratio < (large ? 3 : 4.5)) {
+          faint.push(`${el.textContent.trim().slice(0, 12)}(${ratio.toFixed(1)})`);
+        }
+      }
+      if (faint.length > 0) {
+        out.push(`글자 대비 부족 ${faint.length}곳: ${faint.slice(0, 4).join(" · ")}`);
       }
       return out;
     }, MIN_TAP);
