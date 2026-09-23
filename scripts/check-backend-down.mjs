@@ -30,15 +30,15 @@ const SILENT_OK = new Set(["/plan", "/settings", "/settings/support-mode"]);
 
 const ROUTES = [
   "/parent",
-  "/parent/history",
   "/parent/family",
   `/parent/child/${KID}`,
   "/kid",
   "/kid/m/seed-today",
-  "/kid/praise",
+  "/kid/badges",
+  "/calendar",
+  "/notifications",
   "/plan",
   "/videos",
-  "/family/cheer",
   "/settings",
   "/settings/support-mode",
   "/settings/consent",

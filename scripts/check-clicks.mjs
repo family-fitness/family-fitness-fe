@@ -20,14 +20,15 @@ const DEV_OVERLAY = `nextjs-portal, [data-nextjs-toast], .tsqd-parent-container 
 const ROUTES = {
   parent: [
     "/parent",
-    "/parent/history",
     "/parent/family",
     `/parent/child/${KID}`,
+    `/parent/sticker/${KID}`,
+    "/calendar",
+    "/notifications",
     "/plan",
     "/videos",
     "/videos?list=favorites",
     "/videos?list=recent",
-    "/family/cheer",
     "/settings",
     "/settings/support-mode",
     "/settings/consent",
@@ -38,7 +39,7 @@ const ROUTES = {
     "/start/child",
     "/start/who",
   ],
-  kid: ["/kid", "/kid/m/seed-today", "/kid/praise"],
+  kid: ["/kid", "/kid/m/seed-today", "/kid/badges", "/calendar", "/notifications"],
 };
 
 const browser = await chromium.launch({ channel: "chrome" });
