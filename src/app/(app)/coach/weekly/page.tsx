@@ -218,7 +218,7 @@ export default function WeeklyCoachPage() {
               <button
                 type="button"
                 onClick={() => router.push("/parent")}
-                className="text-signal mt-2 text-sm font-bold"
+                className="text-signal-strong mt-2 text-sm font-bold"
               >
                 미션 보러 가기
               </button>

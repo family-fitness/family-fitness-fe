@@ -1,11 +1,35 @@
 /**
+ * 날짜 하나를 YYYY-MM-DD 로. **기기 시간대 기준이다.**
+ *
+ * `toISOString()` 은 UTC 라서 한국에서는 자정부터 오전 9시까지 어제 날짜가 나온다.
+ * 아침 7시에 한 운동이 전날 칸에 찍히고, 「며칠 전」 계산은 늘 하루가 밀렸다.
+ */
+export function toDateString(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * 시각(ISO-8601) 이 기기 시간대로 며칠인지.
+ *
+ * 서버가 주는 `createdAt` 은 UTC 다. 앞 열 글자를 잘라 쓰면 한국 아침 8시에
+ * 보낸 칭찬이 전날 것으로 세어진다.
+ */
+export function dayOf(timestamp: string): string {
+  const d = new Date(timestamp);
+  return Number.isNaN(d.getTime()) ? timestamp.slice(0, 10) : toDateString(d);
+}
+
+/**
  * 오늘 날짜(YYYY-MM-DD).
  *
- * 열 군데에서 각자 `new Date().toISOString().slice(0, 10)` 을 부르고 있었다.
+ * 열 군데에서 각자 `new Date()` 로 날짜를 만들고 있었다.
  * 같은 화면 안에서 자정을 넘기면 위아래가 다른 날을 가리킨다.
  */
 export function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  return toDateString(new Date());
 }
 
 /** 그날로부터 며칠 지났는지. 날짜가 없으면 null */
@@ -44,5 +68,33 @@ export function ageOf(birthDate: string | null | undefined, on: string = today()
 export function daysBefore(days: number, from: string = today()): string {
   const day = new Date(`${from}T00:00:00`);
   day.setDate(day.getDate() - days);
-  return day.toISOString().slice(0, 10);
+  return toDateString(day);
+}
+
+/** 요일 글자. `Date.getDay()` 순서(일요일이 0) */
+export const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"] as const;
+
+/**
+ * 그날이 든 주의 월요일~일요일.
+ *
+ * 한 주를 월요일에 시작한다. 주말이 한 주의 끝에 붙어 있어야
+ * "이번 주 주말에 같이" 가 이번 주 안에서 말이 된다.
+ */
+export function weekOf(date: string = today()): { from: string; to: string; days: string[] } {
+  const d = new Date(`${date}T00:00:00`);
+  const back = (d.getDay() + 6) % 7; // 월요일까지 며칠 거슬러 가나
+  const monday = daysBefore(back, date);
+  const days = Array.from({ length: 7 }, (_, i) => daysBefore(-i, monday));
+  return { from: monday, to: days[6], days };
+}
+
+/** "9월 23일 화요일" */
+export function longDate(date: string = today()): string {
+  const d = new Date(`${date}T00:00:00`);
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${WEEKDAY[d.getDay()]}요일`;
+}
+
+/** 그날의 요일 글자 */
+export function weekdayOf(date: string): string {
+  return WEEKDAY[new Date(`${date}T00:00:00`).getDay()];
 }

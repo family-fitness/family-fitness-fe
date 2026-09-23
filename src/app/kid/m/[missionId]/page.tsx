@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { NavLink } from "@/components/ui/nav-link";
-import { Backdrop } from "@/components/ui/backdrop";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -112,7 +111,6 @@ export default function MissionPage() {
       <>
         <AppBar back title="다 했어요" />
         <Stage wide className="relative">
-          <Backdrop name="bg/bg-confetti" />
           <DoneCard
             familyId={familyId ?? ""}
             childProfileId={childProfileId ?? ""}
@@ -207,7 +205,7 @@ export default function MissionPage() {
             <button
               type="button"
               onClick={() => setRunning(next)}
-              className="press bg-signal w-full rounded-2xl py-5 text-xl font-extrabold text-white"
+              className="press bg-signal-strong w-full rounded-2xl py-5 text-xl font-extrabold text-white"
             >
               {PHASE_LABEL[next.phase]} 시작
             </button>
@@ -222,7 +220,7 @@ export default function MissionPage() {
           <button
             type="button"
             onClick={() => setFinished(true)}
-            className="press bg-signal w-full rounded-2xl py-5 text-xl font-extrabold text-white"
+            className="press bg-signal-strong w-full rounded-2xl py-5 text-xl font-extrabold text-white"
           >
             다 했어요!
           </button>

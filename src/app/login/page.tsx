@@ -5,10 +5,11 @@ import { Suspense, useEffect, useState } from "react";
 
 import { PlainScreen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
-import { Illustration } from "@/components/ui/illustration";
+import { LevelBuddy } from "@/components/domain/level-buddy";
 import { errorMessage } from "@/lib/errors";
 import { useDevLogin, useGoogleLogin } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
+import { cn } from "@/lib/utils";
 
 /** 로그인. */
 /**
@@ -102,10 +103,12 @@ function LoginContent() {
   return (
     <PlainScreen className="flex min-h-dvh flex-col justify-center gap-8">
       <div className="flex flex-col items-center text-center">
-        <Illustration name="anim/pose-cheer" size={150} />
-        <h1 className="page-title mt-4">우리가족 체력키움</h1>
+        <LevelBuddy stage={3} size={140} cheer />
+        <h1 className="page-title mt-3">우리가족 체력키움</h1>
         <p className="text-ink-soft mt-2 text-sm leading-relaxed">
-          국민체력100 측정 기록으로 가족이 함께할 한 주를 짜 드려요.
+          국민체력100 측정 기록으로 우리 아이 체력을 한눈에 보고,
+          <br />
+          오늘 할 운동을 같이 해요.
         </p>
       </div>
 
@@ -120,23 +123,34 @@ function LoginContent() {
         {GOOGLE_CLIENT_ID && googleButton}
 
         {process.env.NODE_ENV === "development" && (
-          <div className="border-line space-y-2 rounded-xl border p-3">
-            <p className="text-faint text-caption font-bold">개발용 · 구글 없이 들어가기</p>
-            {DEV_ACCOUNTS.map((account, i) => (
-              <Button
-                key={account.id}
-                size="md"
-                variant={!GOOGLE_CLIENT_ID && i === 0 ? "primary" : "outline"}
-                className="w-full"
-                loading={devLogin.isPending}
-                onClick={() => enter(account.id)}
-              >
-                <span className="min-w-0 flex-1 text-left">
-                  {account.label}
-                  <span className="text-faint ml-1.5 text-xs font-bold">{account.hint}</span>
-                </span>
-              </Button>
-            ))}
+          <div className="card space-y-2">
+            <p className="text-ink-soft text-caption font-bold">개발용 · 구글 없이 들어가기</p>
+            {DEV_ACCOUNTS.map((account, i) => {
+              const primary = !GOOGLE_CLIENT_ID && i === 0;
+              return (
+                <Button
+                  key={account.id}
+                  size="md"
+                  variant={primary ? "primary" : "outline"}
+                  className="w-full"
+                  loading={devLogin.isPending}
+                  onClick={() => enter(account.id)}
+                >
+                  <span className="min-w-0 flex-1 text-left">
+                    {account.label}
+                    {/* 파랑 단추 위에서 회색 글자는 1:1 로 사라졌다 */}
+                    <span
+                      className={cn(
+                        "ml-1.5 text-xs font-bold",
+                        primary ? "text-white" : "text-ink-soft",
+                      )}
+                    >
+                      {account.hint}
+                    </span>
+                  </span>
+                </Button>
+              );
+            })}
           </div>
         )}
 

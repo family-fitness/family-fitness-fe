@@ -21,9 +21,5 @@ export default function ParentAreaLayout({ children }: { children: ReactNode }) 
 
   // 잠깐이라도 비치면 안 된다
   if (blocked) return null;
-  return (
-    <>
-      <div className="has-dock">{children}</div>
-    </>
-  );
+  return children;
 }

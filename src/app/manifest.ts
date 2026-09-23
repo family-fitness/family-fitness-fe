@@ -17,8 +17,9 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
-    background_color: "#ffffff",
-    theme_color: "#ffffff",
+    // 앱 바탕(연회색)과 같게. 흰색이면 여는 순간 한 번 번쩍인다
+    background_color: "#f4f5f7",
+    theme_color: "#f4f5f7",
     categories: ["health", "fitness", "lifestyle"],
     icons: [
       { src: "/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },

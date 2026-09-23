@@ -28,7 +28,6 @@ const ROUTES = {
     "/videos?list=favorites",
     "/videos?list=recent",
     "/family/cheer",
-    "/family/report",
     "/settings",
     "/settings/support-mode",
     "/settings/consent",
@@ -39,7 +38,7 @@ const ROUTES = {
     "/start/child",
     "/start/who",
   ],
-  kid: ["/kid", "/kid/m/seed-m1", "/kid/done", "/kid/praise"],
+  kid: ["/kid", "/kid/m/seed-m1", "/kid/praise"],
 };
 
 const browser = await chromium.launch({ channel: "chrome" });

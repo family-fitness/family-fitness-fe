@@ -90,8 +90,6 @@ export type VideoList = S["VideoListView"];
 export type Video = S["VideoView"];
 export type VideoLabel = S["VideoLabel"];
 
-export type WeeklyReport = S["WeeklyReportView"];
-
 /* ─── 아직 서버에 없는 것 ──────────────────────────────────── */
 
 /**
@@ -214,6 +212,125 @@ export type ProposalWithSessions = CoachProposal & {
   /** 이번 주 어느 요일에 넣을지. ▲ 요청: `ProposalView.days` */
   days?: string[] | null;
 };
+
+/**
+ * 하루치 기록. 캘린더 한 칸, 주간 막대 한 칸이 이것 하나다.
+ *
+ * ▲ 요청: `GET /families/{familyId}/calendar?profileId=&from=&to=`
+ * 지금은 미션 목록과 칭찬 목록을 따로 받아 날짜별로 다시 모아야 하는데,
+ * 미션은 기간(startDate~endDate)만 있고 **그날 몇 분 했는지**가 없다.
+ * 날짜별 합은 서버만 정확히 낸다 — 활동 기록(`activityDate`)을 가진 쪽이 서버다.
+ *
+ * 아무것도 안 한 날은 `days` 에 넣지 않는다. 빈 날을 「0분」 으로 채워 보내면
+ * 화면이 그날을 빠진 날처럼 그리기 쉽다.
+ */
+export interface DayLog {
+  /** YYYY-MM-DD. 한국 날짜 */
+  date: string;
+  /** 그날 확인된 운동 시간(분). 영상 · 타이머로 서버가 아는 것만 */
+  minutes: number;
+  /** 그날 잡혀 있던 시간(분). 등록한 운동이 없던 날은 null */
+  plannedMinutes: number | null;
+  entries: DayEntry[];
+  /** 그날 받은 칭찬 스티커 */
+  stickers: StickerLog[];
+}
+
+/** 그날 한 운동 하나 */
+export interface DayEntry {
+  missionId: Uuid;
+  title: string;
+  minutes: number;
+  verifiedBy: VerifiedBy | null;
+  completed: boolean;
+  /** 준비 · 본 · 정리 칸. 칸이 없는 운동은 null */
+  sessions?: { title: string; phase: SessionPhase; minutes: number | null; done: boolean }[] | null;
+}
+
+/**
+ * 받은 칭찬 스티커 한 장.
+ *
+ * ▲ 요청: `CheerRequest.stickerId`. 지금은 계약의 `emoji` 칸에 스티커 코드를 싣는다 —
+ * 화면에 이모지를 쓰지 않아서 그 칸은 비어 있었다.
+ */
+export interface StickerLog {
+  cheerId: Uuid;
+  stickerId: string;
+  fromProfileId: Uuid;
+  fromName: string;
+  message: string | null;
+  missionId: Uuid | null;
+  /** ISO-8601 */
+  createdAt: string;
+}
+
+export interface CalendarView {
+  profileId: Uuid;
+  from: string;
+  to: string;
+  days: DayLog[];
+}
+
+/**
+ * 측정 이력 한 회차.
+ *
+ * ▲ 요청: `GET /profiles/{profileId}/fitness-tests?size=`
+ * `latest` 하나만 있어서 점수 흐름과 키 · 몸무게가 자란 모습을 그릴 수 없다.
+ */
+export interface FitnessTestSummary {
+  fitnessTestId: Uuid;
+  /** YYYY-MM-DD */
+  testedOn: string;
+  overallPercentile: number | null;
+  heightCm: number | null;
+  weightKg: number | null;
+}
+
+export interface FitnessTestHistory {
+  tests: FitnessTestSummary[];
+}
+
+/**
+ * 레벨 · 경험치 · 업적 · 연속.
+ *
+ * ▲ 요청: `GET /profiles/{profileId}/progress`
+ * 회의에서 정한 대로 **계산은 서버가 한다**(레벨 · 경험치 · 업적 판정). 프론트는 꾸미기만 한다 —
+ * 두 곳에서 따로 세면 아이 화면과 부모 화면의 레벨이 어긋난다.
+ *
+ * 경험치는 운동을 한 만큼 쌓이는 값이다. **체력 점수가 아니고, 줄지 않는다.**
+ */
+export interface ProgressView {
+  profileId: Uuid;
+  level: number;
+  /** 지금까지 모은 경험치 */
+  xp: number;
+  /** 이 레벨이 시작된 경험치 */
+  levelFloorXp: number;
+  /** 다음 레벨이 되는 경험치. 마지막 레벨이면 null */
+  nextLevelXp: number | null;
+  /** 며칠 이어서 했나. 오늘 아직 안 했어도 어제까지 이어졌으면 센다 */
+  streakDays: number;
+  achievements: AchievementView[];
+  /** 최근에 경험치가 들어온 까닭 몇 줄 */
+  recentXp: XpEvent[];
+}
+
+export interface AchievementView {
+  code: string;
+  /** 서버가 정한 이름. 화면에서 고쳐 쓰지 않는다 */
+  title: string;
+  /** 어떻게 얻는지 */
+  description: string;
+  /** ISO-8601. 아직이면 null */
+  earnedAt: string | null;
+}
+
+export interface XpEvent {
+  reason: string;
+  amount: number;
+  /** ISO-8601 */
+  at: string;
+}
 
 /* ─── 오류 ─────────────────────────────────────────────────── */
 

@@ -28,7 +28,7 @@ export function CoachSteps({ steps }: { steps: CoachStep[] | null | undefined })
               <span
                 className={cn(
                   "mt-0.5 grid size-5 shrink-0 place-items-center rounded-full",
-                  done && "bg-signal text-white",
+                  done && "bg-signal-strong text-white",
                   failed && "border-line text-ink-soft border",
                   !done && !failed && "border-line border",
                 )}

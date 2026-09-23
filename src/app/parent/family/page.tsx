@@ -1,25 +1,26 @@
 "use client";
 
-import { Check, ChevronRight, Copy, Plus } from "lucide-react";
-import { Illustration } from "@/components/ui/illustration";
-import Link from "next/link";
+import { Check, Copy, HeartHandshake, MessageCircleHeart, Plus } from "lucide-react";
 import { useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { PlainScreen } from "@/components/app-shell/screen";
+import { Stage } from "@/components/app-shell/stage";
+import { CardHead } from "@/components/ui/card";
+import { ListRow } from "@/components/ui/list-row";
 import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar } from "@/components/ui/illustration";
+
 import { Field } from "@/components/ui/field";
 import { errorMessage } from "@/lib/errors";
 import type { ProfileSummary } from "@/lib/api/types";
 import { useCreateProfile, useFamilyProfiles, useOpenInvite } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
-import { avatarFor } from "@/lib/avatar";
 import { ageOf, today } from "@/lib/today";
 import { cn } from "@/lib/utils";
+import { Initial } from "@/components/ui/initial";
 
 /** 가족 더하기. */
 export default function MembersPage() {
@@ -47,52 +48,43 @@ export default function MembersPage() {
 
   return (
     <>
-      <AppBar backHref="/parent" title="가족" />
-      <PlainScreen className="space-y-6 pt-1">
-        <div>
-          <h2 className="page-title">{family?.familyName ?? "우리집"}</h2>
-        </div>
-
-        <ul className="divide-rows">
-          {profiles.map((p) => (
-            <MemberRow key={p.profileId} profile={p} />
-          ))}
-        </ul>
-
-        <button
-          type="button"
-          onClick={() => setAdding(true)}
-          className="press border-line flex w-full items-center gap-2 rounded-xl border border-dashed px-4 py-4"
-        >
-          <Plus className="text-signal size-4" aria-hidden />
-          <span className="text-sm font-bold">가족 더하기</span>
-        </button>
+      <AppBar backHref="/parent" title={family?.familyName ?? "가족"} />
+      <Stage wide className="space-y-3">
+        <section className="card">
+          <CardHead title="구성원" meta={`${profiles.length}명`} />
+          <ul className="divide-rows">
+            {profiles.map((p) => (
+              <MemberRow key={p.profileId} profile={p} />
+            ))}
+          </ul>
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="press bg-sub mt-2 flex min-h-12 w-full items-center justify-center gap-1.5 rounded-2xl text-sm font-bold"
+          >
+            <Plus className="text-signal-strong size-4" aria-hidden />
+            가족 더하기
+          </button>
+        </section>
 
         {/* 부모 홈에서 내려온 것들. 가족에 관한 일은 여기 모인다 */}
-        <ul className="divide-rows">
-          <FamilyLink
+        <ul className="card divide-rows py-1">
+          <ListRow
             href="/settings/support-mode"
-            art="item/item-shoes"
-            title="얼마나 같이 뛸지"
+            icon={HeartHandshake}
+            title="얼마나 같이 할지"
             description={SUPPORT_COPY[mySupportMode ?? "none"]}
           />
-          <FamilyLink
-            href="/family/report"
-            art="item/item-calendar"
-            title="이번 주 우리 가족"
-            description="누가 얼마나 움직였는지"
-          />
-          <FamilyLink
+          <ListRow
             href="/family/cheer"
-            art="scene/scene-no-cheer"
-            fallback="item/item-whistle"
+            icon={MessageCircleHeart}
             title="응원 보내기"
             description="가족끼리 한마디"
           />
         </ul>
 
         <AddMemberSheet open={adding} onClose={() => setAdding(false)} familyId={familyId ?? ""} />
-      </PlainScreen>
+      </Stage>
     </>
   );
 }
@@ -106,7 +98,7 @@ function MemberRow({ profile }: { profile: ProfileSummary }) {
   return (
     <li className="py-3.5">
       <div className="flex items-center gap-3">
-        <Avatar parts={avatarFor(profile)} size={44} />
+        <Initial name={profile.name} tone={profile.role === "CHILD" ? "signal" : "mark"} />
         <div className="min-w-0 flex-1">
           <p className="text-body font-bold">{profile.name}</p>
           <p className="text-faint mt-0.5 text-xs">
@@ -154,7 +146,7 @@ function MemberRow({ profile }: { profile: ProfileSummary }) {
                 setTimeout(() => setCopied(false), 1500);
               });
             }}
-            className="press text-signal flex items-center gap-1 text-xs font-bold"
+            className="press text-signal-strong flex items-center gap-1 text-xs font-bold"
           >
             {copied ? (
               <Check className="size-3.5" aria-hidden />
@@ -188,34 +180,6 @@ const SUPPORT_COPY: Record<string, string> = {
   none: "아직 안 골랐어요",
 };
 
-/** 가족에 관한 일로 들어가는 줄. */
-function FamilyLink({
-  href,
-  art,
-  fallback,
-  title,
-  description,
-}: {
-  href: string;
-  art: string;
-  fallback?: string;
-  title: string;
-  description: string;
-}) {
-  return (
-    <li>
-      <Link href={href} className="press flex items-center gap-3 py-3.5">
-        <Illustration name={art} fallback={fallback} size={36} className="shrink-0" />
-        <span className="min-w-0 flex-1">
-          <span className="text-body block font-bold">{title}</span>
-          <span className="text-ink-soft text-caption block leading-relaxed">{description}</span>
-        </span>
-        <ChevronRight className="text-faint size-4 shrink-0" aria-hidden />
-      </Link>
-    </li>
-  );
-}
-
 function AddMemberSheet({
   open,
   onClose,
@@ -229,14 +193,21 @@ function AddMemberSheet({
 
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
-  const [sex, setSex] = useState<"M" | "F">("F");
+  // 미리 켜 두지 않는다. 기본값이 여성이면 고르지 않은 아빠가 여성으로 저장된다
+  const [sex, setSex] = useState<"M" | "F" | null>(null);
   const [role, setRole] = useState<"PARENT" | "CHILD">("CHILD");
-  const [consent, setConsent] = useState(false);
+  // 두 가지를 따로 받는다. 한 칸으로 묶으면 무엇에 동의했는지 흐려진다
+  const [personal, setPersonal] = useState(false);
+  const [health, setHealth] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // 만 14세 미만이면 보호자 동의가 있어야 저장된다
   const age = ageOf(birthDate);
   const needsConsent = age != null && age < 14;
-  const valid = name.trim() !== "" && birthDate !== "" && (!needsConsent || consent);
+  const valid =
+    name.trim() !== "" &&
+    birthDate !== "" &&
+    sex != null &&
+    (!needsConsent || (personal && health));
 
   return (
     <Sheet open={open} onClose={onClose} title="가족 더하기">
@@ -246,6 +217,7 @@ function AddMemberSheet({
           e.preventDefault();
           setError(null);
           try {
+            if (!sex) return;
             await create.mutateAsync({
               name: name.trim(),
               birthDate,
@@ -257,7 +229,9 @@ function AddMemberSheet({
             });
             setName("");
             setBirthDate("");
-            setConsent(false);
+            setSex(null);
+            setPersonal(false);
+            setHealth(false);
             onClose();
           } catch (err) {
             setError(
@@ -331,23 +305,42 @@ function AddMemberSheet({
           </div>
         </Field>
 
-        {/* 서버가 동의를 자동으로 찍지 않는다. 보호자가 직접 켠다 */}
+        {/* 서버가 동의를 자동으로 찍지 않는다. 보호자가 두 가지를 각각 직접 켠다 */}
         {needsConsent && (
-          <label className="border-line flex items-start gap-3 rounded-xl border p-3.5">
-            <input
-              type="checkbox"
-              checked={consent}
-              onChange={(e) => setConsent(e.target.checked)}
-              className="accent-signal mt-0.5 size-4.5"
-            />
-            <span className="text-sm leading-relaxed">
-              <span className="block font-bold">보호자 동의</span>
-              <span className="text-ink-soft mt-0.5 block">
-                만 14세 미만이라 개인정보와 건강정보 저장에 보호자 동의가 필요해요. 나중에 설정에서
-                철회할 수 있어요.
-              </span>
-            </span>
-          </label>
+          <div role="group" aria-label="보호자 동의" className="space-y-2">
+            <p className="text-caption text-ink-soft">
+              만 14세 미만이라 보호자 동의가 있어야 저장돼요. 나중에 설정에서 철회할 수 있어요.
+            </p>
+            {(
+              [
+                [
+                  personal,
+                  setPersonal,
+                  "개인정보 처리에 동의해요",
+                  "이름 · 생년월일을 또래 기준과 견주는 데만 써요",
+                ],
+                [
+                  health,
+                  setHealth,
+                  "건강정보 처리에 동의해요",
+                  "측정값과 운동 기록이 여기에 저장돼요",
+                ],
+              ] as const
+            ).map(([on, set, title, note]) => (
+              <label key={title} className="bg-sub flex items-start gap-3 rounded-2xl p-3.5">
+                <input
+                  type="checkbox"
+                  checked={on}
+                  onChange={(e) => set(e.target.checked)}
+                  className="accent-signal mt-0.5 size-4.5"
+                />
+                <span className="text-sm leading-relaxed">
+                  <span className="block font-bold">{title}</span>
+                  <span className="text-ink-soft mt-0.5 block text-xs">{note}</span>
+                </span>
+              </label>
+            ))}
+          </div>
         )}
 
         {error && (

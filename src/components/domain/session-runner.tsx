@@ -163,7 +163,7 @@ export function SessionRunner({
             onClick={() => onDone()}
             className={cn(
               "press w-full rounded-2xl py-4 text-lg font-extrabold",
-              full ? "bg-signal text-white" : "border-line border-2",
+              full ? "bg-signal-strong text-white" : "border-line border-2",
             )}
           >
             {full ? "다 했어요!" : "여기까지 할래요"}

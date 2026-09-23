@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { CalendarDays, Check, Megaphone, Users, type LucideIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
@@ -9,7 +9,6 @@ import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Screen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import type { SupportMode } from "@/lib/api/types";
@@ -30,28 +29,28 @@ const MODES: {
   description: string;
   /** 고르면 **아이 화면에 이렇게 뜬다**. 이게 이 화면의 전부다 */
   kid: string;
-  art: string;
+  icon: LucideIcon;
 }[] = [
   {
     value: "CHEER_ONLY",
     title: "응원할게요",
     description: "미션 편성에서 빠지고 응원을 보내요",
     kid: "엄마가 보고 있어요",
-    art: "item/item-whistle",
+    icon: Megaphone,
   },
   {
     value: "WEEKEND",
     title: "주말에는 같이",
     description: "코치가 주말 미션에 같이 넣어 줘요",
     kid: "토요일에 같이 나가요",
-    art: "item/item-shoes",
+    icon: CalendarDays,
   },
   {
     value: "FULL",
     title: "매번 같이",
     description: "코치가 모든 미션에 동반자로 넣어 줘요",
     kid: "엄마도 오늘 같이 해요",
-    art: "item/item-medal",
+    icon: Users,
   },
 ];
 
@@ -90,7 +89,7 @@ function SupportModePageContent() {
       <PageHeader title="참여 방식" back={!joining} />
 
       <Screen className="space-y-5">
-        <ul className="divide-rows">
+        <ul className="space-y-2.5">
           {MODES.map((mode) => {
             const on = current === mode.value;
             return (
@@ -113,9 +112,17 @@ function SupportModePageContent() {
                       );
                     }
                   }}
-                  className="press flex w-full items-start gap-3 py-4 text-left"
+                  className={cn(
+                    "press card flex w-full items-start gap-3 text-left",
+                    on && "ring-signal ring-2",
+                  )}
                 >
-                  <Illustration name={mode.art} size={44} className="mt-0.5 shrink-0" />
+                  <span
+                    aria-hidden
+                    className="bg-signal-soft text-signal-strong grid size-11 shrink-0 place-items-center rounded-2xl"
+                  >
+                    <mode.icon className="size-5" strokeWidth={2.1} />
+                  </span>
                   <span className="min-w-0 flex-1">
                     <span className="text-body block font-bold">{mode.title}</span>
                     <span className="text-ink-soft mt-0.5 block text-sm leading-relaxed">
@@ -129,7 +136,7 @@ function SupportModePageContent() {
                   <span
                     className={cn(
                       "mt-0.5 grid size-6 shrink-0 place-items-center rounded-full border",
-                      on ? "bg-signal border-signal text-white" : "border-line",
+                      on ? "bg-signal-strong border-signal-strong text-white" : "border-line",
                     )}
                     aria-hidden
                   >

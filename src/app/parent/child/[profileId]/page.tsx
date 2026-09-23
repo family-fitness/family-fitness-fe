@@ -1,33 +1,38 @@
 "use client";
 
-import Link from "next/link";
+import { ChevronRight, Ruler, Telescope } from "lucide-react";
 import { useParams } from "next/navigation";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
+import { Card, CardHead } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BadgeStrip } from "@/components/domain/badge-row";
-import { RecordList } from "@/components/domain/record-list";
-import { earnedBadges } from "@/lib/badges";
-import { FactorRow, RecentForm, StatStrip } from "@/components/domain/stat-strip";
-import { daysBefore, daysSince } from "@/lib/today";
+import { ScoreLine } from "@/components/domain/body-card";
+import { FactorRadar, RadarGapNote } from "@/components/domain/factor-radar";
+import { FactorTable } from "@/components/domain/factor-table";
+import { ScoreTrend } from "@/components/domain/score-trend";
+import { REMEASURE_DAYS } from "@/components/domain/update-nudge";
+import type { FitnessTestSummary } from "@/lib/api/types";
 import {
-  useCheers,
   useFamilyProfiles,
+  useFitnessItems,
   useFitnessMap,
+  useFitnessTests,
   useLatestFitnessTest,
-  useMissions,
-  useVideos,
 } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
+import { daysSince } from "@/lib/today";
 import { useBodyStore } from "@/stores/body-store";
 import { formatDate, withJosa } from "@/lib/utils";
 
 /**
- * 아이 한 명 자세히 — 어떻게 자라고 있나.
- * ▲ 서버가 `/fitness-tests/latest` 만 줘서 추이를 그릴 수 없다. 이력 조회를 요청해 뒀다.
+ * 아이 한 명 자세히 — 어디쯤이고, 어떻게 자라고 있나.
+ *
+ * 맨 위는 홈과 같은 육각형이다. 아래로 내려가며 **값 → 흐름 → 몸** 순서로 읽는다.
+ * 육각형 바로 아래 요인 표가 그래프의 표 쌍둥이다.
  */
 export default function ChildDetailPage() {
   const { profileId } = useParams<{ profileId: string }>();
@@ -35,26 +40,25 @@ export default function ChildDetailPage() {
 
   const { data: family, error: familyError, refetch } = useFamilyProfiles(familyId);
   const { data: map } = useFitnessMap(familyId);
-  const { data: missions } = useMissions(familyId, { scope: "ALL" });
-  const { data: cheers } = useCheers(familyId);
-  const { data: watched } = useVideos({ list: "RECENT", profileId });
   const {
     data: latest,
     isPending: latestPending,
     error: latestError,
   } = useLatestFitnessTest(profileId);
+  const { data: history } = useFitnessTests(profileId);
   const localBody = useBodyStore((s) => s.byProfile[profileId]);
 
   const profile = family?.profiles?.find((p) => p.profileId === profileId);
   const member = map?.members?.find((m) => m.profileId === profileId);
+  const { data: catalog } = useFitnessItems(profile?.ageGroup);
 
   if (isPending || latestPending) {
     return (
       <>
-        <AppBar back title="자라는 기록" />
-        <Stage className="space-y-6">
-          <Skeleton className="mx-auto size-44 rounded-full" />
-          <Skeleton className="h-24 w-full rounded-2xl" />
+        <AppBar back title="아이 기록" />
+        <Stage wide className="space-y-3">
+          <Skeleton className="h-112 w-full rounded-3xl" />
+          <Skeleton className="h-72 w-full rounded-3xl" />
         </Stage>
       </>
     );
@@ -66,7 +70,7 @@ export default function ChildDetailPage() {
   if (failure) {
     return (
       <>
-        <AppBar back title="자라는 기록" />
+        <AppBar back title="아이 기록" />
         <Stage>
           <ErrorState error={failure} onRetry={() => void refetch()} />
         </Stage>
@@ -77,7 +81,7 @@ export default function ChildDetailPage() {
   if (!profile) {
     return (
       <>
-        <AppBar back title="자라는 기록" />
+        <AppBar back title="아이 기록" />
         <Stage>
           <EmptyState
             scene="no-record"
@@ -89,209 +93,158 @@ export default function ChildDetailPage() {
     );
   }
 
+  const name = profile.name ?? "아이";
   const score = member?.latest?.overallPercentile ?? null;
-  const days = daysSince(latest?.testedOn);
-  const radar = latest?.radar ?? [];
-  const items = latest?.items ?? [];
-  /* 이 아이가 참여한 미션만. 가족 전체 목록에서 걸러 낸다 */
-  const recent = (missions?.missions ?? []).filter((m) =>
-    m.participants?.some((p) => p.profileId === profileId),
-  );
-  /* 아이가 받은 기념 표시. 부모도 같은 것을 본다 */
-  const badges = earnedBadges({
-    watched: watched?.videos,
-    missions: missions?.missions,
-    cheers: cheers?.cheers,
-    me: member,
-    profileId,
-  });
-  const weakest = latest?.weakest;
-  /*
-    최근 7일. 측정 점수는 몇 달에 한 번 바뀌지만 이 줄은 오늘 움직이면
-    오늘 바뀐다 — 부모가 매일 열어 볼 이유가 여기서 생긴다.
-  */
-  const sevenDaysAgo = daysBefore(6);
-  const recentParts = recent
-    .filter((m) => (m.endDate ?? "") >= sevenDaysAgo)
-    .flatMap((m) =>
-      (m.participants ?? []).filter((p) => p.profileId === profileId).map((p) => ({ m, p })),
-    );
-  const recentMinutes = recentParts.reduce(
-    (sum, { m, p }) =>
-      sum +
-      (m.targetMetric === "TIMER_MINUTES"
-        ? Math.round((p.progress ?? 0) * (m.targetValue ?? 0))
-        : 0),
-    0,
-  );
-  const recentPraise = (cheers?.cheers ?? []).filter(
-    (c) => c.toProfileId === profileId && c.message && c.createdAt.slice(0, 10) >= sevenDaysAgo,
-  ).length;
-  /*
-    서버가 돌려주면 서버 값을 쓴다. 기기에 들고 있는 값은 **서버가 아직 안
-    돌려줄 때만** 쓰는 임시 저장이라, 둘이 다르면 서버가 맞다.
-  */
-  const body =
-    latest?.heightCm && latest?.weightKg && latest?.testedOn
-      ? { heightCm: latest.heightCm, weightKg: latest.weightKg, measuredOn: latest.testedOn }
-      : localBody;
+  const tests = history?.tests ?? [];
 
   return (
     <>
-      <AppBar back title={`${profile.name} 기록`} />
-      <Stage className="space-y-6">
-        {/* 1. 누구인지 · 지금 몇인지 · 기준 대비 어디인지. 한 줄에 몰아 둔다 */}
-        <StatStrip
-          profile={profile}
-          score={score}
-          meta={
-            latest?.testedOn
-              ? `${formatDate(latest.testedOn)}${days != null ? ` · ${days}일 전` : ""}`
-              : undefined
-          }
-        />
+      <AppBar back title={name} />
+      <Stage wide className="space-y-3">
+        <Card hero>
+          <CardHead
+            title="체력"
+            meta={latest?.testedOn ? `${formatDate(latest.testedOn)} 측정` : undefined}
+          />
+          {score != null ? (
+            <ScoreLine score={score} />
+          ) : (
+            <p className="text-lead mt-2 font-extrabold">아직 재지 않았어요</p>
+          )}
+          <FactorRadar points={latest?.radar} name={name} className="mt-3" />
+          <RadarGapNote points={latest?.radar} />
+        </Card>
 
-        {/*
-          한 줄에 몰아 둔다 — 서버가 준 한마디와 받은 표시.
-          개수를 세지 않는다(도메인 규칙 12). 표시는 그림으로만 보인다.
-        */}
-        {(member?.headline || badges.length > 0) && (
-          <div className="flex items-center gap-2.5">
-            {member?.headline && (
-              <p className="min-w-0 flex-1 text-sm font-bold">
-                {member.headline}
-                {weakest && (
-                  <span className="text-ink-soft font-semibold"> · 지금은 {weakest.factor}</span>
-                )}
+        <Card>
+          <CardHead title="요인별" meta="막대 가운데 눈금이 또래 평균" />
+          <FactorTable radar={latest?.radar} results={latest?.items} catalog={catalog?.items} />
+        </Card>
+
+        {tests.length > 0 && (
+          <Card>
+            <CardHead title="신체 점수 흐름" meta={`${tests.length}번 쟀어요`} />
+            <ScoreTrend tests={tests} />
+            {tests.length === 1 && (
+              <p className="text-caption text-ink-soft mt-1 text-center">
+                한 번 더 재면 흐름이 그려져요
               </p>
             )}
-            <BadgeStrip badges={badges} className="shrink-0" />
-          </div>
+          </Card>
         )}
 
-        {/* 2. 최근 며칠. 통산 점수만으론 지금 어떤 상태인지 알 수 없다 */}
-        <RecentForm
-          days={7}
-          items={[
-            { label: "움직인 시간", value: recentMinutes, unit: "분" },
-            { label: "끝낸 미션", value: recentParts.filter(({ p }) => p.completed).length },
-            { label: "받은 칭찬", value: recentPraise },
-          ]}
+        <BodyGrowth
+          profileId={profileId}
+          name={name}
+          tests={tests}
+          fallback={
+            latest?.heightCm && latest?.weightKg && latest?.testedOn
+              ? {
+                  heightCm: latest.heightCm,
+                  weightKg: latest.weightKg,
+                  measuredOn: latest.testedOn,
+                }
+              : localBody
+          }
+          lastTestedOn={latest?.testedOn}
         />
 
-        {/* 3. 요인별. 레이더는 모양만 보이고 값을 못 읽어서 표로 세운다 */}
-        {radar.length > 0 && (
-          <section>
-            <div className="section-head">
-              <h2>요인별</h2>
-              <span className="text-faint text-micro font-bold">가운데 눈금이 또래 평균</span>
+        <Card href={`/p/${profileId}/future`} label="10년 위 연령대 보기">
+          <div className="flex items-center gap-3">
+            <span
+              aria-hidden
+              className="bg-signal-soft text-signal-strong grid size-11 shrink-0 place-items-center rounded-2xl"
+            >
+              <Telescope className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-extrabold">10년 위 연령대는 어디쯤일까</p>
+              <p className="text-caption text-ink-soft mt-0.5">
+                지금과 같은 조건의 10년 위 연령대를 보여 드려요
+              </p>
             </div>
-            <div className="divide-rows">
-              {radar.map((point) => (
-                <FactorRow
-                  key={point.factor}
-                  factor={point.factor ?? ""}
-                  percentile={point.percentile}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* 4. 항목별 원값. 무엇을 재서 나온 수인지 */}
-        {items.length > 0 && (
-          <section>
-            <div className="section-head">
-              <h2>항목별</h2>
-              <span className="text-faint text-micro font-bold">{items.length}개 측정</span>
-            </div>
-            <table className="w-full">
-              <tbody className="divide-rows">
-                {items.map((item) => (
-                  <tr key={item.itemCode}>
-                    <td className="py-2.5 text-sm font-bold">{item.itemLabel}</td>
-                    <td className="board-num py-2.5 text-right text-base">
-                      {item.value}
-                      <span className="text-ink-soft ml-0.5 text-xs font-bold">{item.unit}</span>
-                    </td>
-                    <td className="text-ink-soft w-16 py-2.5 text-right text-xs font-bold tabular-nums">
-                      {item.topPercentText ?? "-"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </section>
-        )}
-
-        {/* 5. 지금 몸 */}
-        <section>
-          <div className="section-head">
-            <h2>지금 몸</h2>
+            <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
           </div>
-          <dl className="divide-rows">
-            <BodyRow
-              label="키"
-              value={body ? `${body.heightCm}cm` : "아직 안 적었어요"}
-              note={body && formatDate(body.measuredOn)}
-            />
-            <BodyRow
-              label="몸무게"
-              value={body ? `${body.weightKg}kg` : "아직 안 적었어요"}
-              note={body && formatDate(body.measuredOn)}
-            />
-          </dl>
-        </section>
-
-        {/* 6. 최근 기록. 무엇으로 확인된 기록인지가 줄마다 보인다 */}
-        {recent.length > 0 && (
-          <section>
-            <div className="section-head">
-              <h2>최근 기록</h2>
-              <Link
-                href="/parent/history"
-                className="text-signal -mr-3 inline-flex min-h-11 min-w-11 items-center justify-center px-3 text-xs font-bold"
-              >
-                전체
-              </Link>
-            </div>
-            <RecordList missions={recent} profileId={profileId} limit={5} />
-          </section>
-        )}
-
-        <section className="grid grid-cols-2 gap-2">
-          <Link
-            href={`/p/${profileId}/measure`}
-            className="press bg-signal col-span-2 block rounded-2xl py-4 text-center text-base font-extrabold text-white"
-          >
-            {withJosa(profile.name ?? "아이", "을를")} 다시 재기
-          </Link>
-          <Link
-            href={`/p/${profileId}/result`}
-            className="press border-line block rounded-2xl border py-3.5 text-center text-sm font-bold"
-          >
-            측정 결과
-          </Link>
-          <Link
-            href={`/p/${profileId}/future`}
-            className="press border-line block rounded-2xl border py-3.5 text-center text-sm font-bold"
-          >
-            10년 뒤
-          </Link>
-        </section>
+        </Card>
       </Stage>
     </>
   );
 }
 
-function BodyRow({ label, value, note }: { label: string; value: string; note?: string | false }) {
+/**
+ * 키 · 몸무게. 마지막 값과, 처음 잰 때보다 얼마나 자랐는지.
+ *
+ * 서버가 이력을 주면 이력으로, 아직이면 최근 회차나 기기에 둔 값으로.
+ * 다시 재기는 덮어쓰기가 아니라 추가다 — 지난 값이 남아야 자란 걸 보여 준다(규칙 11).
+ */
+function BodyGrowth({
+  profileId,
+  name,
+  tests,
+  fallback,
+  lastTestedOn,
+}: {
+  profileId: string;
+  name: string;
+  tests: FitnessTestSummary[];
+  fallback: { heightCm: number; weightKg: number; measuredOn: string } | undefined;
+  lastTestedOn: string | null | undefined;
+}) {
+  const withBody = tests
+    .filter((t) => t.heightCm != null && t.weightKg != null)
+    .sort((a, b) => a.testedOn.localeCompare(b.testedOn));
+  const first = withBody[0];
+  const now = withBody[withBody.length - 1];
+  const height = now?.heightCm ?? fallback?.heightCm ?? null;
+  const weight = now?.weightKg ?? fallback?.weightKg ?? null;
+  const measuredOn = now?.testedOn ?? fallback?.measuredOn ?? null;
+  const grew =
+    first && now && first !== now && first.heightCm != null && now.heightCm != null
+      ? Math.round((now.heightCm - first.heightCm) * 10) / 10
+      : null;
+  const due = (daysSince(lastTestedOn) ?? 0) >= REMEASURE_DAYS;
+
   return (
-    <div className="flex items-baseline justify-between gap-3 py-3.5">
-      <dt className="text-sm font-bold">{label}</dt>
-      <dd className="text-ink-soft text-right text-sm">
-        {value}
-        {note && <span className="text-faint text-caption ml-1.5">{note}</span>}
-      </dd>
-    </div>
+    <Card>
+      <CardHead
+        title="키 · 몸무게"
+        meta={measuredOn ? `${formatDate(measuredOn)} 기준` : undefined}
+      />
+      {height != null && weight != null ? (
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <div className="tile">
+            <p className="metric-label">키</p>
+            <p className="metric-value text-metric mt-1">
+              {height}
+              <span className="metric-unit">cm</span>
+            </p>
+          </div>
+          <div className="tile">
+            <p className="metric-label">몸무게</p>
+            <p className="metric-value text-metric mt-1">
+              {weight}
+              <span className="metric-unit">kg</span>
+            </p>
+          </div>
+        </div>
+      ) : (
+        <p className="text-ink-soft mt-1 text-sm">아직 안 적었어요</p>
+      )}
+      {grew != null && grew > 0 && first && (
+        <p className="text-caption text-ink-soft mt-2.5 font-semibold">
+          {formatDate(first.testedOn)}보다 <b className="text-ink">{grew}cm</b> 자랐어요
+        </p>
+      )}
+      <NavLink
+        href={`/parent/update/${profileId}`}
+        className={
+          due
+            ? "press bg-signal-strong mt-3 flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
+            : "press bg-sub text-ink mt-3 flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold"
+        }
+      >
+        <Ruler aria-hidden className="size-4" />
+        {withJosa(name, "을를")} 새로 재기
+      </NavLink>
+    </Card>
   );
 }

@@ -1,15 +1,15 @@
 "use client";
 
+import { TicketCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
 import { PlainScreen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
-import { Avatar, Illustration } from "@/components/ui/illustration";
-import { avatarFor } from "@/lib/avatar";
 import { errorMessage } from "@/lib/errors";
 import { useClaimProfile, useInvitePeek } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
+import { Initial } from "@/components/ui/initial";
 
 /** 0/O · 1/I 를 뺀 대문자와 숫자 여섯 자리. 링크로 온 코드도 같은 손질을 거친다 */
 const normalizeCode = (raw: string) =>
@@ -72,7 +72,12 @@ function ClaimContent() {
   return (
     <PlainScreen className="flex min-h-dvh flex-col justify-center gap-7">
       <div className="flex flex-col items-center text-center">
-        <Illustration name="scene/scene-invite" size={140} />
+        <span
+          aria-hidden
+          className="bg-signal-soft text-signal-strong grid size-20 place-items-center rounded-full"
+        >
+          <TicketCheck className="size-9" strokeWidth={1.8} />
+        </span>
         <h1 className="page-title mt-3">초대코드를 넣어 주세요</h1>
         <p className="text-ink-soft mt-2 text-sm leading-relaxed">
           어느 자리로 들어올지는 이미 정해져 있어요
@@ -98,10 +103,10 @@ function ClaimContent() {
         {/* 어느 자리인지. 코드가 맞아야 뜬다 */}
         {seat && (
           <div className="border-signal bg-signal-soft flex items-center gap-3 rounded-2xl border p-4">
-            <Avatar
-              parts={avatarFor({ profileId: code, ageGroup: seat.ageGroup ?? undefined })}
-              size={44}
-              className="shrink-0"
+            <Initial
+              name={seat.profileName}
+              tone={seat.role === "CHILD" ? "signal" : "mark"}
+              size="lg"
             />
             <span className="min-w-0 flex-1">
               <span className="text-body block font-extrabold">

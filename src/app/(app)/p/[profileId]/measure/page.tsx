@@ -1,16 +1,17 @@
 "use client";
 
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Wrench } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
 import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
+import { Stage } from "@/components/app-shell/stage";
+import { CardHead } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
-import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MeasureField } from "@/components/domain/measure-field";
 import { errorMessage } from "@/lib/errors";
@@ -217,18 +218,21 @@ export default function MeasurePage() {
     <>
       <PageHeader title={`${profile.name} 측정`} back meta={<span>{filledCount}개 입력함</span>} />
 
-      <Screen>
-        <form onSubmit={onSubmit} className="space-y-7">
+      <Stage wide>
+        <form onSubmit={onSubmit} className="space-y-3">
           {/* 언제 · 어디서 쟀는지. 센터 결과지를 며칠 뒤에 옮겨 적는 경우가 많다 */}
-          <fieldset className="space-y-3">
-            <legend className="text-ink-soft mb-2 text-xs font-bold">언제 쟀나요</legend>
+          <fieldset className="card space-y-3">
+            <legend className="sr-only">언제 쟀나요</legend>
+            <p aria-hidden className="card-head">
+              언제 쟀나요
+            </p>
             <input
               type="date"
               value={testedOn}
               max={today()}
               onChange={(e) => setTestedOn(e.target.value)}
               aria-label="측정한 날짜"
-              className="border-line focus:border-signal field-focus h-12 w-full rounded-xl border bg-transparent px-4 text-base"
+              className="field"
             />
 
             <div className="flex gap-2">
@@ -252,11 +256,9 @@ export default function MeasurePage() {
           </fieldset>
 
           {/* 몸이 자란 만큼 기준도 달라진다. 잴 때마다 다시 묻는다 */}
-          <section>
-            <div className="section-head">
-              <h2>지금 키와 몸무게</h2>
-            </div>
-            <div className="flex gap-3 pt-3">
+          <section className="card">
+            <CardHead title="지금 키와 몸무게" />
+            <div className="flex gap-3 pt-2">
               <BodyInput
                 label="키"
                 unit="cm"
@@ -279,10 +281,8 @@ export default function MeasurePage() {
           </section>
 
           {easy.length > 0 && (
-            <section>
-              <div className="section-head">
-                <h2>집에서 잴 수 있어요</h2>
-              </div>
+            <section className="card">
+              <CardHead title="집에서 잴 수 있어요" meta={`${easy.length}개`} />
               <div className="divide-rows">
                 {easy.map((item) => (
                   <MeasureField
@@ -298,17 +298,22 @@ export default function MeasurePage() {
 
           {/* 장비가 필요한 항목은 접어 둔다. 첫 화면에서 악력계를 요구하면 거기서 나간다 */}
           {equipment.length > 0 && (
-            <section>
+            <section className="card">
               <button
                 type="button"
                 onClick={() => setShowEquipment((v) => !v)}
                 aria-expanded={showEquipment}
-                className="press border-line flex w-full items-center gap-2 rounded-xl border px-4 py-3.5 text-left"
+                className="press flex min-h-12 w-full items-center gap-3 text-left"
               >
-                <Illustration name="item/item-grip" size={28} />
+                <span
+                  aria-hidden
+                  className="bg-sub text-ink-soft grid size-10 shrink-0 place-items-center rounded-xl"
+                >
+                  <Wrench className="size-4.5" />
+                </span>
                 <span className="flex-1">
                   <span className="block text-sm font-bold">장비가 있으면 더 정확해요</span>
-                  <span className="text-faint text-xs">
+                  <span className="text-ink-soft text-xs">
                     악력계 · 넓은 공간이 필요한 {equipment.length}개 항목
                   </span>
                 </span>
@@ -352,7 +357,7 @@ export default function MeasurePage() {
             {filledCount === 0 ? "한 항목 이상 입력해 주세요" : "결과 보기"}
           </Button>
         </form>
-      </Screen>
+      </Stage>
     </>
   );
 }

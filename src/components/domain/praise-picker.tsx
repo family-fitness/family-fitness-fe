@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { Mission } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
-import { KidCharacter } from "@/components/domain/kid-character";
+import { LevelBuddy } from "@/components/domain/level-buddy";
 import { Celebrate } from "@/components/scene/celebrate";
 import { ApiError } from "@/lib/api/client";
 import { errorMessage } from "@/lib/errors";
@@ -115,7 +115,7 @@ function PraiseForm({
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <KidCharacter motion="cheer" size={72} />
+        <LevelBuddy stage={3} size={72} cheer />
         <p className="bg-signal-soft text-signal-deep text-body min-w-0 flex-1 rounded-2xl rounded-bl-md px-4 py-3 leading-relaxed font-bold">
           {message}
         </p>

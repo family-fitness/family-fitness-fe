@@ -4,11 +4,12 @@ import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
-import { KidCharacter } from "@/components/domain/kid-character";
+import { LevelBuddy } from "@/components/domain/level-buddy";
 import { useCheers } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 import { formatDate } from "@/lib/utils";
+import { dayOf } from "@/lib/today";
 
 /** 받은 칭찬. */
 export default function KidPraisePage() {
@@ -59,13 +60,13 @@ export default function KidPraisePage() {
         */}
         <div>
           <div className="flex items-end gap-1">
-            <KidCharacter motion="cheer" size={92} className="shrink-0" />
-            <p className="bg-signal text-lead mb-3 min-w-0 flex-1 rounded-2xl rounded-bl-md px-4 py-3.5 leading-relaxed font-extrabold text-white">
+            <LevelBuddy stage={3} size={92} cheer />
+            <p className="bg-signal-strong text-lead mb-3 min-w-0 flex-1 rounded-2xl rounded-bl-md px-4 py-3.5 leading-relaxed font-extrabold text-white">
               {newest.message}
             </p>
           </div>
           <p className="text-faint text-micro mt-1 text-right">
-            {newest.fromName} · {formatDate(newest.createdAt.slice(0, 10))}
+            {newest.fromName} · {formatDate(dayOf(newest.createdAt))}
           </p>
         </div>
 
@@ -78,7 +79,7 @@ export default function KidPraisePage() {
                   {cheer.message}
                 </p>
                 <p className="text-faint text-micro mt-1 ml-1">
-                  {cheer.fromName} · {formatDate(cheer.createdAt.slice(0, 10))}
+                  {cheer.fromName} · {formatDate(dayOf(cheer.createdAt))}
                 </p>
               </li>
             ))}

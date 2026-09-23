@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { KidCharacter } from "@/components/domain/kid-character";
+import { LevelBuddy } from "@/components/domain/level-buddy";
 import { Celebrate } from "@/components/scene/celebrate";
 import { errorMessage } from "@/lib/errors";
 import { useFamilyProfiles, useSendCheer } from "@/lib/api/queries";
@@ -57,7 +57,7 @@ export function DoneCard({
     <div className="flex flex-col items-center py-6 text-center">
       <Celebrate show />
 
-      <KidCharacter motion="cheer" size={170} animate />
+      <LevelBuddy stage={3} size={160} cheer />
       {/* 이 카드가 놓이는 화면이 이미 제목을 달고 있다 */}
       <h2 className="mt-3 text-2xl font-extrabold">다 했어요!</h2>
       <p className="text-ink-soft mt-1.5 text-sm leading-relaxed">{title}</p>

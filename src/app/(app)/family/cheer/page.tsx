@@ -8,8 +8,7 @@ import { Screen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar } from "@/components/ui/illustration";
-import { avatarFor } from "@/lib/avatar";
+import { Initial } from "@/components/ui/initial";
 import { errorMessage } from "@/lib/errors";
 import { useFamilyProfiles, useSendCheer } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
@@ -78,7 +77,11 @@ export default function CheerPage() {
                       on ? "border-signal bg-signal-soft" : "border-line",
                     )}
                   >
-                    <Avatar parts={avatarFor(p)} size={52} />
+                    <Initial
+                      name={p.name}
+                      tone={p.role === "CHILD" ? "signal" : "mark"}
+                      size="lg"
+                    />
                     <span className="text-caption truncate font-bold">{p.name}</span>
                   </button>
                 </li>

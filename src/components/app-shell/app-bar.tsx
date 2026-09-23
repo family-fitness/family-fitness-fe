@@ -55,7 +55,7 @@ export function AppBar({
     <header
       className={cn(
         "sticky top-0 z-30 flex h-14 items-center gap-1 px-2",
-        "bg-paper/90 backdrop-blur-sm",
+        "bg-ground/90 backdrop-blur-sm",
         className,
       )}
       style={{ viewTransitionName: "app-bar" }}

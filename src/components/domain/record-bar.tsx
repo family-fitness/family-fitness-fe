@@ -56,7 +56,15 @@ export function RecordRow({
         <span className="tabular text-ink-soft text-sm">{value}</span>
       </div>
       <RecordBar percentile={percentile} label={caption} delay={delay} />
-      <p className="text-faint text-caption">{caption ?? "이 나이대는 아직 비교 기준이 없어요"}</p>
+      {/*
+        「기준이 없다」 는 백분위가 비었을 때만 말한다. 아이 화면은 서열 문구(caption)를
+        일부러 빼는데, 그걸 빈 기준으로 읽어 막대 밑에 거짓말을 적고 있었다.
+      */}
+      {percentile == null ? (
+        <p className="text-ink-soft text-caption">이 나이대는 아직 비교 기준이 없어요</p>
+      ) : (
+        caption && <p className="text-ink-soft text-caption">{caption}</p>
+      )}
     </div>
   );
 }

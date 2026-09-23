@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
+import { Stage } from "@/components/app-shell/stage";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
@@ -110,25 +111,30 @@ export default function FuturePage() {
         meta={<span className="text-faint">국민체력100 집단 분포</span>}
       />
 
-      <Screen className="space-y-6">
-        {/* 무엇을 보는 그림인지 먼저 말한다. 그림부터 보면 예언으로 읽힌다 */}
-        <div>
-          <p className="text-body leading-relaxed font-bold">
+      <Stage wide className="space-y-3">
+        <section className="card-hero">
+          {/* 무엇을 보는 그림인지 먼저 말한다. 그림부터 보면 예언으로 읽힌다 */}
+          <p className="text-body leading-relaxed font-extrabold">
             지금과 같은 조건의 10년 위 연령대는 여기 있습니다.
           </p>
           {item && (
-            <p className="text-ink-soft mt-1 text-sm">{item.itemLabel ?? item.itemName} 기준</p>
+            <p className="text-caption text-ink-soft mt-1">
+              {item.itemLabel ?? item.itemName} 기준
+            </p>
           )}
-        </div>
 
-        {create.isPending && !result && <Skeleton className="h-50 w-full rounded-xl" />}
+          {create.isPending && !result && <Skeleton className="mt-4 h-50 w-full rounded-xl" />}
+          {result && points.length > 0 && (
+            <div className="mt-3">
+              <TrajectoryChart points={points} unit={unit} />
+            </div>
+          )}
+        </section>
 
         {result && points.length > 0 && (
           <>
-            <TrajectoryChart points={points} unit={unit} />
-
             {first && last && (
-              <dl className="divide-rows">
+              <dl className="card divide-rows py-1">
                 <div className="flex items-baseline justify-between py-3">
                   <dt className="text-sm font-bold">지금</dt>
                   <dd className="tabular board-num text-xl">
@@ -157,7 +163,7 @@ export default function FuturePage() {
               없을 때만 우리 문장을 낸다 — 둘 다 내면 같은 말이 두 번 쌓이고,
               두 번 읽히는 경고는 한 번도 안 읽힌다.
             */}
-            <p className="border-line text-ink-soft text-caption rounded-xl border p-4 leading-relaxed">
+            <p className="card text-ink-soft text-caption leading-relaxed">
               {result.notice ??
                 "국민체력100은 여러 사람을 한 시점에 조사한 자료예요. 한 사람을 10년 동안 따라간 기록이 아니라서, 개인이 앞으로 어떻게 변할지는 알 수 없어요."}
             </p>
@@ -188,7 +194,7 @@ export default function FuturePage() {
             </Button>
           </div>
         )}
-      </Screen>
+      </Stage>
     </>
   );
 }
