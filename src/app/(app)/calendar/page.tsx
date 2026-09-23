@@ -65,9 +65,20 @@ function Calendar() {
   const who = kids.find((k) => k.profileId === childProfileId) ?? (kidView ? undefined : kids[0]);
 
   const now = today();
-  const month = params.get("month") ?? monthOf(now);
+  // 주소창 값은 믿지 않는다 — 모양이 틀리면 이번 달 · 오늘로.
+  // 알림에서 올 때는 날짜만 온다. 그 날짜가 지난달이면 지난달을 연다
+  const askedMonth = params.get("month");
+  const askedDate = params.get("date");
+  const validDate = askedDate && /^\d{4}-\d{2}-\d{2}$/.test(askedDate) ? askedDate : null;
+  const month =
+    askedMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(askedMonth)
+      ? askedMonth
+      : validDate
+        ? monthOf(validDate)
+        : monthOf(now);
   const grid = monthGrid(month);
-  const selected = params.get("date") ?? (month === monthOf(now) ? now : null);
+  const selected =
+    validDate && monthOf(validDate) === month ? validDate : month === monthOf(now) ? now : null;
 
   const { data: calendar, isPending: calendarPending } = useCalendar(
     familyId,
