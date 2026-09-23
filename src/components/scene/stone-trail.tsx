@@ -218,7 +218,11 @@ export function StoneTrail({
       const back = (k: number) => 1 + 2.2 * Math.pow(k - 1, 3) + 1.2 * Math.pow(k - 1, 2);
 
       return {
-        busy: () => hop != null || stones.some((s) => s.rise != null),
+        // 건너는 중 · 솟는 중 · 아직 목표 돌에 닿지 않았으면 계속 그린다 — 건너는 도중에 온 새 목표를 놓치지 않게
+        busy: () =>
+          hop != null ||
+          stones.some((s) => s.rise != null) ||
+          targetOf(live.current.done, live.current.current) !== standing,
         update(t) {
           sync(t);
           for (const s of stones) {
@@ -248,6 +252,8 @@ export function StoneTrail({
             if (k >= 1) {
               standing = hop.to;
               hop = null;
+              // 건너는 사이에 목표가 또 바뀌었으면 곧바로 이어서 건넌다
+              sync(t);
             }
           } else {
             buddy.position.copy(topOf(standing));
