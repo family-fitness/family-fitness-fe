@@ -10,11 +10,12 @@
 import { HttpResponse, http } from "msw";
 
 import type { NotificationList, NotificationView } from "@/lib/api/types";
+import { callName } from "@/lib/family";
 import { stickerOf } from "@/lib/stickers";
 import { dayOf, daysBefore, daysSince, today } from "@/lib/today";
 import { josa } from "@/lib/utils";
 
-import { BASE, db } from "./db";
+import { BASE, db, type Profile } from "./db";
 import { progressOf } from "./progress";
 
 const READ_KEY = "ff-mock-notifications-read";
@@ -55,7 +56,7 @@ function notificationsFor(profileId: string): NotificationView[] {
       items.push({
         notificationId: `done-${c.cheerId}`,
         kind: "KID_DONE",
-        title: `${subject(kid.name ?? "아이")} 오늘 운동을 마쳤어요`,
+        title: `${subject(kid.name ?? "아이")} 운동을 마쳤어요`,
         body: c.message,
         aboutProfileId: kid.profileId ?? null,
         missionId: c.missionId,
@@ -82,16 +83,21 @@ function notificationsFor(profileId: string): NotificationView[] {
       });
     }
   } else {
-    // 받은 스티커 · 칭찬
+    // 받은 스티커 · 칭찬. 아이에게는 「엄마가」 · 「아빠가」 — 이름으로 부르지 않는다
     for (const c of db.cheers) {
       if (c.toProfileId !== profileId) continue;
       const sticker = stickerOf(c.stickerId);
+      const from = callName(
+        people.find((p) => p.profileId === c.fromProfileId) as Profile | undefined,
+        c.fromName,
+        true,
+      );
       items.push({
         notificationId: `praise-${c.cheerId}`,
         kind: "PRAISE",
         title: sticker
-          ? `${subject(c.fromName)} 스티커를 붙여 줬어요`
-          : `${subject(c.fromName)} 칭찬을 보냈어요`,
+          ? `${subject(from)} 스티커를 붙여 줬어요`
+          : `${subject(from)} 칭찬을 보냈어요`,
         body: c.message,
         aboutProfileId: profileId,
         missionId: c.missionId,

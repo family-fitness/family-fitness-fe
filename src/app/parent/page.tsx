@@ -15,6 +15,7 @@ import { BodyCard } from "@/components/domain/body-card";
 import { ChildSwitch } from "@/components/domain/child-switch";
 import { FamilyCard } from "@/components/domain/family-card";
 import { FinderCard } from "@/components/domain/finder-card";
+import { NotificationBell } from "@/components/domain/notification-bell";
 import { ProposalNudge } from "@/components/domain/proposal-nudge";
 import { TodayCard } from "@/components/domain/today-card";
 import { UpdateNudge } from "@/components/domain/update-nudge";
@@ -59,9 +60,12 @@ export default function ParentHomePage() {
       eyebrow={longDate()}
       title={map?.familyName ?? "우리집"}
       actions={
-        <IconLink href="/settings" label="설정">
-          <Settings className="size-6" strokeWidth={1.8} />
-        </IconLink>
+        <>
+          <NotificationBell profileId={profile?.profileId ?? undefined} />
+          <IconLink href="/settings" label="설정">
+            <Settings className="size-6" strokeWidth={1.8} />
+          </IconLink>
+        </>
       }
     />
   );

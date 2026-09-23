@@ -15,6 +15,7 @@ import { InviteParent } from "@/components/domain/invite-parent";
 import { TodayRings } from "@/components/domain/today-rings";
 import { WeekStrip } from "@/components/domain/week-strip";
 import { KiumIsland } from "@/components/scene/kium-island";
+import { NotificationBell } from "@/components/domain/notification-bell";
 import type { Mission } from "@/lib/api/types";
 import { useCalendar, useFitnessMap, useMissions, useProgress } from "@/lib/api/queries";
 import { levelProgress, stageOf } from "@/lib/levels";
@@ -106,9 +107,12 @@ export default function KidHomePage() {
     <>
       <div className="flex items-center justify-between px-5 pt-4">
         <p className="text-caption text-ink-soft font-semibold">{longDate()}</p>
-        <IconLink href="/settings" label="설정" className="-mr-2">
-          <Settings className="size-6" strokeWidth={1.8} />
-        </IconLink>
+        <div className="-mr-2 flex items-center">
+          <NotificationBell profileId={childProfileId ?? undefined} />
+          <IconLink href="/settings" label="설정">
+            <Settings className="size-6" strokeWidth={1.8} />
+          </IconLink>
+        </div>
       </div>
 
       <Stage wide className="space-y-3">
