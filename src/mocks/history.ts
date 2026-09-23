@@ -23,7 +23,7 @@ import { dayOf, daysBefore, today } from "@/lib/today";
 import { BASE, DEMO, db, fail, type MissionRow } from "./db";
 
 /** 같은 글자에는 늘 같은 0~1. FNV-1a */
-export function roll(seed: string): number {
+function roll(seed: string): number {
   let h = 2166136261;
   for (let i = 0; i < seed.length; i++) {
     h ^= seed.charCodeAt(i);
@@ -143,6 +143,16 @@ function entryOf(m: MissionRow, profileId: string): DayEntry {
   };
 }
 
+/**
+ * 그날 한 운동. 오늘이면 지금 미션에서, 지난날이면 심어 둔 기록에서.
+ * 레벨 · 연속 · 업적도 이 값으로 센다 — 달력과 레벨이 다른 날을 세면 안 된다.
+ */
+export function dayLogFor(profileId: string, date: string): DayLog | null {
+  if (date > today()) return null;
+  if (date === today()) return todayOf(profileId, date);
+  return hasHistory(profileId) ? pastDay(profileId, date) : null;
+}
+
 /** 그날 받은 스티커. 칭찬 목록에서 스티커가 붙은 것만 */
 function stickersOn(profileId: string, date: string): StickerLog[] {
   return db.cheers
@@ -184,16 +194,9 @@ export const history = [
       return fail(400, "BAD_REQUEST", "profileId · from · to 가 필요합니다");
     }
 
-    const now = today();
     const days = datesBetween(from, to)
-      .filter((d) => d <= now)
       .map((date) => {
-        const base =
-          date === now
-            ? todayOf(profileId, date)
-            : hasHistory(profileId)
-              ? pastDay(profileId, date)
-              : null;
+        const base = dayLogFor(profileId, date);
         const stickers = stickersOn(profileId, date);
         if (!base && stickers.length === 0) return null;
         return {

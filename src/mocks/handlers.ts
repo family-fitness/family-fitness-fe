@@ -29,6 +29,7 @@ import {
 } from "./db";
 
 import { history } from "./history";
+import { progress } from "./progress";
 
 export { DEMO, setActingProfile } from "./db";
 
@@ -884,4 +885,5 @@ export const handlers = [
   ...missions,
   ...videos,
   ...history,
+  ...progress,
 ];

@@ -292,6 +292,48 @@ export interface FitnessTestHistory {
   tests: FitnessTestSummary[];
 }
 
+/**
+ * 레벨 · 경험치 · 업적 · 연속.
+ *
+ * ▲ 요청: `GET /profiles/{profileId}/progress`
+ * 회의에서 정한 대로 **계산은 서버가 한다**(레벨 · 경험치 · 업적 판정). 프론트는 꾸미기만 한다 —
+ * 두 곳에서 따로 세면 아이 화면과 부모 화면의 레벨이 어긋난다.
+ *
+ * 경험치는 운동을 한 만큼 쌓이는 값이다. **체력 점수가 아니고, 줄지 않는다.**
+ */
+export interface ProgressView {
+  profileId: Uuid;
+  level: number;
+  /** 지금까지 모은 경험치 */
+  xp: number;
+  /** 이 레벨이 시작된 경험치 */
+  levelFloorXp: number;
+  /** 다음 레벨이 되는 경험치. 마지막 레벨이면 null */
+  nextLevelXp: number | null;
+  /** 며칠 이어서 했나. 오늘 아직 안 했어도 어제까지 이어졌으면 센다 */
+  streakDays: number;
+  achievements: AchievementView[];
+  /** 최근에 경험치가 들어온 까닭 몇 줄 */
+  recentXp: XpEvent[];
+}
+
+export interface AchievementView {
+  code: string;
+  /** 서버가 정한 이름. 화면에서 고쳐 쓰지 않는다 */
+  title: string;
+  /** 어떻게 얻는지 */
+  description: string;
+  /** ISO-8601. 아직이면 null */
+  earnedAt: string | null;
+}
+
+export interface XpEvent {
+  reason: string;
+  amount: number;
+  /** ISO-8601 */
+  at: string;
+}
+
 /* ─── 오류 ─────────────────────────────────────────────────── */
 
 /** 실패는 한 형태다. **봉투가 있다.** */

@@ -22,6 +22,7 @@ import type {
   MeResponse,
   NextStep,
   MissionList,
+  ProgressView,
   PredictionResult,
   ProfileSummary,
   Role,
@@ -53,6 +54,7 @@ export const qk = {
   profile: {
     latestTest: (profileId: Uuid) => ["profile", profileId, "fitness-tests", "latest"] as const,
     tests: (profileId: Uuid) => ["profile", profileId, "fitness-tests", "list"] as const,
+    progress: (profileId: Uuid) => ["profile", profileId, "progress"] as const,
   },
   fitness: {
     items: (ageGroup: AgeGroup | undefined) => ["fitness", "items", ageGroup ?? "all"] as const,
@@ -64,6 +66,16 @@ export const qk = {
   videos: (list: string, profileId?: Uuid, ageGroup?: AgeGroup) =>
     ["videos", list, profileId ?? "-", ageGroup ?? "-"] as const,
 };
+
+/**
+ * 경험치가 바뀌었을 수 있다. 누구 것인지 몰라도 된다 — 레벨 조회는 가볍다.
+ * 운동을 끝낸 바로 그 화면에서 레벨 막대가 차올라야 해낸 게 보인다.
+ */
+function refreshProgress(qc: ReturnType<typeof useQueryClient>) {
+  void qc.invalidateQueries({
+    predicate: (q) => q.queryKey[0] === "profile" && q.queryKey[2] === "progress",
+  });
+}
 
 /* ─── 인증 · 계정 ──────────────────────────────────────────── */
 
@@ -248,6 +260,7 @@ export function useCreateFitnessTest(profileId: Uuid, familyId: Uuid) {
       // 최근 회차와 이력을 같이. 다시 잰 값이 점수 흐름에 바로 한 점 더해져야 한다
       qc.invalidateQueries({ queryKey: ["profile", profileId, "fitness-tests"] });
       qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId) });
+      refreshProgress(qc);
     },
   });
 }
@@ -392,6 +405,7 @@ export function useRecordSteps(missionId: Uuid, familyId: Uuid) {
       // 이번 주 기록의 분·완료 수가 이 값에서 나온다
       qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
+      refreshProgress(qc);
     },
   });
 }
@@ -414,6 +428,7 @@ export function useRecordTimer(missionId: Uuid, familyId: Uuid) {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
+      refreshProgress(qc);
     },
   });
 }
@@ -428,6 +443,7 @@ export function useConfirmParticipant(missionId: Uuid, familyId: Uuid) {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       qc.invalidateQueries({ queryKey: qk.family.report(familyId) });
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
+      refreshProgress(qc);
     },
   });
 }
@@ -478,6 +494,7 @@ export function useRecordVideoProgress(videoId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["videos"] });
       qc.invalidateQueries({ queryKey: ["family"] });
+      refreshProgress(qc);
     },
   });
 }
@@ -499,6 +516,7 @@ export function useSendCheer(familyId: Uuid) {
       qc.invalidateQueries({ queryKey: ["family", familyId, "cheers"] });
       // 붙인 스티커는 그날 칸에 남는다
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
+      refreshProgress(qc);
     },
   });
 }
@@ -552,6 +570,18 @@ export function useFitnessTests(profileId: Uuid | undefined) {
     queryKey: qk.profile.tests(profileId ?? ""),
     queryFn: () =>
       api.get<FitnessTestHistory>(`/profiles/${profileId}/fitness-tests${query({ size: 12 })}`),
+    enabled: Boolean(profileId),
+  });
+}
+
+/**
+ * 레벨 · 경험치 · 업적 · 연속. 서버가 계산한 값을 그대로 쓴다.
+ * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
+ */
+export function useProgress(profileId: Uuid | undefined) {
+  return useQuery({
+    queryKey: qk.profile.progress(profileId ?? ""),
+    queryFn: () => api.get<ProgressView>(`/profiles/${profileId}/progress`),
     enabled: Boolean(profileId),
   });
 }
