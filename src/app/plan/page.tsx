@@ -7,6 +7,7 @@ import { useState, type ReactNode } from "react";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Stage } from "@/components/app-shell/stage";
+import { Dock } from "@/components/ui/dock";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -232,7 +233,7 @@ function PlanForm() {
       </Stage>
 
       {/* 아래에 붙는 한 단추. 조건을 다 내려 보고 나서 누른다 */}
-      <div className="fixed inset-x-0 bottom-0 z-20 mx-auto max-w-(--width-phone) px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+      <Dock>
         <button
           type="button"
           onClick={() => void submit()}
@@ -242,7 +243,7 @@ function PlanForm() {
           <ArtIcon name="icon/menu-ai" fallback={Sparkles} className="size-5" />
           {start.isPending ? "코치에게 보내는 중" : `AI 에게 ${minutes}분 짜 달라기`}
         </button>
-      </div>
+      </Dock>
     </>
   );
 }

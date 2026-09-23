@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Stage } from "@/components/app-shell/stage";
+import { Dock } from "@/components/ui/dock";
 import { CardHead } from "@/components/ui/card";
 import { Initial } from "@/components/ui/initial";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -296,7 +297,7 @@ function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
         })}
       </section>
 
-      <div className="bg-ground/95 fixed inset-x-0 bottom-0 z-20 mx-auto max-w-(--width-phone) px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] backdrop-blur-sm">
+      <Dock>
         {problem && (
           <p role="alert" className="text-signal-deep mb-2 text-center text-sm font-semibold">
             {problem}
@@ -317,7 +318,7 @@ function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
             {save.isPending ? "저장하는 중" : "저장하기"}
           </button>
         )}
-      </div>
+      </Dock>
     </>
   );
 }

@@ -6,6 +6,7 @@ import { Suspense, useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
+import { Dock } from "@/components/ui/dock";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -401,7 +402,7 @@ function Tray({ tray, onClear }: { tray: ClipView[]; onClear: () => void }) {
   };
 
   return (
-    <div className="bg-ground/95 fixed inset-x-0 bottom-0 z-20 mx-auto max-w-(--width-phone) px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] backdrop-blur-sm">
+    <Dock>
       <div className="card-hero flex items-center gap-3 py-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-extrabold">
@@ -425,7 +426,7 @@ function Tray({ tray, onClear }: { tray: ClipView[]; onClear: () => void }) {
           {create.isPending ? "만드는 중" : "오늘 운동으로"}
         </button>
       </div>
-    </div>
+    </Dock>
   );
 }
 

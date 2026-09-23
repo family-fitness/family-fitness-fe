@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Stage } from "@/components/app-shell/stage";
+import { Dock } from "@/components/ui/dock";
 import { CardHead } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Sheet } from "@/components/ui/sheet";
@@ -185,7 +186,7 @@ function Proposal() {
       </Stage>
 
       {!approved && !rejected && (
-        <div className="bg-ground/95 fixed inset-x-0 bottom-0 z-20 mx-auto max-w-(--width-phone) px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] backdrop-blur-sm">
+        <Dock>
           {problem && (
             <p role="alert" className="text-signal-deep mb-2 text-center text-sm font-semibold">
               {problem}
@@ -214,7 +215,7 @@ function Proposal() {
               이번엔 안 할래요
             </button>
           </div>
-        </div>
+        </Dock>
       )}
 
       {/* 거절도 한 가지 길이다. 이유를 받는다 — 다음 편성이 참고한다(규칙 1) */}
