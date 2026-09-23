@@ -75,6 +75,8 @@ function CustomPlan() {
   const [weeks, setWeeks] = useState<(typeof WEEKS)[number]["value"]>("1");
   const [problem, setProblem] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  /** 등록을 마쳤다 — 떠나는 사이 담은 동작이 비어 「아직 없어요」 가 번쩍 뜨지 않게 */
+  const [sent, setSent] = useState(false);
 
   const minutes = routineMinutes(moves);
   const dates = repeatDates(days, Number(weeks));
@@ -104,6 +106,7 @@ function CustomPlan() {
           sessions,
         });
       }
+      setSent(true);
       clear();
       router.push(dates.length === 1 && dates[0] === now ? "/parent" : "/calendar");
     } catch (e) {
@@ -118,6 +121,19 @@ function CustomPlan() {
       setSaving(false);
     }
   };
+
+  if (sent) {
+    return (
+      <>
+        <AppBar back title="직접 짜기" />
+        <Stage wide>
+          <p className="card-hero text-center text-sm font-extrabold" role="status">
+            등록했어요
+          </p>
+        </Stage>
+      </>
+    );
+  }
 
   if (moves.length === 0) {
     return (
