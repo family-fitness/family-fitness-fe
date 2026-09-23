@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 import { mascotImage } from "./kium-island";
 import { useToonScene } from "./use-toon-scene";
+import { useWidth } from "./use-width";
 
 /**
  * 키 자 — 문틀에 키를 재 긋던 그 자. 잴 때마다 노랑 눈금이 하나씩 붙는다.
@@ -20,6 +21,8 @@ import { useToonScene } from "./use-toon-scene";
 const SPEC: OrthoSpec = { elevation: 12, azimuth: 24, target: 1.55, view: 2.25 };
 /** 자 높이(세계 단위) */
 const POLE = 3.4;
+/** 이 폭일 때 `height` 가 된다. 좁은 폰에서는 비율 그대로 줄어든다 */
+const REF_WIDTH = 320;
 
 export function GrowthPole({
   records,
@@ -146,14 +149,15 @@ export function GrowthPole({
     [key],
   );
 
-  const width = 358;
+  const width = useWidth(host, REF_WIDTH);
+  const tall = (width * height) / REF_WIDTH;
   return (
     <div
       ref={host}
       role="img"
       aria-label={`키가 자란 자취 — ${records.map((r) => `${r.date.slice(5).replace("-", "월 ")}일 ${r.heightCm}cm`).join(", ")}`}
       className={cn("relative w-full select-none", className)}
-      style={{ height }}
+      style={{ aspectRatio: `${REF_WIDTH} / ${height}` }}
     >
       {/* 섬 위에 세울 키움이 그림의 원본. 화면에는 보이지 않는다 */}
       <div ref={standIn} aria-hidden className="hidden">
@@ -161,7 +165,7 @@ export function GrowthPole({
       </div>
       <div aria-hidden className="pointer-events-none absolute inset-0 z-10">
         {records.map((r, i) => {
-          const p = projectOrtho(SPEC, [0.15 + 0.64, at(r.heightCm), 0], width, height);
+          const p = projectOrtho(SPEC, [0.15 + 0.64, at(r.heightCm), 0], width, tall);
           const last = i === records.length - 1;
           return (
             <span
@@ -170,7 +174,7 @@ export function GrowthPole({
                 "absolute -translate-y-1/2 pl-1 text-xs whitespace-nowrap tabular-nums",
                 last ? "text-signal-deep font-extrabold" : "text-ink-soft font-bold",
               )}
-              style={{ left: `calc(50% + ${p.x - width / 2}px)`, top: p.y }}
+              style={{ left: p.x, top: p.y }}
             >
               {r.heightCm}
               <span className="text-micro ml-1 font-semibold">{Number(r.date.slice(5, 7))}월</span>

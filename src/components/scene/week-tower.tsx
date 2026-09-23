@@ -9,6 +9,7 @@ import { WEEKDAY } from "@/lib/today";
 import { cn } from "@/lib/utils";
 
 import { useToonScene } from "./use-toon-scene";
+import { useWidth } from "./use-width";
 
 /**
  * 이번 주 블록 탑 — 요일마다 육각 기둥 하나, 높이가 그날 움직인 분.
@@ -27,18 +28,21 @@ const RADIUS = 0.4;
 const TALL = 2.3;
 /** 이보다 적게 움직인 주에도 기둥이 너무 솟지 않게 — 30분을 한 칸 끝으로 둔다 */
 const FLOOR_MINUTES = 30;
+/** 이 폭일 때 `height` 가 된다. 좁은 폰에서는 비율 그대로 줄어든다 — 판이 잘리지 않게 */
+const REF_WIDTH = 320;
 
 export function WeekTower({
   days,
   logs,
   today,
-  height = 170,
+  height = 150,
   className,
 }: {
   /** 월 ~ 일 날짜 일곱 개 */
   days: string[];
   logs: DayLog[] | undefined;
   today: string;
+  /** 폭이 320 일 때의 높이 */
   height?: number;
   className?: string;
 }) {
@@ -124,7 +128,8 @@ export function WeekTower({
   );
 
   // 글자 자리 — 캔버스와 같은 셈으로 먼저 세운다
-  const width = 358;
+  const width = useWidth(host, REF_WIDTH);
+  const tall = (width * height) / REF_WIDTH;
   return (
     <div
       ref={host}
@@ -136,24 +141,21 @@ export function WeekTower({
         )
         .join(", ")}
       className={cn("relative w-full touch-pan-y select-none", className)}
-      style={{ height }}
+      style={{ aspectRatio: `${REF_WIDTH} / ${height}` }}
     >
       <Labels
         days={days}
         minutes={minutes}
         heights={heights}
         today={today}
-        height={height}
+        height={tall}
         width={width}
       />
     </div>
   );
 }
 
-/**
- * 기둥 위 분 · 판 앞 요일. 폭은 CSS 로 늘어나니 가로 자리는 % 로 둔다 —
- * 정사영에서 가로 위치는 폭에 곧게 비례한다.
- */
+/** 기둥 위 분 · 판 앞 요일. 칸의 실제 크기로 셈한다 */
 function Labels({
   days,
   minutes,
@@ -175,7 +177,7 @@ function Labels({
         const x = (i - 3) * GAP;
         const topAt = projectOrtho(SPEC, [x, Math.max(heights[i], 0.06), 0], width, height);
         const footAt = projectOrtho(SPEC, [x, -0.32, 0.75], width, height);
-        const left = `calc(50% + ${topAt.x - width / 2}px)`;
+        const left = topAt.x;
         const on = date === today;
         return (
           <div key={date}>
@@ -195,7 +197,7 @@ function Labels({
                 "text-micro absolute -translate-x-1/2 pt-1.5 font-bold",
                 on ? "text-signal-deep" : "text-ink-soft",
               )}
-              style={{ left: `calc(50% + ${footAt.x - width / 2}px)`, top: footAt.y }}
+              style={{ left: footAt.x, top: footAt.y }}
             >
               {WEEKDAY[new Date(`${date}T00:00:00`).getDay()]}
             </span>

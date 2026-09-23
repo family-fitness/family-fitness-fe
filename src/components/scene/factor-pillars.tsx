@@ -8,6 +8,7 @@ import { projectOrtho, separateLabels, type OrthoSpec } from "@/lib/ortho";
 import { cn } from "@/lib/utils";
 
 import { useToonScene } from "./use-toon-scene";
+import { useWidth } from "./use-width";
 
 /**
  * 체력 육각 기둥 — 부모 화면의 여섯 요인을 섬 위 기둥으로.
@@ -26,6 +27,8 @@ const SPEC: OrthoSpec = { elevation: 28, azimuth: 25, target: 0.75, view: 2.6 };
 const RING = 1.6;
 const PILLAR = 0.38;
 const TALL = 2.1;
+/** 이 폭일 때 `height` 가 된다. 좁은 폰에서는 비율 그대로 줄어든다 */
+const REF_WIDTH = 320;
 
 /** 여섯 꼭지점 — 심폐지구력이 맨 뒤(위)에서 시계 방향. 육각형 그래프와 같은 차례 */
 function spot(i: number) {
@@ -156,8 +159,8 @@ export function FactorPillars({
     [key],
   );
 
-  const width = 358;
-  const labels = placeLabels(values, width, height);
+  const width = useWidth(host, REF_WIDTH);
+  const labels = placeLabels(values, width, (width * height) / REF_WIDTH);
   return (
     <>
       <div
@@ -169,7 +172,7 @@ export function FactorPillars({
           ) + ". 기둥마다 남색 고리가 또래 평균 50"
         }
         className={cn("relative w-full select-none", className)}
-        style={{ height }}
+        style={{ aspectRatio: `${REF_WIDTH} / ${height}` }}
       >
         {/* 기둥마다 이름 · 값 한 장. 흰 바탕을 깔아 뒤 기둥 위에 겹쳐도 읽힌다 */}
         <div aria-hidden className="pointer-events-none absolute inset-0 z-10">
@@ -177,7 +180,7 @@ export function FactorPillars({
             <span
               key={factor}
               className="bg-paper/90 absolute -translate-x-1/2 -translate-y-full rounded-md px-1.5 py-px whitespace-nowrap shadow-sm"
-              style={{ left: `calc(50% + ${x - width / 2}px)`, top: y }}
+              style={{ left: x, top: y }}
             >
               <span className="text-micro text-ink-soft font-bold">{factor}</span>
               {value != null && (
