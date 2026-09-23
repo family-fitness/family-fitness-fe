@@ -12,11 +12,16 @@ import { CardHead } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorIcon } from "@/components/domain/factor-icon";
 import { FactorRadar } from "@/components/domain/factor-radar";
-import { useFitnessMap, useLatestFitnessTest, useStartCoachRun } from "@/lib/api/queries";
+import {
+  useAvailability,
+  useFitnessMap,
+  useLatestFitnessTest,
+  useStartCoachRun,
+} from "@/lib/api/queries";
 import { errorMessage } from "@/lib/errors";
 import { FACTORS, type Factor } from "@/lib/fitness-factors";
 import { useSession } from "@/lib/session";
-import { today } from "@/lib/today";
+import { today, weekdayCode } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useRoleStore } from "@/stores/role-store";
 
@@ -30,6 +35,11 @@ import { useRoleStore } from "@/stores/role-store";
  * 들어간 꼭지점이다. 그래서 여기에 그 육각형을 같이 둔다.
  */
 const MINUTES = [10, 20, 30, 40] as const;
+
+/** 적어 둔 시간을 고를 수 있는 칸 중 가장 가까운 것으로 */
+function nearest(m: number) {
+  return MINUTES.reduce((a, b) => (Math.abs(b - m) < Math.abs(a - m) ? b : a));
+}
 
 export default function PlanPage() {
   return (
@@ -49,7 +59,12 @@ function PlanForm() {
   const { data: latest } = useLatestFitnessTest(kid?.profileId);
   const start = useStartCoachRun(familyId ?? "");
 
-  const [minutes, setMinutes] = useState<number>(20);
+  const { data: availability } = useAvailability(kid?.profileId);
+  // 고르기 전에는 오늘 적어 둔 시간이 기본이다. 적어 둔 게 없으면 20분
+  const [picked, setPicked] = useState<number | null>(null);
+  const todaySlot = availability?.slots.find((s) => s.day === weekdayCode());
+  const minutes = picked ?? nearest(todaySlot?.minutes ?? 20);
+  const setMinutes = setPicked;
   const [place, setPlace] = useState<"HOME" | "OUTDOOR">("HOME");
   const [quiet, setQuiet] = useState(true);
   const [focus, setFocus] = useState<Factor | null>(null);
@@ -123,7 +138,10 @@ function PlanForm() {
         </section>
 
         <section className="card">
-          <CardHead title="몇 분 할까요" />
+          <CardHead
+            title="몇 분 할까요"
+            meta={todaySlot ? `오늘 적어 둔 시간 ${todaySlot.minutes}분` : undefined}
+          />
           <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="운동 시간">
             {MINUTES.map((m) => (
               <Chip key={m} on={minutes === m} onClick={() => setMinutes(m)}>

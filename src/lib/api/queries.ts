@@ -6,6 +6,8 @@ import { api, query } from "./client";
 import type {
   AgeGroup,
   AuthResponse,
+  Availability,
+  AvailabilitySlot,
   CalendarView,
   Cheer,
   CheerLogList,
@@ -52,6 +54,7 @@ export const qk = {
     latestTest: (profileId: Uuid) => ["profile", profileId, "fitness-tests", "latest"] as const,
     tests: (profileId: Uuid) => ["profile", profileId, "fitness-tests", "list"] as const,
     progress: (profileId: Uuid) => ["profile", profileId, "progress"] as const,
+    availability: (profileId: Uuid) => ["profile", profileId, "availability"] as const,
   },
   fitness: {
     items: (ageGroup: AgeGroup | undefined) => ["fitness", "items", ageGroup ?? "all"] as const,
@@ -619,5 +622,26 @@ export function useCompleteSession(missionId: Uuid, familyId: Uuid) {
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
       refreshProgress(qc);
     },
+  });
+}
+
+/**
+ * 운동할 수 있는 시간. AI 편성의 「몇 분」 기본값이 여기서 나온다.
+ * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
+ */
+export function useAvailability(profileId: Uuid | undefined) {
+  return useQuery({
+    queryKey: qk.profile.availability(profileId ?? ""),
+    queryFn: () => api.get<Availability>(`/profiles/${profileId}/availability`),
+    enabled: Boolean(profileId),
+  });
+}
+
+export function useSaveAvailability(profileId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (slots: AvailabilitySlot[]) =>
+      api.put<Availability>(`/profiles/${profileId}/availability`, { slots }),
+    onSuccess: (saved) => qc.setQueryData(qk.profile.availability(profileId), saved),
   });
 }

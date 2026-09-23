@@ -332,6 +332,28 @@ export interface XpEvent {
   at: string;
 }
 
+/** 요일. 한 주는 월요일에 시작한다 */
+export type Weekday = "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN";
+
+/**
+ * 운동할 수 있는 시간 — 한 사람의 한 주.
+ *
+ * ▲ 요청: `GET · PUT /profiles/{profileId}/availability`
+ * AI 편성이 「몇 분」 의 기본값으로 쓴다. 이 시간이 아니라고 운동을 막지는 않는다 —
+ * 추천이 시간으로 정해지는 게 아니라 언제 하겠다는 약속이다(9/23 회의).
+ */
+export interface AvailabilitySlot {
+  day: Weekday;
+  /** HH:mm, 한국 시각 */
+  start: string;
+  minutes: number;
+}
+
+export interface Availability {
+  profileId: Uuid;
+  slots: AvailabilitySlot[];
+}
+
 /* ─── 오류 ─────────────────────────────────────────────────── */
 
 /** 실패는 한 형태다. **봉투가 있다.** */

@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, HeartHandshake, Repeat, ShieldCheck, Users } from "lucide-react";
+import { Clock, Heart, HeartHandshake, Repeat, ShieldCheck, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -50,6 +50,13 @@ export default function SettingsPage() {
               icon={Users}
               title="가족 관리 · 초대"
               description="아이를 등록하고 초대코드를 보내요"
+            />
+            <ListRow
+              href="/settings/schedule"
+              art="icon/menu-schedule"
+              icon={Clock}
+              title="운동할 수 있는 시간"
+              description="언제 몇 분 할 수 있는지 적어 두면 AI 가 맞춰 짜요"
             />
             <ListRow
               href="/settings/support-mode"

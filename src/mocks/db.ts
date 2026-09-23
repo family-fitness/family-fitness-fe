@@ -136,6 +136,22 @@ export function seedTests(): Record<string, FitnessTestSummary[]> {
   };
 }
 
+/** 아이는 월 · 수 · 금 저녁과 토요일 오전, 엄마는 토요일 오전에 같이 */
+export function seedAvailability(): Record<
+  string,
+  { day: string; start: string; minutes: number }[]
+> {
+  return {
+    [KID_ID]: [
+      { day: "MON", start: "19:00", minutes: 20 },
+      { day: "WED", start: "19:00", minutes: 20 },
+      { day: "FRI", start: "19:00", minutes: 20 },
+      { day: "SAT", start: "10:00", minutes: 30 },
+    ],
+    "00000000-0000-4000-8000-000000000011": [{ day: "SAT", start: "10:00", minutes: 30 }],
+  };
+}
+
 /** 다섯 항목 평균 55. 서버가 그러듯 목도 머리말을 같이 바꾼다 */
 function demoMap() {
   const map = structuredClone(fixtures.fitnessMap);
@@ -186,6 +202,8 @@ export const db = {
   latest: demoLatest(),
   /** 측정 이력. 점수 흐름과 키 · 몸무게가 자란 모습을 그린다 */
   tests: seedTests(),
+  /** 운동할 수 있는 시간. 사람마다 한 주 */
+  availability: seedAvailability(),
   coachRun: loadCoachRun(),
   /** 이번 주 제안은 아직 0건이다. 심어 둔 것은 지난 회차에서 승인한 미션들이다 */
   missions: loadMissions(),

@@ -98,3 +98,10 @@ export function longDate(date: string = today()): string {
 export function weekdayOf(date: string): string {
   return WEEKDAY[new Date(`${date}T00:00:00`).getDay()];
 }
+
+/** 요일 코드. 서버와 주고받는 값이다 — `WEEKDAY` 는 화면 글자, 이건 코드 */
+export const WEEKDAY_CODE = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"] as const;
+
+export function weekdayCode(date: string = today()): (typeof WEEKDAY_CODE)[number] {
+  return WEEKDAY_CODE[new Date(`${date}T00:00:00`).getDay()];
+}

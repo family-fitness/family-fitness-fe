@@ -434,6 +434,35 @@ const fitness = [
     return HttpResponse.json(table[ageGroup ?? "유소년"] ?? table["유소년"]);
   }),
 
+  /** ▲ 서버에 아직 없다. 운동할 수 있는 시간 */
+  http.get<PathParams>(`${BASE}/profiles/:profileId/availability`, ({ params }) =>
+    HttpResponse.json({
+      profileId: String(params.profileId),
+      slots: db.availability[String(params.profileId)] ?? [],
+    }),
+  ),
+
+  http.put<PathParams>(`${BASE}/profiles/:profileId/availability`, async ({ params, request }) => {
+    const me = acting();
+    if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자만 바꿀 수 있습니다");
+    const body = (await request.json()) as {
+      slots?: { day: string; start: string; minutes: number }[];
+    };
+    const days = new Set(["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]);
+    const slots = (body.slots ?? []).filter(
+      (s) =>
+        days.has(s.day) &&
+        /^([01]\d|2[0-3]):[0-5]\d$/.test(s.start) &&
+        s.minutes >= 5 &&
+        s.minutes <= 120,
+    );
+    if (slots.length !== (body.slots ?? []).length) {
+      return fail(400, "INVALID_SLOT", "요일 · 시각 · 시간 중 맞지 않는 값이 있습니다");
+    }
+    db.availability[String(params.profileId)] = slots;
+    return HttpResponse.json({ profileId: String(params.profileId), slots });
+  }),
+
   /** ▲ 서버에 아직 없다. 최근 회차가 먼저 온다 */
   http.get<PathParams>(`${BASE}/profiles/:profileId/fitness-tests`, ({ params }) =>
     HttpResponse.json({ tests: db.tests[String(params.profileId)] ?? [] }),
