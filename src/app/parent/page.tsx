@@ -14,13 +14,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BodyCard } from "@/components/domain/body-card";
 import { ChildSwitch } from "@/components/domain/child-switch";
 import { FamilyCard } from "@/components/domain/family-card";
+import { FamilyWeekCard } from "@/components/domain/family-week-card";
 import { FinderCard } from "@/components/domain/finder-card";
 import { NotificationBell } from "@/components/domain/notification-bell";
 import { ProposalNudge } from "@/components/domain/proposal-nudge";
 import { TodayCard } from "@/components/domain/today-card";
 import { UpdateNudge } from "@/components/domain/update-nudge";
 import { WeekCard } from "@/components/domain/week-card";
-import { useCalendar, useFitnessMap, useMissions } from "@/lib/api/queries";
+import { useCalendar, useFitnessMap, useMissions, useProgress } from "@/lib/api/queries";
+import { stageOf } from "@/lib/levels";
 import { useSession } from "@/lib/session";
 import { longDate, weekOf } from "@/lib/today";
 import { useRoleStore } from "@/stores/role-store";
@@ -54,6 +56,8 @@ export default function ParentHomePage() {
 
   const week = weekOf();
   const { data: calendar } = useCalendar(familyId, child?.profileId, week);
+  // 가족 다리를 건너는 키움이는 지금 보는 아이의 모습
+  const { data: progress } = useProgress(child?.profileId ?? undefined);
 
   const header = (
     <HomeHeader
@@ -122,6 +126,12 @@ export default function ParentHomePage() {
         />
 
         <WeekCard days={week.days} logs={calendar?.days} href="/calendar" />
+        <FamilyWeekCard
+          familyId={familyId ?? undefined}
+          profileIds={members.flatMap((m) => (m.profileId ? [m.profileId] : []))}
+          stage={stageOf(progress?.level).stage}
+          editable
+        />
         <FinderCard />
         <FamilyCard members={members} />
       </Stage>
