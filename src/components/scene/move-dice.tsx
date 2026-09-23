@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type * as T from "three";
 
 import { cn } from "@/lib/utils";
@@ -20,6 +20,11 @@ const CAMERA: CameraSpec = { elevation: 46, azimuth: 30, target: 0.6, view: 1.55
 const SIZE = 1.2;
 /** 구르는 시간(초) */
 const ROLL = 1.25;
+/**
+ * 화면이 「멈췄다」 고 볼 때까지(밀리초). 입체가 못 오거나(WebGL 없음) 늦게 와도
+ * 굴린 결과는 이만큼 뒤에 나온다 — 주사위를 기다리다 놀이가 멈추면 안 된다
+ */
+export const DICE_SETTLE_MS = ROLL * 1000 + 700;
 
 /** 박스 면 차례(+x −x +y −y +z −z)마다 글자의 오른쪽 · 위 방향. three 의 BoxGeometry 가 UV 를 까는 방향이다 */
 const FACE_AXES: [T.Vector3Tuple, T.Vector3Tuple, T.Vector3Tuple][] = [
@@ -98,6 +103,7 @@ export function MoveDice({
   className?: string;
 }) {
   const host = useRef<HTMLDivElement>(null);
+  const [ready, setReady] = useState(false);
   const live = useRef({ roll, onLanded, onTap });
   useEffect(() => {
     live.current = { roll, onLanded, onTap };
@@ -220,9 +226,10 @@ export function MoveDice({
         const from = new THREE.Matrix4().makeBasis(r, u, n).transpose();
         return new THREE.Quaternion().setFromRotationMatrix(up.clone().multiply(from));
       };
-      body.quaternion.copy(facing(live.current.roll?.face ?? 0));
+      // 첫 면에서 시작한다. 입체가 오기 전에 굴렸으면(차례가 이미 있으면) 곧바로 그 면으로 구른다
+      body.quaternion.copy(facing(0));
 
-      let seenRoll = live.current.roll?.n ?? 0;
+      let seenRoll = 0;
       let tumble: {
         from: T.Quaternion;
         to: T.Quaternion;
@@ -287,6 +294,7 @@ export function MoveDice({
       };
     },
     [faces.map((f) => f.name + f.amount).join()],
+    () => setReady(true),
   );
 
   // 굴릴 차례가 오면 깨운다
@@ -295,12 +303,28 @@ export function MoveDice({
     if (rollKey) wake();
   }, [rollKey, wake]);
 
+  // 입체가 오기 전 · WebGL 이 없을 때 — 납작한 주사위 한 면. 빈 칸이 먼저 뜨지 않게
+  const shown = faces[roll?.face ?? 0];
   return (
     <div
       ref={host}
       aria-hidden
       className={cn("relative w-full touch-pan-y select-none", className)}
       style={{ height }}
-    />
+    >
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-0 grid place-items-center transition-opacity duration-300",
+          ready && "opacity-0",
+        )}
+      >
+        <div className="bg-paper border-signal-deep shadow-card grid size-28 place-items-center rounded-2xl border-4 px-2 text-center">
+          <span className="text-sm leading-tight font-extrabold">
+            {shown?.name}
+            <span className="text-signal-strong mt-1 block">{shown?.amount}</span>
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }

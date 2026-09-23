@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type * as T from "three";
 
 import { LevelBuddy } from "@/components/domain/level-buddy";
@@ -61,6 +61,8 @@ export function StoneTrail({
 }) {
   const host = useRef<HTMLDivElement>(null);
   const standIn = useRef<HTMLDivElement>(null);
+  /** 입체가 섰다 — 그 전 · WebGL 이 없을 때는 납작한 점줄이 대신 선다 */
+  const [ready, setReady] = useState(false);
   const live = useRef<{ done: number[]; current: number | null }>({ done, current });
 
   const wake = useToonScene(
@@ -218,7 +220,11 @@ export function StoneTrail({
       const back = (k: number) => 1 + 2.2 * Math.pow(k - 1, 3) + 1.2 * Math.pow(k - 1, 2);
 
       return {
-        busy: () => hop != null || stones.some((s) => s.rise != null),
+        // 건너는 중 · 솟는 중 · 아직 목표 돌에 닿지 않았으면 계속 그린다 — 건너는 도중에 온 새 목표를 놓치지 않게
+        busy: () =>
+          hop != null ||
+          stones.some((s) => s.rise != null) ||
+          targetOf(live.current.done, live.current.current) !== standing,
         update(t) {
           sync(t);
           for (const s of stones) {
@@ -248,6 +254,8 @@ export function StoneTrail({
             if (k >= 1) {
               standing = hop.to;
               hop = null;
+              // 건너는 사이에 목표가 또 바뀌었으면 곧바로 이어서 건넌다
+              sync(t);
             }
           } else {
             buddy.position.copy(topOf(standing));
@@ -269,6 +277,7 @@ export function StoneTrail({
       };
     },
     [count, layout, stage],
+    () => setReady(true),
   );
 
   // 받은 값이 바뀌면 장면을 새로 짓지 않고 따라가게만 한다
@@ -286,6 +295,31 @@ export function StoneTrail({
       className={cn("relative w-full touch-pan-y select-none", className)}
       style={{ height }}
     >
+      {/* 입체가 오기 전 · 없을 때 — 끝낸 칸 파랑, 지금 칸 노랑 점줄(넓은 판에는 키움이도) */}
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 transition-opacity duration-500",
+          ready && "opacity-0",
+        )}
+      >
+        {layout === "zigzag" && <LevelBuddy stage={stage} size={Math.round(height * 0.55)} />}
+        <span className="flex gap-2">
+          {Array.from({ length: count }, (_, i) => (
+            <span
+              key={i}
+              className={cn(
+                "size-3 rounded-full",
+                done.includes(i)
+                  ? "bg-signal"
+                  : i === current
+                    ? "bg-mark ring-signal-deep ring-2"
+                    : "bg-bar",
+              )}
+            />
+          ))}
+        </span>
+      </div>
       {/* 돌 위에 세울 키움이 그림의 원본. 화면에는 보이지 않는다 */}
       <div ref={standIn} aria-hidden className="hidden">
         <LevelBuddy stage={stage} size={160} />

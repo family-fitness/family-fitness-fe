@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type * as T from "three";
 
 import { LevelBuddy } from "@/components/domain/level-buddy";
@@ -38,6 +38,8 @@ export function FamilyBridge({
 }) {
   const host = useRef<HTMLDivElement>(null);
   const standIn = useRef<HTMLDivElement>(null);
+  /** 입체가 섰다 — 그 전 · WebGL 이 없을 때는 널판 줄이 대신 선다 */
+  const [ready, setReady] = useState(false);
   const ratio = goal > 0 ? Math.min(1, minutes / goal) : 0;
   const laid = Math.floor(ratio * PLANKS + 1e-9);
 
@@ -201,6 +203,7 @@ export function FamilyBridge({
       };
     },
     [laid, stage],
+    () => setReady(true),
   );
 
   return (
@@ -211,6 +214,24 @@ export function FamilyBridge({
       className={cn("relative w-full touch-pan-y select-none", className)}
       style={{ aspectRatio: `${REF_WIDTH} / ${height}` }}
     >
+      {/* 입체가 오기 전 · 없을 때 — 놓인 널판만큼 칠한 열 칸 */}
+      <div
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute inset-0 flex items-center justify-center gap-1 px-6 transition-opacity duration-500",
+          ready && "opacity-0",
+        )}
+      >
+        {Array.from({ length: PLANKS }, (_, i) => (
+          <span
+            key={i}
+            className={cn(
+              "h-4 flex-1 rounded-sm",
+              i < laid ? (i % 2 === 0 ? "bg-signal" : "bg-mark") : "bg-sub",
+            )}
+          />
+        ))}
+      </div>
       <div ref={standIn} aria-hidden className="hidden">
         <LevelBuddy stage={stage} size={160} />
       </div>

@@ -22,7 +22,7 @@ import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { useIsKidView } from "@/lib/view-role";
 import { useRoleStore } from "@/stores/role-store";
-import { useRoutineStore } from "@/stores/routine-store";
+import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
 /**
  * 운동 찾기 — 키우고 싶은 힘으로.
@@ -69,6 +69,8 @@ function Finder() {
   const [favoritesOnly, setFavoritesOnly] = useState(params.get("list") === "favorites");
   // 담은 동작은 직접 짜기와 같이 본다 — 두 화면을 오가도 남는다
   const moves = useRoutineStore((s) => s.moves);
+  // 탭 저장소를 읽은 뒤에야 담은 것이 보인다. 그 전에는 쟁반을 내지 않는다(첫 화면과 어긋나지 않게)
+  useRoutineReady();
   const toggleMove = useRoutineStore((s) => s.toggle);
   const clearMoves = useRoutineStore((s) => s.clear);
   const [preview, setPreview] = useState<ClipView | null>(null);
@@ -358,7 +360,7 @@ function Tray({ onClear }: { onClear: () => void }) {
           <button
             type="button"
             onClick={onClear}
-            className="press text-caption text-ink-soft -ml-1 min-h-8 px-1 font-semibold"
+            className="press text-caption text-ink-soft -ml-1 min-h-10 px-1 font-semibold"
           >
             모두 빼기
           </button>

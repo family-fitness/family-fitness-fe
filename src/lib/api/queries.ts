@@ -508,7 +508,7 @@ export function useFamilyWeek(
   profileIds: Uuid[],
   range: { from: string; to: string },
 ) {
-  return useQueries({
+  const week = useQueries({
     queries: profileIds.map((profileId) => ({
       queryKey: qk.family.calendar(familyId ?? "", profileId, range.from, range.to),
       queryFn: () =>
@@ -525,6 +525,8 @@ export function useFamilyWeek(
       pending: results.some((r) => r.isPending),
     }),
   });
+  // 가족 목록을 아직 못 받았으면 기다리는 중이다 — 빈 목록을 「0분」 으로 그리면 한 번 틀린 값을 보인다
+  return profileIds.length === 0 ? { minutes: 0, pending: true } : week;
 }
 
 /**

@@ -60,7 +60,11 @@ export default function KidHomePage() {
   const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
   const { data: progress } = useProgress(childProfileId ?? undefined);
   const week = weekOf();
-  const { data: calendar } = useCalendar(familyId, childProfileId ?? undefined, week);
+  const { data: calendar, isPending: calendarPending } = useCalendar(
+    familyId,
+    childProfileId ?? undefined,
+    week,
+  );
   const { data: cheers } = useCheers(familyId, childProfileId ?? undefined);
   const { data: family } = useFamilyProfiles(familyId);
   // 아이에게 부모는 엄마 · 아빠다
@@ -219,7 +223,12 @@ export default function KidHomePage() {
                 ` · ${progress.streakDays}일째 이어서 하고 있어요`}
             </p>
             <div className="mt-2">
-              <WeekTower days={week.days} logs={calendar?.days} today={now} height={150} />
+              {/* 기록을 받은 뒤에 짓는다 — 0분으로 먼저 지었다가 다시 지으면 깜빡이고 WebGL 이 하나 더 든다 */}
+              {calendarPending ? (
+                <Skeleton className="aspect-[320/150] w-full rounded-2xl" />
+              ) : (
+                <WeekTower days={week.days} logs={calendar?.days} today={now} height={150} />
+              )}
             </div>
           </div>
         </Card>

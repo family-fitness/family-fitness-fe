@@ -1,4 +1,5 @@
 import { Card, CardHead } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { WeekTower } from "@/components/scene/week-tower";
 import type { DayLog } from "@/lib/api/types";
 import { today } from "@/lib/today";
@@ -12,11 +13,14 @@ import { today } from "@/lib/today";
 export function WeekCard({
   days,
   logs,
+  loading = false,
   href,
 }: {
   /** 이번 주 날짜 일곱 개 (월~일) */
   days: string[];
   logs: DayLog[] | undefined;
+  /** 기록을 받는 중 — 탑은 받은 뒤에 짓는다(0분으로 먼저 지었다 다시 짓지 않게) */
+  loading?: boolean;
   href: string;
 }) {
   const byDate = new Map((logs ?? []).map((l) => [l.date, l]));
@@ -35,7 +39,11 @@ export function WeekCard({
         </p>
         <p className="text-caption text-ink-soft font-semibold">{active}일 움직였어요</p>
       </div>
-      <WeekTower days={days} logs={logs} today={now} height={150} className="-mx-1 mt-1" />
+      {loading ? (
+        <Skeleton className="mt-1 aspect-[320/150] w-full rounded-2xl" />
+      ) : (
+        <WeekTower days={days} logs={logs} today={now} height={150} className="-mx-1 mt-1" />
+      )}
     </Card>
   );
 }

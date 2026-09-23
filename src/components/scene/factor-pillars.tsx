@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
+import { FactorRadar } from "@/components/domain/factor-radar";
 import type { RadarPoint } from "@/lib/api/types";
 import { FACTORS, toHexagon } from "@/lib/fitness-factors";
 import { projectOrtho, separateLabels, type OrthoSpec } from "@/lib/ortho";
@@ -50,6 +51,8 @@ export function FactorPillars({
   className?: string;
 }) {
   const host = useRef<HTMLDivElement>(null);
+  /** 입체가 섰다 — 그 전 · WebGL 이 없을 때는 평면 육각형이 대신 선다 */
+  const [ready, setReady] = useState(false);
   const hex = toHexagon(points);
   const values = FACTORS.map((f) => {
     const p = hex.find((x) => x.factor === f)?.percentile;
@@ -157,6 +160,7 @@ export function FactorPillars({
       };
     },
     [key],
+    () => setReady(true),
   );
 
   const width = useWidth(host, REF_WIDTH);
@@ -174,8 +178,23 @@ export function FactorPillars({
         className={cn("relative w-full select-none", className)}
         style={{ aspectRatio: `${REF_WIDTH} / ${height}` }}
       >
-        {/* 기둥마다 이름 · 값 한 장. 흰 바탕을 깔아 뒤 기둥 위에 겹쳐도 읽힌다 */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 z-10">
+        {/* 입체가 오기 전 · 없을 때 — 같은 값을 평면 육각형으로 */}
+        {!ready && (
+          <FactorRadar
+            points={points}
+            name={name}
+            legend={false}
+            className="absolute inset-0 mx-auto h-full w-auto"
+          />
+        )}
+        {/* 기둥마다 이름 · 값 한 장. 흰 바탕을 깔아 뒤 기둥 위에 겹쳐도 읽힌다. 입체가 선 뒤에만 */}
+        <div
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute inset-0 z-10 transition-opacity duration-500",
+            !ready && "opacity-0",
+          )}
+        >
           {labels.map(({ factor, value, x, y }) => (
             <span
               key={factor}
