@@ -139,6 +139,7 @@ export default function KidHomePage() {
         <section className="flex flex-col items-center pb-2 text-center">
           <KiumIsland
             stage={stage.stage}
+            level={progress?.level}
             plants={progress ? trees : null}
             seed={childProfileId ?? "kid"}
             label={`${me.name}의 섬. 운동한 날마다 나무가 하나씩 자라요. 지금 ${trees}그루`}

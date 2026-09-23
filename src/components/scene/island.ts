@@ -14,6 +14,15 @@
  */
 import type * as T from "three";
 
+import type { DecorationId } from "@/lib/unlocks";
+
+import {
+  DECOR_CLEAR,
+  DECOR_SPOTS,
+  buildDecoration,
+  decorationSpot,
+  type Decoration,
+} from "./decorations";
 import { type Addons, type Palette, type Three, toonKit } from "./toon";
 
 /** 섬의 치수와 카메라. 캐릭터가 설 자리를 three 없이도 셀 수 있게 밖에 둔다 */
@@ -96,6 +105,11 @@ interface Slot {
   phase: number;
 }
 
+/** 장식 자리 — 레벨과 상관없이 늘 비워 둔다. 장식이 열릴 때 나무가 옮겨 다니지 않게 */
+const DECOR_AT = (Object.keys(DECOR_SPOTS) as DecorationId[]).map((id) =>
+  decorationSpot(id, ISLAND.azimuth),
+);
+
 /**
  * 나무 자리. 캐릭터 가까이는 비워 둔다 — 캐릭터 앞을 큰 나무가 가리면
  * 아이가 자기 캐릭터를 못 찾는다. 가까운 자리에는 낮은 덤불만 선다.
@@ -117,6 +131,7 @@ function slotsFor(seed: string): Slot[] {
     // 뿔이나 모자처럼 보인다. 섬을 돌리면 잠깐 지나갈 뿐이다
     if (kind !== "bush" && Math.abs(Math.atan2(Math.sin(a - BEHIND), Math.cos(a - BEHIND))) < 0.55)
       continue;
+    if (DECOR_AT.some((d) => Math.hypot(d.x - x, d.z - z) < DECOR_CLEAR)) continue;
     const gap = kind === "bush" ? 0.52 : 0.7;
     if (
       out.some((p) => Math.hypot(p.x - x, p.z - z) < Math.max(gap, p.kind === "bush" ? 0.52 : 0.7))
@@ -156,6 +171,8 @@ export interface Island {
   hop(t: number): void;
   /** 가장 최근 나무가 자라난다(다 했어요 순간) */
   sprout(t: number): void;
+  /** 방금 열린 장식이 튀어나온다(레벨 업 순간). 나무가 자란 뒤에 */
+  reveal(t: number): void;
   /** 나무를 몇 그루 세웠나 */
   plants: number;
   /** 가장 최근 나무가 섬 위 어느 방향에 있나(라디안). 없으면 null */
@@ -172,6 +189,8 @@ export function buildIsland(
   {
     plants,
     seed,
+    decorations = [],
+    unveil = null,
     palette,
     mascot,
     light,
@@ -179,6 +198,10 @@ export function buildIsland(
   }: {
     plants: number;
     seed: string;
+    /** 섬에 세울 장식 — 이 레벨까지 열린 것 */
+    decorations?: DecorationId[];
+    /** 방금 열린 장식. `reveal` 전까지 숨어 있다 */
+    unveil?: DecorationId | null;
     palette: Palette;
     /** 캐릭터 그림. 없으면 섬만 */
     mascot: HTMLImageElement | null;
@@ -311,6 +334,21 @@ export function buildIsland(
     keep(fill);
     keep(outline);
   }
+
+  /* 장식 — 섬과 같이 돈다 */
+  const decor: { id: DecorationId; piece: Decoration; shownAt: number | null }[] = decorations.map(
+    (id) => {
+      const piece = buildDecoration(THREE, kit, palette, id);
+      const { x, z, a } = decorationSpot(id, ISLAND.azimuth);
+      piece.group.position.set(x, 0, z);
+      // 울타리는 가장자리를 따라, 나머지는 섬 앞(처음 보는 쪽)을 본다
+      piece.group.rotation.y = id === "fence" ? a : ISLAND.azimuth;
+      island.add(piece.group);
+      const hidden = id === unveil;
+      if (hidden) piece.group.scale.setScalar(0.0001);
+      return { id, piece, shownAt: hidden ? Infinity : null };
+    },
+  );
 
   const plantState = slots.slice(0, shown).map((s) => ({
     x: s.x,
@@ -464,6 +502,13 @@ export function buildIsland(
         }
         sprite.position.y = island.position.y + jump;
       }
+      for (const d of decor) {
+        if (!still) d.piece.update?.(t);
+        if (d.shownAt === null || d.shownAt === Infinity) continue;
+        const k = (t - d.shownAt) / 0.9;
+        d.piece.group.scale.setScalar(Math.max(0.0001, popOut(k)));
+        if (k >= 1) d.shownAt = null;
+      }
       const growing = plantState.some((p) => p.grownAt !== null);
       if (!still || growing || plantsDirty) {
         placePlants(t, still);
@@ -496,6 +541,13 @@ export function buildIsland(
       ring.position.set(newestSlot.x, 0.02, newestSlot.z);
       ringAt = start;
       hopAt = start + 0.1;
+    },
+    reveal(t) {
+      const d = decor.find((x) => x.id === unveil);
+      if (!d) return;
+      // 나무가 다 자란 다음 — 한 번에 하나씩 눈에 들어오게
+      d.shownAt = t + 1.5;
+      hopAt = t + 1.6;
     },
     dispose() {
       kit.dispose();
