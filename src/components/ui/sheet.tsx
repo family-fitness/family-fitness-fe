@@ -73,7 +73,7 @@ export function Sheet({
                   type="button"
                   onClick={onClose}
                   aria-label="닫기"
-                  className="text-ink-soft hover:text-ink -m-2 p-2"
+                  className="text-ink-soft -m-2 p-2"
                 >
                   <X className="size-5" />
                 </button>
