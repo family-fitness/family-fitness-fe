@@ -156,7 +156,7 @@ export default function ResultPage() {
           </Link>
         ) : (
           <>
-            <Link href="/coach/weekly" className="card press bg-signal-soft block">
+            <Link href="/plan" className="card press bg-signal-soft block">
               <p className="text-signal-deep text-sm font-extrabold">
                 {onlyOneFactor
                   ? "항목을 더 재면 더 잘 맞는 운동을 찾아요"

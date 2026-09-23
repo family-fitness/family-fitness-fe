@@ -15,6 +15,7 @@ import { BodyCard } from "@/components/domain/body-card";
 import { ChildSwitch } from "@/components/domain/child-switch";
 import { FamilyCard } from "@/components/domain/family-card";
 import { FinderCard } from "@/components/domain/finder-card";
+import { ProposalNudge } from "@/components/domain/proposal-nudge";
 import { TodayCard } from "@/components/domain/today-card";
 import { UpdateNudge } from "@/components/domain/update-nudge";
 import { WeekCard } from "@/components/domain/week-card";
@@ -105,6 +106,8 @@ export default function ParentHomePage() {
 
         <BodyCard child={child} />
         <UpdateNudge child={child} />
+
+        <ProposalNudge familyId={familyId} />
 
         <TodayCard
           familyId={familyId ?? ""}

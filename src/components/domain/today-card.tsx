@@ -60,7 +60,7 @@ export function TodayCard({
           {withJosa(childName, "은는")} 아직 오늘 운동이 없어요
         </p>
         <Link
-          href="/coach/weekly"
+          href="/plan"
           className="press bg-signal-strong mt-3 flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
         >
           <ArtIcon name="icon/menu-ai" fallback={Sparkles} className="size-5" />

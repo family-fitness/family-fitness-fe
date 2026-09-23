@@ -282,13 +282,35 @@ export function useCreatePrediction(profileId: Uuid) {
 /* ─── 코치 ─────────────────────────────────────────────────── */
 
 /** 비동기다. 202 로 접수만 되고 status 가 RUNNING 으로 시작한다 */
+/**
+ * 오늘 운동을 짜 달라고 한다. 채팅이 아니라 **고른 조건**을 보낸다(9/23 회의).
+ *
+ * ▲ 계약의 요청은 한 주 단위(`weekStart` · `daysPerWeek` · `minutesPerSession`)다.
+ * 하루 단위와 조건 칸을 요청해 두었다(`BACKEND_ASKS.md`). `minutesPerSession` 은
+ * 지금 서버도 알아듣게 같이 보낸다.
+ */
+export interface PlanRequest {
+  /** 누구의 운동인지 */
+  profileId: string;
+  /** YYYY-MM-DD. 그날 하루 */
+  date: string;
+  minutes: number;
+  /** 아랫집이 신경 쓰이면 뛰는 동작을 뺀다 */
+  quiet: boolean;
+  place: "HOME" | "OUTDOOR";
+  /** 부모가 고른 힘. null 이면 코치가 가장 낮은 요인을 고른다 */
+  focusFactor: string | null;
+  /** 부모도 같이 하나. 참여 방식에서 기본값이 온다 */
+  withParent: boolean;
+}
+
 export function useStartCoachRun(familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { daysPerWeek?: number; minutesPerSession?: number } = {}) =>
+    mutationFn: (body: PlanRequest) =>
       api.post<{ coachRunId: string; status: string; pollAfterMs: number }>(
         `/families/${familyId}/coach/runs`,
-        body,
+        { ...body, minutesPerSession: body.minutes },
       ),
     onSuccess: (run) => {
       qc.invalidateQueries({ queryKey: qk.coach.run(run.coachRunId) });
@@ -304,7 +326,8 @@ export function useCoachRun(runId: Uuid | undefined) {
     queryKey: qk.coach.run(runId ?? ""),
     queryFn: () => api.get<CoachRun>(`/coach/runs/${runId}`),
     enabled: Boolean(runId),
-    refetchInterval: (q) => (q.state.data?.status === "RUNNING" ? 1500 : false),
+    // 짜는 동안은 촘촘히 — 단계가 하나씩 차오르는 것이 이 화면의 전부다
+    refetchInterval: (q) => (q.state.data?.status === "RUNNING" ? 700 : false),
   });
 }
 

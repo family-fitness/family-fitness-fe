@@ -4,7 +4,7 @@ import { ExternalLink } from "lucide-react";
 
 import { safeUrl } from "@/lib/safe-url";
 
-/** AI 가 답한 근거. */
+/** AI 편성 제안의 근거. 제안마다 늘 붙는다(규칙 6) */
 /** 인용의 라벨 이름이 두 곳에서 다르다. */
 interface CitationLike {
   index?: number;
@@ -25,7 +25,7 @@ export function Citations({
     return (
       <p className={className}>
         <span className="text-faint text-caption">
-          근거를 불러오지 못했어요. 이 답변은 참고만 해 주세요.
+          근거를 불러오지 못했어요. 이 제안은 참고만 해 주세요.
         </span>
       </p>
     );

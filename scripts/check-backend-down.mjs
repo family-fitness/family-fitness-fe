@@ -26,7 +26,7 @@ const ME = JSON.stringify(
  * 참여 방식은 /me 로 이미 받은 값만 그려서 화면 자체는 멀쩡하고,
  * **고른 순간** 저장에 실패하면 그때 말해 준다 — 열자마자 경고를 띄울 이유가 없다.
  */
-const SILENT_OK = new Set(["/coach/weekly", "/settings", "/settings/support-mode"]);
+const SILENT_OK = new Set(["/plan", "/settings", "/settings/support-mode"]);
 
 const ROUTES = [
   "/parent",
@@ -36,7 +36,7 @@ const ROUTES = [
   "/kid",
   "/kid/m/seed-today",
   "/kid/praise",
-  "/coach/weekly",
+  "/plan",
   "/videos",
   "/family/cheer",
   "/settings",

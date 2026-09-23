@@ -23,7 +23,7 @@ const ROUTES = {
     "/parent/history",
     "/parent/family",
     `/parent/child/${KID}`,
-    "/coach/weekly",
+    "/plan",
     "/videos",
     "/videos?list=favorites",
     "/videos?list=recent",

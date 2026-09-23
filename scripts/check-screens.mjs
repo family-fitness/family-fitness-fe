@@ -29,7 +29,7 @@ const ROUTES = [
   "/kid",
   "/kid/praise",
   "/kid/m/seed-today",
-  "/coach/weekly",
+  "/plan",
   "/videos",
   "/videos?list=favorites",
   "/videos?list=recent",
