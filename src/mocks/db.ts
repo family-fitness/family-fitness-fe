@@ -314,14 +314,28 @@ export function daysAgo(days: number, hour: number): string {
  * 하나 있어야 이 서비스가 무엇을 하는지 한 화면에서 보인다.
  */
 export function seedCheers(): CheerLog[] {
-  type Row = { from: string; to: string; msg: string; mission: string | null; days: number };
+  type Row = {
+    from: string;
+    to: string;
+    msg: string;
+    mission: string | null;
+    days: number;
+    sticker?: string;
+  };
   const rows: Row[] = [
-    // 어제 — 아이가 다 했다고 알렸고 엄마 · 아빠가 답했다
+    // 어제 — 아이가 다 했다고 알렸고 엄마 · 아빠가 스티커로 답했다
     { from: DEMO.kid, to: DEMO.mom, msg: "오늘 운동 다 했어요!", mission: null, days: 1 },
-    { from: DEMO.mom, to: DEMO.kid, msg: "끝까지 한 게 제일 멋있어", mission: null, days: 1 },
-    { from: DEMO.dad, to: DEMO.kid, msg: "아빠보다 오래 하던데?", mission: null, days: 1 },
+    {
+      from: DEMO.mom,
+      to: DEMO.kid,
+      msg: "끝까지 한 게 제일 멋있어",
+      mission: null,
+      days: 1,
+      sticker: "flag",
+    },
+    { from: DEMO.dad, to: DEMO.kid, msg: "슝 빨라졌어", mission: null, days: 1, sticker: "rocket" },
     // 사흘 전
-    { from: DEMO.mom, to: DEMO.kid, msg: "오늘 진짜 잘했어", mission: null, days: 3 },
+    { from: DEMO.mom, to: DEMO.kid, msg: "최고야", mission: null, days: 3, sticker: "star" },
   ];
   const nameOf = (id: string) =>
     fixtures.profiles.profiles.find((p) => p.profileId === id)?.name ?? "가족";
@@ -333,6 +347,7 @@ export function seedCheers(): CheerLog[] {
     toProfileId: row.to,
     message: row.msg,
     missionId: row.mission,
+    stickerId: row.sticker ?? null,
     createdAt: daysAgo(row.days, row.from === DEMO.kid ? 17 : 21),
   }));
 }

@@ -29,6 +29,7 @@ import {
 import { clips } from "./clips";
 import { coaching } from "./coach";
 import { history } from "./history";
+import { notifications } from "./notifications";
 import { progress } from "./progress";
 
 export { DEMO, setActingProfile } from "./db";
@@ -374,6 +375,8 @@ const identity = [
       toProfileId: body.toProfileId,
       message: body.message ?? null,
       missionId: body.missionId ?? null,
+      // ▲ 계약에 칸이 없어 `emoji` 로 온다
+      stickerId: body.stickerId ?? body.emoji ?? null,
       createdAt: cheer.createdAt,
     });
     saveCheers(db.cheers);
@@ -388,7 +391,7 @@ const identity = [
     const to = new URL(request.url).searchParams.get("toProfileId");
     const cheers = (to ? db.cheers.filter((c) => c.toProfileId === to) : db.cheers)
       .slice()
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
     return HttpResponse.json({ cheers });
   }),
 ];
@@ -839,4 +842,5 @@ export const handlers = [
   ...history,
   ...progress,
   ...clips,
+  ...notifications,
 ];

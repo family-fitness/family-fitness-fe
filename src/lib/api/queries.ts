@@ -22,6 +22,7 @@ import type {
   FitnessTestResult,
   InviteCode,
   InvitePeek,
+  NotificationList,
   LatestWithBody,
   MeResponse,
   NextStep,
@@ -57,6 +58,7 @@ export const qk = {
     progress: (profileId: Uuid) => ["profile", profileId, "progress"] as const,
     availability: (profileId: Uuid) => ["profile", profileId, "availability"] as const,
   },
+  notifications: (profileId: Uuid) => ["notifications", profileId] as const,
   fitness: {
     items: (ageGroup: AgeGroup | undefined) => ["fitness", "items", ageGroup ?? "all"] as const,
   },
@@ -439,16 +441,23 @@ export function useConfirmParticipant(missionId: Uuid, familyId: Uuid) {
 export function useSendCheer(familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: {
+    mutationFn: ({
+      stickerId,
+      ...body
+    }: {
       fromProfileId: string;
       toProfileId: string;
       message?: string;
       missionId?: string;
-    }) => api.post<Cheer>(`/families/${familyId}/cheers`, body),
+      /** 붙일 스티커. ▲ 계약에 칸이 없어 `emoji` 에 싣는다 */
+      stickerId?: string;
+    }) => api.post<Cheer>(`/families/${familyId}/cheers`, { ...body, emoji: stickerId ?? null }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "cheers"] });
       // 붙인 스티커는 그날 칸에 남는다
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
+      // 받는 쪽 종에 점이 뜬다
+      qc.invalidateQueries({ queryKey: ["notifications"] });
       refreshProgress(qc);
     },
   });
@@ -599,5 +608,36 @@ export function useToggleClipFavorite(profileId: Uuid) {
     mutationFn: ({ clipId, favorited }: { clipId: string; favorited: boolean }) =>
       api.post(`/clips/${encodeURIComponent(clipId)}/favorite`, { profileId, favorited }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["clips"] }),
+  });
+}
+
+/* ─── 알림 ────────────────────────────────────────────────── */
+
+/**
+ * 한 사람의 알림. 종의 점과 알림 화면이 같이 쓴다.
+ * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
+ */
+export function useNotifications(profileId: Uuid | undefined) {
+  return useQuery({
+    queryKey: qk.notifications(profileId ?? ""),
+    queryFn: () => api.get<NotificationList>(`/notifications${query({ profileId })}`),
+    enabled: Boolean(profileId),
+    // 아이가 「다 했어요」 를 누르면 부모 종에 점이 떠야 한다. 푸시가 없는 동안은 가끔 묻는다
+    refetchInterval: 60_000,
+  });
+}
+
+/**
+ * 다 읽었다. **목록은 다시 받지 않고 점만 끈다** — 들어오자마자 목록을 다시 받으면
+ * 이번에 새로 온 것의 표시가 사라져 무엇이 새로 왔는지 못 본다.
+ */
+export function useMarkNotificationsRead(profileId: Uuid | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<void>(`/notifications/read`, { profileId }),
+    onSuccess: () =>
+      qc.setQueryData<NotificationList>(qk.notifications(profileId ?? ""), (old) =>
+        old ? { ...old, unread: 0 } : old,
+      ),
   });
 }

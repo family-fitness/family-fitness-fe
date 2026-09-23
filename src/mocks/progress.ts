@@ -58,9 +58,7 @@ export function progressOf(profileId: string): ProgressView {
     .filter((l): l is DayLog => l !== null && l.minutes > 0);
   const active = new Set(logs.map((l) => l.date));
   const tests = db.tests[profileId] ?? [];
-  const stickers = db.cheers.filter(
-    (c) => c.toProfileId === profileId && (c as { stickerId?: string | null }).stickerId,
-  );
+  const stickers = db.cheers.filter((c) => c.toProfileId === profileId && c.stickerId);
 
   const events: XpEvent[] = [
     ...logs.map((l) => ({
@@ -97,7 +95,8 @@ export function progressOf(profileId: string): ProgressView {
       tests.length,
       stickers.map((c) => c.createdAt),
     ),
-    recentXp: events.sort((a, b) => b.at.localeCompare(a.at)).slice(0, 5),
+    // 시각이 「Z」 와 「+09:00」 으로 섞여 온다 — 글자가 아니라 시각으로 줄 세운다
+    recentXp: events.sort((a, b) => Date.parse(b.at) - Date.parse(a.at)).slice(0, 5),
   };
 }
 

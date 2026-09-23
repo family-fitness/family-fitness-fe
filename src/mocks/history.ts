@@ -156,15 +156,10 @@ export function dayLogFor(profileId: string, date: string): DayLog | null {
 /** 그날 받은 스티커. 칭찬 목록에서 스티커가 붙은 것만 */
 function stickersOn(profileId: string, date: string): StickerLog[] {
   return db.cheers
-    .filter(
-      (c) =>
-        c.toProfileId === profileId &&
-        (c as { stickerId?: string | null }).stickerId &&
-        dayOf(c.createdAt) === date,
-    )
+    .filter((c) => c.toProfileId === profileId && c.stickerId && dayOf(c.createdAt) === date)
     .map((c) => ({
       cheerId: c.cheerId,
-      stickerId: (c as { stickerId?: string }).stickerId ?? "",
+      stickerId: c.stickerId ?? "",
       fromProfileId: c.fromProfileId,
       fromName: c.fromName,
       message: c.message,
