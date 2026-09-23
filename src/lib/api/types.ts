@@ -80,7 +80,6 @@ export type CoachRun = S["CoachRunView"];
 export type CoachProposal = S["ProposalView"];
 export type CoachStep = S["CoachStep"];
 export type CoachApproveResult = S["ApproveCoachRunView"];
-export type ChatCitation = S["ChatCitationView"];
 
 export type MissionList = S["MissionListView"];
 export type Mission = S["MissionView"];

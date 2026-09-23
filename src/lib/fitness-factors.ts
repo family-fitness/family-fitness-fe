@@ -14,16 +14,6 @@ export const FACTORS = ["심폐지구력", "근력", "근지구력", "유연성"
 
 export type Factor = (typeof FACTORS)[number];
 
-/** 축 이름이 길면 도형 밖에서 두 줄이 된다. 짧은 이름을 따로 둔다 */
-export const FACTOR_SHORT: Record<Factor, string> = {
-  심폐지구력: "심폐",
-  근력: "근력",
-  근지구력: "근지구",
-  유연성: "유연성",
-  민첩성: "민첩성",
-  순발력: "순발력",
-};
-
 /** 이 요인이 무엇인지 한 마디. 처음 보는 부모가 읽는다 */
 export const FACTOR_NOTE: Record<Factor, string> = {
   심폐지구력: "오래 뛰어도 숨이 덜 차는 힘",

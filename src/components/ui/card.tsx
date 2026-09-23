@@ -83,36 +83,3 @@ export function CardHead({
     <div className={cn("flex min-h-8 items-center justify-between gap-2", className)}>{inner}</div>
   );
 }
-
-/** 라벨 위, 큰 숫자 아래. 헬스 앱이 수치를 보여 주는 가장 작은 단위 */
-export function Metric({
-  label,
-  value,
-  unit,
-  size = "md",
-  className,
-}: {
-  label?: ReactNode;
-  value: ReactNode;
-  unit?: string;
-  size?: "sm" | "md" | "lg";
-  className?: string;
-}) {
-  return (
-    <div className={className}>
-      {label && <p className="metric-label">{label}</p>}
-      <p
-        className={cn(
-          "metric-value",
-          label && "mt-1",
-          size === "lg" && "text-metric-lg",
-          size === "md" && "text-metric",
-          size === "sm" && "text-xl",
-        )}
-      >
-        {value}
-        {unit && <span className="metric-unit">{unit}</span>}
-      </p>
-    </div>
-  );
-}
