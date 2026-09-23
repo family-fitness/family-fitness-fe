@@ -4,6 +4,7 @@ import { Card, CardHead } from "@/components/ui/card";
 import type { FitnessMapMember } from "@/lib/api/types";
 import { daysSince } from "@/lib/today";
 import { withJosa } from "@/lib/utils";
+import { ArtIcon } from "@/components/ui/art-icon";
 
 /**
  * 며칠이 지나면 다시 재자고 말할지.
@@ -25,7 +26,7 @@ export function UpdateNudge({ child }: { child: FitnessMapMember }) {
           aria-hidden
           className="bg-mark-soft text-ink grid size-11 shrink-0 place-items-center rounded-2xl"
         >
-          <Ruler className="size-5" />
+          <ArtIcon name="icon/menu-measure" fallback={Ruler} className="size-6" />
         </span>
         <div className="min-w-0 flex-1">
           <CardHead title="키 · 몸무게를 새로 잴 때예요" chevron />

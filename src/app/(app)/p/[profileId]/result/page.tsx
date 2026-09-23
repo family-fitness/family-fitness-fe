@@ -13,7 +13,7 @@ import { BandChip, GradeBadge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FACTOR_ICON } from "@/components/domain/factor-icon";
+import { FactorIcon } from "@/components/domain/factor-icon";
 import { FactorRadar, RadarGapNote } from "@/components/domain/factor-radar";
 import { RecordRow } from "@/components/domain/record-bar";
 import { isFactor } from "@/lib/fitness-factors";
@@ -171,11 +171,17 @@ export default function ResultPage() {
             <ul className="card divide-rows py-1">
               <ListRow
                 href={`/p/${profileId}/future`}
+                art="icon/menu-future"
                 icon={LineChart}
                 title="10년 위 연령대 보기"
                 description="지금과 같은 조건의 10년 위 연령대"
               />
-              <ListRow href={`/p/${profileId}/measure`} icon={Ruler} title="다시 재기" />
+              <ListRow
+                href={`/p/${profileId}/measure`}
+                art="icon/menu-measure"
+                icon={Ruler}
+                title="다시 재기"
+              />
             </ul>
           </>
         )}
@@ -214,14 +220,17 @@ function ResultSkeleton() {
 
 /** 한 요인 한 줄 — 요인 아이콘과 이름 */
 function FactorLine({ label, factor }: { label: string; factor: string | undefined }) {
-  const Icon = isFactor(factor) ? FACTOR_ICON[factor] : Activity;
   return (
     <div className="flex items-center gap-3 py-3">
       <span
         aria-hidden
         className="bg-signal-soft text-signal-strong grid size-10 shrink-0 place-items-center rounded-xl"
       >
-        <Icon className="size-5" strokeWidth={2.1} />
+        {isFactor(factor) ? (
+          <FactorIcon factor={factor} className="size-6" />
+        ) : (
+          <Activity className="size-5" strokeWidth={2.1} />
+        )}
       </span>
       <div className="min-w-0">
         <p className="text-caption text-ink-soft font-bold">{label}</p>

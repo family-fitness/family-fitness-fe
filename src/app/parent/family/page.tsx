@@ -71,12 +71,14 @@ export default function MembersPage() {
         <ul className="card divide-rows py-1">
           <ListRow
             href="/settings/support-mode"
+            art="icon/menu-support"
             icon={HeartHandshake}
             title="얼마나 같이 할지"
             description={SUPPORT_COPY[mySupportMode ?? "none"]}
           />
           <ListRow
             href="/family/cheer"
+            art="icon/menu-cheer"
             icon={MessageCircleHeart}
             title="응원 보내기"
             description="가족끼리 한마디"

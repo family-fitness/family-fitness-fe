@@ -13,6 +13,7 @@ import { VERIFIED_COPY } from "@/lib/mission";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { dayOf, today } from "@/lib/today";
 import { cn, withJosa } from "@/lib/utils";
+import { ArtIcon } from "@/components/ui/art-icon";
 
 /**
  * 부모 홈 — 아이의 오늘.
@@ -62,7 +63,7 @@ export function TodayCard({
           href="/coach/weekly"
           className="press bg-signal-strong mt-3 flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
         >
-          <Sparkles aria-hidden className="size-4" />
+          <ArtIcon name="icon/menu-ai" fallback={Sparkles} className="size-5" />
           AI 에게 오늘 운동 받기
         </Link>
       </Card>

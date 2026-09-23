@@ -1,4 +1,4 @@
-import { FACTOR_ICON } from "@/components/domain/factor-icon";
+import { FactorIcon } from "@/components/domain/factor-icon";
 import { BAND_COPY, type FitnessItem, type ItemResult, type RadarPoint } from "@/lib/api/types";
 import { FACTOR_NOTE, itemsByFactor, toHexagon } from "@/lib/fitness-factors";
 import { cn } from "@/lib/utils";
@@ -26,7 +26,6 @@ export function FactorTable({
   return (
     <ul className="divide-rows">
       {hex.map((p) => {
-        const Icon = FACTOR_ICON[p.factor];
         const item = byFactor.get(p.factor);
         const howTo = (catalog ?? []).find((c) => c.factor === p.factor);
         const missing = p.percentile == null;
@@ -39,7 +38,7 @@ export function FactorTable({
                 missing ? "bg-sub text-faint" : "bg-signal-soft text-signal-strong",
               )}
             >
-              <Icon className="size-4.5" strokeWidth={2.2} />
+              <FactorIcon factor={p.factor} className="size-5.5" />
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">

@@ -4,7 +4,7 @@ import type { UseFormRegisterReturn } from "react-hook-form";
 
 import { Activity } from "lucide-react";
 
-import { FACTOR_ICON } from "@/components/domain/factor-icon";
+import { FactorIcon } from "@/components/domain/factor-icon";
 import type { FitnessItem } from "@/lib/api/types";
 import { isFactor } from "@/lib/fitness-factors";
 import { cn } from "@/lib/utils";
@@ -20,8 +20,6 @@ export function MeasureField({
   error?: string;
 }) {
   const range = item.range;
-  // 무엇을 키우는 항목인지 요인 아이콘으로. 항목마다 그림을 뽑던 것은 결이 제각각이었다
-  const Icon = isFactor(item.factor) ? FACTOR_ICON[item.factor] : Activity;
 
   return (
     <div className="flex items-start gap-3 py-3.5">
@@ -29,7 +27,12 @@ export function MeasureField({
         aria-hidden
         className="bg-signal-soft text-signal-strong mt-0.5 grid size-10 shrink-0 place-items-center rounded-xl"
       >
-        <Icon className="size-5" strokeWidth={2.1} />
+        {/* 무엇을 키우는 항목인지 요인 그림으로. 항목마다 뽑던 그림은 결이 제각각이었다 */}
+        {isFactor(item.factor) ? (
+          <FactorIcon factor={item.factor} className="size-6" />
+        ) : (
+          <Activity className="size-5" strokeWidth={2.1} />
+        )}
       </span>
 
       <div className="min-w-0 flex-1">

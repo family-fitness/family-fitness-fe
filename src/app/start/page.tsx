@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useFamilyProfiles } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
+import { ArtIcon } from "@/components/ui/art-icon";
 
 /** 부모인가 아이인가. */
 export default function StartPage() {
@@ -95,7 +96,7 @@ export default function StartPage() {
               aria-hidden
               className="bg-mark-soft text-ink grid size-20 shrink-0 place-items-center rounded-full"
             >
-              <Users className="size-9" strokeWidth={1.8} />
+              <ArtIcon name="icon/role-parent" fallback={Users} className="size-11" />
             </span>
           }
         />
