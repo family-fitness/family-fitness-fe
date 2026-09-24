@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, path, query } from "./client";
 import type {
@@ -496,37 +496,6 @@ export function useCalendar(
       ),
     enabled: Boolean(familyId && profileId),
   });
-}
-
-/**
- * 가족이 이번 주에 같이 움직인 분 — 가족 다리의 널판. **합만** 쓴다(누가 몇 분인지 나누지 않는다).
- * 사람마다 날짜별 기록을 받아 더한다. 캘린더와 같은 열쇠라 이미 받은 사람 것은 다시 안 받는다.
- * ▲ 요청: `GET /families/{familyId}/calendar?from=&to=` 에 가족 합(`familyMinutes`)을 같이
- */
-export function useFamilyWeek(
-  familyId: Uuid | undefined,
-  profileIds: Uuid[],
-  range: { from: string; to: string },
-) {
-  const week = useQueries({
-    queries: profileIds.map((profileId) => ({
-      queryKey: qk.family.calendar(familyId ?? "", profileId, range.from, range.to),
-      queryFn: () =>
-        api.get<CalendarView>(
-          path`/families/${familyId}/calendar${query({ profileId, from: range.from, to: range.to })}`,
-        ),
-      enabled: Boolean(familyId && profileId),
-    })),
-    combine: (results) => ({
-      minutes: results.reduce(
-        (sum, r) => sum + (r.data?.days ?? []).reduce((a, d) => a + d.minutes, 0),
-        0,
-      ),
-      pending: results.some((r) => r.isPending),
-    }),
-  });
-  // 가족 목록을 아직 못 받았으면 기다리는 중이다 — 빈 목록을 「0분」 으로 그리면 한 번 틀린 값을 보인다
-  return profileIds.length === 0 ? { minutes: 0, pending: true } : week;
 }
 
 /**
