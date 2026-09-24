@@ -256,6 +256,7 @@ export default function AddChildPage() {
                     </button>
                   );
                 })}
+                <p className="text-faint text-caption pt-0.5">설정에서 언제든 철회할 수 있어요.</p>
               </fieldset>
             )}
 
