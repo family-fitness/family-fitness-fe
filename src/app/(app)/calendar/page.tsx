@@ -15,7 +15,7 @@ import { DayRings } from "@/components/domain/day-rings";
 import { StickerArt } from "@/components/domain/sticker-art";
 import type { DayLog } from "@/lib/api/types";
 import { useCalendar, useFitnessMap, useMissions } from "@/lib/api/queries";
-import { plannedDay } from "@/lib/day";
+import { daySummary, plannedDay } from "@/lib/day";
 import { useSession } from "@/lib/session";
 import { stickerOf } from "@/lib/stickers";
 import { longDate, monthGrid, monthLabel, monthOf, shiftMonth, today } from "@/lib/today";
@@ -272,6 +272,7 @@ function DayCell({
 }) {
   const day = Number(date.slice(8));
   const moved = log && log.minutes > 0 ? log : undefined;
+  const summary = daySummary(log);
   const sticker = log?.stickers[0] ? stickerOf(log.stickers[0].stickerId) : undefined;
   const size = 38;
   const stroke = 4;
@@ -282,7 +283,8 @@ function DayCell({
       type="button"
       onClick={onPick}
       disabled={future && !planned}
-      aria-label={`${longDate(date)}${moved ? ` · ${moved.minutes}분` : ""}${sticker ? ` · ${sticker.label} 스티커` : ""}${planned && !moved ? " · 운동 잡혀 있음" : ""}`}
+      // 링 둘이 말하는 것을 다 읽어 준다 — 범례는 화면 읽기에서 숨어 있다
+      aria-label={`${longDate(date)}${moved ? ` · 움직인 시간 ${moved.minutes}분 · 끝낸 운동 ${summary.done}개` : ""}${sticker ? ` · ${sticker.label} 스티커` : ""}${planned && !moved ? " · 운동 잡혀 있음" : ""}`}
       className={cn(
         "press relative grid size-11 place-items-center rounded-full",
         isToday && "bg-signal-soft",
