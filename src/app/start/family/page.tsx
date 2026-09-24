@@ -105,7 +105,7 @@ export default function CreateFamilyPage() {
                   type="button"
                   onClick={() => setSex(value)}
                   aria-pressed={sex === value}
-                  className={cn("chip press", sex === value && "chip-on")}
+                  className={cn("chip press", sex === value ? "chip-on" : "bg-paper shadow-card")}
                 >
                   {label}
                 </button>
