@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useFamilyProfiles } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
-import { Initial } from "@/components/ui/initial";
+import { ProfileAvatar } from "@/components/domain/profile-avatar";
 
 /** 형제 중 누구인지. */
 export default function WhoPage() {
@@ -64,7 +64,7 @@ export default function WhoPage() {
                 }}
                 className="press border-line flex w-full items-center gap-4 rounded-3xl border-2 p-4 text-left"
               >
-                <Initial name={kid.name} size="lg" />
+                <ProfileAvatar profileId={kid.profileId} name={kid.name} size="lg" />
                 <span className="text-xl font-extrabold">{kid.name}</span>
               </button>
             </li>

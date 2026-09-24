@@ -4,7 +4,7 @@ import { Check, Copy, Link2, Share2 } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Initial } from "@/components/ui/initial";
+import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { NavLink } from "@/components/ui/nav-link";
 import { Sheet } from "@/components/ui/sheet";
 import type { ProfileSummary } from "@/lib/api/types";
@@ -174,7 +174,11 @@ export function InviteSheet({
                     onClick={() => setPicked(m.profileId ?? null)}
                     className="press flex min-h-14 w-full items-center gap-3 text-left"
                   >
-                    <Initial name={m.name} tone={m.role === "CHILD" ? "signal" : "mark"} />
+                    <ProfileAvatar
+                      profileId={m.profileId}
+                      name={m.name}
+                      tone={m.role === "CHILD" ? "signal" : "mark"}
+                    />
                     <span className="min-w-0 flex-1">
                       <span className="block font-extrabold">{m.name}</span>
                       <span className="text-caption text-ink-soft block">

@@ -35,6 +35,7 @@ import type {
   Uuid,
   FamilyLeague,
   RestDays,
+  FamilyCreated,
 } from "./types";
 
 /**
@@ -142,7 +143,7 @@ export function useCreateFamily() {
     mutationFn: (body: {
       familyName: string;
       owner: { name: string; birthDate: string; sex: "M" | "F" };
-    }) => api.post("/families", body),
+    }) => api.post<FamilyCreated>("/families", body),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.me() }),
   });
 }

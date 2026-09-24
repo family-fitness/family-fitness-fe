@@ -61,6 +61,8 @@ export type MeResponse = S["MeResponse"];
 export type AuthResponse = S["AuthResponse"];
 export type FamilyProfiles = S["FamilyProfilesResponse"];
 export type InviteCode = S["InviteResponse"];
+/** 가족을 만들면 돌아오는 것 — 가족 id 와 만든 사람의 프로필 */
+export type FamilyCreated = S["FamilyCreatedResponse"];
 export type Cheer = S["CheerResponse"];
 
 export type FitnessMap = S["FitnessMapResponse"];

@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
-import { Initial } from "@/components/ui/initial";
+import { PhotoSheet } from "@/components/domain/photo-sheet";
+import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { ListRow } from "@/components/ui/list-row";
 import { useFamilyProfiles } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
@@ -27,6 +29,7 @@ export default function SettingsPage() {
   const resetRole = useRoleStore((s) => s.reset);
   const mode = useRoleStore((s) => s.mode);
   const parentView = profile?.role === "PARENT" && mode !== "kid";
+  const [photoOpen, setPhotoOpen] = useState(false);
 
   return (
     <>
@@ -34,7 +37,20 @@ export default function SettingsPage() {
       <Stage wide className="space-y-3">
         {/* 지금 누구로 쓰고 있나. 한 기기를 부모와 아이가 번갈아 쓴다 */}
         <section className="card flex items-center gap-3">
-          <Initial name={profile?.name} size="lg" tone={parentView ? "mark" : "signal"} />
+          {/* 누르면 내 사진 바꾸기 */}
+          <button
+            type="button"
+            onClick={() => setPhotoOpen(true)}
+            aria-label="내 사진 바꾸기"
+            className="press grid size-12 shrink-0 place-items-center rounded-full"
+          >
+            <ProfileAvatar
+              profileId={profile?.profileId}
+              name={profile?.name}
+              size="lg"
+              tone={parentView ? "mark" : "signal"}
+            />
+          </button>
           <div className="min-w-0 flex-1">
             <p className="text-lead truncate font-extrabold">{profile?.name ?? "나"}</p>
             <p className="text-caption text-ink-soft mt-0.5">
@@ -71,6 +87,14 @@ export default function SettingsPage() {
           아니며, 건강에 관한 판단은 전문가와 상담하세요.
         </p>
       </Stage>
+      {profile?.profileId && (
+        <PhotoSheet
+          open={photoOpen}
+          onClose={() => setPhotoOpen(false)}
+          profileId={profile.profileId}
+          name={profile.name ?? "나"}
+        />
+      )}
     </>
   );
 }

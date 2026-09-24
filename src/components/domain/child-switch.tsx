@@ -1,6 +1,6 @@
 "use client";
 
-import { Initial } from "@/components/ui/initial";
+import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import type { FitnessMapMember } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +32,12 @@ export function ChildSwitch({
                   on ? "bg-signal-strong text-white" : "bg-paper shadow-card",
                 )}
               >
-                <Initial name={kid.name} size="sm" tone={on ? "sub" : "signal"} />
+                <ProfileAvatar
+                  profileId={kid.profileId}
+                  name={kid.name}
+                  size="sm"
+                  tone={on ? "sub" : "signal"}
+                />
                 <span className="text-sm font-bold">{kid.name}</span>
               </button>
             </li>

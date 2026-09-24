@@ -15,7 +15,7 @@ import type { ProfileSummary } from "@/lib/api/types";
 import { useFamilyProfiles, useUpdateConsent } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
-import { Initial } from "@/components/ui/initial";
+import { ProfileAvatar } from "@/components/domain/profile-avatar";
 
 /** 보호자 동의 관리. */
 function ConsentPageContent() {
@@ -92,7 +92,7 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
   return (
     <li className="py-4">
       <div className="flex items-center gap-3">
-        <Initial name={child.name} />
+        <ProfileAvatar profileId={child.profileId} name={child.name} />
         <div className="min-w-0 flex-1">
           <p className="text-body font-bold">{child.name}</p>
           <p className={cn("mt-0.5 text-xs font-semibold", given ? "text-done" : "text-ink-soft")}>

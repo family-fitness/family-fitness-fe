@@ -8,7 +8,7 @@ import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Stage } from "@/components/app-shell/stage";
 import { Dock } from "@/components/ui/dock";
 import { CardHead } from "@/components/ui/card";
-import { Initial } from "@/components/ui/initial";
+import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AvailabilitySlot, Weekday } from "@/lib/api/types";
 import { useAvailability, useFamilyProfiles, useSaveAvailability } from "@/lib/api/queries";
@@ -104,7 +104,8 @@ function Schedule() {
                         on ? "bg-signal-strong text-white" : "bg-paper shadow-card",
                       )}
                     >
-                      <Initial
+                      <ProfileAvatar
+                        profileId={p.profileId}
                         name={p.name}
                         size="sm"
                         tone={on ? "sub" : p.role === "CHILD" ? "signal" : "mark"}

@@ -9,7 +9,7 @@
  * 없어서 새 사용자가 첫 관문을 못 넘고 있었는데 아무 검사도 빨갛지 않았다.
  *
  * 두 길을 걷는다.
- *   1. 가족 없는 계정 → 가족 만들기 → 아이 등록 → 참여 방식 → 부모 홈
+ *   1. 가족 없는 계정 → 첫 시작(키움이 인사 · 가족 · 보호자 · 아이 · 동의 · 참여 방식 · 운동 시간 · 첫 측정) → 부모 홈
  *   2. 초대받은 계정 → 자리 확인 → 참여 방식 → 역할 고르기
  */
 import { chromium } from "playwright";
@@ -77,45 +77,68 @@ await walk("새 가족 만들기", async (h) => {
     await page.getByRole("button", { name: /새 계정/ }).click();
     await h.until(/\/start\/family/);
   });
-  await h.step("가족 만들기 폼", async () => {
+  /** 첫 시작 — 한 화면에 질문 하나. 칸마다 「다음」 */
+  const next = async (name = "다음") => {
+    await page.getByRole("button", { name, exact: true }).click();
+    await h.settle(700);
+  };
+  await h.step("키움이 인사", async () => {
+    await page.getByRole("heading", { name: /저는 키움이에요/ }).waitFor({ timeout: 8000 });
+    await next("좋아요");
+  });
+  await h.step("가족 이름 · 보호자 이름 · 성별 · 생년월일", async () => {
     await page.getByLabel("가족 이름").fill("민서네");
-    await page.getByLabel("내 이름").fill("지영");
-    await page.locator("input[type=date]").fill("1988-04-12");
-    await page.getByRole("button", { name: "여성" }).click();
-    await h.settle(300);
-    await page.getByRole("button", { name: "가족 만들기" }).click();
-    await h.until(/\/start\/child/);
+    await next();
+    await page.getByLabel("보호자 이름").fill("지영");
+    await next();
+    await page.getByRole("radio", { name: /여성/ }).click();
+    await next();
+    await page.getByLabel("보호자 생년월일").fill("1988-04-12");
+    await next();
   });
-  await h.step("아이 이름 · 생일 · 성별", async () => {
-    await page.getByLabel("이름", { exact: true }).fill("민서");
-    await page.locator("input[type=date]").fill("2017-08-03");
-    await page.getByRole("button", { name: "여자" }).click();
-    await h.settle(300);
-    await page.getByRole("button", { name: "다음" }).click();
-    await h.settle(1100);
+  await h.step("보호자 사진은 건너뛴다 → 가족이 생긴다", async () => {
+    await next();
+    await page.getByLabel("아이 이름").waitFor({ timeout: 8000 });
+    // 가족을 만든 뒤에는 뒤로 가지 않는다 — 두 번 만들지 않게
+    if (await page.getByRole("button", { name: "뒤로" }).count()) {
+      problems.push("새 가족 만들기\n    가족을 만든 뒤에도 뒤로 단추가 있다");
+    }
   });
-  await h.step("키 · 몸무게 · 보호자 동의 둘", async () => {
-    const nums = page.locator("input[type=number]");
-    await nums.nth(0).fill("125");
-    await nums.nth(1).fill("26");
-    // 동의를 안 누르면 등록 단추가 잠겨 있어야 한다
-    const locked = await page.getByRole("button", { name: "등록하기" }).isDisabled();
-    if (!locked) problems.push("새 가족 만들기\n    동의 없이도 등록 단추가 열려 있다");
-    await page.getByRole("button", { name: /개인정보 처리에 동의/ }).click();
-    await page.getByRole("button", { name: /건강정보 처리에 동의/ }).click();
-    await h.settle(300);
-    await page.getByRole("button", { name: "등록하기" }).click();
-    await h.settle(2200);
+  await h.step("아이 이름 · 생일 · 성별 · 키 · 몸무게", async () => {
+    await page.getByLabel("아이 이름").fill("민서");
+    await next();
+    await page.getByLabel("아이 생일").fill("2017-08-03");
+    await next();
+    await page.getByRole("radio", { name: "여자아이" }).click();
+    await next();
+    await page.getByLabel("키").fill("125");
+    await page.getByLabel("몸무게").fill("26");
+    await next();
+    await next(); // 아이 사진은 건너뛴다
   });
-  await h.step("등록 완료 → 참여 방식", async () => {
-    await page.getByRole("button", { name: "다음" }).click();
-    await h.until(/support-mode/);
+  await h.step("보호자 동의 둘", async () => {
+    // 동의를 안 누르면 다음이 잠겨 있어야 한다
+    const locked = await page.getByRole("button", { name: "다음", exact: true }).isDisabled();
+    if (!locked) problems.push("새 가족 만들기\n    동의 없이도 다음이 열려 있다");
+    await page.getByRole("checkbox", { name: /개인정보 처리에 동의/ }).click();
+    await page.getByRole("checkbox", { name: /건강정보 처리에 동의/ }).click();
+    await next();
+    await h.settle(900);
   });
-  await h.step("참여 방식 고르기", async () => {
-    await page.getByRole("button", { name: /주말에는 같이/ }).click();
-    await h.settle(1100);
-    await page.getByRole("button", { name: "다 골랐어요" }).click();
+  await h.step("참여 방식 · 운동할 수 있는 시간", async () => {
+    await page.getByRole("radio", { name: /주말에는 같이/ }).click();
+    await next();
+    await h.settle(600);
+    await page.getByRole("heading", { name: /언제 운동할 수 있어요/ }).waitFor({ timeout: 8000 });
+    await next();
+  });
+  await h.step("첫 측정은 나중에 → 준비됐어요 → 부모 홈", async () => {
+    await page.getByRole("radio", { name: /나중에 할게요/ }).click();
+    await next();
+    await page.getByRole("heading", { name: "준비됐어요!" }).waitFor({ timeout: 8000 });
+    await next("시작하기");
     await h.until(/\/parent/);
+    await h.settle(1500);
   });
   await h.step("부모 홈이 새 가족을 보여 준다", async () => {
     const text = await page.locator("body").innerText();
