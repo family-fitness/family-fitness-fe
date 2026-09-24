@@ -155,6 +155,29 @@ function Proposal() {
           )}
         </section>
 
+        {/* 등록하면 제안 전부가 운동이 된다(서버가 한꺼번에 등록한다). 둘 이상이면 무엇이 같이 되는지 다 보인다 */}
+        {(run.proposals?.length ?? 0) > 1 && (
+          <section className="card">
+            <CardHead title="같이 등록돼요" meta={`${run.proposals?.length ?? 0}개`} />
+            <ul className="divide-rows mt-1">
+              {(run.proposals ?? []).map((p, i) => {
+                const list = orderSessions((p as ProposalWithSessions).sessions);
+                return (
+                  <li key={`${p.title}-${i}`} className="py-2.5">
+                    <p className="text-sm font-extrabold">{p.title}</p>
+                    <p className="text-caption text-ink-soft mt-0.5 font-semibold tabular-nums">
+                      {[p.startDate, p.endDate && p.endDate !== p.startDate ? p.endDate : null]
+                        .filter(Boolean)
+                        .join(" ~ ")}
+                      {list.length > 0 && ` · ${list.length}개 · ${totalMinutes(list)}분`}
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
         <section className="card">
           <CardHead title="근거" meta="국민체력100" />
           <Citations items={proposal?.citations} className="mt-1" />
