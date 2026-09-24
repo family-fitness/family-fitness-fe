@@ -113,7 +113,13 @@ function PlanForm() {
       setError(
         errorMessage(
           e,
-          { NOT_A_PARENT: "보호자만 운동을 짤 수 있어요." },
+          {
+            NOT_A_PARENT: "보호자만 운동을 짤 수 있어요.",
+            ALREADY_RUN_THIS_WEEK: "이번 주 제안은 이미 받았어요.",
+            RUN_IN_PROGRESS: "짜고 있는 제안이 있어요.",
+            CONSENT_REQUIRED: "보호자 동의가 있어야 짤 수 있어요.",
+            TEMPORARILY_UNAVAILABLE: "코치가 잠깐 쉬고 있어요. 조금 뒤에 다시 해 주세요.",
+          },
           "짜 달라고 하지 못했어요. 잠시 후 다시 해 주세요.",
         ),
       );
