@@ -55,7 +55,8 @@ export function TodayRings({
           label: "이번 주 운동한 날",
           value: a.days,
           max: a.target,
-          text: `${a.days} / ${a.target}일`,
+          // 적어 둔 날보다 더 했으면 「5 / 4일」 이 아니라 「5일」 — 한 바퀴는 이미 찼다
+          text: a.days >= a.target ? `${a.days}일` : `${a.days} / ${a.target}일`,
           color: "var(--color-signal-deep)",
           track: "var(--color-deep-soft)",
         },
