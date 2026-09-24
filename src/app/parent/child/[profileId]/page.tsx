@@ -11,6 +11,8 @@ import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorView, ScoreLine } from "@/components/domain/body-card";
+import { MonthStats, RecentDays } from "@/components/domain/child-stats";
+import { LevelBuddy } from "@/components/domain/level-buddy";
 import { GrowthPole } from "@/components/scene/growth-pole";
 import { FactorTable } from "@/components/domain/factor-table";
 import { IslandCard } from "@/components/domain/island-card";
@@ -33,10 +35,11 @@ import { formatDate, withJosa } from "@/lib/utils";
 import { ArtIcon } from "@/components/ui/art-icon";
 
 /**
- * 아이 한 명 자세히 — 어디쯤이고, 어떻게 자라고 있나.
+ * 아이 기록 — 전적 검색 사이트(op.gg · maple.gg)처럼 한 아이의 통계를 한 화면에.
  *
- * 맨 위는 홈과 같은 육각형이다. 아래로 내려가며 **값 → 흐름 → 몸** 순서로 읽는다.
- * 육각형 바로 아래 요인 표가 그래프의 표 쌍둥이다.
+ * 맨 위 프로필 머리(레벨 캐릭터 · 이름 · 서버가 준 한 줄)와 신체 점수 · 육각형,
+ * 그 아래 이번 달 칸 넷 · 최근 기록(날마다 한 줄) · 요인 표 · 점수 흐름 · 키와 몸무게 순이다.
+ * 육각형 아래 요인 표가 그래프의 표 쌍둥이다. **부모 화면에만** 있다(규칙 10).
  */
 export default function ChildDetailPage() {
   const { profileId } = useParams<{ profileId: string }>();
@@ -50,6 +53,7 @@ export default function ChildDetailPage() {
     error: latestError,
   } = useLatestFitnessTest(profileId);
   const { data: history } = useFitnessTests(profileId);
+  const { data: progress } = useProgress(profileId);
   const localBody = useBodyStore((s) => s.byProfile[profileId]);
 
   const profile = family?.profiles?.find((p) => p.profileId === profileId);
@@ -100,23 +104,49 @@ export default function ChildDetailPage() {
   const name = profile.name ?? "아이";
   const score = member?.latest?.overallPercentile ?? null;
   const tests = history?.tests ?? [];
+  const stage = stageOf(progress?.level);
 
   return (
     <>
-      <AppBar back title={name} />
+      <AppBar back title="아이 기록" />
       <Stage wide className="space-y-3">
         <Card hero>
-          <CardHead
-            title="체력"
-            meta={latest?.testedOn ? `${formatDate(latest.testedOn)} 측정` : undefined}
-          />
-          {score != null ? (
-            <ScoreLine score={score} />
-          ) : (
-            <p className="text-lead mt-2 font-extrabold">아직 재지 않았어요</p>
-          )}
+          {/* 프로필 머리 — 캐릭터 · 이름 · 레벨 · 서버가 준 한 줄 그대로(규칙 9) */}
+          <div className="flex items-center gap-4">
+            <span className="bg-signal-soft grid size-20 shrink-0 place-items-center rounded-3xl">
+              <LevelBuddy stage={stage.stage} size={68} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lead font-extrabold">{name}</h2>
+              <p className="text-caption text-ink-soft mt-0.5 font-bold">
+                {progress ? `Lv.${progress.level} · ${stage.name}` : " "}
+              </p>
+              {member?.headline && (
+                <p className="bg-signal-soft text-signal-deep text-caption mt-1.5 inline-block rounded-full px-2.5 py-1 font-extrabold">
+                  {member.headline}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="border-line mt-4 border-t pt-3">
+            <p className="text-caption text-ink-soft font-bold">
+              체력{latest?.testedOn && ` · ${formatDate(latest.testedOn)} 측정`}
+            </p>
+            {score != null ? (
+              <ScoreLine score={score} />
+            ) : (
+              <p className="text-lead mt-2 font-extrabold">아직 재지 않았어요</p>
+            )}
+          </div>
           <FactorView points={latest?.radar} name={name} pending={false} />
         </Card>
+
+        <MonthStats
+          familyId={familyId ?? undefined}
+          profileId={profileId}
+          streak={progress?.streakDays}
+        />
+        <RecentDays familyId={familyId ?? undefined} profileId={profileId} />
 
         <Card>
           <CardHead title="요인별" meta="눈금 · 또래 평균 50" />
