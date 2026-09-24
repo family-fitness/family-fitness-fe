@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { cn } from "@/lib/utils";
 
 /**
@@ -27,77 +29,88 @@ export function ActivityRings({
   size = 128,
   stroke = 13,
   gap = 3,
+  legend = true,
+  center,
   className,
 }: {
   rings: RingValue[];
   size?: number;
   stroke?: number;
   gap?: number;
+  /** 옆의 이름 · 값 목록. 링만 작게 쓸 때(요일 줄) · 칸을 따로 둘 때 끈다 */
+  legend?: boolean;
+  /** 링 가운데에 얹는 것 — 받은 스티커 */
+  center?: ReactNode;
   className?: string;
 }) {
   const said = rings.map((r) => `${r.label} ${r.text}`).join(", ");
 
   return (
     <div className={cn("flex items-center gap-4", className)}>
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        className="shrink-0 -rotate-90"
-        role="img"
-        aria-label={said}
-      >
-        {rings.map((ring, i) => {
-          const r = size / 2 - stroke / 2 - i * (stroke + gap);
-          if (r <= 0) return null;
-          const c = 2 * Math.PI * r;
-          const p = ring.max > 0 ? Math.max(0, Math.min(1, ring.value / ring.max)) : 0;
-          return (
-            <g key={ring.label}>
-              <circle
-                cx={size / 2}
-                cy={size / 2}
-                r={r}
-                fill="none"
-                stroke={ring.track}
-                strokeWidth={stroke}
-              />
-              {p > 0 && (
+      <span className="relative grid shrink-0 place-items-center">
+        <svg
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
+          className="shrink-0 -rotate-90"
+          role="img"
+          aria-label={said}
+        >
+          {rings.map((ring, i) => {
+            const r = size / 2 - stroke / 2 - i * (stroke + gap);
+            if (r <= 0) return null;
+            const c = 2 * Math.PI * r;
+            const p = ring.max > 0 ? Math.max(0, Math.min(1, ring.value / ring.max)) : 0;
+            return (
+              <g key={ring.label}>
                 <circle
                   cx={size / 2}
                   cy={size / 2}
                   r={r}
                   fill="none"
-                  stroke={ring.color}
+                  stroke={ring.track}
                   strokeWidth={stroke}
-                  strokeLinecap="round"
-                  strokeDasharray={c}
-                  strokeDashoffset={c * (1 - p)}
-                  className="transition-[stroke-dashoffset] duration-700 ease-out motion-reduce:transition-none"
                 />
-              )}
-            </g>
-          );
-        })}
-      </svg>
+                {p > 0 && (
+                  <circle
+                    cx={size / 2}
+                    cy={size / 2}
+                    r={r}
+                    fill="none"
+                    stroke={ring.color}
+                    strokeWidth={stroke}
+                    strokeLinecap="round"
+                    strokeDasharray={c}
+                    strokeDashoffset={c * (1 - p)}
+                    className="transition-[stroke-dashoffset] duration-700 ease-out motion-reduce:transition-none"
+                  />
+                )}
+              </g>
+            );
+          })}
+        </svg>
+        {center && <span className="absolute inset-0 grid place-items-center">{center}</span>}
+      </span>
 
       {/* 범례 — 이름 위, 값 아래. 한 줄에 두면 좁은 폰에서 이름이 잘린다 */}
-      <ul className="min-w-0 flex-1 space-y-2.5" aria-hidden>
-        {rings.map((ring) => (
-          <li key={ring.label} className="flex gap-2">
-            <span
-              className="mt-1 size-2.5 shrink-0 rounded-full"
-              style={{ background: ring.color }}
-            />
-            <span className="min-w-0">
-              <span className="text-caption text-ink-soft block font-bold">{ring.label}</span>
-              <span className="block text-base leading-tight font-extrabold tabular-nums">
-                {ring.text}
+      {legend && (
+        <ul className="min-w-0 flex-1 space-y-2.5" aria-hidden>
+          {rings.map((ring) => (
+            <li key={ring.label} className="flex gap-2">
+              <span
+                className="mt-1 size-2.5 shrink-0 rounded-full"
+                style={{ background: ring.color }}
+              />
+              <span className="min-w-0">
+                <span className="text-caption text-ink-soft block font-bold">{ring.label}</span>
+                <span className="block text-base leading-tight font-extrabold tabular-nums">
+                  {ring.text}
+                </span>
               </span>
-            </span>
-          </li>
-        ))}
-      </ul>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

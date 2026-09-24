@@ -6,22 +6,19 @@ import { Suspense } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
-import { Card, CardHead } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChildSwitch } from "@/components/domain/child-switch";
 import { StickerArt } from "@/components/domain/sticker-art";
-import type { DayLog, Mission, ProfileWithSex } from "@/lib/api/types";
-import { useCalendar, useFamilyProfiles, useFitnessMap, useMissions } from "@/lib/api/queries";
-import { callName } from "@/lib/family";
-import { VERIFIED_COPY } from "@/lib/mission";
-import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
+import type { DayLog } from "@/lib/api/types";
+import { useCalendar, useFitnessMap, useMissions } from "@/lib/api/queries";
+import { plannedDay } from "@/lib/day";
 import { useSession } from "@/lib/session";
 import { stickerOf } from "@/lib/stickers";
 import { longDate, monthGrid, monthLabel, monthOf, shiftMonth, today } from "@/lib/today";
-import { cn, withJosa } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useIsKidView } from "@/lib/view-role";
 import { useRoleStore } from "@/stores/role-store";
 
@@ -29,13 +26,14 @@ import { useRoleStore } from "@/stores/role-store";
  * 캘린더 — 부모와 아이가 같이 본다.
  *
  * 한 달이 작은 링으로 찬다(애플 피트니스의 달력처럼). 링은 그날 잡힌 시간 대비 움직인 시간.
- * 받은 스티커는 그날 칸 모서리에 붙는다. 날을 누르면 아래에 그날 한 것과 받은 말이 나온다.
+ * 받은 스티커는 그날 칸 모서리에 붙는다. **날을 누르면 그날의 하루 기록**(`/calendar/[날짜]`)으로 간다.
+ * 달 아래에는 그 달을 칸 셋으로 — 움직인 날 · 모두 몇 분 · 받은 칭찬.
  *
  * **아무것도 안 한 날은 빈 칸이다.** 「빠진 날」 이라고 쓰지 않는다 — 쉰 날은 쉰 날이다.
- * 부모는 아이를 골라 보고, 아이는 자기 것만 본다. 달과 날은 주소에 둔다(`?month=&date=`).
+ * 부모는 아이를 골라 보고, 아이는 자기 것만 본다. 달은 주소에 둔다(`?month=`).
  *
  * **앞으로의 날에는 잡아 둔 운동이 점선 고리로 보인다** — 직접 짜기에서 여러 날에 넣은 것.
- * 누르면 그날 할 운동이 나온다. 다음 달까지만 넘겨 본다.
+ * 다음 달까지만 넘겨 본다.
  */
 export default function CalendarPage() {
   return (
@@ -53,14 +51,6 @@ function Calendar() {
   const kidView = useIsKidView();
   const { familyId, isPending, error: sessionError } = useSession();
   const { data: map, isPending: mapPending, error: mapError, refetch } = useFitnessMap(familyId);
-  const { data: family } = useFamilyProfiles(familyId);
-  // 아이에게 부모는 엄마 · 아빠다
-  const nameOf = (profileId: string, fallback: string) =>
-    callName(
-      family?.profiles?.find((p) => p.profileId === profileId) as ProfileWithSex | undefined,
-      fallback,
-      kidView,
-    );
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
 
@@ -68,8 +58,8 @@ function Calendar() {
   const who = kids.find((k) => k.profileId === childProfileId) ?? (kidView ? undefined : kids[0]);
 
   const now = today();
-  // 주소창 값은 믿지 않는다 — 모양이 틀리면 이번 달 · 오늘로.
-  // 알림에서 올 때는 날짜만 온다. 그 날짜가 지난달이면 지난달을 연다
+  // 주소창 값은 믿지 않는다 — 모양이 틀리면 이번 달로.
+  // 예전 알림은 날짜만 싣고 온다(`?date=`). 그 날짜가 든 달을 연다
   const askedMonth = params.get("month");
   const askedDate = params.get("date");
   const validDate = askedDate && /^\d{4}-\d{2}-\d{2}$/.test(askedDate) ? askedDate : null;
@@ -80,8 +70,6 @@ function Calendar() {
         ? monthOf(validDate)
         : monthOf(now);
   const grid = monthGrid(month);
-  const selected =
-    validDate && monthOf(validDate) === month ? validDate : month === monthOf(now) ? now : null;
 
   const { data: calendar, isPending: calendarPending } = useCalendar(
     familyId,
@@ -91,25 +79,14 @@ function Calendar() {
   const logs = new Map((calendar?.days ?? []).map((d) => [d.date, d]));
   // 앞으로 잡힌 운동 — 이 아이가 하는 것만. 걸음수는 넣지 않는다(규칙 2)
   const { data: active } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
-  const planned = new Map<string, Mission[]>();
-  for (const m of active?.missions ?? []) {
-    if (m.targetMetric === "STEPS") continue;
-    if (!m.participants?.some((p) => p.profileId === who?.profileId)) continue;
-    const start = m.startDate ?? "";
-    const end = m.endDate ?? start;
-    // 하루짜리가 대부분이다. 기간이 길면 첫날 · 오늘 이후만 적는다
-    const day = start > now ? start : end >= now ? now : null;
-    if (!day || day > grid.to || day < grid.from) continue;
-    planned.set(day, [...(planned.get(day) ?? []), m]);
-  }
+  const planned = new Set(
+    (active?.missions ?? [])
+      .filter((m) => m.participants?.some((p) => p.profileId === who?.profileId))
+      .map((m) => plannedDay(m, now))
+      .filter((d): d is string => Boolean(d)),
+  );
 
-  const go = (next: { month?: string; date?: string | null }) => {
-    const q = new URLSearchParams();
-    q.set("month", next.month ?? month);
-    const date = next.date === undefined ? selected : next.date;
-    if (date) q.set("date", date);
-    router.replace(`/calendar?${q}`, { scroll: false });
-  };
+  const go = (next: string) => router.replace(`/calendar?month=${next}`, { scroll: false });
 
   const back = kidView ? "/kid" : "/parent";
   const failure = sessionError ?? mapError;
@@ -148,10 +125,11 @@ function Calendar() {
     );
   }
 
-  const days = [...logs.values()].filter((d) => d.minutes > 0);
+  const days = [...logs.values()].filter((d) => d.minutes > 0 && monthOf(d.date) === month);
   const total = days.reduce((sum, d) => sum + d.minutes, 0);
-  const log = selected ? logs.get(selected) : undefined;
-  const name = who?.name ?? "아이";
+  const stickers = [...logs.values()]
+    .filter((d) => monthOf(d.date) === month)
+    .reduce((sum, d) => sum + d.stickers.length, 0);
 
   return (
     <>
@@ -171,7 +149,7 @@ function Calendar() {
           <div className="flex items-center justify-between">
             <button
               type="button"
-              onClick={() => go({ month: shiftMonth(month, -1), date: null })}
+              onClick={() => go(shiftMonth(month, -1))}
               aria-label="지난달"
               className="press text-ink-soft grid size-11 place-items-center rounded-full"
             >
@@ -180,7 +158,7 @@ function Calendar() {
             <h2 className="text-lead font-extrabold">{monthLabel(month)}</h2>
             <button
               type="button"
-              onClick={() => go({ month: shiftMonth(month, 1), date: null })}
+              onClick={() => go(shiftMonth(month, 1))}
               disabled={month >= shiftMonth(monthOf(now), 1)}
               aria-label="다음 달"
               className="press text-ink-soft grid size-11 place-items-center rounded-full disabled:opacity-30"
@@ -188,14 +166,6 @@ function Calendar() {
               <ChevronRight aria-hidden className="size-5" />
             </button>
           </div>
-
-          <p className="text-caption text-ink-soft mt-1 text-center font-semibold">
-            {calendarPending
-              ? " "
-              : days.length > 0
-                ? `${withJosa(name, "이가")} 움직인 날 ${days.length}일 · 모두 ${total}분`
-                : "이 달에는 아직 기록이 없어요"}
-          </p>
 
           <div className="mt-3 grid grid-cols-7 gap-y-1 text-center" aria-hidden>
             {WEEK_HEAD.map((d) => (
@@ -211,34 +181,24 @@ function Calendar() {
                   <DayCell
                     date={date}
                     log={logs.get(date)}
-                    planned={(planned.get(date)?.length ?? 0) > 0}
-                    on={date === selected}
+                    planned={planned.has(date)}
                     future={date > now}
                     isToday={date === now}
                     loading={calendarPending}
-                    onPick={() => go({ date })}
+                    onPick={() => router.push(`/calendar/${date}`)}
                   />
                 )}
               </li>
             ))}
           </ol>
-        </section>
 
-        {selected && (
-          <DayDetail
-            date={selected}
-            log={log}
-            planned={planned.get(selected) ?? []}
-            loading={calendarPending}
-            future={selected > now}
-            nameOf={nameOf}
-            stickerHref={
-              !kidView && selected === now && who?.profileId
-                ? `/parent/sticker/${who.profileId}`
-                : null
-            }
-          />
-        )}
+          {/* 이 달 — 칸 셋 */}
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <MonthTile label="움직인 날" value={days.length} unit="일" loading={calendarPending} />
+            <MonthTile label="모두" value={total} unit="분" loading={calendarPending} />
+            <MonthTile label="받은 칭찬" value={stickers} unit="장" loading={calendarPending} />
+          </div>
+        </section>
       </Stage>
     </>
   );
@@ -249,7 +209,6 @@ function DayCell({
   date,
   log,
   planned,
-  on,
   future,
   isToday,
   loading,
@@ -259,7 +218,6 @@ function DayCell({
   log: DayLog | undefined;
   /** 잡아 둔 운동이 있다 — 점선 고리 */
   planned: boolean;
-  on: boolean;
   future: boolean;
   isToday: boolean;
   loading: boolean;
@@ -279,11 +237,10 @@ function DayCell({
       type="button"
       onClick={onPick}
       disabled={future && !planned}
-      aria-pressed={on}
       aria-label={`${longDate(date)}${moved ? ` · ${moved.minutes}분` : ""}${sticker ? ` · ${sticker.label} 스티커` : ""}${planned && !moved ? " · 운동 잡혀 있음" : ""}`}
       className={cn(
         "press relative grid size-11 place-items-center rounded-full",
-        on && "bg-signal-soft",
+        isToday && "bg-signal-soft",
         future && !planned && "opacity-40",
       )}
     >
@@ -350,112 +307,26 @@ function DayCell({
   );
 }
 
-/** 고른 날 — 한 것과 받은 말 */
-function DayDetail({
-  date,
-  log,
-  planned,
+/** 이 달 한 칸 */
+function MonthTile({
+  label,
+  value,
+  unit,
   loading,
-  future,
-  nameOf,
-  stickerHref,
 }: {
-  date: string;
-  log: DayLog | undefined;
-  /** 이날 잡아 둔 운동 */
-  planned: Mission[];
+  label: string;
+  value: number;
+  unit: string;
   loading: boolean;
-  future: boolean;
-  nameOf: (profileId: string, fallback: string) => string;
-  /** 부모 · 오늘 · 아직 스티커가 없을 때만 */
-  stickerHref: string | null;
 }) {
-  if (loading) return <Skeleton className="h-40 w-full rounded-3xl" />;
-
-  const moved = log && log.minutes > 0;
-  // 잡아 둔 운동 중 그날 기록에 아직 없는 것 — 한 가지를 했어도 남은 것은 보여야 한다
-  const waiting = planned.filter((m) => !log?.entries.some((e) => e.missionId === m.missionId));
   return (
-    <Card>
-      <CardHead title={longDate(date)} meta={moved ? `${log.minutes}분` : undefined} />
-
-      {!moved && waiting.length === 0 && (
-        <p className="text-ink-soft mt-1 text-sm">
-          {future ? "아직 오지 않은 날이에요" : "이날은 쉬었어요"}
-        </p>
-      )}
-
-      {moved &&
-        log.entries.map((entry) => (
-          <div key={entry.missionId} className="border-line mt-3 border-t pt-3 first:border-0">
-            <p className="text-sm font-extrabold">{entry.title}</p>
-            {entry.sessions && entry.sessions.length > 0 && (
-              <ul className="mt-1.5 space-y-1">
-                {entry.sessions.map((s, i) => (
-                  <li key={i} className="text-caption flex gap-2">
-                    <span className="text-ink-soft w-11 shrink-0 font-bold">
-                      {PHASE_LABEL[s.phase].replace("운동", "")}
-                    </span>
-                    <span className={cn("min-w-0 flex-1", !s.done && "text-faint")}>{s.title}</span>
-                    {s.minutes != null && (
-                      <span className="text-ink-soft shrink-0 tabular-nums">{s.minutes}분</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {entry.verifiedBy && (
-              <p className="text-micro text-ink-soft mt-1.5 font-semibold">
-                {VERIFIED_COPY[entry.verifiedBy]}
-              </p>
-            )}
-          </div>
-        ))}
-
-      {/* 잡아 둔 운동 — 아직 안 했다. 한 것처럼 보이지 않게 연하게 */}
-      {waiting.map((m) => {
-        const sessions = sessionsOf(m);
-        return (
-          <div key={m.missionId} className="border-line mt-3 border-t pt-3 first:border-0">
-            <p className="text-caption text-signal-deep font-extrabold">할 운동</p>
-            <p className="mt-0.5 text-sm font-extrabold">{m.title}</p>
-            <p className="text-caption text-ink-soft mt-0.5">
-              {sessions.length > 0
-                ? `${sessions.length}개 · ${totalMinutes(sessions)}분`
-                : `${m.targetValue ?? ""}분`}
-              {(m.participants?.length ?? 0) > 1 &&
-                ` · ${(m.participants ?? [])
-                  .map((p) => nameOf(p.profileId ?? "", p.name ?? ""))
-                  .join(" · ")} 같이`}
-            </p>
-          </div>
-        );
-      })}
-
-      {log?.stickers.map((st) => {
-        const sticker = stickerOf(st.stickerId);
-        return (
-          <div key={st.cheerId} className="bg-sub mt-3 flex items-center gap-3 rounded-2xl p-3">
-            <StickerArt id={st.stickerId} className="size-12 shrink-0" />
-            <div className="min-w-0">
-              <p className="text-sm font-extrabold">{st.message || sticker?.label || "칭찬"}</p>
-              <p className="text-micro text-ink-soft mt-0.5 font-semibold">
-                {nameOf(st.fromProfileId, st.fromName)}
-              </p>
-            </div>
-          </div>
-        );
-      })}
-
-      {stickerHref && moved && (log?.stickers.length ?? 0) === 0 && (
-        <NavLink
-          href={stickerHref}
-          className="press bg-signal-strong mt-3 flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold text-white"
-        >
-          칭찬 스티커 붙이기
-        </NavLink>
-      )}
-    </Card>
+    <div className="bg-sub rounded-2xl px-2 py-3 text-center">
+      <p className="text-micro text-ink-soft font-bold">{label}</p>
+      <p className={cn("metric-value mt-1 text-2xl", loading && "opacity-40")}>
+        {loading ? 0 : value}
+        <span className="metric-unit">{unit}</span>
+      </p>
+    </div>
   );
 }
 
@@ -464,8 +335,7 @@ function CalendarSkeleton() {
     <>
       <AppBar title="캘린더" />
       <Stage wide className="space-y-3">
-        <Skeleton className="h-96 w-full rounded-3xl" />
-        <Skeleton className="h-40 w-full rounded-3xl" />
+        <Skeleton className="h-[30rem] w-full rounded-3xl" />
       </Stage>
     </>
   );

@@ -22,6 +22,7 @@ import {
   toggleMove,
   upcomingDays,
 } from "@/lib/routine";
+import { dayRings, daySummary, plannedDay } from "@/lib/day";
 import { isEmpty, rangeLabel, weekRecap } from "@/lib/recap";
 import { UNLOCKS, decorationsAt, isGameOpen, newlyUnlocked, nextUnlock } from "@/lib/unlocks";
 import { josa } from "@/lib/utils";
@@ -241,6 +242,62 @@ check("적을 것이 없으면 비었다", isEmpty(weekRecap([log("2026-09-15", 
 check("스티커만 받은 주는 비지 않았다", !isEmpty(weekRecap([log("2026-09-15", 0, 1)], [], week)));
 check("같은 달 범위", rangeLabel("2026-09-14", "2026-09-20") === "9월 14일 ~ 20일");
 check("달이 바뀌는 범위", rangeLabel("2026-08-31", "2026-09-06") === "8월 31일 ~ 9월 6일");
+
+/* ─── 하루 기록 ─────────────────────────────────────────── */
+
+const dayLog: DayLog = {
+  date: "2026-09-23",
+  minutes: 9,
+  plannedMinutes: 12,
+  entries: [
+    {
+      missionId: "m1",
+      title: "유연성 키우기",
+      minutes: 9,
+      verifiedBy: "TIMER",
+      completed: false,
+      sessions: [
+        { title: "a", phase: "WARMUP", minutes: 1, done: true },
+        { title: "b", phase: "MAIN", minutes: 4, done: true },
+        { title: "c", phase: "MAIN", minutes: 4, done: true },
+        { title: "d", phase: "COOLDOWN", minutes: 3, done: false },
+      ],
+    },
+    { missionId: "m2", title: "걷기", minutes: 0, verifiedBy: "SELF_REPORT", completed: true },
+  ],
+  stickers: [],
+};
+const day = daySummary(dayLog);
+check("칸 없는 운동은 한 칸으로 센다", day.total === 5 && day.done === 4);
+check("끝낸 칸의 분만 단계마다", same(day.phases, { WARMUP: 1, MAIN: 8, COOLDOWN: 0 }));
+check("확인 방법은 한 번씩", same(day.verified, ["TIMER", "SELF_REPORT"]));
+check("잡힌 시간 대비 · 칸 대비 · 스티커 없음", same(dayRings(day), [0.75, 0.8, 0]));
+check("목표를 넘겨도 한 바퀴", dayRings(daySummary({ ...dayLog, minutes: 30 }))[0] === 1);
+check(
+  "잡힌 운동 없이 움직인 날은 한 바퀴",
+  dayRings(daySummary({ ...dayLog, plannedMinutes: null }))[0] === 1,
+);
+check("기록이 없는 날은 전부 비었다", same(dayRings(daySummary(undefined)), [0, 0, 0]));
+const mission = (startDate: string, endDate: string, targetMetric = "TIMER_MINUTES") =>
+  ({ missionId: "x", startDate, endDate, targetMetric }) as unknown as Parameters<
+    typeof plannedDay
+  >[0];
+check(
+  "앞날 운동은 그 첫날에",
+  plannedDay(mission("2026-09-26", "2026-09-26"), "2026-09-24") === "2026-09-26",
+);
+check(
+  "이미 시작한 긴 운동은 오늘에",
+  plannedDay(mission("2026-09-20", "2026-09-30"), "2026-09-24") === "2026-09-24",
+);
+check(
+  "끝난 운동은 캘린더에 서지 않는다",
+  plannedDay(mission("2026-09-20", "2026-09-21"), "2026-09-24") === null,
+);
+check(
+  "걸음수는 잡아 둔 운동이 아니다",
+  plannedDay(mission("2026-09-26", "2026-09-26", "STEPS"), "2026-09-24") === null,
+);
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);

@@ -66,7 +66,7 @@ export function TodayCard({
   if (mine.length === 0) {
     return (
       <Card>
-        <CardHead title="오늘 운동" meta={childName} />
+        <CardHead title="오늘 운동" meta={childName} href={`/calendar/${now}`} />
         {rings}
         <p className="text-ink-soft border-line mt-4 border-t pt-3 text-sm">
           {withJosa(childName, "은는")} 아직 오늘 운동이 없어요
@@ -110,7 +110,7 @@ export function TodayCard({
 
   return (
     <Card>
-      <CardHead title="오늘 운동" meta={childName} />
+      <CardHead title="오늘 운동" meta={childName} href={`/calendar/${now}`} />
       {rings}
 
       {main && (

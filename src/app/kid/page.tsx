@@ -207,7 +207,7 @@ export default function KidHomePage() {
 
         {/* 오늘 한 만큼 — 부모 홈과 같은 링. 비어 있어도 탓하지 않는다 */}
         <Card>
-          <CardHead title="오늘 움직인 만큼" />
+          <CardHead title="오늘 움직인 만큼" href={`/calendar/${now}`} />
           <TodayRings
             profileId={childProfileId ?? undefined}
             missions={missions?.missions}

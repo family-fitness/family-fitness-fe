@@ -71,7 +71,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 /kid/badges          레벨과 업적 · 레벨마다 열리는 것
 /kid/play            놀이터 — 레벨이 오르면 열리는 몸 놀이 (주사위 · 얼음땡 · 따라 해 봐)
 
-/calendar            캘린더 — 부모 · 아이 둘 다
+/calendar            캘린더 — 부모 · 아이 둘 다. 날을 누르면 하루 기록
+/calendar/[date]     하루 기록 — 삼성헬스 「일일 활동」 처럼 요일 링 줄 · 큰 링 · 칸 셋
 /notifications       알림
 /videos              운동 찾기 — 키우고 싶은 힘으로
 /settings            설정 — 역할 바꾸기, 동의, 로그아웃. 쓰는 자리가 있는 건 거기에 둔다
