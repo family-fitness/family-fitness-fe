@@ -36,7 +36,7 @@ export function ChildPill({
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-label={`보고 있는 아이 ${current.name ?? ""} · 바꾸기`}
-        className="press bg-signal-soft text-signal-deep mr-1 flex min-h-10 items-center gap-1.5 rounded-full py-1 pr-2.5 pl-1 text-sm font-extrabold"
+        className="press bg-signal-soft text-signal-deep mr-1 flex min-h-11 items-center gap-1.5 rounded-full py-1 pr-2.5 pl-1.5 text-sm font-extrabold"
       >
         <Initial name={current.name} size="sm" tone="sub" className="bg-paper text-signal-deep" />
         <span className="max-w-20 truncate">{current.name}</span>

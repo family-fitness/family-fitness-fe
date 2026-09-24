@@ -34,7 +34,7 @@ export function HomeHeader({
             {titleHref ? (
               <NavLink
                 href={titleHref}
-                className="press inline-flex max-w-full items-center gap-0.5"
+                className="press inline-flex min-h-11 max-w-full items-center gap-0.5"
               >
                 <span className="truncate">{title}</span>
                 <ChevronRight
