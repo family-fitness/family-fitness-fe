@@ -11,7 +11,6 @@ import { IconLink } from "@/components/ui/icon-link";
 import { Illustration } from "@/components/ui/illustration";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { InviteParent } from "@/components/domain/invite-parent";
 import { TodayRings } from "@/components/domain/today-rings";
 import { WeekTower } from "@/components/scene/week-tower";
 import { KiumIsland } from "@/components/scene/kium-island";
@@ -189,13 +188,8 @@ export default function KidHomePage() {
             <p className="text-lead font-extrabold">오늘 거 다 했어요!</p>
           </div>
         ) : (
-          <div className="card-hero">
+          <div className="card-hero text-center">
             <p className="text-lead font-extrabold">오늘 운동이 아직 없어요</p>
-            <InviteParent
-              familyId={familyId ?? ""}
-              childProfileId={childProfileId ?? ""}
-              className="mt-3"
-            />
           </div>
         )}
 
