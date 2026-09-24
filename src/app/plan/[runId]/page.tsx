@@ -242,9 +242,6 @@ function Proposal() {
             </li>
           ))}
         </ul>
-        <p className="text-caption text-ink-soft mt-3">
-          고른 이유는 다음에 짤 때 참고해요. 이유를 골라도 기록이 깎이지 않아요.
-        </p>
       </Sheet>
     </>
   );
