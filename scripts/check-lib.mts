@@ -8,7 +8,9 @@
  */
 import type { ClipView } from "@/lib/api/types";
 import type { DayLog } from "@/lib/api/types";
+import { TIERS, nextTier, prevTier, zoneOf } from "@/lib/league";
 import { projectOrtho } from "@/lib/ortho";
+import { withJosa } from "@/lib/utils";
 import {
   MAX_MOVES,
   repeatDates,
@@ -87,6 +89,35 @@ check(
   "정사영 — 같은 높이 차이는 어디서나 같은 픽셀",
   Math.abs(center.y - higher.y - (lower.y - center.y)) < 1e-9,
 );
+
+/* ─── 조사 「으로 · 로」 ──────────────────────────────── */
+
+check("받침 있으면 「으로」 — 플래티넘으로", withJosa("플래티넘", "으로로") === "플래티넘으로");
+check(
+  "받침 없으면 「로」 — 골드로 · 다이아로",
+  withJosa("골드", "으로로") === "골드로" && withJosa("다이아", "으로로") === "다이아로",
+);
+check("받침 ㄹ 뒤는 「로」 — 서울로", withJosa("서울", "으로로") === "서울로");
+
+/* ─── 가족 리그 ──────────────────────────────────────── */
+
+check(
+  "티어는 아래부터 다섯",
+  same(
+    TIERS.map((t) => t.id),
+    ["BRONZE", "SILVER", "GOLD", "PLATINUM", "DIAMOND"],
+  ),
+);
+check(
+  "다이아 위도 브론즈 아래도 없다",
+  nextTier("DIAMOND") === null && prevTier("BRONZE") === null,
+);
+check("골드 한 칸 위는 플래티넘", nextTier("GOLD") === "PLATINUM" && prevTier("GOLD") === "SILVER");
+check(
+  "열 가족 · 셋 올라가고 셋 내려간다",
+  zoneOf(3, 10, 3, 3) === "up" && zoneOf(4, 10, 3, 3) === "stay" && zoneOf(8, 10, 3, 3) === "down",
+);
+check("브론즈는 내려가는 자리가 없다", zoneOf(10, 10, 3, 0) === "stay");
 
 /* ─── 직접 짜기 ──────────────────────────────────────── */
 
