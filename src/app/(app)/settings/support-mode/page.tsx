@@ -27,31 +27,22 @@ import { ArtIcon } from "@/components/ui/art-icon";
 const MODES: {
   value: SupportMode;
   title: string;
-  description: string;
-  /** 고르면 **아이 화면에 이렇게 뜬다**. 이게 이 화면의 전부다 */
-  kid: string;
   /** 그림 이름. 오기 전에는 자리만 비어 있다 */
   art: string;
 }[] = [
   {
     value: "CHEER_ONLY",
     title: "응원할게요",
-    description: "미션 편성에서 빠지고 응원을 보내요",
-    kid: "엄마가 보고 있어요",
     art: "icon/mode-cheer",
   },
   {
     value: "WEEKEND",
     title: "주말에는 같이",
-    description: "코치가 주말 미션에 같이 넣어 줘요",
-    kid: "토요일에 같이 나가요",
     art: "icon/mode-weekend",
   },
   {
     value: "FULL",
     title: "매번 같이",
-    description: "코치가 모든 미션에 동반자로 넣어 줘요",
-    kid: "엄마도 오늘 같이 해요",
     art: "icon/mode-full",
   },
 ];
@@ -127,13 +118,6 @@ function SupportModePageContent() {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="text-body block font-bold">{mode.title}</span>
-                    <span className="text-ink-soft mt-0.5 block text-sm leading-relaxed">
-                      {mode.description}
-                    </span>
-                    {/* 고르면 아이 화면이 어떻게 바뀌는지. 고르는 근거가 이것뿐이다 */}
-                    <span className="bg-signal-soft text-signal-deep text-micro mt-1.5 inline-block rounded-md px-2 py-1 font-bold">
-                      아이 화면에 「{mode.kid}」
-                    </span>
                   </span>
                   <span
                     className={cn(
