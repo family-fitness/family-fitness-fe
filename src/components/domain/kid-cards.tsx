@@ -29,7 +29,7 @@ export function RecentStickers({
     <Card href="/calendar" label="받은 스티커 · 캘린더 보기">
       <CardHead title="받은 스티커" chevron />
       {recent.length === 0 ? (
-        <p className="text-ink-soft mt-1 text-sm">엄마 · 아빠가 붙여 주면 여기에 모여요</p>
+        <p className="text-ink-soft mt-1 text-sm">아직 없어요</p>
       ) : (
         <ul className="mt-2 grid grid-cols-3 gap-2">
           {recent.map((c) => (
@@ -57,7 +57,7 @@ export function RecentBadges({ achievements }: { achievements: AchievementView[]
     <Card href="/kid/badges" label="업적 · 레벨과 업적 보기">
       <CardHead title="업적" chevron />
       {recent.length === 0 ? (
-        <p className="text-ink-soft mt-1 text-sm">운동 한 칸을 끝내면 첫 업적이 생겨요</p>
+        <p className="text-ink-soft mt-1 text-sm">아직 없어요</p>
       ) : (
         <ul className="mt-2 grid grid-cols-3 gap-2">
           {recent.map((a) => (

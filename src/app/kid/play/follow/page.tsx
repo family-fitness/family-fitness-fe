@@ -81,7 +81,6 @@ export default function FollowPage() {
               <>
                 <p className="text-lead font-extrabold">키움이가 하는 걸 잘 보고</p>
                 <p className="text-lead font-extrabold">순서대로 따라 해요</p>
-                <p className="text-caption text-ink-soft mt-1">한 판마다 동작이 하나씩 늘어요</p>
               </>
             )}
             {phase === "show" && move != null && (
@@ -97,9 +96,7 @@ export default function FollowPage() {
             {phase === "do" && (
               <>
                 <p className="text-metric leading-tight font-extrabold">이제 해 봐요!</p>
-                <p className="text-caption text-ink-soft mt-1">
-                  {sequence.length}가지를 순서대로 · 가족이 옆에서 봐 줘요
-                </p>
+                <p className="text-caption text-ink-soft mt-1">{sequence.length}가지를 순서대로</p>
               </>
             )}
             {phase === "end" && (
@@ -161,9 +158,6 @@ export default function FollowPage() {
             </p>
           )}
         </section>
-        <p className="text-caption text-faint px-2 text-center leading-relaxed">
-          뛰기 전에 주변에 부딪힐 것이 없는지 먼저 봐요
-        </p>
       </Stage>
     </>
   );

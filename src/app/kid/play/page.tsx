@@ -79,9 +79,6 @@ export default function PlaygroundPage() {
             {withJosa(next.name, "이가")} 생겨요
           </p>
         )}
-        <p className="text-caption text-faint px-2 text-center leading-relaxed">
-          뛰기 전에 주변에 부딪힐 것이 없는지 먼저 봐요
-        </p>
       </Stage>
     </>
   );

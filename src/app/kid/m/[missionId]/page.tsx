@@ -464,9 +464,6 @@ function Step({
             </Ring>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">{s.minutes ?? 1}분 동안 따라 해요</p>
-              <p className="text-caption text-ink-soft mt-0.5">
-                영상이 짧으면 처음부터 다시 나와요
-              </p>
               {status === "rest" && (
                 <button
                   type="button"

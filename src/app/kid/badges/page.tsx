@@ -116,7 +116,7 @@ export default function BadgesPage() {
         <UnlockLadder level={progress.level} />
 
         <Card>
-          <CardHead title="업적" meta="누르면 크게 볼 수 있어요" />
+          <CardHead title="업적" />
           <ul className="mt-2 grid grid-cols-3 gap-2">
             {achievements.map((a) => {
               const got = Boolean(a.earnedAt);
@@ -165,19 +165,6 @@ export default function BadgesPage() {
             </ul>
           </Card>
         )}
-
-        <Card>
-          <CardHead title="경험치는 이렇게 얻어요" />
-          <ul className="text-ink-soft mt-2 space-y-1.5 text-sm">
-            <li>운동 한 칸을 끝내면</li>
-            <li>그날 운동을 다 하면 조금 더</li>
-            <li>엄마 · 아빠가 칭찬 스티커를 붙여 주면</li>
-            <li>키 · 몸무게를 새로 재면</li>
-          </ul>
-          <p className="text-caption text-signal-deep mt-3 font-bold">
-            경험치는 줄지 않아요. 쉬는 날이 있어도 괜찮아요
-          </p>
-        </Card>
       </Stage>
 
       <Sheet open={Boolean(open)} onClose={() => setOpen(null)} title={open?.title}>
@@ -194,9 +181,7 @@ export default function BadgesPage() {
             )}
             <p className="text-body mt-2 font-bold">{open.description}</p>
             <p className="text-caption text-ink-soft mt-1 font-semibold">
-              {open.earnedAt
-                ? `${formatDate(dayOf(open.earnedAt))}에 받았어요`
-                : "아직이에요 — 위처럼 하면 받아요"}
+              {open.earnedAt ? `${formatDate(dayOf(open.earnedAt))}에 받았어요` : "아직이에요"}
             </p>
           </div>
         )}
