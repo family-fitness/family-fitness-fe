@@ -31,6 +31,7 @@ const SILENT_OK = new Set(["/plan", "/settings", "/settings/support-mode"]);
 const ROUTES = [
   "/parent",
   "/parent/family",
+  "/parent/dashboard",
   `/parent/child/${KID}`,
   "/kid",
   "/kid/m/seed-today",

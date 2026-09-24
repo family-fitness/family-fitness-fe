@@ -62,7 +62,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 /start/*             가족 만들기 · 아이 추가 · 참여 방식
 
 /parent              부모 홈 — 큰 묶음 둘: 「아이」(육각형 · 통합 신체 점수 · 오늘 운동) · 「이번 주」 + 영상 한 줄
-/parent/child/[id]   아이 기록 — 프로필 머리 · 육각형 · 이번 달 칸 · 최근 기록 · 요인 표 · 점수 흐름 · 키
+/parent/dashboard    가족 대시보드 — 이번 달 우리 가족 · 구성원(오늘 · 이번 주 · 이어서 · 초대)
+/parent/child/[id]   아이 기록 — 프로필 머리 · 육각형 · 이번 달 칸 · 최근 기록 · 요인 표 · 점수 흐름 · 키 · 업적
 /plan/*              AI 편성 — 조건 → 짜는 과정 → 제안 → 오늘 운동으로 등록
 /plan/custom         직접 짜기 — 담은 동작 · 누가 · 언제(여러 날 · 몇 주) → 등록
 
