@@ -488,7 +488,7 @@ export function seedMissions(): MissionRow[] {
       */
       missionId: "seed-steps",
       title: "학교까지 걸어가기",
-      origin: "PARENT",
+      origin: "MANUAL",
       coachRunId: null,
       targetMetric: "STEPS",
       targetValue: 3000,
