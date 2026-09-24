@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { ChoiceButton, WizardShell } from "@/components/app-shell/wizard";
 import { ArtIcon } from "@/components/ui/art-icon";
+import { Illustration } from "@/components/ui/illustration";
 import { Button } from "@/components/ui/button";
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { PhotoPicker } from "@/components/domain/photo-picker";
@@ -15,6 +16,7 @@ import {
   useSaveAvailability,
   useUpdateSupportMode,
 } from "@/lib/api/queries";
+import { artFor } from "@/lib/art";
 import { bodyValue, rangeHint } from "@/lib/body";
 import { errorMessage } from "@/lib/errors";
 import { useSession } from "@/lib/session";
@@ -327,7 +329,14 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
         return (
           <WizardShell
             {...common}
-            art={<LevelBuddy stage={3} size={168} cheer />}
+            art={
+              // 주문한 인사 그림이 오면 그것으로, 오기 전에는 레벨 캐릭터가 선다
+              artFor("scene/kiumi-hello") ? (
+                <Illustration name="scene/kiumi-hello" size={200} priority />
+              ) : (
+                <LevelBuddy stage={3} size={168} cheer />
+              )
+            }
             title="안녕하세요! 저는 키움이에요"
             reason="우리 가족 운동을 같이 챙길게요. 앱을 쓰는 데 꼭 필요한 것만 몇 가지 물어볼게요."
           />
