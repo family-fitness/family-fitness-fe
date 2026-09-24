@@ -44,7 +44,8 @@ export function TodayRings({
       className={className}
       rings={[
         {
-          label: "움직인 시간",
+          // 「이번 주」 묶음 안에 서도 오늘 것임을 이름이 말한다
+          label: "오늘 움직인 시간",
           value: a.moved,
           max: a.goal,
           text: over(a.moved, a.goal, "분"),
@@ -52,7 +53,7 @@ export function TodayRings({
           track: "var(--color-signal-soft)",
         },
         {
-          label: "끝낸 운동",
+          label: "오늘 끝낸 운동",
           value: a.done,
           max: a.total,
           text: a.total > 0 ? over(a.done, a.total, "개") : "아직 없어요",
