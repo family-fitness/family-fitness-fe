@@ -119,9 +119,7 @@ export default function FreezePage() {
             {phase === "ready" && (
               <>
                 <p className="text-lead font-extrabold">음악이 나오면 신나게 움직여요</p>
-                <p className="text-caption text-ink-soft mt-1 leading-relaxed">
-                  「얼음!」 이 뜨면 그대로 멈춰요. 가족이랑 같이 하면 더 재밌어요
-                </p>
+                <p className="text-body text-ink-soft mt-1 font-bold">「얼음!」 이면 멈춰요</p>
               </>
             )}
             {phase === "dance" && (
@@ -137,7 +135,6 @@ export default function FreezePage() {
             {phase === "end" && (
               <>
                 <p className="text-lead font-extrabold">얼음 {ROUNDS}번, 한 판 끝!</p>
-                <p className="text-caption text-ink-soft mt-1">숨 고르고 한 판 더 할까요?</p>
               </>
             )}
           </div>
@@ -185,9 +182,6 @@ export default function FreezePage() {
           )}
           {muted ? "소리 꺼짐 · 켜기" : "소리 켜짐 · 끄기"}
         </button>
-        <p className="text-caption text-faint px-2 text-center leading-relaxed">
-          뛰기 전에 주변에 부딪힐 것이 없는지 먼저 봐요
-        </p>
       </Stage>
     </>
   );

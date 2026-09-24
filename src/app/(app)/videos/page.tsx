@@ -194,9 +194,6 @@ function Finder() {
           <EmptyState
             scene="no-mission"
             title={favoritesOnly ? "아직 즐겨찾기한 동작이 없어요" : "조건에 맞는 동작이 없어요"}
-            description={
-              favoritesOnly ? "마음에 드는 동작에 하트를 눌러 두세요." : "조건을 하나 풀어 볼까요?"
-            }
           />
         ) : (
           <ul className="card divide-rows py-1">

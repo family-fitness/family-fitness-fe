@@ -173,7 +173,6 @@ export default function KidHomePage() {
                 </div>
                 <p className="text-micro text-ink-soft mt-1.5 font-bold">
                   {bar?.left == null ? "가장 높은 레벨이에요" : `다음 레벨까지 ${bar.left}`}
-                  {trees === 0 && " · 운동한 날마다 섬에 나무가 자라요"}
                 </p>
               </div>
             </>
@@ -193,9 +192,6 @@ export default function KidHomePage() {
         ) : (
           <div className="card-hero">
             <p className="text-lead font-extrabold">오늘 운동이 아직 없어요</p>
-            <p className="text-caption text-ink-soft mt-1">
-              엄마 · 아빠가 짜 주면 여기에 떠요. 같이 하자고 불러 볼까요?
-            </p>
             <InviteParent
               familyId={familyId ?? ""}
               childProfileId={childProfileId ?? ""}
@@ -254,7 +250,9 @@ export default function KidHomePage() {
                 <span className="record-fill" style={{ width: `${score}%` }} />
                 <span className="record-avg" />
               </div>
-              <p className="text-caption text-ink-soft mt-1.5">가운데 눈금이 또래 평균 50이에요</p>
+              <p className="text-micro text-ink-soft mt-1.5 text-right font-bold">
+                눈금 · 또래 평균 50
+              </p>
             </div>
           ) : (
             <p className="text-ink-soft mt-1 text-sm">아직 재지 않았어요</p>

@@ -81,12 +81,7 @@ export default function MembersPage() {
             title="얼마나 같이 할지"
             description={SUPPORT_COPY[mySupportMode ?? "none"]}
           />
-          <ListRow
-            href="/settings/schedule"
-            art="icon/menu-schedule"
-            title="운동할 수 있는 시간"
-            description="적어 두면 AI 편성 · 직접 짜기가 그 날에 맞춘다"
-          />
+          <ListRow href="/settings/schedule" art="icon/menu-schedule" title="운동할 수 있는 시간" />
           {kid?.profileId && (
             <ListRow
               href={`/parent/sticker/${kid.profileId}`}
@@ -171,11 +166,7 @@ function MemberRow({ profile }: { profile: ProfileSummary }) {
           </button>
         </div>
       )}
-      {code && (
-        <p className="text-faint text-caption mt-1">
-          7일 안에 써야 해요. 새로 만들면 이전 코드는 바로 못 쓰게 돼요.
-        </p>
-      )}
+      {code && <p className="text-faint text-caption mt-1">7일 동안 쓸 수 있어요</p>}
 
       {error && (
         <p role="alert" className="text-signal-deep mt-2 text-xs font-semibold">
@@ -322,9 +313,7 @@ function AddMemberSheet({
         {/* 서버가 동의를 자동으로 찍지 않는다. 보호자가 두 가지를 각각 직접 켠다 */}
         {needsConsent && (
           <div role="group" aria-label="보호자 동의" className="space-y-2">
-            <p className="text-caption text-ink-soft">
-              만 14세 미만이라 보호자 동의가 있어야 저장돼요. 나중에 설정에서 철회할 수 있어요.
-            </p>
+            <p className="text-caption text-ink-soft">만 14세 미만 · 보호자 동의</p>
             {(
               [
                 [

@@ -138,7 +138,7 @@ export default function AddChildPage() {
               />
             </Field>
 
-            <Field label="성별" hint="국민체력100 기준이 성별로 나뉘어 있어요" group>
+            <Field label="성별" group>
               <div className="flex gap-2">
                 {(
                   [
@@ -256,7 +256,6 @@ export default function AddChildPage() {
                     </button>
                   );
                 })}
-                <p className="text-faint text-caption pt-0.5">설정에서 언제든 철회할 수 있어요.</p>
               </fieldset>
             )}
 

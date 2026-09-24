@@ -158,7 +158,7 @@ export function TrajectoryChart({
       </svg>
 
       <figcaption className="text-faint text-micro mt-1 leading-relaxed">
-        진한 선이 가운데(50%), 옅은 띠가 열에 여덟이 들어가는 범위(10~90%) 예요.
+        진한 선 가운데(50%) · 옅은 띠 10~90%
       </figcaption>
     </figure>
   );

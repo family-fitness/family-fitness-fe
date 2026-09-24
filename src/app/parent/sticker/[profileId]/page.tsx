@@ -106,9 +106,6 @@ function StickerForm() {
         <Stage wide className="flex flex-col items-center pt-8 text-center">
           <StickerArt id={sticker.id} className="badge-pop size-36" />
           <h2 className="page-title mt-4">붙였어요</h2>
-          <p className="text-ink-soft mt-1 text-sm">
-            {withJosa(name, "이가")} 알림을 받고 오늘 칸에서 볼 수 있어요
-          </p>
           <div className="mt-6 grid w-full gap-2">
             <NavLink
               href={`/calendar/${now}`}
@@ -156,13 +153,16 @@ function StickerForm() {
                 <p className="text-sm font-extrabold">{memo.trim() || sticker.label}</p>
               </div>
             ) : (
-              <p className="text-ink-soft text-sm font-semibold">아래에서 하나 골라 주세요</p>
+              <span
+                aria-hidden
+                className="border-line bg-paper size-24 rounded-full border-2 border-dashed"
+              />
             )}
           </div>
         </section>
 
         <Card>
-          <CardHead title="스티커" meta="고르기만 해도 붙어요" />
+          <CardHead title="스티커" />
           <ul className="mt-2 grid grid-cols-4 gap-2" aria-label="스티커">
             {STICKERS.map((s) => {
               const on = s.id === picked;
@@ -187,12 +187,12 @@ function StickerForm() {
         </Card>
 
         <Card>
-          <CardHead title="한마디 더" meta="안 써도 돼요" />
+          <CardHead title="한마디 더" />
           <input
             type="text"
             value={memo}
             onChange={(e) => setMemo(e.target.value.slice(0, MEMO_MAX))}
-            placeholder={sticker ? sticker.label : "스티커 이름이 한마디가 돼요"}
+            placeholder={sticker ? sticker.label : "한마디"}
             aria-label="한마디"
             className="field mt-2"
           />

@@ -69,7 +69,6 @@ export default function StartPage() {
     <Stage className="flex min-h-dvh flex-col justify-center gap-5 py-8">
       <div>
         <h1 className="text-[1.6rem] leading-tight font-extrabold">누가 쓰고 있나요?</h1>
-        <p className="text-ink-soft mt-1.5 text-sm">언제든 바꿀 수 있어요.</p>
       </div>
 
       <RoleCard
@@ -82,7 +81,7 @@ export default function StartPage() {
 
       {childAccount ? (
         <p className="text-faint text-center text-xs leading-relaxed">
-          이 계정은 아이 계정이에요. 부모 화면은 보호자 계정에서 볼 수 있어요.
+          부모 화면은 보호자 계정에서
         </p>
       ) : (
         <RoleCard

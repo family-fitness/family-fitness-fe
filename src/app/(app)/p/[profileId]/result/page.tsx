@@ -156,16 +156,7 @@ export default function ResultPage() {
         ) : (
           <>
             <Link href="/plan" className="card press bg-signal-soft block">
-              <p className="text-signal-deep text-sm font-extrabold">
-                {onlyOneFactor
-                  ? "항목을 더 재면 더 잘 맞는 운동을 찾아요"
-                  : test.coachDirection === "STRENGTHEN"
-                    ? "잘하는 영역을 더 키울 때예요"
-                    : weakest
-                      ? `${withJosa(weakest.factor ?? "", "을를")} 키우기 좋은 때예요`
-                      : "이번 주 운동을 찾아볼까요"}
-              </p>
-              <p className="text-signal-deep mt-1 text-sm font-bold">AI 에게 운동 받기</p>
+              <p className="text-signal-deep text-sm font-extrabold">AI 에게 운동 받기</p>
             </Link>
             <ul className="card divide-rows py-1">
               <ListRow

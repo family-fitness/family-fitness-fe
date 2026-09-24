@@ -96,9 +96,7 @@ function PlanRun() {
             {finished ? "다 짰어요" : "코치가 오늘 운동을 짜고 있어요"}
           </h2>
           <p className="text-caption text-ink-soft mt-1">
-            {finished
-              ? "제안을 보여 드릴게요"
-              : `${Math.min(done + 1, names.length)}단계째 · 무엇을 보고 골랐는지 남겨 둘게요`}
+            {finished ? " " : `${Math.min(done + 1, names.length)} / ${names.length}`}
           </p>
         </section>
 

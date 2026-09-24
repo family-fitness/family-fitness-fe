@@ -126,9 +126,6 @@ function PlanForm() {
       <Stage wide className="space-y-3 pb-28">
         <section className="card-hero">
           <p className="text-lead font-extrabold">{name}의 오늘 운동을 짜 드려요</p>
-          <p className="text-caption text-ink-soft mt-1">
-            국민체력100 운동처방과 운동 영상에서 조건에 맞는 것만 골라요
-          </p>
           <FactorRadar
             points={latest?.radar}
             name={name}
@@ -150,11 +147,11 @@ function PlanForm() {
         >
           <span className="min-w-0 flex-1">
             <span className="block text-sm font-extrabold">직접 고를래요</span>
-            <span className="text-caption text-ink-soft mt-0.5 block">
-              {gathered > 0
-                ? `담아 둔 동작 ${gathered}개로 짜기 · 여러 날에 한 번에`
-                : "운동 찾기에서 동작을 담아 짜요 · 여러 날에 한 번에"}
-            </span>
+            {gathered > 0 && (
+              <span className="text-caption text-ink-soft mt-0.5 block">
+                담아 둔 동작 {gathered}개
+              </span>
+            )}
           </span>
           <ChevronRight aria-hidden className="text-ink-soft size-5 shrink-0" />
         </NavLink>
@@ -195,7 +192,7 @@ function PlanForm() {
             </div>
           </div>
           <div>
-            <CardHead title="소리" meta="아랫집이 신경 쓰이면" />
+            <CardHead title="소리" />
             <div className="mt-2 flex gap-2" role="group" aria-label="소리">
               <Chip on={quiet} onClick={() => setQuiet(true)}>
                 조용히 할래요
@@ -208,7 +205,7 @@ function PlanForm() {
         </section>
 
         <section className="card">
-          <CardHead title="키우고 싶은 힘" meta="고르지 않으면 코치가 골라요" />
+          <CardHead title="키우고 싶은 힘" />
           <div className="mt-2 grid grid-cols-3 gap-2" role="group" aria-label="키우고 싶은 힘">
             <button
               type="button"

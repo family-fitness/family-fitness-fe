@@ -26,9 +26,7 @@ export function ProposalNudge({ familyId }: { familyId: string | undefined }) {
         </span>
         <div className="min-w-0 flex-1">
           <CardHead title="AI 제안이 와 있어요" chevron />
-          <p className="text-caption text-ink-soft">
-            {title ? `${title} · ` : ""}등록하면 아이 화면에 떠요
-          </p>
+          <p className="text-caption text-ink-soft">{title ?? "오늘 운동 제안"}</p>
         </div>
       </div>
     </Card>

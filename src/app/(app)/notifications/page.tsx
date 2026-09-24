@@ -76,17 +76,7 @@ export default function NotificationsPage() {
     <>
       <AppBar backHref={back} title="알림" />
       <Stage wide className="space-y-4">
-        {items.length === 0 && (
-          <EmptyState
-            scene="no-alarm"
-            title="아직 알림이 없어요"
-            description={
-              kidView
-                ? "엄마 · 아빠가 스티커를 붙여 주면 여기에 와요"
-                : "아이가 운동을 마치면 여기에 와요"
-            }
-          />
-        )}
+        {items.length === 0 && <EmptyState scene="no-alarm" title="아직 알림이 없어요" />}
         {fresh.length > 0 && (
           <Group title="새로 온 것" items={fresh} kidView={kidView} until={until} />
         )}

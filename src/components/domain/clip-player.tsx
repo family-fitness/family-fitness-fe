@@ -175,10 +175,8 @@ export function ClipPlayer({
   if (failed) {
     return (
       <div className="bg-sub grid aspect-video w-full place-content-center gap-1 rounded-2xl px-6 text-center">
-        <p className="text-sm font-extrabold">지금은 이 영상을 못 봐요</p>
-        <p className="text-caption text-ink-soft">
-          영상 없이 타이머만 따라 해도 돼요. 동작 이름: {title}
-        </p>
+        <p className="text-sm font-extrabold">{title}</p>
+        <p className="text-caption text-ink-soft">영상을 못 불러왔어요</p>
       </div>
     );
   }
