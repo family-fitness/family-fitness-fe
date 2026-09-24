@@ -121,15 +121,11 @@ export default function ResultPage() {
         )}
 
         <section className="card">
+          {/* 막대 가운데 눈금이 무엇인지 글로 — 아이 홈 · 요인 표와 같은 말. 몇 항목인지는 머리에 있다 */}
           <CardHead
             title="항목별"
-            meta={kidView ? `${items.length}개` : `국민체력100 등급 · ${items.length}개`}
+            meta={kidView ? "눈금 · 또래 평균 50" : "국민체력100 등급 · 눈금 · 또래 평균 50"}
           />
-          {/* 막대 가운데 눈금이 무엇인지 글로 — 기준이 없으면 막대 길이가 좋은지 모른다 */}
-          <p className="text-caption text-ink-soft mt-1 flex items-center gap-1.5 font-semibold">
-            <span aria-hidden className="bg-ink/55 h-3 w-0.5 rounded-full" />
-            또래 평균
-          </p>
           <div className="divide-rows">
             {items.map((entry, index) => (
               <div key={entry.itemCode} className="py-3.5">
