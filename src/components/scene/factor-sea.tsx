@@ -28,7 +28,7 @@ import { useWidth } from "./use-width";
  *
  * **부모 화면에만** 둔다 — 물 아래 기둥이 곧 「약한 항목」 이라서(규칙 10).
  */
-const SPEC: OrthoSpec = { elevation: 28, azimuth: -14, target: 0.5, view: 2.44 };
+const SPEC: OrthoSpec = { elevation: 28, azimuth: -14, target: 0.99, view: 2.15 };
 const GAP = 1;
 const RADIUS = 0.34;
 /** 100 일 때 기둥 높이(세계 단위) */
@@ -41,17 +41,18 @@ interface Ring {
   flat: number;
   depth: number;
 }
-const SLAB: Ring = { half: 3.05, flat: 2.72, depth: 0.84 };
+const SLAB: Ring = { half: 3.08, flat: 2.94, depth: 0.84 };
 const SLAB_THICK = 0.3;
 /** 섬 밑동 — 아래로 좁아진다 */
-const UNDER: Ring = { half: 2.45, flat: 2.2, depth: 0.4 };
+const UNDER: Ring = { half: 2.5, flat: 2.3, depth: 0.4 };
 const UNDER_DROP = 0.55;
-/** 물 — 판 안쪽으로 들여 흰 테가 남게 */
-const POOL: Ring = { half: 2.88, flat: 2.6, depth: 0.7 };
-/** 이 폭일 때 이 높이다. 좁은 폰에서는 비율 그대로 줄어든다 */
+/** 물 — 판 안쪽으로 들여 흰 테가 남게. 끝 기둥의 고리까지 물 안에 든다 */
+const POOL: Ring = { half: 2.95, flat: 2.8, depth: 0.7 };
+/** 물 위 고리 반지름 — 기둥보다 조금 크게 */
+const COLLAR = RADIUS + 0.1;
+/** 이 폭일 때 이 높이다. 좁은 폰에서는 비율 그대로 줄어든다 — 이름 줄은 캔버스 밖 아래에 따로 */
 const REF_WIDTH = 320;
-/** 맨 아래 한 줄은 요인 그림 · 이름 자리다 */
-const REF_HEIGHT = 255;
+const REF_HEIGHT = 220;
 
 const spotX = (i: number) => (i - (FACTORS.length - 1) / 2) * GAP;
 /** 안 잰 요인은 납작한 판 — 0 기둥이 아니다 */
@@ -210,21 +211,32 @@ export function FactorSea({
         const [nx, nz] = shore[(k + 1) % shore.length];
         rim.push(x, lift, z, nx, lift, nz);
       });
-      root.add(segments(rim, line(2.5)));
+      // 물보다 늦게 그린다 — 먼저 그리면 비스듬한 물 윗면이 선 아래쪽 한 픽셀을 물들인다
+      const afterWater = (width: number) => {
+        const material = line(width);
+        material.transparent = true;
+        return material;
+      };
+      const rimLines = segments(rim, afterWater(2.5));
+      rimLines.renderOrder = 4;
+      root.add(rimLines);
 
       /* 고리 — 기둥마다 물 위에 그 기둥의 50 자리. 안 잰 요인에는 두지 않는다 */
       const collar: number[] = [];
       values.forEach((v, i) => {
         if (v == null) return;
-        const r = RADIUS + 0.1;
         for (let k = 0; k < 6; k++) {
           const a = (k * Math.PI) / 3;
           const b = ((k + 1) * Math.PI) / 3;
-          collar.push(spotX(i) + Math.sin(a) * r, lift, Math.cos(a) * r);
-          collar.push(spotX(i) + Math.sin(b) * r, lift, Math.cos(b) * r);
+          collar.push(spotX(i) + Math.sin(a) * COLLAR, lift, Math.cos(a) * COLLAR);
+          collar.push(spotX(i) + Math.sin(b) * COLLAR, lift, Math.cos(b) * COLLAR);
         }
       });
-      if (collar.length) root.add(segments(collar, line(2)));
+      if (collar.length) {
+        const collars = segments(collar, afterWater(2));
+        collars.renderOrder = 4;
+        root.add(collars);
+      }
 
       // 마지막 기둥까지 다 솟는 데 걸리는 시간
       const growFor = (pillars.length - 1) * 0.07 + 0.7;
@@ -246,21 +258,21 @@ export function FactorSea({
       };
     },
     [key],
-    () => setReady(true),
+    setReady,
   );
 
   const width = useWidth(host, REF_WIDTH);
   const tall = (width * REF_HEIGHT) / REF_WIDTH;
-  const { tops, axis } = placeLabels(values, width, tall);
+  const { tops, axis, stagger } = placeLabels(values, width, tall);
   return (
     <>
       <div
         ref={host}
         role="img"
         aria-label={
-          FACTORS.map((f, i) => `${f} ${values[i] == null ? "아직 안 쟀어요" : values[i]}`).join(
-            ", ",
-          ) + ". 물 높이가 또래 평균 50"
+          FACTORS.map(
+            (f, i) => `${f} ${values[i] == null ? "아직 안 쟀어요" : `또래 백분위 ${values[i]}`}`,
+          ).join(", ") + ". 물 높이가 또래 평균 50"
         }
         className={cn("relative w-full touch-pan-y select-none", className)}
         style={{ aspectRatio: `${REF_WIDTH} / ${REF_HEIGHT}` }}
@@ -287,18 +299,28 @@ export function FactorSea({
               )}
             </span>
           ))}
-          {/* 섬 아래 한 줄 — 요인 그림과 이름. 기둥 가운데에 맞춘다 */}
-          {axis.map(({ factor, x }) => (
-            <span
-              key={factor}
-              className="absolute bottom-0 flex -translate-x-1/2 flex-col items-center gap-0.5"
-              style={{ left: x }}
-            >
-              <FactorIcon factor={factor} className="size-5" />
-              <span className="text-micro text-ink-soft font-bold whitespace-nowrap">{factor}</span>
-            </span>
-          ))}
         </div>
+      </div>
+      {/* 섬 아래 한 줄 — 요인 그림과 이름. 기둥 가운데에 맞춘다. 캔버스 밖에 두어 좁은 폰에서
+          섬이 줄어도 겹치지 않는다. 이름끼리 부딪히면 한 칸 걸러 한 줄 내린다 */}
+      <div aria-hidden className={cn("relative", stagger ? "h-13" : "h-10")}>
+        {axis.map(({ factor, x }, i) => (
+          <span
+            key={factor}
+            className="absolute top-0 flex -translate-x-1/2 flex-col items-center gap-0.5"
+            style={{ left: x }}
+          >
+            <FactorIcon factor={factor} className="size-5" />
+            <span
+              className={cn(
+                "text-micro text-ink-soft font-bold whitespace-nowrap",
+                stagger && i % 2 === 1 && "mt-3",
+              )}
+            >
+              {factor}
+            </span>
+          </span>
+        ))}
       </div>
       {/* 범례 — 색만으로 가르지 않는다. 기둥과 물이 무엇인지 글로 */}
       <p className="text-caption text-ink-soft flex items-center justify-center gap-3 font-semibold">
@@ -378,12 +400,40 @@ function FlatSea({
         );
       })}
       <polygon points={water} className="fill-signal-pale" fillOpacity={0.72} />
-      <polygon
-        points={poly(POOL, WATER)}
-        className="stroke-signal-deep fill-none"
-        strokeWidth={2.5}
-        strokeLinejoin="round"
-      />
+      {/* 물 위로 솟은 몫은 물빛 없이 다시 — 그 기둥의 50 자리(고리)부터 위 */}
+      {values.map((v, i) => {
+        if (v == null || heightOf(v) <= WATER) return null;
+        const mid = at([spotX(i), WATER, 0]);
+        const top = at([spotX(i), heightOf(v), 0]);
+        const tall = mid.y - top.y;
+        return (
+          <g key={FACTORS[i]} className="fill-signal">
+            <rect x={mid.x - barWidth / 2} y={top.y} width={barWidth} height={tall} rx={3} />
+            <rect
+              x={mid.x - barWidth / 2}
+              y={top.y + tall / 2}
+              width={barWidth}
+              height={tall / 2}
+            />
+          </g>
+        );
+      })}
+      <g className="stroke-signal-deep fill-none" strokeLinejoin="round">
+        <polygon points={poly(POOL, WATER)} strokeWidth={2.5} />
+        {values.map((v, i) =>
+          v == null ? null : (
+            <polygon
+              key={FACTORS[i]}
+              strokeWidth={2}
+              points={Array.from({ length: 6 }, (_, k) => {
+                const a = (k * Math.PI) / 3;
+                const p = at([spotX(i) + Math.sin(a) * COLLAR, WATER, Math.cos(a) * COLLAR]);
+                return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+              }).join(" ")}
+            />
+          ),
+        )}
+      </g>
     </svg>
   );
 }
@@ -410,24 +460,28 @@ function hull(points: { x: number; y: number }[]) {
 
 /**
  * 글자 자리. 값은 기둥 꼭대기와 물높이 중 **높은 쪽 위**에 둔다 — 물 아래 기둥이면 값이
- * 물 위 고리 위에 서서, 꼭대기와 고리 사이 틈을 덮지 않는다. 겹치면 뒤쪽 글자를 올린다.
+ * 물 위 고리 위에 서서, 꼭대기와 고리 사이 틈을 덮지 않는다. 고리 · 윗면의 **뒤 끝**보다 위에
+ * 두어야 글자 바탕이 고리 뒤쪽을 가리지 않는다. 겹치면 뒤쪽 글자를 올린다.
  * 이름은 섬 아래 한 줄 — 기둥 가운데와 같은 가로 자리다(정사영이라 높이와 상관없다).
  */
 function placeLabels(values: (number | null)[], width: number, height: number) {
   const boxes = FACTORS.map((factor, i) => {
     const v = values[i];
     const top = Math.max(heightOf(v), WATER) + 0.06;
+    const back = heightOf(v) > WATER ? RADIUS : COLLAR;
     const at = projectOrtho(SPEC, [spotX(i), top, 0], width, height);
+    const behind = projectOrtho(SPEC, [spotX(i), top, -back], width, height);
     // 글자 폭 어림 — 숫자 한 자 8.5px + 좌우 여백 8px. 「안 잼」 은 30px
     const w = v == null ? 30 : 8 + String(v).length * 8.5;
-    return { factor, value: v, x: at.x, y: at.y - 2, w, h: 20 };
+    return { factor, value: v, x: at.x, y: behind.y - 2, w, h: 20 };
   });
   const ys = separateLabels(boxes);
-  return {
-    tops: boxes.map((b, i) => ({ ...b, y: ys[i] })),
-    axis: FACTORS.map((factor, i) => ({
-      factor,
-      x: projectOrtho(SPEC, [spotX(i), 0, 0], width, height).x,
-    })),
-  };
+  // 이름 폭 어림 — 한 자 11px + 여백 4px
+  const axis = FACTORS.map((factor, i) => ({
+    factor,
+    x: projectOrtho(SPEC, [spotX(i), 0, 0], width, height).x,
+    w: factor.length * 11 + 4,
+  }));
+  const stagger = axis.some((a, i) => i > 0 && a.x - axis[i - 1].x < (a.w + axis[i - 1].w) / 2);
+  return { tops: boxes.map((b, i) => ({ ...b, y: ys[i] })), axis, stagger };
 }
