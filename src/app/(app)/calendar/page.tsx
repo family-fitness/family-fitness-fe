@@ -55,7 +55,13 @@ function Calendar() {
   const setChild = useRoleStore((s) => s.setChild);
 
   const kids = (map?.members ?? []).filter((m) => m.role === "CHILD");
-  const who = kids.find((k) => k.profileId === childProfileId) ?? (kidView ? undefined : kids[0]);
+  // 아이 기록 · 하루 기록에서 올 때는 그 아이(`?profileId=`)가 먼저다. 아이 화면은 자기 것만
+  const asked = kidView ? null : params.get("profileId");
+  const who =
+    kids.find((k) => k.profileId === asked) ??
+    kids.find((k) => k.profileId === childProfileId) ??
+    (kidView ? undefined : kids[0]);
+  const suffix = asked && asked === who?.profileId ? `?profileId=${encodeURIComponent(asked)}` : "";
 
   const now = today();
   // 주소창 값은 믿지 않는다 — 모양이 틀리면 이번 달로.
@@ -86,7 +92,10 @@ function Calendar() {
       .filter((d): d is string => Boolean(d)),
   );
 
-  const go = (next: string) => router.replace(`/calendar?month=${next}`, { scroll: false });
+  const go = (next: string) =>
+    router.replace(`/calendar?month=${next}${suffix ? `&${suffix.slice(1)}` : ""}`, {
+      scroll: false,
+    });
 
   const back = kidView ? "/kid" : "/parent";
   const failure = sessionError ?? mapError;
@@ -141,6 +150,9 @@ function Calendar() {
             selectedId={who?.profileId}
             onSelect={(id) => {
               setChild(id);
+              router.replace(`/calendar?month=${month}&profileId=${encodeURIComponent(id)}`, {
+                scroll: false,
+              });
             }}
           />
         )}
@@ -185,7 +197,7 @@ function Calendar() {
                     future={date > now}
                     isToday={date === now}
                     loading={calendarPending}
-                    onPick={() => router.push(`/calendar/${date}`)}
+                    onPick={() => router.push(`/calendar/${date}${suffix}`)}
                   />
                 )}
               </li>
