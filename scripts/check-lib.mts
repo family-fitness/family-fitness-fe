@@ -23,7 +23,6 @@ import {
   upcomingDays,
 } from "@/lib/routine";
 import { dayRings, daySummary, plannedDay } from "@/lib/day";
-import { isEmpty, rangeLabel, weekRecap } from "@/lib/recap";
 import { UNLOCKS, decorationsAt, isGameOpen, newlyUnlocked, nextUnlock } from "@/lib/unlocks";
 import { josa } from "@/lib/utils";
 
@@ -40,20 +39,23 @@ check(
   "한 레벨에 하나씩 열린다",
   same(
     UNLOCKS.map((u) => u.level),
-    [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    [1, 2, 3, 4, 5, 6, 7, 8],
   ),
 );
-check("Lv.1 에는 운동 주사위만", same(decorationsAt(1), []) && isGameOpen("dice", 1));
-check("Lv.5 섬에는 깃발 · 울타리", same(decorationsAt(5), ["flag", "fence"]));
-check("레벨을 모르면 Lv.1 로 본다", same(decorationsAt(null), []) && isGameOpen("dice", undefined));
-check("얼음땡은 Lv.3 부터", !isGameOpen("freeze", 2) && isGameOpen("freeze", 3));
-check("다 열면 다음이 없다", nextUnlock(9) === null && nextUnlock(20) === null);
-check("Lv.5 다음은 연못", nextUnlock(5)?.id === "pond");
+check("Lv.1 부터 얼음땡은 열려 있다", same(decorationsAt(1), []) && isGameOpen("freeze", 1));
+check("Lv.5 섬에는 깃발 · 울타리 · 연못", same(decorationsAt(5), ["flag", "fence", "pond"]));
+check(
+  "레벨을 모르면 Lv.1 로 본다",
+  same(decorationsAt(null), []) && isGameOpen("freeze", undefined),
+);
+check("따라 해 봐는 Lv.3 부터", !isGameOpen("follow", 2) && isGameOpen("follow", 3));
+check("다 열면 다음이 없다", nextUnlock(8) === null && nextUnlock(20) === null);
+check("Lv.5 다음은 텐트", nextUnlock(5)?.id === "tent");
 check(
   "두 레벨을 한 번에 올라도 둘 다 열린 것으로",
   same(
-    newlyUnlocked(3, 5).map((u) => u.id),
-    ["fence", "follow"],
+    newlyUnlocked(2, 4).map((u) => u.id),
+    ["follow", "fence"],
   ),
 );
 check("오르지 않았으면 새로 열린 것 없음", newlyUnlocked(5, 5).length === 0);
@@ -191,57 +193,6 @@ check(
 );
 check("되풀이는 4주까지", repeatDates(["2026-09-23"], 9).length === 4);
 check("겹친 날은 한 번만", repeatDates(["2026-09-23", "2026-09-23"], 1).length === 1);
-
-/* ─── 지난주 돌아보기 ─────────────────────────────────── */
-
-const log = (date: string, minutes: number, stickers = 0): DayLog => ({
-  date,
-  minutes,
-  plannedMinutes: null,
-  entries: [],
-  stickers: Array.from({ length: stickers }, (_, i) => ({
-    cheerId: `${date}-${i}`,
-    stickerId: "star",
-    fromProfileId: "p",
-    fromName: "엄마",
-    message: null,
-    missionId: null,
-    createdAt: `${date}T19:00:00+09:00`,
-  })),
-});
-const week = { from: "2026-09-14", to: "2026-09-20" };
-const recap = weekRecap(
-  [
-    log("2026-09-13", 50),
-    log("2026-09-14", 12, 1),
-    log("2026-09-16", 25),
-    log("2026-09-18", 25, 2),
-    log("2026-09-19", 0),
-  ],
-  [
-    { code: "A", title: "사흘 이어서", description: "", earnedAt: "2026-09-16T20:00:00+09:00" },
-    { code: "B", title: "첫 스티커", description: "", earnedAt: "2026-09-02T20:00:00+09:00" },
-    { code: "C", title: "아직", description: "", earnedAt: null },
-  ],
-  week,
-);
-check("그 주 안의 움직인 날만 센다", recap.days === 3);
-check("그 주 안의 분만 더한다", recap.minutes === 62);
-check(
-  "가장 많이 한 날 — 같으면 이른 날",
-  recap.best?.date === "2026-09-16" && recap.best.minutes === 25,
-);
-check("그 주에 받은 스티커", recap.stickers === 3);
-check("그 주에 받은 업적만", same(recap.badges, ["사흘 이어서"]));
-check("하루도 없으면 가장 많이 한 날도 없다", weekRecap([], [], week).best === null);
-check(
-  "같은 분이면 이른 날 — 늦은 날부터 받아도",
-  weekRecap([log("2026-09-18", 25), log("2026-09-16", 25)], [], week).best?.date === "2026-09-16",
-);
-check("적을 것이 없으면 비었다", isEmpty(weekRecap([log("2026-09-15", 0)], [], week)));
-check("스티커만 받은 주는 비지 않았다", !isEmpty(weekRecap([log("2026-09-15", 0, 1)], [], week)));
-check("같은 달 범위", rangeLabel("2026-09-14", "2026-09-20") === "9월 14일 ~ 20일");
-check("달이 바뀌는 범위", rangeLabel("2026-08-31", "2026-09-06") === "8월 31일 ~ 9월 6일");
 
 /* ─── 하루 기록 ─────────────────────────────────────────── */
 

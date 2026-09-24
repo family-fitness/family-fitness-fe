@@ -9,35 +9,34 @@
  */
 
 export type DecorationId = "flag" | "fence" | "pond" | "tent" | "windmill" | "lighthouse";
-export type GameId = "dice" | "freeze" | "follow";
+export type GameId = "freeze" | "follow";
 
 export type Unlock =
   | { kind: "decoration"; id: DecorationId; level: number; name: string; line: string }
   | { kind: "game"; id: GameId; level: number; name: string; line: string };
 
-/** 레벨 차례. 한 레벨에 하나 */
+/** 레벨 차례. 한 레벨에 하나 — 처음(Lv.1)부터 놀이 하나는 열려 있다 */
 export const UNLOCKS: readonly Unlock[] = [
-  { kind: "game", id: "dice", level: 1, name: "운동 주사위", line: "굴려서 나온 동작을 해요" },
-  { kind: "decoration", id: "flag", level: 2, name: "깃발", line: "내 섬에 깃발이 꽂혀요" },
   {
     kind: "game",
     id: "freeze",
-    level: 3,
+    level: 1,
     name: "얼음땡",
     line: "박자에 맞춰 움직이다 얼음이면 멈춰요",
   },
-  { kind: "decoration", id: "fence", level: 4, name: "울타리", line: "섬 가장자리에 울타리" },
+  { kind: "decoration", id: "flag", level: 2, name: "깃발", line: "내 섬에 깃발이 꽂혀요" },
   {
     kind: "game",
     id: "follow",
-    level: 5,
+    level: 3,
     name: "따라 해 봐",
     line: "동작 순서를 기억해 따라 해요",
   },
-  { kind: "decoration", id: "pond", level: 6, name: "연못", line: "섬에 작은 연못이 생겨요" },
-  { kind: "decoration", id: "tent", level: 7, name: "텐트", line: "섬에서 캠핑을 해요" },
-  { kind: "decoration", id: "windmill", level: 8, name: "풍차", line: "바람 따라 도는 풍차" },
-  { kind: "decoration", id: "lighthouse", level: 9, name: "등대", line: "섬을 비추는 등대" },
+  { kind: "decoration", id: "fence", level: 4, name: "울타리", line: "섬 가장자리에 울타리" },
+  { kind: "decoration", id: "pond", level: 5, name: "연못", line: "섬에 작은 연못이 생겨요" },
+  { kind: "decoration", id: "tent", level: 6, name: "텐트", line: "섬에서 캠핑을 해요" },
+  { kind: "decoration", id: "windmill", level: 7, name: "풍차", line: "바람 따라 도는 풍차" },
+  { kind: "decoration", id: "lighthouse", level: 8, name: "등대", line: "섬을 비추는 등대" },
 ];
 
 /** 이 레벨까지 열린 것 */

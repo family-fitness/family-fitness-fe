@@ -84,14 +84,6 @@ for (const [mode, route] of [
   });
 }
 
-await check("운동 주사위 — 굴리면 결과가 나온다", async () => {
-  const { ctx, page, errors } = await open("kid", "/kid/play/dice");
-  await page.getByRole("button", { name: "굴리기" }).click({ timeout: 20000 });
-  await page.getByRole("button", { name: "다 했어요" }).waitFor({ timeout: 5000 });
-  await ctx.close();
-  if (errors.length) throw new Error(errors[0]);
-});
-
 await check("얼음땡 — 시작하면 움직여요가 뜬다", async () => {
   const { ctx, page, errors } = await open("kid", "/kid/play/freeze");
   await page.getByRole("button", { name: "시작하기" }).click({ timeout: 20000 });
