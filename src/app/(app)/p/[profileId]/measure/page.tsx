@@ -359,6 +359,10 @@ export default function MeasurePage() {
           >
             결과 보기
           </Button>
+          {/* 못 누르는 까닭 한 줄 — 아이 등록과 같은 자리 · 같은 모양. 키 · 몸무게만으로는 결과가 없다 */}
+          {filledCount === 0 && (
+            <p className="text-faint text-caption text-center">항목을 하나 이상 적어 주세요</p>
+          )}
         </form>
       </Stage>
     </>
