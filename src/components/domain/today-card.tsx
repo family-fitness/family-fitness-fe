@@ -78,7 +78,7 @@ export function TodayCard({
             className="press bg-signal-strong flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
           >
             <ArtIcon name="icon/menu-ai" className="size-5" />
-            AI 에게 받기
+            AI에게 받기
           </Link>
           <Link
             href="/videos"

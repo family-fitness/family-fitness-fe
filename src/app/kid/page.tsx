@@ -234,7 +234,7 @@ export default function KidHomePage() {
 
         {/* 점수 하나는 아이도 본다. 등수로 바꾸지 않고 또래 평균 50 과 같이(규칙 10) */}
         <Card>
-          <CardHead title="내 체력 점수" />
+          <CardHead title="내 신체 점수" />
           {score != null ? (
             <div className="mt-1">
               <p className="metric-value text-metric">

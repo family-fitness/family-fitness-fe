@@ -131,7 +131,7 @@ function PlanForm() {
       <AppBar backHref="/parent" title="오늘 운동 짜기" />
       <Stage wide className="space-y-3 pb-28">
         <section className="card-hero">
-          <p className="text-lead font-extrabold">{name}의 오늘 운동을 짜 드려요</p>
+          <p className="text-lead font-extrabold">{name}의 체력</p>
           <FactorRadar
             points={latest?.radar}
             name={name}
@@ -274,7 +274,7 @@ function PlanForm() {
           className="press bg-signal-strong shadow-lift flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white disabled:opacity-60"
         >
           <ArtIcon name="icon/menu-ai" className="size-5" />
-          {start.isPending ? "코치에게 보내는 중" : `AI 에게 ${minutes}분 짜 달라기`}
+          {start.isPending ? "코치에게 보내는 중" : `AI에게 ${minutes}분 운동 받기`}
         </button>
       </Dock>
     </>
