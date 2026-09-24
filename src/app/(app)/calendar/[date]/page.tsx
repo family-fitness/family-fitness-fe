@@ -358,7 +358,7 @@ function Thumb({ videoId, phase }: { videoId?: string | null; phase: MissionSess
       aria-hidden
       className={cn(
         "text-caption grid aspect-video w-20 shrink-0 place-items-center rounded-xl font-extrabold",
-        phase === "MAIN" ? "bg-signal text-white" : "bg-signal-soft text-signal-deep",
+        phase === "MAIN" ? "bg-signal-strong text-white" : "bg-signal-soft text-signal-deep",
       )}
     >
       {PHASE_LABEL[phase].replace("운동", "")}
