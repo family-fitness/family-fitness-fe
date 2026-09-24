@@ -5,17 +5,16 @@ import { useRouter } from "next/navigation";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
-import { Card, CardHead } from "@/components/ui/card";
+import { ArtIcon } from "@/components/ui/art-icon";
 import { ErrorState } from "@/components/ui/error-state";
 import { IconLink } from "@/components/ui/icon-link";
 import { Illustration } from "@/components/ui/illustration";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TodayRings } from "@/components/domain/today-rings";
-import { WeekTower } from "@/components/scene/week-tower";
+import { StickerArt } from "@/components/domain/sticker-art";
+import { PanelCell, PanelCells, WeekPanel } from "@/components/domain/week-panel";
 import { KiumIsland } from "@/components/scene/kium-island";
 import { NotificationBell } from "@/components/domain/notification-bell";
-import { RecentBadges, RecentStickers } from "@/components/domain/kid-cards";
 import type { Mission } from "@/lib/api/types";
 import type { ProfileWithSex } from "@/lib/api/types";
 import {
@@ -27,10 +26,11 @@ import {
   useProgress,
 } from "@/lib/api/queries";
 import { callName } from "@/lib/family";
-import { levelProgress, stageOf } from "@/lib/levels";
+import { badgeArt, levelProgress, stageOf } from "@/lib/levels";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
-import { longDate, today, weekOf } from "@/lib/today";
+import { dayOf, longDate, today, weekOf } from "@/lib/today";
+import { stickerOf } from "@/lib/stickers";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
@@ -124,6 +124,13 @@ export default function KidHomePage() {
   const trees = progress?.activeDays ?? 0;
   const bar = progress ? levelProgress(progress) : null;
   const score = me.latest?.overallPercentile ?? null;
+  // 가장 최근에 받은 스티커 · 업적 하나씩. 개수를 세지 않는다 — 모아야 할 것이 되면 못 받은 날이 실패가 된다
+  const sticker = (cheers?.cheers ?? [])
+    .filter((c) => c.stickerId && stickerOf(c.stickerId))
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0];
+  const badge = (progress?.achievements ?? [])
+    .filter((x) => x.earnedAt)
+    .sort((a, b) => Date.parse(b.earnedAt ?? "") - Date.parse(a.earnedAt ?? ""))[0];
 
   return (
     <>
@@ -193,64 +200,62 @@ export default function KidHomePage() {
         )}
 
         {/* 오늘 한 만큼 — 부모 홈과 같은 링. 비어 있어도 탓하지 않는다 */}
-        <Card>
-          <CardHead title="오늘 움직인 만큼" href={`/calendar/${now}`} />
-          <TodayRings
-            profileId={childProfileId ?? undefined}
-            missions={missions?.missions}
-            weekLogs={calendar?.days}
-            size={124}
-            className="mt-2"
-          />
-          <div className="border-line mt-4 border-t pt-3">
-            {/* 이어서 한 날은 이번 주와 다른 수다(지난주부터 이어질 수 있다) — 한 줄에 섞지 않고 따로 */}
-            <div className="flex min-h-7 items-center justify-between gap-2">
-              <p className="text-caption text-ink-soft font-bold">이번 주</p>
-              {progress && progress.streakDays > 1 && (
-                <p className="bg-mark-soft text-caption rounded-full px-2.5 py-1 font-extrabold">
-                  {progress.streakDays}일째 이어서
-                </p>
-              )}
-            </div>
-            <div className="mt-2">
-              {/* 기록을 받은 뒤에 짓는다 — 0분으로 먼저 지었다가 다시 지으면 깜빡이고 WebGL 이 하나 더 든다 */}
-              {calendarPending ? (
-                <Skeleton className="aspect-[320/150] w-full rounded-2xl" />
-              ) : (
-                <WeekTower days={week.days} logs={calendar?.days} today={now} height={150} />
-              )}
-            </div>
-          </div>
-        </Card>
-
-        <RecentStickers cheers={cheers?.cheers} nameOf={nameOf} />
-        <RecentBadges achievements={progress?.achievements} />
-
-        {/* 점수 하나는 아이도 본다. 등수로 바꾸지 않고 또래 평균 50 과 같이(규칙 10) */}
-        <Card>
-          <CardHead title="내 신체 점수" />
-          {score != null ? (
-            <div className="mt-1">
-              <p className="metric-value text-metric">
-                {score}
-                <span className="metric-unit">점</span>
-              </p>
-              <div
-                className="record-rail mt-2.5"
-                role="img"
-                aria-label={`내 점수 ${score}, 또래 평균 50`}
-              >
-                <span className="record-fill" style={{ width: `${score}%` }} />
-                <span className="record-avg" />
-              </div>
-              <p className="text-micro text-ink-soft mt-1.5 text-right font-bold">
-                눈금 · 또래 평균 50
-              </p>
-            </div>
-          ) : (
-            <p className="text-ink-soft mt-1 text-sm">아직 재지 않았어요</p>
-          )}
-        </Card>
+        {/* 둘째 묶음 — 이번 주. 링 · 요일 탑 · 받은 스티커 · 업적 · 신체 점수를 한 덩어리로(9/25 「큰 묶음 둘」) */}
+        <WeekPanel
+          profileId={childProfileId ?? undefined}
+          missions={missions?.missions}
+          days={week.days}
+          logs={calendar?.days}
+          loading={calendarPending}
+          href={`/calendar/${now}`}
+          meta={
+            // 이어서 한 날은 이번 주와 다른 수다(지난주부터 이어질 수 있다) — 머리 곁에 따로. 끊긴 날은 말하지 않는다
+            progress && progress.streakDays > 1 ? (
+              <span className="bg-mark-soft text-ink rounded-full px-2.5 py-1 font-extrabold">
+                {progress.streakDays}일째 이어서
+              </span>
+            ) : undefined
+          }
+        >
+          <PanelCells>
+            <PanelCell
+              href={sticker ? `/calendar/${dayOf(sticker.createdAt)}` : "/calendar"}
+              label="받은 스티커"
+              // 누가 붙여 줬는지 — 아이에게 부모는 엄마 · 아빠다. 스티커 말은 그림이 한다
+              note={sticker ? nameOf(sticker.fromProfileId, sticker.fromName) : "아직 없어요"}
+              art={sticker ? <StickerArt id={sticker.stickerId} className="size-10" /> : null}
+            />
+            <PanelCell
+              href="/kid/badges"
+              label="업적"
+              note={badge?.title ?? "아직 없어요"}
+              art={badge ? <ArtIcon name={badgeArt(badge.code)} className="size-10" /> : null}
+            />
+            {/* 점수 하나는 아이도 본다. 등수로 바꾸지 않고 또래 평균 50 눈금과 같이(규칙 10) */}
+            <PanelCell
+              label="신체 점수"
+              note={score != null ? "눈금 · 또래 평균 50" : "아직 재지 않았어요"}
+              art={
+                score != null ? (
+                  <span className="flex flex-col items-center">
+                    <span className="metric-value text-2xl leading-none">
+                      {score}
+                      <span className="metric-unit">점</span>
+                    </span>
+                    <span
+                      className="record-rail mt-1.5 w-16"
+                      role="img"
+                      aria-label={`내 점수 ${score}, 또래 평균 50`}
+                    >
+                      <span className="record-fill" style={{ width: `${score}%` }} />
+                      <span className="record-avg" />
+                    </span>
+                  </span>
+                ) : null
+              }
+            />
+          </PanelCells>
+        </WeekPanel>
       </Stage>
     </>
   );
