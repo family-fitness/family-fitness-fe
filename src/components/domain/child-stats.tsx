@@ -18,7 +18,11 @@ import { cn } from "@/lib/utils";
  * 못 받은 것은 0 이 아니라 「—」 다. 0 을 그리면 안 한 달처럼 보인다.
  */
 
-/** 이번 달 숫자 넷 — 운동한 날 · 움직인 시간 · 이어서 · 받은 칭찬. 한 카드 안에 선으로 나눈다 */
+/**
+ * 이번 달 숫자 — 운동한 날 · 움직인 시간 · 이어서 · 받은 칭찬. 한 카드 안에 선으로 나눈다.
+ * 칭찬은 받은 달에만, 이어서는 이틀부터 칸을 둔다 — 「0장」 · 「0일째」 를 적어 두면 못 한 달이 된다
+ * (규칙 12 · 캘린더 달 칸 · 아이 홈과 같게). 못 받았거나 받는 중이면 자리는 둔다.
+ */
 export function MonthStats({
   familyId,
   profileId,
@@ -41,16 +45,55 @@ export function MonthStats({
   const active = days.filter((d) => d.minutes > 0);
   const minutes = active.reduce((sum, d) => sum + d.minutes, 0);
   const stickers = days.reduce((sum, d) => sum + d.stickers.length, 0);
-  const calendar = error ? "error" : isPending ? "pending" : "ready";
+  const calendar: Load = error ? "error" : isPending ? "pending" : "ready";
+
+  const cells: StatCell[] = [
+    { key: "days", label: "이번 달 운동한 날", value: active.length, unit: "일", state: calendar },
+    { key: "minutes", label: "움직인 시간", value: minutes, unit: "분", state: calendar },
+  ];
+  if ((streak ?? 0) >= 2 || streakState !== "ready") {
+    cells.push({
+      key: "streak",
+      label: "이어서",
+      value: streak ?? 0,
+      unit: "일째",
+      state: streakState,
+    });
+  }
+  if (stickers > 0 || calendar !== "ready") {
+    cells.push({
+      key: "stickers",
+      label: "받은 칭찬",
+      value: stickers,
+      unit: "장",
+      state: calendar,
+    });
+  }
 
   return (
     <section aria-label="이번 달" className="card grid grid-cols-2 px-0 py-1">
-      <Stat label="이번 달 운동한 날" value={active.length} unit="일" state={calendar} />
-      <Stat label="움직인 시간" value={minutes} unit="분" state={calendar} left />
-      <Stat label="이어서" value={streak ?? 0} unit="일째" state={streakState} top />
-      <Stat label="받은 칭찬" value={stickers} unit="장" state={calendar} left top />
+      {cells.map(({ key, ...cell }, i) => (
+        <Stat
+          key={key}
+          {...cell}
+          left={i % 2 === 1}
+          top={i >= 2}
+          // 셋이면 아랫줄 하나가 폭을 다 쓴다 — 반쪽이 비어 보이지 않게
+          wide={cells.length === 3 && i === 2}
+        />
+      ))}
     </section>
   );
+}
+
+type Load = "pending" | "error" | "ready";
+
+interface StatCell {
+  key: string;
+  label: string;
+  value: number;
+  unit: string;
+  state: Load;
 }
 
 function Stat({
@@ -60,6 +103,7 @@ function Stat({
   state,
   left,
   top,
+  wide,
 }: {
   label: string;
   value: number;
@@ -69,10 +113,17 @@ function Stat({
   left?: boolean;
   /** 윗줄과 나누는 선 */
   top?: boolean;
+  /** 두 칸 폭 */
+  wide?: boolean;
 }) {
   return (
     <div
-      className={cn("px-5 py-3.5", left && "border-line border-l", top && "border-line border-t")}
+      className={cn(
+        "px-5 py-3.5",
+        left && "border-line border-l",
+        top && "border-line border-t",
+        wide && "col-span-2",
+      )}
     >
       <p className="metric-label">{label}</p>
       {state === "pending" ? (
