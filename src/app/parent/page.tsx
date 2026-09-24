@@ -77,6 +77,8 @@ export default function ParentHomePage() {
     <HomeHeader
       eyebrow={longDate()}
       title={map?.familyName ?? "우리집"}
+      // 가족 이름을 누르면 가족 대시보드 — 가족 전체를 한 화면에서
+      titleHref="/parent/dashboard"
       actions={
         <>
           {/* 보고 있는 아이 — 오른쪽 위 이름 알약(닥터아이처럼). 여럿이면 여기서 바로 바꾼다 */}
@@ -158,8 +160,8 @@ export default function ParentHomePage() {
               art={<ArtIcon name="icon/menu-video" className="size-9" />}
             />
             <PanelCell
-              href="/parent/family"
-              label="가족"
+              href="/parent/dashboard"
+              label="우리 가족"
               note={`${members.length}명`}
               art={<ArtIcon name="icon/menu-family" className="size-9" />}
             />

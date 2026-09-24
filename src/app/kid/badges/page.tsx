@@ -1,24 +1,17 @@
 "use client";
 
-import { useState } from "react";
-
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
-import { ArtIcon } from "@/components/ui/art-icon";
 import { Card, CardHead } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
-import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LevelBuddy } from "@/components/domain/level-buddy";
+import { AchievementGrid } from "@/components/domain/achievement-grid";
 import { UnlockLadder } from "@/components/domain/unlock-ladder";
-import { KiumMedal } from "@/components/scene/kium-medal";
-import type { AchievementView } from "@/lib/api/types";
 import { useProgress } from "@/lib/api/queries";
-import { artFor } from "@/lib/art";
-import { STAGES, badgeArt, levelProgress, stageOf } from "@/lib/levels";
+import { STAGES, levelProgress, stageOf } from "@/lib/levels";
 import { whenOf } from "@/lib/notifications";
-import { cn, formatDate } from "@/lib/utils";
-import { dayOf } from "@/lib/today";
+import { cn } from "@/lib/utils";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
@@ -34,7 +27,6 @@ import { useRoleStore } from "@/stores/role-store";
 export default function BadgesPage() {
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const { data: progress, isPending, error, refetch } = useProgress(childProfileId ?? undefined);
-  const [open, setOpen] = useState<AchievementView | null>(null);
 
   if (isPending) return <BadgesSkeleton />;
   if (error || !progress) {
@@ -117,34 +109,9 @@ export default function BadgesPage() {
 
         <Card>
           <CardHead title="업적" />
-          <ul className="mt-2 grid grid-cols-3 gap-2">
-            {achievements.map((a) => {
-              const got = Boolean(a.earnedAt);
-              return (
-                <li key={a.code}>
-                  <button
-                    type="button"
-                    onClick={() => setOpen(a)}
-                    className="press bg-sub flex w-full flex-col items-center gap-1.5 rounded-2xl px-1.5 py-3"
-                    aria-label={`${a.title}${got ? " · 받았어요" : " · 아직"}`}
-                  >
-                    <ArtIcon
-                      name={badgeArt(a.code)}
-                      className={cn("size-12", !got && "opacity-30 grayscale")}
-                    />
-                    <span
-                      className={cn(
-                        "text-micro text-center leading-tight font-bold",
-                        !got && "text-ink-soft",
-                      )}
-                    >
-                      {a.title}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="mt-2">
+            <AchievementGrid achievements={achievements} />
+          </div>
         </Card>
 
         {progress.recentXp.length > 0 && (
@@ -166,26 +133,6 @@ export default function BadgesPage() {
           </Card>
         )}
       </Stage>
-
-      <Sheet open={Boolean(open)} onClose={() => setOpen(null)} title={open?.title}>
-        {open && (
-          <div className="flex flex-col items-center pb-2 text-center">
-            {open.earnedAt ? (
-              <KiumMedal
-                art={artFor(badgeArt(open.code))}
-                size={220}
-                label={`${open.title} 메달`}
-              />
-            ) : (
-              <ArtIcon name={badgeArt(open.code)} className="my-8 size-28 opacity-30 grayscale" />
-            )}
-            <p className="text-body mt-2 font-bold">{open.description}</p>
-            <p className="text-caption text-ink-soft mt-1 font-semibold">
-              {open.earnedAt ? `${formatDate(dayOf(open.earnedAt))}에 받았어요` : "아직이에요"}
-            </p>
-          </div>
-        )}
-      </Sheet>
     </>
   );
 }

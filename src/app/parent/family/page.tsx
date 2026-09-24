@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -16,12 +16,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Field } from "@/components/ui/field";
 import { errorMessage } from "@/lib/errors";
 import type { ProfileSummary } from "@/lib/api/types";
-import { useCreateProfile, useFamilyProfiles, useOpenInvite } from "@/lib/api/queries";
+import { useCreateProfile, useFamilyProfiles } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { ageOf, today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useRoleStore } from "@/stores/role-store";
 import { Initial } from "@/components/ui/initial";
+import { InviteSheet } from "@/components/domain/invite-sheet";
 
 /** 가족 더하기. */
 export default function MembersPage() {
@@ -30,6 +31,8 @@ export default function MembersPage() {
   const childProfileId = useRoleStore((s) => s.childProfileId);
 
   const [adding, setAdding] = useState(false);
+  // 초대 시트 — 닫힘(undefined) · 이 자리로(id). 가족 대시보드와 같은 시트다
+  const [inviting, setInviting] = useState<string | null | undefined>(undefined);
 
   if (sessionPending || isPending) return <MembersSkeleton />;
 
@@ -60,7 +63,11 @@ export default function MembersPage() {
           <CardHead title="구성원" meta={`${profiles.length}명`} />
           <ul className="divide-rows">
             {profiles.map((p) => (
-              <MemberRow key={p.profileId} profile={p} />
+              <MemberRow
+                key={p.profileId}
+                profile={p}
+                onInvite={() => setInviting(p.profileId ?? null)}
+              />
             ))}
           </ul>
           <button
@@ -93,17 +100,20 @@ export default function MembersPage() {
         </ul>
 
         <AddMemberSheet open={adding} onClose={() => setAdding(false)} familyId={familyId ?? ""} />
+        <InviteSheet
+          key={inviting ?? "any"}
+          open={inviting !== undefined}
+          onClose={() => setInviting(undefined)}
+          familyName={family?.familyName ?? "우리 가족"}
+          members={profiles}
+          initialId={inviting}
+        />
       </Stage>
     </>
   );
 }
 
-function MemberRow({ profile }: { profile: ProfileSummary }) {
-  const invite = useOpenInvite();
-  const [code, setCode] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
+function MemberRow({ profile, onInvite }: { profile: ProfileSummary; onInvite: () => void }) {
   return (
     <li className="py-3.5">
       <div className="flex items-center gap-3">
@@ -119,60 +129,12 @@ function MemberRow({ profile }: { profile: ProfileSummary }) {
         {profile.hasAccount ? (
           <span className="text-done text-xs font-bold">연결됨</span>
         ) : (
-          <Button
-            size="md"
-            variant="outline"
-            loading={invite.isPending}
-            onClick={async () => {
-              setError(null);
-              try {
-                const res = await invite.mutateAsync(profile.profileId ?? "");
-                setCode(res.claimCode ?? null);
-              } catch (e) {
-                setError(
-                  errorMessage(
-                    e,
-                    { ALREADY_CLAIMED: "이미 계정이 연결됐어요." },
-                    "초대코드를 만들지 못했어요.",
-                  ),
-                );
-              }
-            }}
-          >
-            {code ? "코드 다시" : "초대하기"}
+          // 코드는 이 자리 하나에 맞는다 — 시트에서 만들고 복사 · 공유한다
+          <Button size="md" variant="outline" onClick={onInvite}>
+            초대하기
           </Button>
         )}
       </div>
-
-      {code && (
-        <div className="bg-sub mt-2.5 flex items-center justify-between rounded-xl px-4 py-3">
-          <span className="board-num text-xl tracking-[0.2em]">{code}</span>
-          <button
-            type="button"
-            onClick={() => {
-              navigator.clipboard?.writeText(code).then(() => {
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-              });
-            }}
-            className="press text-signal-strong flex items-center gap-1 text-xs font-bold"
-          >
-            {copied ? (
-              <Check className="size-3.5" aria-hidden />
-            ) : (
-              <Copy className="size-3.5" aria-hidden />
-            )}
-            {copied ? "복사했어요" : "복사"}
-          </button>
-        </div>
-      )}
-      {code && <p className="text-faint text-caption mt-1">7일 동안 쓸 수 있어요</p>}
-
-      {error && (
-        <p role="alert" className="text-signal-deep mt-2 text-xs font-semibold">
-          {error}
-        </p>
-      )}
     </li>
   );
 }

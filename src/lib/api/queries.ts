@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, path, query } from "./client";
 import type {
@@ -495,6 +495,27 @@ export function useCalendar(
         path`/families/${familyId}/calendar${query({ profileId, from: range.from, to: range.to })}`,
       ),
     enabled: Boolean(familyId && profileId),
+  });
+}
+
+/**
+ * 여러 구성원의 날짜별 기록을 한꺼번에 — 가족 대시보드가 이번 달을 가족 단위로 셀 때.
+ * 키가 `useCalendar` 와 같아 한 사람씩 받은 것과 캐시를 나눠 쓴다.
+ */
+export function useFamilyCalendars(
+  familyId: Uuid | undefined,
+  profileIds: Uuid[],
+  range: { from: string; to: string },
+) {
+  return useQueries({
+    queries: profileIds.map((profileId) => ({
+      queryKey: qk.family.calendar(familyId ?? "", profileId, range.from, range.to),
+      queryFn: () =>
+        api.get<CalendarView>(
+          path`/families/${familyId}/calendar${query({ profileId, from: range.from, to: range.to })}`,
+        ),
+      enabled: Boolean(familyId && profileId),
+    })),
   });
 }
 

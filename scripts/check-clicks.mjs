@@ -21,6 +21,7 @@ const ROUTES = {
   parent: [
     "/parent",
     "/parent/family",
+    "/parent/dashboard",
     `/parent/child/${KID}`,
     `/parent/sticker/${KID}`,
     "/calendar",

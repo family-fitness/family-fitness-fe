@@ -14,6 +14,7 @@ import { FactorView } from "@/components/domain/factor-view";
 import { MonthStats, RecentDays } from "@/components/domain/child-stats";
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { GrowthPole } from "@/components/scene/growth-pole";
+import { AchievementGrid } from "@/components/domain/achievement-grid";
 import { FactorTable } from "@/components/domain/factor-table";
 import { IslandCard } from "@/components/domain/island-card";
 import { ScoreTrend } from "@/components/domain/score-trend";
@@ -182,6 +183,19 @@ export default function ChildDetailPage() {
 
         {/* 아이 화면의 섬을 부모도 본다. 해낸 날이 쌓이는 곳 */}
         <IslandCard profileId={profileId} name={name} />
+
+        {/* 어떤 업적이 있는지 — 받은 것 · 아직인 것과 얻는 법(9/25 「어떤 업적이 있는지도 보이는 장소」) */}
+        {progress && progress.achievements.length > 0 && (
+          <Card>
+            <CardHead
+              title="업적"
+              meta={`${progress.achievements.filter((a) => a.earnedAt).length} / ${progress.achievements.length}`}
+            />
+            <div className="mt-2">
+              <AchievementGrid achievements={progress.achievements} />
+            </div>
+          </Card>
+        )}
 
         <Card href={`/p/${profileId}/future`} label="10년 위 연령대 보기">
           <div className="flex items-center gap-3">
