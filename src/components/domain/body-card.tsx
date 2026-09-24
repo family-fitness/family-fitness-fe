@@ -33,7 +33,12 @@ export function BodyCard({ child }: { child: FitnessMapMember }) {
 
       {score == null ? <FirstMeasure child={child} /> : <ScoreLine score={score} />}
 
-      <FactorView points={latest?.radar} name={name} pending={isPending} />
+      <FactorView
+        points={latest?.radar}
+        name={name}
+        pending={isPending}
+        ageGroup={child.ageGroup}
+      />
 
       {/* 서버가 준 한 줄을 그대로. 고쳐 쓰면 두 화면이 다른 말을 한다(규칙 9) */}
       {child.headline && (
@@ -93,15 +98,23 @@ function FirstMeasure({ child }: { child: FitnessMapMember }) {
   );
 }
 
-/** 여섯 요인 — 체력 육각형 하나. 표(요인별)는 아이 자세히에 같이 있다 */
+/**
+ * 여섯 요인 — 체력 육각형 하나. 표(요인별)는 아이 기록에 같이 있다.
+ *
+ * 아래에 **무엇과 견준 값인지** 한 줄을 늘 붙인다 — 국민체력100 공공데이터의 그 연령대 또래.
+ * 공공데이터 활용 공모전이라 이 서비스의 숫자가 어디서 왔는지가 화면에서 보여야 한다.
+ */
 export function FactorView({
   points,
   name,
   pending,
+  ageGroup,
 }: {
   points: Parameters<typeof FactorRadar>[0]["points"];
   name: string;
   pending: boolean;
+  /** 서버가 준 연령대 — 「유소년」 */
+  ageGroup?: string | null;
 }) {
   return (
     <div className="mt-4">
@@ -110,6 +123,12 @@ export function FactorView({
       ) : (
         <FactorRadar points={points} name={name} />
       )}
+      <p className="mt-2.5 flex justify-center">
+        <span className="bg-signal-soft text-signal-deep text-micro inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-extrabold">
+          <span aria-hidden className="bg-signal-deep size-1.5 rounded-full" />
+          국민체력100 · {ageGroup ?? "같은 연령대"} 또래 기준
+        </span>
+      </p>
     </div>
   );
 }

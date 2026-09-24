@@ -184,7 +184,9 @@ function Finder() {
         </div>
 
         <p className="text-caption text-ink-soft px-1 font-bold" aria-live="polite">
-          {isPending ? "찾는 중" : `${factor ?? "모든 힘"} · ${data?.total ?? 0}개`}
+          {isPending
+            ? "찾는 중"
+            : `국민체력100 운동영상 · ${factor ?? "모든 힘"} · ${data?.total ?? 0}개`}
           {isFetching && !isPending && " · 새로 찾는 중"}
         </p>
 

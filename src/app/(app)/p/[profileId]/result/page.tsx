@@ -96,7 +96,12 @@ export default function ResultPage() {
         {!kidView && radar.length > 0 && (
           <section className="card-hero">
             <CardHead title="요인별 모양" />
-            <FactorView points={radar} name={profile?.name ?? "나"} pending={false} />
+            <FactorView
+              points={radar}
+              name={profile?.name ?? "나"}
+              pending={false}
+              ageGroup={profile?.ageGroup}
+            />
           </section>
         )}
 

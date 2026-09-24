@@ -138,7 +138,12 @@ export default function ChildDetailPage() {
               <p className="text-lead mt-2 font-extrabold">아직 재지 않았어요</p>
             )}
           </div>
-          <FactorView points={latest?.radar} name={name} pending={false} />
+          <FactorView
+            points={latest?.radar}
+            name={name}
+            pending={false}
+            ageGroup={member?.ageGroup ?? profile.ageGroup}
+          />
         </Card>
 
         <MonthStats
