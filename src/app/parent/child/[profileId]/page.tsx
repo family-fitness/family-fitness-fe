@@ -53,7 +53,11 @@ export default function ChildDetailPage() {
     error: latestError,
   } = useLatestFitnessTest(profileId);
   const { data: history } = useFitnessTests(profileId);
-  const { data: progress } = useProgress(profileId);
+  const {
+    data: progress,
+    isPending: progressPending,
+    error: progressError,
+  } = useProgress(profileId);
   const localBody = useBodyStore((s) => s.byProfile[profileId]);
 
   const profile = family?.profiles?.find((p) => p.profileId === profileId);
@@ -141,6 +145,7 @@ export default function ChildDetailPage() {
           familyId={familyId ?? undefined}
           profileId={profileId}
           streak={progress?.streakDays}
+          streakState={progressError ? "error" : progressPending ? "pending" : "ready"}
         />
         <RecentDays familyId={familyId ?? undefined} profileId={profileId} />
 
