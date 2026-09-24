@@ -14,6 +14,14 @@ import { useAvailability } from "@/lib/api/queries";
  *
  * 비어 있어도 탓하는 말을 붙이지 않는다. 링은 채워질 자리를 보여 줄 뿐이다.
  */
+/**
+ * 링 옆 숫자. 목표를 **넘기면** 「35 / 20분」 이 아니라 「35분」 — 한 바퀴는 이미 찼다.
+ * 딱 맞으면 「4 / 4일」 그대로 둔다(채웠다는 말이다). 세 링이 같은 셈을 쓴다.
+ */
+function over(value: number, max: number, unit: string) {
+  return value > max ? `${value}${unit}` : `${value} / ${max}${unit}`;
+}
+
 export function TodayRings({
   profileId,
   missions,
@@ -39,7 +47,7 @@ export function TodayRings({
           label: "움직인 시간",
           value: a.moved,
           max: a.goal,
-          text: `${a.moved} / ${a.goal}분`,
+          text: over(a.moved, a.goal, "분"),
           color: "var(--color-signal)",
           track: "var(--color-signal-soft)",
         },
@@ -47,7 +55,7 @@ export function TodayRings({
           label: "끝낸 운동",
           value: a.done,
           max: a.total,
-          text: a.total > 0 ? `${a.done} / ${a.total}개` : "아직 없어요",
+          text: a.total > 0 ? over(a.done, a.total, "개") : "아직 없어요",
           color: "var(--color-mark)",
           track: "var(--color-mark-soft)",
         },
@@ -55,8 +63,7 @@ export function TodayRings({
           label: "이번 주 운동한 날",
           value: a.days,
           max: a.target,
-          // 적어 둔 날보다 더 했으면 「5 / 4일」 이 아니라 「5일」 — 한 바퀴는 이미 찼다
-          text: a.days >= a.target ? `${a.days}일` : `${a.days} / ${a.target}일`,
+          text: over(a.days, a.target, "일"),
           color: "var(--color-signal-deep)",
           track: "var(--color-deep-soft)",
         },
