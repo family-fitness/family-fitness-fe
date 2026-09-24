@@ -64,18 +64,27 @@ export function dayRings(s: DaySummary): [number, number] {
   return [clamp(time), clamp(work)];
 }
 
-/** 그날 한 것으로 보일 운동 — 한 칸이라도 끝냈거나, 직접 적어 낸 것. 아직 시작 안 한 것은 「할 운동」 이다 */
+/**
+ * 그날 한 것으로 보일 운동 — 한 칸이라도 끝냈거나, 움직인 분이 있거나, 직접 적어 낸 것.
+ * 아직 시작 안 한 것은 「할 운동」 이다. 움직인 분은 셌는데 목록에서 빠지면 숫자와 목록이 어긋난다
+ */
 export function didSomething(entry: DayLog["entries"][number]): boolean {
   return (
     entry.completed ||
+    entry.minutes > 0 ||
     entry.verifiedBy === "SELF_REPORT" ||
     Boolean(entry.sessions?.some((s) => s.done))
   );
 }
 
-/** 주소창의 날짜가 달력에 있는 날인가 — `2026-13-01` · `2026-02-30` 을 거른다 */
+/**
+ * 주소창의 날짜가 달력에 있는 날인가 — `2026-13-01` · `2026-02-30` 을 거르고,
+ * 이 서비스가 다룰 해(2020~2100)만 받는다. 1000년 같은 값은 앞뒤 날을 셀 때 끝없이 돈다
+ */
 export function isRealDate(value: string | null | undefined): value is string {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const year = Number(value.slice(0, 4));
+  if (year < 2020 || year > 2100) return false;
   const d = new Date(`${value}T00:00:00`);
   if (Number.isNaN(d.getTime())) return false;
   const back = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
