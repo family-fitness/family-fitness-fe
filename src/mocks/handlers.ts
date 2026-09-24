@@ -382,6 +382,7 @@ const identity = [
       toProfileId: body.toProfileId,
       message: body.message ?? null,
       missionId: body.missionId ?? null,
+      kind: body.kind === "DONE" || body.kind === "CALL" ? body.kind : null,
       // ▲ 계약에 칸이 없어 `emoji` 로 온다
       stickerId: body.stickerId ?? body.emoji ?? null,
       createdAt: cheer.createdAt,

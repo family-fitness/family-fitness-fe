@@ -21,7 +21,7 @@ import {
 } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 
-/** 10년 뒤 — **예언이 아니다.** */
+/** 10년 위 연령대 — **예언이 아니다.** 같은 조건의 윗 연령대가 어디 있는지일 뿐(규칙 3) */
 export default function FuturePage() {
   const router = useRouter();
   const { profileId } = useParams<{ profileId: string }>();
@@ -69,7 +69,7 @@ export default function FuturePage() {
   if (latestError) {
     return (
       <>
-        <PageHeader title="10년 뒤" back />
+        <PageHeader title="10년 위 연령대" back />
         <Screen>
           <ErrorState error={latestError} onRetry={() => void refetch()} />
         </Screen>
@@ -80,7 +80,7 @@ export default function FuturePage() {
   if (!hasTest) {
     return (
       <>
-        <PageHeader title="10년 뒤" back />
+        <PageHeader title="10년 위 연령대" back />
         <Screen>
           <EmptyState
             scene="no-record"
@@ -106,7 +106,7 @@ export default function FuturePage() {
   return (
     <>
       <PageHeader
-        title={profile ? `${profile.name}의 10년 뒤` : "10년 뒤"}
+        title="10년 위 연령대"
         back
         meta={<span className="text-faint">국민체력100 집단 분포</span>}
       />
@@ -136,14 +136,14 @@ export default function FuturePage() {
             {first && last && (
               <dl className="card divide-rows py-1">
                 <div className="flex items-baseline justify-between py-3">
-                  <dt className="text-sm font-bold">지금</dt>
+                  <dt className="text-sm font-bold">지금 연령대 가운데</dt>
                   <dd className="tabular board-num text-xl">
                     {first.p50}
                     <span className="text-ink-soft ml-0.5 text-sm font-bold">{unit}</span>
                   </dd>
                 </div>
                 <div className="flex items-baseline justify-between py-3">
-                  <dt className="text-sm font-bold">{last.yearsFromNow}년 위 연령대</dt>
+                  <dt className="text-sm font-bold">{last.yearsFromNow}년 위 연령대 가운데</dt>
                   <dd className="text-right">
                     <span className="tabular board-num text-xl">
                       {last.p50}
@@ -213,7 +213,7 @@ const predictMessage = (error: unknown) =>
 function FutureSkeleton() {
   return (
     <>
-      <PageHeader title="10년 뒤" back />
+      <PageHeader title="10년 위 연령대" back />
       <Screen className="space-y-6">
         <Skeleton className="h-5 w-64" />
         <Skeleton className="h-50 w-full rounded-xl" />

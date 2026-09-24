@@ -210,12 +210,15 @@ export default function KidHomePage() {
             className="mt-2"
           />
           <div className="border-line mt-4 border-t pt-3">
-            <p className="text-caption text-ink-soft font-bold">
-              이번 주
-              {progress &&
-                progress.streakDays > 1 &&
-                ` · ${progress.streakDays}일째 이어서 하고 있어요`}
-            </p>
+            {/* 이어서 한 날은 이번 주와 다른 수다(지난주부터 이어질 수 있다) — 한 줄에 섞지 않고 따로 */}
+            <div className="flex min-h-7 items-center justify-between gap-2">
+              <p className="text-caption text-ink-soft font-bold">이번 주</p>
+              {progress && progress.streakDays > 1 && (
+                <p className="bg-mark-soft text-caption rounded-full px-2.5 py-1 font-extrabold">
+                  {progress.streakDays}일째 이어서
+                </p>
+              )}
+            </div>
             <div className="mt-2">
               {/* 기록을 받은 뒤에 짓는다 — 0분으로 먼저 지었다가 다시 지으면 깜빡이고 WebGL 이 하나 더 든다 */}
               {calendarPending ? (
@@ -234,7 +237,7 @@ export default function KidHomePage() {
 
         {/* 점수 하나는 아이도 본다. 등수로 바꾸지 않고 또래 평균 50 과 같이(규칙 10) */}
         <Card>
-          <CardHead title="내 체력 점수" />
+          <CardHead title="내 신체 점수" />
           {score != null ? (
             <div className="mt-1">
               <p className="metric-value text-metric">

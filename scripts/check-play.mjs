@@ -34,6 +34,17 @@ await context.addInitScript(
   },
   [KID],
 );
+/*
+  소리 안내는 기기의 말하기 엔진을 탄다. 이 맥에서는 말을 끊고 새로 말할 때마다 화면이 몇 초씩 멈춰,
+  가짜 시계가 그만큼 더 흘러 쉬는 10초가 통째로 지나가 버렸다(9/25 — 코드는 그대로인데 검사만 실패).
+  검사는 말하기 엔진을 재우고 화면만 본다. 소리 안내 단추는 그대로 있다.
+*/
+await context.addInitScript(() => {
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.speak = () => {};
+    window.speechSynthesis.cancel = () => {};
+  }
+});
 // 유튜브 스크립트 · 영상은 막는다. 없어도 타이머로 끝까지 가야 한다
 await context.route(/youtube\.com|ytimg\.com/, (route) => route.abort());
 

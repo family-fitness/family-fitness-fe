@@ -125,7 +125,7 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
         <div className="space-y-4">
           <ul className="text-ink-soft space-y-2 text-sm leading-relaxed">
             <li>· 새 측정을 저장할 수 없어요</li>
-            <li>· 10년 뒤 보기를 쓸 수 없어요</li>
+            <li>· 10년 위 연령대 보기를 쓸 수 없어요</li>
             <li>· 이미 저장된 기록은 지워지지 않아요</li>
             <li>· 다시 동의하면 바로 되돌아와요</li>
           </ul>

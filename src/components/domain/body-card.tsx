@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Card, CardHead } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SourceTag } from "@/components/domain/source-tag";
 import { FactorRadar } from "@/components/domain/factor-radar";
 import type { FitnessMapMember } from "@/lib/api/types";
 import { useLatestFitnessTest } from "@/lib/api/queries";
@@ -40,10 +41,10 @@ export function BodyCard({ child }: { child: FitnessMapMember }) {
         ageGroup={child.ageGroup}
       />
 
-      {/* 서버가 준 한 줄을 그대로. 고쳐 쓰면 두 화면이 다른 말을 한다(규칙 9) */}
+      {/* 서버가 준 한 줄을 그대로(규칙 9). 회색 칸에 담으면 누르는 칸처럼 보여 글 한 줄로 둔다 */}
       {child.headline && (
-        <p className="text-body bg-sub mt-4 rounded-2xl px-4 py-3 text-center leading-relaxed font-semibold">
-          {child.headline}
+        <p className="mt-3 flex justify-center">
+          <span className="text-signal-deep text-body font-extrabold">{child.headline}</span>
         </p>
       )}
     </Card>
@@ -123,12 +124,7 @@ export function FactorView({
       ) : (
         <FactorRadar points={points} name={name} />
       )}
-      <p className="mt-2.5 flex justify-center">
-        <span className="bg-signal-soft text-signal-deep text-micro inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-extrabold">
-          <span aria-hidden className="bg-signal-deep size-1.5 rounded-full" />
-          국민체력100 · {ageGroup ?? "같은 연령대"} 또래 기준
-        </span>
-      </p>
+      <SourceTag className="mt-2.5">국민체력100 · {ageGroup ?? "같은 연령대"} 또래 기준</SourceTag>
     </div>
   );
 }

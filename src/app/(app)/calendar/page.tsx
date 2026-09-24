@@ -11,10 +11,11 @@ import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChildSwitch } from "@/components/domain/child-switch";
+import { DayRings } from "@/components/domain/day-rings";
 import { StickerArt } from "@/components/domain/sticker-art";
 import type { DayLog } from "@/lib/api/types";
 import { useCalendar, useFitnessMap, useMissions } from "@/lib/api/queries";
-import { plannedDay } from "@/lib/day";
+import { daySummary, plannedDay } from "@/lib/day";
 import { useSession } from "@/lib/session";
 import { stickerOf } from "@/lib/stickers";
 import { longDate, monthGrid, monthLabel, monthOf, shiftMonth, today } from "@/lib/today";
@@ -25,9 +26,9 @@ import { useRoleStore } from "@/stores/role-store";
 /**
  * 캘린더 — 부모와 아이가 같이 본다.
  *
- * 한 달이 작은 링으로 찬다(애플 피트니스의 달력처럼). 링은 그날 잡힌 시간 대비 움직인 시간.
+ * 한 달이 작은 링으로 찬다(애플 피트니스의 달력처럼). 링은 하루 기록과 같은 둘 — 움직인 시간 · 끝낸 운동.
  * 받은 스티커는 그날 칸 모서리에 붙는다. **날을 누르면 그날의 하루 기록**(`/calendar/[날짜]`)으로 간다.
- * 달 아래에는 그 달을 칸 셋으로 — 움직인 날 · 모두 몇 분 · 받은 칭찬.
+ * 달 아래에는 그 달을 칸 셋으로 — 운동한 날 · 움직인 시간 · 받은 칭찬(아이 기록과 같은 이름).
  *
  * **아무것도 안 한 날은 빈 칸이다.** 「빠진 날」 이라고 쓰지 않는다 — 쉰 날은 쉰 날이다.
  * 부모는 아이를 골라 보고, 아이는 자기 것만 본다. 달은 주소에 둔다(`?month=`).
@@ -144,7 +145,8 @@ function Calendar() {
 
   return (
     <>
-      <AppBar backHref={back} title="캘린더" />
+      {/* 부모는 누구의 달인지 제목에서 안다 — 아이가 하나면 고르는 칩이 없다 */}
+      <AppBar backHref={back} title={kidView ? "캘린더" : `${who.name ?? "아이"}의 캘린더`} />
       <Stage wide className="space-y-3">
         {!kidView && (
           <ChildSwitch
@@ -205,6 +207,20 @@ function Calendar() {
               </li>
             ))}
           </ol>
+          {/* 링 둘이 무엇인지 글로 — 색만으로 가르지 않는다. 하루 기록의 링과 같은 둘이다 */}
+          <ul
+            className="text-caption text-ink-soft mt-3 flex justify-center gap-4 font-semibold"
+            aria-hidden
+          >
+            <li className="flex items-center gap-1.5">
+              <span className="bg-signal size-2 rounded-full" />
+              움직인 시간
+            </li>
+            <li className="flex items-center gap-1.5">
+              <span className="bg-mark size-2 rounded-full" />
+              끝낸 운동
+            </li>
+          </ul>
 
           {/* 이 달 — 칸 셋(칭찬을 받은 달) · 둘 */}
           <div
@@ -213,8 +229,8 @@ function Calendar() {
               stickers > 0 || tileState !== "ready" ? "grid-cols-3" : "grid-cols-2",
             )}
           >
-            <MonthTile label="움직인 날" value={days.length} unit="일" state={tileState} />
-            <MonthTile label="모두" value={total} unit="분" state={tileState} />
+            <MonthTile label="운동한 날" value={days.length} unit="일" state={tileState} />
+            <MonthTile label="움직인 시간" value={total} unit="분" state={tileState} />
             {/* 칭찬은 받은 달에만 칸으로 — 0장을 적어 두면 못 받은 달이 된다(규칙 12) */}
             {(stickers > 0 || tileState !== "ready") && (
               <MonthTile label="받은 칭찬" value={stickers} unit="장" state={tileState} />
@@ -235,7 +251,7 @@ function Calendar() {
   );
 }
 
-/** 날 한 칸. 움직인 날은 작은 링, 받은 스티커는 모서리에 */
+/** 날 한 칸. 움직인 날은 하루 기록과 같은 링 둘(가운데에 날짜), 받은 스티커는 모서리에 */
 function DayCell({
   date,
   log,
@@ -256,19 +272,19 @@ function DayCell({
 }) {
   const day = Number(date.slice(8));
   const moved = log && log.minutes > 0 ? log : undefined;
+  const summary = daySummary(log);
   const sticker = log?.stickers[0] ? stickerOf(log.stickers[0].stickerId) : undefined;
   const size = 38;
   const stroke = 4;
   const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const p = moved ? Math.min(1, moved.minutes / (moved.plannedMinutes || moved.minutes)) : 0;
 
   return (
     <button
       type="button"
       onClick={onPick}
       disabled={future && !planned}
-      aria-label={`${longDate(date)}${moved ? ` · ${moved.minutes}분` : ""}${sticker ? ` · ${sticker.label} 스티커` : ""}${planned && !moved ? " · 운동 잡혀 있음" : ""}`}
+      // 링 둘이 말하는 것을 다 읽어 준다 — 범례는 화면 읽기에서 숨어 있다
+      aria-label={`${longDate(date)}${moved ? ` · 움직인 시간 ${moved.minutes}분 · 끝낸 운동 ${summary.done}개` : ""}${sticker ? ` · ${sticker.label} 스티커` : ""}${planned && !moved ? " · 운동 잡혀 있음" : ""}`}
       className={cn(
         "press relative grid size-11 place-items-center rounded-full",
         isToday && "bg-signal-soft",
@@ -294,35 +310,7 @@ function DayCell({
           />
         </svg>
       )}
-      {moved && (
-        <svg
-          width={size}
-          height={size}
-          viewBox={`0 0 ${size} ${size}`}
-          className="absolute -rotate-90"
-          aria-hidden
-        >
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill="none"
-            stroke="var(--color-signal-soft)"
-            strokeWidth={stroke}
-          />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={r}
-            fill="none"
-            stroke="var(--color-signal)"
-            strokeWidth={stroke}
-            strokeLinecap="round"
-            strokeDasharray={c}
-            strokeDashoffset={c * (1 - p)}
-          />
-        </svg>
-      )}
+      {moved && <DayRings log={moved} size={40} stroke={3.5} gap={1} className="absolute" />}
       <span
         className={cn(
           "relative text-sm tabular-nums",
@@ -338,7 +326,6 @@ function DayCell({
   );
 }
 
-/** 이 달 한 칸 */
 /** 이 달 한 칸. 못 받은 것은 0 이 아니라 「—」 — 0 을 그리면 안 한 달처럼 보인다 */
 function MonthTile({
   label,

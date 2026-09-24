@@ -185,10 +185,11 @@ function Thanks({ item, to, until }: { item: NotificationView; to: string; until
           고마워요를 보냈어요
         </p>
       ) : (
+        /* 글 단추 하나 — 알림마다 파랑 알약이 서면 해야 할 일 목록처럼 보인다(보내라고 재촉하지 않는다) */
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="press bg-signal-soft text-signal-deep min-h-10 rounded-full px-4 text-sm font-extrabold"
+          className="press text-signal-deep inline-flex min-h-10 items-center text-sm font-extrabold"
         >
           고마워요 보내기
         </button>

@@ -2,7 +2,7 @@
 
 import { ChevronRight, Heart, Play, Plus, Search, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Fragment, Suspense, useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -37,6 +37,9 @@ import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
  *
  * 아이 화면에서는 보고 즐겨찾기만 한다. 오늘 운동을 만드는 건 부모다.
  */
+/** 회색 바탕 위에 바로 놓인 칩 — 회색 칩은 바탕에 묻혀 글자만 떠 보였다 */
+const OFF = "bg-paper shadow-card";
+
 const PHASES: { value: SessionPhase | null; label: string }[] = [
   { value: null, label: "전체" },
   { value: "WARMUP", label: "준비" },
@@ -115,14 +118,14 @@ function Finder() {
         </label>
 
         {/* 키우고 싶은 힘 — 이 화면의 주된 고르기 */}
-        <div className="scroll-row -mx-4 px-4">
+        <div className="scroll-row -mx-4 -mt-1 px-4 py-1">
           <ul className="flex gap-2" aria-label="키우고 싶은 힘">
             <li>
               <button
                 type="button"
                 aria-pressed={factor === null}
                 onClick={() => setFactor(null)}
-                className={cn("chip press", factor === null && "chip-on")}
+                className={cn("chip press", factor === null ? "chip-on" : OFF)}
               >
                 전체
               </button>
@@ -133,7 +136,7 @@ function Finder() {
                   type="button"
                   aria-pressed={factor === f}
                   onClick={() => setFactor(f)}
-                  className={cn("chip press gap-1.5 pl-3", factor === f && "chip-on")}
+                  className={cn("chip press gap-1.5 pl-3", factor === f ? "chip-on" : OFF)}
                 >
                   <FactorIcon factor={f} className="size-5" />
                   {f}
@@ -168,7 +171,7 @@ function Finder() {
             type="button"
             aria-pressed={quiet}
             onClick={() => setQuiet((v) => !v)}
-            className={cn("chip press", quiet && "chip-on")}
+            className={cn("chip press", quiet ? "chip-on" : OFF)}
           >
             조용한 것만
           </button>
@@ -176,7 +179,7 @@ function Finder() {
             type="button"
             aria-pressed={favoritesOnly}
             onClick={() => setFavoritesOnly((v) => !v)}
-            className={cn("chip press gap-1", favoritesOnly && "chip-on")}
+            className={cn("chip press gap-1", favoritesOnly ? "chip-on" : OFF)}
           >
             <Heart aria-hidden className={cn("size-4", favoritesOnly && "fill-current")} />
             즐겨찾기
@@ -249,7 +252,7 @@ function ClipRow({
         aria-label={`${c.title} 시범 보기`}
         className="press relative shrink-0 overflow-hidden rounded-xl"
       >
-        <VideoThumb videoId={c.videoId} className="aspect-video w-28" />
+        <VideoThumb videoId={c.videoId} className="aspect-video w-24" />
         <span className="text-micro absolute right-1 bottom-1 rounded-md bg-black/70 px-1.5 py-0.5 font-bold text-white">
           {clock(length)}
         </span>
@@ -261,11 +264,16 @@ function ClipRow({
       </button>
       <div className="min-w-0 flex-1">
         <p className="line-clamp-2 text-sm leading-snug font-bold">{c.title}</p>
+        {/* 꼬리표는 통째로 줄을 넘긴다 — 「도구 / 필요」 로 쪼개지지 않게. 「·」 는 앞 꼬리표에 붙는다 */}
         <p className="text-caption text-ink-soft mt-0.5">
-          {PHASE_LABEL[c.phase]}
-          {c.factor && ` · ${c.factor}`}
-          {c.quiet && " · 조용함"}
-          {c.props && " · 도구 필요"}
+          {[PHASE_LABEL[c.phase], c.factor, c.quiet && "조용함", c.props && "도구 필요"]
+            .filter((t): t is string => Boolean(t))
+            .map((t, i) => (
+              <Fragment key={t}>
+                {i > 0 && "\u00a0· "}
+                <span className="whitespace-nowrap">{t}</span>
+              </Fragment>
+            ))}
         </p>
       </div>
       <div className="flex shrink-0 items-center">
@@ -376,7 +384,7 @@ function ListSkeleton() {
     <div className="card space-y-4">
       {[0, 1, 2, 3].map((i) => (
         <div key={i} className="flex items-center gap-3">
-          <Skeleton className="aspect-video w-28 rounded-xl" />
+          <Skeleton className="aspect-video w-24 rounded-xl" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-32" />
             <Skeleton className="h-3 w-24" />

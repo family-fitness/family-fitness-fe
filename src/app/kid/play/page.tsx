@@ -1,6 +1,6 @@
 "use client";
 
-import { Play } from "lucide-react";
+import { ChevronRight, Play } from "lucide-react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -9,6 +9,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProgress } from "@/lib/api/queries";
+import { artFor } from "@/lib/art";
 import { UNLOCKS, nextUnlock, type Unlock } from "@/lib/unlocks";
 import { cn, withJosa } from "@/lib/utils";
 import { useRoleStore } from "@/stores/role-store";
@@ -55,7 +56,10 @@ export default function PlaygroundPage() {
               <p className="text-caption text-signal-deep font-extrabold">몸으로 하는 놀이</p>
               <h2 className="text-lead mt-0.5 font-extrabold">{hero.name}</h2>
             </div>
-            <ArtIcon name={`play/play-${hero.id}`} className="size-20 shrink-0" />
+            {/* 놀이 그림은 아직 오는 중이다 — 없으면 빈 상자를 세우지 않는다(줄 앞 · 머리 옆이 비어 보였다) */}
+            {artFor(`play/play-${hero.id}`) && (
+              <ArtIcon name={`play/play-${hero.id}`} className="size-20 shrink-0" />
+            )}
           </div>
           <NavLink
             href={`/kid/play/${hero.id}`}
@@ -86,10 +90,12 @@ export default function PlaygroundPage() {
 function GameRow({ game, open }: { game: Game; open: boolean }) {
   const body = (
     <>
-      <ArtIcon
-        name={`play/play-${game.id}`}
-        className={cn("size-12 shrink-0", !open && "opacity-50")}
-      />
+      {artFor(`play/play-${game.id}`) && (
+        <ArtIcon
+          name={`play/play-${game.id}`}
+          className={cn("size-12 shrink-0", !open && "opacity-50")}
+        />
+      )}
       <span className="min-w-0 flex-1">
         <span className={cn("block text-sm font-extrabold", !open && "text-ink-soft")}>
           {game.name}
@@ -110,6 +116,7 @@ function GameRow({ game, open }: { game: Game; open: boolean }) {
           className="press flex min-h-16 items-center gap-3 py-2.5"
         >
           {body}
+          <ChevronRight aria-hidden className="text-faint size-5 shrink-0" />
         </NavLink>
       ) : (
         <div className="flex min-h-16 items-center gap-3 py-2.5">{body}</div>

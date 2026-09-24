@@ -7,6 +7,7 @@ import { useParams } from "next/navigation";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
 import { Stage } from "@/components/app-shell/stage";
+import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
 import { ListRow } from "@/components/ui/list-row";
 import { BandChip, GradeBadge } from "@/components/ui/badge";
@@ -120,7 +121,11 @@ export default function ResultPage() {
         )}
 
         <section className="card">
-          <CardHead title="항목별" meta={`${items.length}개`} />
+          {/* 막대 가운데 눈금이 무엇인지 글로 — 아이 홈 · 요인 표와 같은 말. 몇 항목인지는 머리에 있다 */}
+          <CardHead
+            title="항목별"
+            meta={kidView ? "눈금 · 또래 평균 50" : "국민체력100 등급 · 눈금 · 또래 평균 50"}
+          />
           <div className="divide-rows">
             {items.map((entry, index) => (
               <div key={entry.itemCode} className="py-3.5">
@@ -145,13 +150,20 @@ export default function ResultPage() {
         {/* 다음에 뭘 할지. 서버가 정한 방향을 그대로 따른다.
             제안 · 미션 · 보호자는 부모의 말이라 아이 화면에서는 통째로 뺀다 */}
         {kidView ? (
-          <Link href="/kid" className="card press bg-signal-soft block">
-            <p className="text-signal-deep mt-1 text-sm font-bold">오늘 운동 하러 가기</p>
+          <Link
+            href="/kid"
+            className="press bg-signal-strong flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold text-white"
+          >
+            오늘 운동 하러 가기
           </Link>
         ) : (
           <>
-            <Link href="/plan" className="card press bg-signal-soft block">
-              <p className="text-signal-deep text-sm font-extrabold">AI 에게 운동 받기</p>
+            <Link
+              href="/plan"
+              className="press bg-signal-strong flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
+            >
+              <ArtIcon name="icon/menu-ai" className="size-5" />
+              AI에게 운동 받기
             </Link>
             <ul className="card divide-rows py-1">
               <ListRow
@@ -160,7 +172,7 @@ export default function ResultPage() {
                 title="10년 위 연령대 보기"
                 description="지금과 같은 조건의 10년 위 연령대"
               />
-              <ListRow href={`/p/${profileId}/measure`} art="icon/menu-measure" title="다시 재기" />
+              <ListRow href={`/p/${profileId}/measure`} art="icon/menu-measure" title="새로 재기" />
             </ul>
           </>
         )}

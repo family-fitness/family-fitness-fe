@@ -122,9 +122,10 @@ function RoleCard({
     <button
       type="button"
       onClick={onClick}
+      /* 아이 칸이 더 크다(주인공). 파랑 테를 두르면 이미 고른 것처럼 보여 테는 없다 */
       className={
         kid
-          ? "press card-hero ring-signal flex items-center gap-4 text-left ring-2"
+          ? "press card-hero flex items-center gap-4 text-left"
           : "press card flex items-center gap-4 text-left"
       }
     >

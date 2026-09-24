@@ -220,14 +220,17 @@ function StickerForm() {
           type="button"
           onClick={() => void submit()}
           disabled={!sticker || send.isPending || confirm.isPending}
-          className="press bg-signal-strong shadow-lift flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white disabled:opacity-50"
+          data-off={!sticker ? "" : undefined}
+          className="press bg-signal-strong shadow-lift data-off:bg-line data-off:text-ink-soft flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white disabled:opacity-100 data-off:shadow-none"
         >
           <Check aria-hidden className="size-5" strokeWidth={3} />
-          {send.isPending
+          {/* 이름은 늘 「붙이기」 — 고르기 전에 단추가 「골라 주세요」 로 바뀌면 같은 자리의 이름이 바뀐다 */}
+          {/* 직접 적은 걸음수를 확인하는 동안(confirm)도 붙이는 중이다 — 누른 뒤 아무 일도 없어 보이지 않게 */}
+          {send.isPending || confirm.isPending
             ? "붙이는 중"
             : sticker
               ? `${sticker.label} 붙이기`
-              : "스티커를 골라 주세요"}
+              : "붙이기"}
         </button>
       </Dock>
     </>

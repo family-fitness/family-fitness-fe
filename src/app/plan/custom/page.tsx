@@ -397,7 +397,8 @@ function CustomPlan() {
             type="button"
             onClick={() => void submit()}
             disabled={saving || chosen.length === 0 || pending.length === 0}
-            className="press bg-signal-strong mt-2 flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white disabled:opacity-50"
+            data-off={!saving && (chosen.length === 0 || pending.length === 0) ? "" : undefined}
+            className="press bg-signal-strong data-off:bg-line data-off:text-ink-soft mt-2 flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white disabled:opacity-100 data-off:shadow-none"
           >
             {saving ? "등록하는 중" : label}
           </button>

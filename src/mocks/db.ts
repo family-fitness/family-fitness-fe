@@ -324,7 +324,7 @@ export function seedCheers(): CheerLog[] {
   };
   const rows: Row[] = [
     // 어제 — 아이가 다 했다고 알렸고 엄마 · 아빠가 스티커로 답했다
-    { from: DEMO.kid, to: DEMO.mom, msg: "오늘 운동 다 했어요!", mission: null, days: 1 },
+    { from: DEMO.kid, to: DEMO.mom, msg: "운동 다 했어요!", mission: null, days: 1 },
     {
       from: DEMO.mom,
       to: DEMO.kid,

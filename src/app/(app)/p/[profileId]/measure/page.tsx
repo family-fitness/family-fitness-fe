@@ -211,7 +211,15 @@ export default function MeasurePage() {
 
   return (
     <>
-      <PageHeader title={`${profile.name} 측정`} back meta={<span>{filledCount}개 입력함</span>} />
+      <PageHeader
+        title={`${profile.name} 측정`}
+        back
+        meta={
+          <span>
+            국민체력100 {profile.ageGroup ?? ""} 항목 · {filledCount}개 입력함
+          </span>
+        }
+      />
 
       <Stage wide>
         <form onSubmit={onSubmit} className="space-y-3">
@@ -349,8 +357,12 @@ export default function MeasurePage() {
             loading={create.isPending}
             disabled={filledCount === 0}
           >
-            {filledCount === 0 ? "한 항목 이상 입력해 주세요" : "결과 보기"}
+            결과 보기
           </Button>
+          {/* 못 누르는 까닭 한 줄 — 아이 등록과 같은 자리 · 같은 모양. 키 · 몸무게만으로는 결과가 없다 */}
+          {filledCount === 0 && (
+            <p className="text-faint text-caption text-center">항목을 하나 이상 적어 주세요</p>
+          )}
         </form>
       </Stage>
     </>

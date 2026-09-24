@@ -604,8 +604,10 @@ function Finish({
           send.mutateAsync({
             fromProfileId: kidId,
             toProfileId: p.profileId ?? "",
-            message: `${allDone ? "오늘 운동 다 했어요!" : `오늘 운동 ${doneCount}개 했어요!`}${feel ? ` ${FEEL_LINE[feel]}` : ""}`,
+            // 남는 말이라 「오늘」 을 넣지 않는다 — 다음 날 알림함에서 읽으면 틀린 말이 된다
+            message: `${allDone ? "운동 다 했어요!" : `운동 ${doneCount}개 했어요!`}${feel ? ` ${FEEL_LINE[feel]}` : ""}`,
             missionId,
+            kind: "DONE",
           }),
         ),
       );
@@ -714,7 +716,7 @@ function Finish({
             disabled={send.isPending}
             className="press bg-signal-strong mt-4 flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white"
           >
-            엄마 · 아빠한테 알리기
+            {send.isPending ? "알리는 중" : "엄마 · 아빠한테 알리기"}
           </button>
         )
       )}

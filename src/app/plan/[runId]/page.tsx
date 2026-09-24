@@ -222,7 +222,7 @@ function Proposal() {
             type="button"
             onClick={() => void register()}
             disabled={approve.isPending}
-            className="press bg-signal-strong shadow-lift flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white disabled:opacity-60"
+            className="press bg-signal-strong shadow-lift flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white"
           >
             {approve.isPending ? "등록하는 중" : "오늘 운동으로 등록"}
           </button>

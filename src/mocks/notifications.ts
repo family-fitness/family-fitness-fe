@@ -68,6 +68,22 @@ function notificationsFor(profileId: string): NotificationView[] {
         });
         continue;
       }
+      // 같이 하자고 불렀다 — 운동을 마친 게 아니다. 누르면 오늘 운동을 짜러
+      if (c.kind === "CALL") {
+        items.push({
+          notificationId: `call-${c.cheerId}`,
+          kind: "KID_CALL",
+          title: `${subject(kid.name ?? "아이")} 같이 하재요`,
+          body: c.message,
+          aboutProfileId: kid.profileId ?? null,
+          fromProfileId: kid.profileId ?? null,
+          missionId: null,
+          date: dayOf(c.createdAt),
+          stickerId: null,
+          createdAt: c.createdAt,
+        });
+        continue;
+      }
       items.push({
         notificationId: `done-${c.cheerId}`,
         kind: "KID_DONE",
@@ -122,7 +138,7 @@ function notificationsFor(profileId: string): NotificationView[] {
         createdAt: c.createdAt,
       });
     }
-    // 오늘 운동이 생겼다 — 아직 다 하지 않은 것만
+    // 운동이 생겼다 — 아직 다 하지 않은 것만. 남는 말이라 「오늘」 을 넣지 않는다
     const now = today();
     for (const m of db.missions) {
       const mine = m.participants?.find((p) => p.profileId === profileId);
@@ -132,7 +148,7 @@ function notificationsFor(profileId: string): NotificationView[] {
       items.push({
         notificationId: `ready-${m.missionId}-${now}`,
         kind: "MISSION_READY",
-        title: "오늘 운동이 생겼어요",
+        title: "새 운동이 생겼어요",
         body: m.title ?? null,
         aboutProfileId: profileId,
         missionId: m.missionId ?? null,
@@ -150,7 +166,7 @@ function notificationsFor(profileId: string): NotificationView[] {
         notificationId: `badge-${profileId}-${a.code}`,
         kind: "ACHIEVEMENT",
         title: `새 업적 — ${a.title}`,
-        body: a.description,
+        body: earned(a.description),
         aboutProfileId: profileId,
         missionId: null,
         date: dayOf(a.earnedAt),
@@ -168,6 +184,23 @@ function notificationsFor(profileId: string): NotificationView[] {
     .sort((a, b) => at(b.createdAt) - at(a.createdAt))
     .slice(0, 30)
     .map((n) => ({ ...n, read: read.has(n.notificationId) }));
+}
+
+/**
+ * 업적 설명은 조건이다(「칭찬 스티커를 처음 받아요」). 알림은 이미 일어난 일이라 지난 말로 —
+ * 「받아요」 가 알림함에 오면 아직 안 받은 것처럼 읽힌다.
+ */
+const PAST: [string, string][] = [
+  ["해 봐요", "해 봤어요"],
+  ["받아요", "받았어요"],
+  ["움직여요", "움직였어요"],
+  ["끝내요", "끝냈어요"],
+  ["재요", "쟀어요"],
+  ["해요", "했어요"],
+];
+function earned(text: string) {
+  const hit = PAST.find(([now]) => text.endsWith(now));
+  return hit ? text.slice(0, -hit[0].length) + hit[1] : text;
 }
 
 export const notifications = [
