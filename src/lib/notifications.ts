@@ -24,6 +24,8 @@ export function notificationHref(n: NotificationView): string | null {
       return "/kid/badges";
     case "KID_THANKS":
       return null;
+    case "KID_CALL":
+      return "/plan";
     default:
       return null;
   }
@@ -44,6 +46,8 @@ export function notificationArt(n: NotificationView): string {
       return "icon/menu-trophy";
     case "KID_THANKS":
       return stickerOf(n.stickerId)?.art ?? "icon/menu-cheer";
+    case "KID_CALL":
+      return "icon/menu-cheer";
     default:
       return "icon/menu-cheer";
   }
