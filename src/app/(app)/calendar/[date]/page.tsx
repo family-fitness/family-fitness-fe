@@ -157,7 +157,7 @@ function Day() {
     <>
       <AppBar
         backHref={back}
-        title="하루 기록"
+        title={kidView ? "하루 기록" : `${who.name ?? "아이"}의 하루`}
         right={
           <NavLink
             href={`/calendar?month=${monthOf(date)}${suffix ? `&${suffix.slice(1)}` : ""}`}
@@ -286,9 +286,7 @@ function Day() {
                 unit="개"
                 goal={summary.total ? `/ ${summary.total}개` : null}
               />
-              {summary.stickers > 0 && (
-                <Tile dot="bg-signal-deep" label="칭찬" value={summary.stickers} unit="장" />
-              )}
+              {summary.stickers > 0 && <Tile label="칭찬" value={summary.stickers} unit="장" />}
             </div>
 
             {(summary.done > 0 || summary.verified.length > 0) && (
@@ -350,7 +348,8 @@ function Day() {
                     <p className="text-caption text-ink-soft mt-0.5 font-bold">
                       {nameOf(st.fromProfileId, st.fromName)}
                     </p>
-                    {st.message && (
+                    {/* 스티커 이름을 그대로 적어 보낸 말은 한 번만 — 같은 말이 두 줄이면 틀린 화면처럼 보인다 */}
+                    {st.message && st.message.trim() !== stickerOf(st.stickerId)?.label && (
                       <p className="text-body mt-1.5 leading-snug font-semibold">{st.message}</p>
                     )}
                   </div>
@@ -373,7 +372,7 @@ function Day() {
   );
 }
 
-/** 링 아래 칸 하나 — 이름 · 큰 숫자 · 목표 */
+/** 링 아래 칸 하나 — 이름 · 큰 숫자 · 목표. 점은 링 색이다 — 링이 아닌 칭찬 칸에는 없다 */
 function Tile({
   dot,
   label,
@@ -381,7 +380,7 @@ function Tile({
   unit,
   goal,
 }: {
-  dot: string;
+  dot?: string;
   label: string;
   value: number;
   unit: string;
@@ -390,7 +389,7 @@ function Tile({
   return (
     <div className="bg-sub rounded-2xl px-2 py-3 text-center">
       <p className="text-micro text-ink-soft flex items-center justify-center gap-1 font-bold">
-        <span aria-hidden className={cn("size-2 rounded-full", dot)} />
+        {dot && <span aria-hidden className={cn("size-2 rounded-full", dot)} />}
         {label}
       </p>
       <p className="metric-value mt-1.5 text-2xl">
@@ -413,7 +412,10 @@ function Leader({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** 칸 하나의 그림 — 영상이 있으면 썸네일, 없으면 준비 · 본 · 정리 조각 */
+/**
+ * 칸 하나의 그림 — 영상이 있으면 썸네일, 없으면 준비 · 본 · 정리 조각.
+ * 조각은 셋 다 같은 회색이다. 「본」 만 파랑으로 채웠더니 고른 칸처럼 보였다.
+ */
 function Thumb({ videoId, phase }: { videoId?: string | null; phase: MissionSession["phase"] }) {
   if (videoId)
     return <VideoThumb videoId={videoId} className="aspect-video w-20 shrink-0 rounded-xl" />;
@@ -421,8 +423,7 @@ function Thumb({ videoId, phase }: { videoId?: string | null; phase: MissionSess
     <span
       aria-hidden
       className={cn(
-        "text-caption grid aspect-video w-20 shrink-0 place-items-center rounded-xl font-extrabold",
-        phase === "MAIN" ? "bg-signal-strong text-white" : "bg-signal-soft text-signal-deep",
+        "text-caption bg-sub text-ink-soft grid aspect-video w-20 shrink-0 place-items-center rounded-xl font-extrabold",
       )}
     >
       {PHASE_LABEL[phase].replace("운동", "")}
