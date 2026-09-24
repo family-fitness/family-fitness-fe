@@ -211,7 +211,15 @@ export default function MeasurePage() {
 
   return (
     <>
-      <PageHeader title={`${profile.name} 측정`} back meta={<span>{filledCount}개 입력함</span>} />
+      <PageHeader
+        title={`${profile.name} 측정`}
+        back
+        meta={
+          <span>
+            국민체력100 {profile.ageGroup ?? ""} 항목 · {filledCount}개 입력함
+          </span>
+        }
+      />
 
       <Stage wide>
         <form onSubmit={onSubmit} className="space-y-3">
@@ -349,7 +357,7 @@ export default function MeasurePage() {
             loading={create.isPending}
             disabled={filledCount === 0}
           >
-            {filledCount === 0 ? "한 항목 이상 입력해 주세요" : "결과 보기"}
+            결과 보기
           </Button>
         </form>
       </Stage>
