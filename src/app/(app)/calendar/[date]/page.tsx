@@ -130,11 +130,14 @@ function Day() {
   );
   // 갈 수 있는 날 — 오늘까지는 전부, 앞날은 운동을 잡아 둔 날만
   const open = (d: string) => d <= now || plannedDays.has(d);
-  const prev = (() => {
-    let d = daysBefore(1, date);
-    while (!open(d)) d = daysBefore(1, d);
-    return d;
-  })();
+  // 앞날에서 뒤로 갈 때는 그 앞의 잡아 둔 날, 없으면 오늘 — 하루씩 세며 돌지 않는다
+  const prev =
+    date > now
+      ? ([...plannedDays]
+          .filter((p) => p > now && p < date)
+          .sort()
+          .at(-1) ?? now)
+      : daysBefore(1, date);
   const next = (() => {
     const d = daysBefore(-1, date);
     if (d <= now) return d;
@@ -157,7 +160,7 @@ function Day() {
         title="하루 기록"
         right={
           <NavLink
-            href={`/calendar?month=${monthOf(date)}`}
+            href={`/calendar?month=${monthOf(date)}${suffix ? `&${suffix.slice(1)}` : ""}`}
             aria-label="달력"
             className="press text-ink-soft grid size-10 place-items-center rounded-full"
           >

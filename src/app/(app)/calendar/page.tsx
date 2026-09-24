@@ -77,11 +77,12 @@ function Calendar() {
         : monthOf(now);
   const grid = monthGrid(month);
 
-  const { data: calendar, isPending: calendarPending } = useCalendar(
-    familyId,
-    who?.profileId ?? undefined,
-    { from: grid.from, to: grid.to },
-  );
+  const {
+    data: calendar,
+    isPending: calendarPending,
+    error: calendarError,
+    refetch: refetchCalendar,
+  } = useCalendar(familyId, who?.profileId ?? undefined, { from: grid.from, to: grid.to });
   const logs = new Map((calendar?.days ?? []).map((d) => [d.date, d]));
   // 앞으로 잡힌 운동 — 이 아이가 하는 것만. 걸음수는 넣지 않는다(규칙 2)
   const { data: active } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
@@ -139,6 +140,7 @@ function Calendar() {
   const stickers = [...logs.values()]
     .filter((d) => monthOf(d.date) === month)
     .reduce((sum, d) => sum + d.stickers.length, 0);
+  const tileState = calendarError ? "error" : calendarPending ? "pending" : "ready";
 
   return (
     <>
@@ -204,12 +206,29 @@ function Calendar() {
             ))}
           </ol>
 
-          {/* 이 달 — 칸 셋 */}
-          <div className="mt-4 grid grid-cols-3 gap-2">
-            <MonthTile label="움직인 날" value={days.length} unit="일" loading={calendarPending} />
-            <MonthTile label="모두" value={total} unit="분" loading={calendarPending} />
-            <MonthTile label="받은 칭찬" value={stickers} unit="장" loading={calendarPending} />
+          {/* 이 달 — 칸 셋(칭찬을 받은 달) · 둘 */}
+          <div
+            className={cn(
+              "mt-4 grid gap-2",
+              stickers > 0 || tileState !== "ready" ? "grid-cols-3" : "grid-cols-2",
+            )}
+          >
+            <MonthTile label="움직인 날" value={days.length} unit="일" state={tileState} />
+            <MonthTile label="모두" value={total} unit="분" state={tileState} />
+            {/* 칭찬은 받은 달에만 칸으로 — 0장을 적어 두면 못 받은 달이 된다(규칙 12) */}
+            {(stickers > 0 || tileState !== "ready") && (
+              <MonthTile label="받은 칭찬" value={stickers} unit="장" state={tileState} />
+            )}
           </div>
+          {calendarError && (
+            <button
+              type="button"
+              onClick={() => void refetchCalendar()}
+              className="press text-ink-soft mt-3 min-h-10 w-full text-sm font-bold"
+            >
+              기록을 불러오지 못했어요 · 다시
+            </button>
+          )}
         </section>
       </Stage>
     </>
@@ -320,24 +339,36 @@ function DayCell({
 }
 
 /** 이 달 한 칸 */
+/** 이 달 한 칸. 못 받은 것은 0 이 아니라 「—」 — 0 을 그리면 안 한 달처럼 보인다 */
 function MonthTile({
   label,
   value,
   unit,
-  loading,
+  state,
 }: {
   label: string;
   value: number;
   unit: string;
-  loading: boolean;
+  state: "pending" | "error" | "ready";
 }) {
   return (
     <div className="bg-sub rounded-2xl px-2 py-3 text-center">
       <p className="text-micro text-ink-soft font-bold">{label}</p>
-      <p className={cn("metric-value mt-1 text-2xl", loading && "opacity-40")}>
-        {loading ? 0 : value}
-        <span className="metric-unit">{unit}</span>
-      </p>
+      {state === "ready" ? (
+        <p className="metric-value mt-1 text-2xl">
+          {value}
+          <span className="metric-unit">{unit}</span>
+        </p>
+      ) : (
+        <p
+          className={cn(
+            "metric-value text-faint mt-1 text-2xl",
+            state === "pending" && "opacity-40",
+          )}
+        >
+          {state === "error" ? "—" : 0}
+        </p>
+      )}
     </div>
   );
 }
