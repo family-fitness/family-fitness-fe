@@ -1,3 +1,4 @@
+import { VideoThumb } from "@/components/ui/video-thumb";
 import type { MissionSession } from "@/lib/api/types";
 import { PHASE_LABEL } from "@/lib/session-plan";
 
@@ -26,12 +27,9 @@ export function SessionList({ sessions }: { sessions: MissionSession[] }) {
             {g.rows.map((s) => (
               <li key={s.position} className="flex items-center gap-3">
                 {s.clip?.videoId ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- 유튜브 썸네일은 외부 주소라 최적화가 안 된다
-                  <img
-                    src={`https://i.ytimg.com/vi/${encodeURIComponent(s.clip.videoId)}/mqdefault.jpg`}
-                    alt=""
-                    loading="lazy"
-                    className="bg-sub aspect-video w-24 shrink-0 rounded-xl object-cover"
+                  <VideoThumb
+                    videoId={s.clip.videoId}
+                    className="aspect-video w-24 shrink-0 rounded-xl"
                   />
                 ) : (
                   <span className="bg-sub text-caption text-ink-soft grid aspect-video w-24 shrink-0 place-items-center rounded-xl">
