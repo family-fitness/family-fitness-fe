@@ -40,10 +40,10 @@ export function BodyCard({ child }: { child: FitnessMapMember }) {
         ageGroup={child.ageGroup}
       />
 
-      {/* 서버가 준 한 줄을 그대로. 고쳐 쓰면 두 화면이 다른 말을 한다(규칙 9) */}
+      {/* 서버가 준 한 줄을 그대로(규칙 9). 회색 칸에 담으면 누르는 칸처럼 보여 글 한 줄로 둔다 */}
       {child.headline && (
-        <p className="text-body bg-sub mt-4 rounded-2xl px-4 py-3 text-center leading-relaxed font-semibold">
-          {child.headline}
+        <p className="mt-3 flex justify-center">
+          <span className="text-signal-deep text-body font-extrabold">{child.headline}</span>
         </p>
       )}
     </Card>

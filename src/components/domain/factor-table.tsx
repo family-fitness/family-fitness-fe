@@ -45,7 +45,7 @@ export function FactorTable({
                 <p className="text-sm font-extrabold">{p.factor}</p>
                 <p className="text-caption shrink-0 font-bold">
                   {missing ? (
-                    <span className="text-faint">안 잰</span>
+                    <span className="text-faint">안 잼</span>
                   ) : (
                     (item?.topPercentText ?? `백분위 ${p.percentile}`)
                   )}

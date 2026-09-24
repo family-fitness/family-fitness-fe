@@ -214,7 +214,7 @@ export function FactorRadar({
             <span aria-hidden className="bg-signal relative h-0.5 w-4 rounded-full">
               <span className="bg-signal absolute top-1/2 left-1/2 size-2 -translate-1/2 rounded-full" />
             </span>
-            {name}
+            {name} · 또래 백분위
           </li>
           <li className="flex items-center gap-1.5">
             <svg aria-hidden width="16" height="2" className="overflow-visible">
