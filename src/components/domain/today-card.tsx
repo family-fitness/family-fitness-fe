@@ -71,14 +71,14 @@ export function TodayCard({
         <p className="text-ink-soft border-line mt-4 border-t pt-3 text-sm">
           {withJosa(childName, "은는")} 아직 오늘 운동이 없어요
         </p>
-        {/* 두 길 — AI 에게 받거나, 직접 골라 짜거나 */}
+        {/* 두 길 — AI에게 받거나, 직접 골라 짜거나. 이름은 결과 화면 · 운동 짜기와 같게 */}
         <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
           <Link
             href="/plan"
             className="press bg-signal-strong flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
           >
             <ArtIcon name="icon/menu-ai" className="size-5" />
-            AI에게 받기
+            AI에게 운동 받기
           </Link>
           <Link
             href="/videos"
