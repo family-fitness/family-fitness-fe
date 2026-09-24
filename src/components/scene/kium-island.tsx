@@ -7,6 +7,7 @@ import type { Stage } from "@/lib/levels";
 import { decorationsAt, type DecorationId } from "@/lib/unlocks";
 import { cn } from "@/lib/utils";
 
+import { buddyFrame } from "./buddy";
 import { ISLAND, buildIsland, footRatio, type Island } from "./island";
 import { loadThree, readPalette } from "./toon";
 
@@ -59,6 +60,8 @@ export function KiumIsland({
   const host = useRef<HTMLDivElement>(null);
   const standIn = useRef<HTMLDivElement>(null);
   const mascotSize = Math.round(height * ISLAND.mascot);
+  /** 캐릭터 그림의 몸 비율 — 주문한 그림(PNG)과 코드 그림이 발끝 자리가 다르다 */
+  const buddy = buddyFrame(stage, cheer);
   const decorKey = decorationsAt(level).join();
 
   useEffect(() => {
@@ -117,6 +120,7 @@ export function KiumIsland({
           plants: count,
           seed,
           decorations: decorKey ? (decorKey.split(",") as DecorationId[]) : [],
+          frame: buddy,
           // 움직임 줄이기면 튀어나오지 않는다 — 처음부터 서 있다
           unveil: still ? null : unveil,
           palette: readPalette(),
@@ -319,7 +323,7 @@ export function KiumIsland({
       disposed = true;
       teardown();
     };
-  }, [plants, seed, grow, spin, stage, cheer, decorKey, unveil]);
+  }, [plants, seed, grow, spin, stage, cheer, decorKey, unveil, buddy]);
 
   return (
     <div
@@ -336,7 +340,7 @@ export function KiumIsland({
         className="pointer-events-none absolute left-1/2 transition-opacity duration-500"
         style={{
           top: `${footRatio() * 100}%`,
-          transform: `translate(-50%, -${(1 - ISLAND.feet) * 100}%)`,
+          transform: `translate(-50%, -${(1 - buddy.feet) * 100}%)`,
         }}
       >
         <LevelBuddy stage={stage} cheer={cheer} size={mascotSize} />

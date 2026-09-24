@@ -19,6 +19,7 @@ import type * as T from "three";
 
 import type { DecorationId } from "@/lib/unlocks";
 
+import type { BuddyFrame } from "./buddy";
 import {
   DECOR_CLEAR,
   DECOR_SPOTS,
@@ -198,6 +199,7 @@ export function buildIsland(
     seed,
     decorations = [],
     unveil = null,
+    frame,
     palette,
     mascot,
     light,
@@ -209,6 +211,8 @@ export function buildIsland(
     decorations?: DecorationId[];
     /** 방금 열린 장식. `reveal` 전까지 숨어 있다 */
     unveil?: DecorationId | null;
+    /** 캐릭터 그림의 몸 비율(발끝 자리). 없으면 코드 그림 값 */
+    frame?: BuddyFrame;
     palette: Palette;
     /** 캐릭터 그림. 없으면 섬만 */
     mascot: HTMLImageElement | null;
@@ -411,7 +415,7 @@ export function buildIsland(
       new THREE.SpriteMaterial({ map: texture, transparent: true, alphaTest: 0.35 }),
     );
     sprite = new THREE.Sprite(material);
-    sprite.center.set(0.5, ISLAND.feet);
+    sprite.center.set(0.5, frame?.feet ?? ISLAND.feet);
     const tall = ISLAND.mascot * 2 * ISLAND.view;
     sprite.scale.set(tall, tall, 1);
     figure.add(sprite);

@@ -7,6 +7,7 @@ import type { Stage } from "@/lib/levels";
 import { projectOrtho, type OrthoSpec } from "@/lib/ortho";
 import { cn } from "@/lib/utils";
 
+import { buddyFrame } from "./buddy";
 import { mascotImage } from "./kium-island";
 import { useToonScene } from "./use-toon-scene";
 import { useWidth } from "./use-width";
@@ -128,9 +129,10 @@ export function GrowthPole({
           const sprite = new THREE.Sprite(
             keep(new THREE.SpriteMaterial({ map: texture, transparent: true, alphaTest: 0.35 })),
           );
-          // 키움이 그림(160칸)에서 발끝은 151칸째, 머리 꼭대기는 54칸째다 — 새싹은 머리 위로 솟는다
-          const tall = latest / ((151 - 54) / 160);
-          sprite.center.set(0.5, 9 / 160);
+          // 모자 꼭대기가 마지막 눈금에 닿게 — 새싹은 그 위로 솟는다
+          const frame = buddyFrame(stage);
+          const tall = latest / frame.body;
+          sprite.center.set(0.5, frame.feet);
           sprite.scale.set(tall, tall, 1);
           figure.add(sprite);
           invalidate();
