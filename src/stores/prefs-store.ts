@@ -8,7 +8,6 @@ import { persist } from "zustand/middleware";
  *
  * 부모 폰 하나를 식구가 같이 쓰니 사람이 아니라 **기기**의 값이다.
  */
-export type ChartView = "3d" | "flat";
 /** 부모 홈에서 숨길 수 있는 카드 — 체력 · 오늘 운동 · 알려 줄 것은 숨기지 않는다(이 앱이 하는 일이다) */
 export const HOME_CARDS = [
   { id: "recap", name: "지난주 돌아보기", line: "한 주가 시작되면 지난주를 짧게" },
@@ -30,9 +29,6 @@ export const FAMILY_GOALS = [60, 90, 120] as const;
 export type FamilyGoal = (typeof FAMILY_GOALS)[number];
 
 interface PrefsState {
-  /** 체력 그래프 — 입체 기둥 / 평면 육각형 */
-  chartView: ChartView;
-  setChartView: (view: ChartView) => void;
   /** 운동하기 소리 안내 — 「시작!」 「10초 남았어요」 「셋 · 둘 · 하나」 */
   voice: boolean;
   setVoice: (on: boolean) => void;
@@ -50,8 +46,6 @@ interface PrefsState {
 export const usePrefsStore = create<PrefsState>()(
   persist(
     (set) => ({
-      chartView: "3d",
-      setChartView: (chartView) => set({ chartView }),
       voice: true,
       setVoice: (voice) => set({ voice }),
       familyGoal: 90,
