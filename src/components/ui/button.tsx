@@ -15,9 +15,10 @@ const button = cva(
   {
     variants: {
       variant: {
-        // 못 누를 때는 회색 면에 진한 글자. 흐린 파랑 위 흰 글자는 읽히지 않았다
+        // 아직 못 누를 때(data-off)는 회색 면에 진한 글자 — 흐린 파랑 위 흰 글자는 읽히지 않았다.
+        // 보내는 중(loading)은 파랑 그대로 둔다. 누른 것이 회색으로 바뀌면 안 눌린 것처럼 보인다
         primary:
-          "bg-signal-strong text-white disabled:bg-line disabled:text-ink-soft disabled:opacity-100",
+          "bg-signal-strong text-white disabled:opacity-100 data-off:bg-line data-off:text-ink-soft",
         soft: "bg-signal-soft text-signal-deep",
         outline: "border-line text-ink border-1.5 border",
         ghost: "text-ink-soft",
@@ -40,12 +41,14 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<ty
   children: ReactNode;
 }
 
-export function Button({ className, variant, size, loading, children, ...props }: Props) {
+export function Button({ className, variant, size, loading, disabled, children, ...props }: Props) {
   return (
+    // disabled 를 props 에 남겨 두면 뒤의 펼침이 loading 을 덮어써 보내는 중에도 눌렸다
     <button
-      className={cn(button({ variant, size }), className)}
-      disabled={props.disabled || loading}
       {...props}
+      className={cn(button({ variant, size }), className)}
+      data-off={disabled && !loading ? "" : undefined}
+      disabled={disabled || loading}
     >
       {loading && <Loader2 className="size-4 animate-spin" aria-hidden />}
       {children}
