@@ -1,9 +1,9 @@
 /**
- * WebGL 이 없는 브라우저에서도 화면과 놀이가 끝까지 도는지.
+ * WebGL 이 없는 브라우저에서도 화면이 끝까지 도는지.
  *
  *   npm run check:nowebgl   (개발 서버가 떠 있어야 한다)
  *
- * AGENTS.md — 입체가 오기 전 · WebGL 이 없을 때도 빈 칸이 아니다. 놀이는 입체 없이도 끝까지 돈다.
+ * AGENTS.md — 입체가 오기 전 · WebGL 이 없을 때도 빈 칸이 아니다.
  * 오래된 폰 · 저전력 모드 · 회사 PC 에서 WebGL 이 꺼져 있는 일이 흔하다.
  */
 import { chromium } from "playwright";
@@ -83,23 +83,6 @@ for (const [mode, route] of [
     if (text.length < 20) throw new Error("화면이 비어 있다");
   });
 }
-
-await check("얼음땡 — 시작하면 움직여요가 뜬다", async () => {
-  const { ctx, page, errors } = await open("kid", "/kid/play/freeze");
-  await page.getByRole("button", { name: "시작하기" }).click({ timeout: 20000 });
-  await page.getByText("움직여요!").waitFor({ timeout: 5000 });
-  await page.getByRole("button", { name: "그만하기" }).click();
-  await ctx.close();
-  if (errors.length) throw new Error(errors[0]);
-});
-
-await check("따라 해 봐 — 시작하면 동작을 보여 준다", async () => {
-  const { ctx, page, errors } = await open("kid", "/kid/play/follow");
-  await page.getByRole("button", { name: "시작하기" }).click({ timeout: 20000 });
-  await page.getByText(/잘 보세요/).waitFor({ timeout: 5000 });
-  await ctx.close();
-  if (errors.length) throw new Error(errors[0]);
-});
 
 await check("운동하기 — 징검다리 대신 점줄이 선다", async () => {
   const { ctx, page, errors } = await open("kid", "/kid/m/seed-today");

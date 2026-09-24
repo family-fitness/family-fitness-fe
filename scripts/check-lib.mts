@@ -9,7 +9,6 @@
 import type { ClipView } from "@/lib/api/types";
 import type { DayLog } from "@/lib/api/types";
 import { projectOrtho } from "@/lib/ortho";
-import { FOLLOW_MOVES, extendSequence, pick } from "@/lib/play";
 import {
   MAX_MOVES,
   repeatDates,
@@ -23,7 +22,7 @@ import {
   upcomingDays,
 } from "@/lib/routine";
 import { dayRings, daySummary, didSomething, isRealDate, plannedDay } from "@/lib/day";
-import { UNLOCKS, decorationsAt, isGameOpen, newlyUnlocked, nextUnlock } from "@/lib/unlocks";
+import { UNLOCKS, decorationsAt, newlyUnlocked, nextUnlock } from "@/lib/unlocks";
 import { josa } from "@/lib/utils";
 
 let failed = 0;
@@ -36,26 +35,25 @@ const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 /* ─── 레벨마다 열리는 것 ─────────────────────────────────── */
 
 check(
-  "한 레벨에 하나씩 열린다",
+  "Lv.2 부터 한 레벨에 하나씩 열린다",
   same(
     UNLOCKS.map((u) => u.level),
-    [1, 2, 3, 4, 5, 6, 7, 8],
+    [2, 3, 4, 5, 6, 7],
   ),
 );
-check("Lv.1 부터 얼음땡은 열려 있다", same(decorationsAt(1), []) && isGameOpen("freeze", 1));
-check("Lv.5 섬에는 깃발 · 울타리 · 연못", same(decorationsAt(5), ["flag", "fence", "pond"]));
+check("Lv.1 섬에는 아직 장식이 없다", same(decorationsAt(1), []));
 check(
-  "레벨을 모르면 Lv.1 로 본다",
-  same(decorationsAt(null), []) && isGameOpen("freeze", undefined),
+  "Lv.5 섬에는 깃발 · 울타리 · 연못 · 텐트",
+  same(decorationsAt(5), ["flag", "fence", "pond", "tent"]),
 );
-check("따라 해 봐는 Lv.3 부터", !isGameOpen("follow", 2) && isGameOpen("follow", 3));
-check("다 열면 다음이 없다", nextUnlock(8) === null && nextUnlock(20) === null);
-check("Lv.5 다음은 텐트", nextUnlock(5)?.id === "tent");
+check("레벨을 모르면 Lv.1 로 본다", same(decorationsAt(null), []));
+check("다 열면 다음이 없다", nextUnlock(7) === null && nextUnlock(20) === null);
+check("Lv.5 다음은 풍차", nextUnlock(5)?.id === "windmill");
 check(
   "두 레벨을 한 번에 올라도 둘 다 열린 것으로",
   same(
     newlyUnlocked(2, 4).map((u) => u.id),
-    ["follow", "fence"],
+    ["fence", "pond"],
   ),
 );
 check("오르지 않았으면 새로 열린 것 없음", newlyUnlocked(5, 5).length === 0);
@@ -88,25 +86,6 @@ const lower = projectOrtho(spec, [0, 0, 0], 320, 160);
 check(
   "정사영 — 같은 높이 차이는 어디서나 같은 픽셀",
   Math.abs(center.y - higher.y - (lower.y - center.y)) < 1e-9,
-);
-
-/* ─── 따라 해 봐 ──────────────────────────────────────── */
-
-let sequence: number[] = [];
-let repeatsInRow = 0;
-for (let i = 0; i < 200; i++) {
-  sequence = extendSequence(sequence);
-  if (sequence.length > 1 && sequence.at(-1) === sequence.at(-2)) repeatsInRow += 1;
-}
-check("순서는 하나씩 늘어난다", sequence.length === 200);
-check("바로 앞 동작과 같은 게 이어 나오지 않는다", repeatsInRow === 0);
-check(
-  "동작 번호가 목록 안에 있다",
-  sequence.every((n) => n >= 0 && n < FOLLOW_MOVES.length),
-);
-check(
-  "고른 수는 0 이상 n 미만",
-  Array.from({ length: 500 }, () => pick(6)).every((n) => n >= 0 && n < 6),
 );
 
 /* ─── 직접 짜기 ──────────────────────────────────────── */

@@ -1,40 +1,29 @@
 /**
- * 레벨마다 열리는 것 — 섬 꾸미기와 놀이가 번갈아 하나씩.
+ * 레벨마다 열리는 것 — 섬 꾸미기가 한 레벨에 하나씩.
  *
  * 레벨은 서버가 센다. 여기서는 **몇 레벨에 무엇이 열리는지**만 정한다.
  * 레벨은 한 만큼 오르고 내려가지 않으니(규칙 10), 한 번 열린 것은 닫히지 않는다.
  *
  * 열리는 건 전부 **덤**이다. 오늘 운동 · 캘린더 · 칭찬처럼 서비스의 본 기능은 레벨로 막지 않는다.
- * 놀이는 몸으로 하는 놀이다 — 운동을 화면 시간으로 바꿔 주는 게 아니다(조사 「가져오지 않을 것」).
+ * 놀이터(얼음땡 · 따라 해 봐)는 뺐다(9/25) — 그 자리를 섬 장식이 한 칸씩 당겨 채운다.
  */
 
 export type DecorationId = "flag" | "fence" | "pond" | "tent" | "windmill" | "lighthouse";
-export type GameId = "freeze" | "follow";
 
-export type Unlock =
-  | { kind: "decoration"; id: DecorationId; level: number; name: string }
-  | { kind: "game"; id: GameId; level: number; name: string };
+export interface Unlock {
+  id: DecorationId;
+  level: number;
+  name: string;
+}
 
-/** 레벨 차례. 한 레벨에 하나 — 처음(Lv.1)부터 놀이 하나는 열려 있다 */
+/** 레벨 차례. Lv.1 은 시작이라 열 것이 없고, Lv.2 부터 한 레벨에 하나 */
 export const UNLOCKS: readonly Unlock[] = [
-  {
-    kind: "game",
-    id: "freeze",
-    level: 1,
-    name: "얼음땡",
-  },
-  { kind: "decoration", id: "flag", level: 2, name: "깃발" },
-  {
-    kind: "game",
-    id: "follow",
-    level: 3,
-    name: "따라 해 봐",
-  },
-  { kind: "decoration", id: "fence", level: 4, name: "울타리" },
-  { kind: "decoration", id: "pond", level: 5, name: "연못" },
-  { kind: "decoration", id: "tent", level: 6, name: "텐트" },
-  { kind: "decoration", id: "windmill", level: 7, name: "풍차" },
-  { kind: "decoration", id: "lighthouse", level: 8, name: "등대" },
+  { id: "flag", level: 2, name: "깃발" },
+  { id: "fence", level: 3, name: "울타리" },
+  { id: "pond", level: 4, name: "연못" },
+  { id: "tent", level: 5, name: "텐트" },
+  { id: "windmill", level: 6, name: "풍차" },
+  { id: "lighthouse", level: 7, name: "등대" },
 ];
 
 /** 이 레벨까지 열린 것 */
@@ -51,24 +40,11 @@ export function nextUnlock(level: number | null | undefined): Unlock | null {
 
 /** 섬에 세울 장식 */
 export function decorationsAt(level: number | null | undefined): DecorationId[] {
-  return unlockedAt(level).flatMap((u) => (u.kind === "decoration" ? [u.id] : []));
+  return unlockedAt(level).map((u) => u.id);
 }
 
 /** 방금 레벨이 오르며 새로 열린 것. 오르지 않았으면 빈 목록 */
 export function newlyUnlocked(before: number | null, after: number | null | undefined): Unlock[] {
   if (before == null || after == null || after <= before) return [];
   return UNLOCKS.filter((u) => u.level > before && u.level <= after);
-}
-
-export function isGameOpen(id: GameId, level: number | null | undefined): boolean {
-  const game = UNLOCKS.find((u) => u.kind === "game" && u.id === id);
-  return game != null && game.level <= Math.max(1, level ?? 1);
-}
-
-export function gameOf(id: GameId): Extract<Unlock, { kind: "game" }> {
-  const game = UNLOCKS.find(
-    (u): u is Extract<Unlock, { kind: "game" }> => u.kind === "game" && u.id === id,
-  );
-  if (!game) throw new Error(`없는 놀이: ${id}`);
-  return game;
 }
