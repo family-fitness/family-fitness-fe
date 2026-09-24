@@ -20,6 +20,14 @@ export const usePrefsStore = create<PrefsState>()(
       voice: true,
       setVoice: (voice) => set({ voice }),
     }),
-    { name: "ff-prefs" },
+    {
+      name: "ff-prefs",
+      // 뺀 기능이 남긴 값(입체 고르기 · 가족 목표 · 숨긴 카드 · 닫은 주)은 버린다 — 소리 안내만 남긴다
+      version: 1,
+      partialize: (s) => ({ voice: s.voice }),
+      migrate: (persisted) => ({
+        voice: (persisted as { voice?: unknown } | null)?.voice !== false,
+      }),
+    },
   ),
 );

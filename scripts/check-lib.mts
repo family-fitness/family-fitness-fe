@@ -8,7 +8,7 @@
  */
 import type { ClipView } from "@/lib/api/types";
 import type { DayLog } from "@/lib/api/types";
-import { projectOrtho, separateLabels } from "@/lib/ortho";
+import { projectOrtho } from "@/lib/ortho";
 import { FOLLOW_MOVES, extendSequence, pick } from "@/lib/play";
 import {
   MAX_MOVES,
@@ -22,7 +22,7 @@ import {
   toggleMove,
   upcomingDays,
 } from "@/lib/routine";
-import { dayRings, daySummary, plannedDay } from "@/lib/day";
+import { dayRings, daySummary, didSomething, isRealDate, plannedDay } from "@/lib/day";
 import { UNLOCKS, decorationsAt, isGameOpen, newlyUnlocked, nextUnlock } from "@/lib/unlocks";
 import { josa } from "@/lib/utils";
 
@@ -89,13 +89,6 @@ check(
   "정사영 — 같은 높이 차이는 어디서나 같은 픽셀",
   Math.abs(center.y - higher.y - (lower.y - center.y)) < 1e-9,
 );
-const moved = separateLabels([
-  { x: 100, y: 100, w: 80, h: 20 },
-  { x: 110, y: 110, w: 80, h: 20 },
-  { x: 300, y: 100, w: 40, h: 20 },
-]);
-check("겹친 글자는 위의 것을 올린다", moved[0] <= 110 - 20 - 2 && moved[1] === 110);
-check("안 겹친 글자는 그대로", moved[2] === 100);
 
 /* ─── 따라 해 봐 ──────────────────────────────────────── */
 
@@ -219,16 +212,46 @@ const dayLog: DayLog = {
   stickers: [],
 };
 const day = daySummary(dayLog);
-check("칸 없는 운동은 한 칸으로 센다", day.total === 5 && day.done === 4);
+check(
+  "직접 적은 걸음수는 끝낸 운동으로 세지 않는다(홈 링과 같게)",
+  day.total === 4 && day.done === 3,
+);
 check("끝낸 칸의 분만 단계마다", same(day.phases, { WARMUP: 1, MAIN: 8, COOLDOWN: 0 }));
 check("확인 방법은 한 번씩", same(day.verified, ["TIMER", "SELF_REPORT"]));
-check("잡힌 시간 대비 · 칸 대비 · 스티커 없음", same(dayRings(day), [0.75, 0.8, 0]));
+check("잡힌 시간 대비 · 칸 대비 — 칭찬은 링이 아니다", same(dayRings(day), [0.75, 0.75]));
 check("목표를 넘겨도 한 바퀴", dayRings(daySummary({ ...dayLog, minutes: 30 }))[0] === 1);
 check(
   "잡힌 운동 없이 움직인 날은 한 바퀴",
   dayRings(daySummary({ ...dayLog, plannedMinutes: null }))[0] === 1,
 );
-check("기록이 없는 날은 전부 비었다", same(dayRings(daySummary(undefined)), [0, 0, 0]));
+check("기록이 없는 날은 전부 비었다", same(dayRings(daySummary(undefined)), [0, 0]));
+check(
+  "칸 없이 타이머로 확인된 운동은 한 칸",
+  daySummary({
+    ...dayLog,
+    entries: [
+      { missionId: "t", title: "달리기", minutes: 5, verifiedBy: "TIMER", completed: true },
+    ],
+  }).total === 1,
+);
+check("한 칸이라도 끝냈으면 한 운동", didSomething(dayLog.entries[0]));
+check(
+  "하나도 안 한 운동은 할 운동",
+  !didSomething({
+    ...dayLog.entries[0],
+    completed: false,
+    sessions: [{ title: "a", phase: "MAIN", minutes: 1, done: false }],
+  }),
+);
+check("직접 적어 낸 걸음수는 한 것으로 보인다", didSomething(dayLog.entries[1]));
+check("달력에 있는 날", isRealDate("2026-09-23") && isRealDate("2024-02-29"));
+check(
+  "달력에 없는 날은 거른다",
+  !isRealDate("2026-13-01") &&
+    !isRealDate("2026-02-30") &&
+    !isRealDate("../x") &&
+    !isRealDate(null),
+);
 const mission = (startDate: string, endDate: string, targetMetric = "TIMER_MINUTES") =>
   ({ missionId: "x", startDate, endDate, targetMetric }) as unknown as Parameters<
     typeof plannedDay

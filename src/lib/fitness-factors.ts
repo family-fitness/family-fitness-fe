@@ -38,11 +38,6 @@ export function toHexagon(points: RadarPoint[] | null | undefined): FactorPointV
   }));
 }
 
-/** 잰 것이 몇 개인지. 셋이 안 되면 도형을 잇지 않는다 */
-export function measuredCount(points: FactorPointView[]): number {
-  return points.filter((p) => p.percentile != null).length;
-}
-
 /**
  * 요인마다 그 요인을 잰 항목을 찾는다.
  *
