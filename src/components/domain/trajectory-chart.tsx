@@ -2,7 +2,7 @@
 
 import type { PredictionPoint } from "@/lib/api/types";
 
-/** 10년 뒤 분포. */
+/** 지금 연령대와 10년 위 연령대의 분포 — 한 사람의 앞날이 아니다(규칙 3) */
 export function TrajectoryChart({
   points,
   unit,
@@ -64,7 +64,7 @@ export function TrajectoryChart({
         width="100%"
         height={height}
         role="img"
-        aria-label={`지금 ${first.p50}${unit ?? ""}, ${last.yearsFromNow}년 위 연령대는 ${last.p10}에서 ${last.p90}${unit ?? ""} 사이에 있습니다`}
+        aria-label={`지금 연령대 가운데 ${first.p50}${unit ?? ""}, ${last.yearsFromNow}년 위 연령대는 ${last.p10}에서 ${last.p90}${unit ?? ""} 사이에 있습니다`}
       >
         {/* 가로 눈금 */}
         {[lo - pad, (lo + hi) / 2, hi + pad].map((v) => (

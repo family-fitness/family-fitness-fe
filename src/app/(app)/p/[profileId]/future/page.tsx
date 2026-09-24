@@ -21,7 +21,7 @@ import {
 } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 
-/** 10년 뒤 — **예언이 아니다.** */
+/** 10년 위 연령대 — **예언이 아니다.** 같은 조건의 윗 연령대가 어디 있는지일 뿐(규칙 3) */
 export default function FuturePage() {
   const router = useRouter();
   const { profileId } = useParams<{ profileId: string }>();
