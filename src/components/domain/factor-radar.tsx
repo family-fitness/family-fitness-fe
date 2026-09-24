@@ -58,7 +58,7 @@ export function FactorRadar({
   points: RadarPoint[] | null | undefined;
   /** 파랑 도형이 누구인지. 범례에 쓴다 */
   name: string;
-  /** 이 요인의 축만 진하게. AI 편성이 무엇을 키우려는지 보여 줄 때 */
+  /** 이 요인의 이름에 옅은 칸을 씌운다. AI 편성이 무엇을 키우려는지 보여 줄 때(축은 늘 옅게) */
   focus?: Factor | null;
   legend?: boolean;
   className?: string;
