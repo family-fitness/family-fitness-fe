@@ -149,7 +149,7 @@ function SupportModePageContent() {
             disabled={!current}
             onClick={() => router.replace(from === "onboarding" ? "/parent" : "/start")}
           >
-            {current ? "다 골랐어요" : "하나 골라 주세요"}
+            다 골랐어요
           </Button>
         )}
       </Screen>
