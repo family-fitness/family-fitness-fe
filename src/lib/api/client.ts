@@ -62,7 +62,64 @@ function currentToken(): string | null {
   }
 }
 
-type Options = Omit<RequestInit, "body"> & { body?: unknown };
+/**
+ * 새로 받은 토큰을 auth-store 에 넘기는 곳. client 가 store 를 부르면 서로 부르는 고리가 생겨서
+ * store 가 스스로 여기에 걸어 둔다(`setTokenSink`).
+ */
+type TokenSink = (tokens: { accessToken: string; refreshToken: string | null }) => void;
+let tokenSink: TokenSink | null = null;
+export function setTokenSink(sink: TokenSink | null) {
+  tokenSink = sink;
+}
+
+function savedRefreshToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const saved = JSON.parse(raw) as { state?: { refreshToken?: string | null } };
+    return saved.state?.refreshToken ?? null;
+  } catch {
+    return null;
+  }
+}
+
+let refreshing: Promise<boolean> | null = null;
+
+/**
+ * 액세스 토큰은 한 시간이면 끝난다(서버 설정). 401 을 맞으면 리프레시 토큰으로 **한 번만** 새로 받고
+ * 다시 부른다 — 여러 요청이 같이 맞아도 새로 받기는 한 번이다. 못 받으면 원래 401 을 그대로 돌려
+ * 로그인으로 보낸다. 이게 없으면 한 시간마다 로그인 화면으로 튕긴다.
+ */
+function refreshOnce(): Promise<boolean> {
+  if (refreshing) return refreshing;
+  const token = savedRefreshToken();
+  if (!token) return Promise.resolve(false);
+  refreshing = fetch(`${BASE}/auth/refresh`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken: token }),
+  })
+    .then(async (res) => {
+      if (!res.ok) return false;
+      const body = (await res.json().catch(() => null)) as {
+        accessToken?: string;
+        refreshToken?: string;
+      } | null;
+      if (!body?.accessToken) return false;
+      accessToken = body.accessToken;
+      tokenSink?.({ accessToken: body.accessToken, refreshToken: body.refreshToken ?? token });
+      return true;
+    })
+    .catch(() => false)
+    .finally(() => {
+      refreshing = null;
+    });
+  return refreshing;
+}
+
+type Options = Omit<RequestInit, "body"> & { body?: unknown; retried?: boolean };
 
 /**
  * 경로 조각에 「.」 · 「..」 가 섞이면 브라우저가 경로를 접어서 다른 엔드포인트로 간다.
@@ -79,7 +136,7 @@ function traverses(path: string): boolean {
 }
 
 async function request<T>(path: string, options: Options = {}): Promise<T> {
-  const { body, headers, ...rest } = options;
+  const { body, headers, retried, ...rest } = options;
   if (traverses(path)) throw new ApiError(400, "BAD_PATH", `경로가 올바르지 않습니다: ${path}`);
   const token = currentToken();
 
@@ -93,6 +150,11 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
     },
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
+
+  // 토큰이 끝났다 — 한 번만 새로 받고 다시 부른다. 로그인 · 새로 받기 자체는 다시 부르지 않는다
+  if (res.status === 401 && !retried && !path.startsWith("/auth/") && (await refreshOnce())) {
+    return request<T>(path, { ...options, retried: true });
+  }
 
   if (res.status === 204) return undefined as T;
 
