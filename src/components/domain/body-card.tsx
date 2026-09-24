@@ -129,7 +129,7 @@ export function FactorView({
         />
       </div>
       {pending ? (
-        <Skeleton className="mx-auto mt-2 aspect-[320/233] w-full rounded-3xl" />
+        <Skeleton className="mx-auto mt-2 aspect-[320/255] w-full rounded-3xl" />
       ) : view === "3d" ? (
         <FactorSea points={points} name={name} className="mt-1" />
       ) : (
