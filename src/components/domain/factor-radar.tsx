@@ -108,9 +108,9 @@ export function FactorRadar({
               strokeWidth={1}
             />
           ))}
+          {/* 축은 늘 옅게. 고른 요인을 파랑 축으로 그렸더니 값 선처럼 읽혔다 — 고른 것은 이름이 말한다 */}
           {FACTORS.map((f, i) => {
             const [x, y] = at(i, 100);
-            const on = focus === f;
             return (
               <line
                 key={f}
@@ -118,8 +118,8 @@ export function FactorRadar({
                 y1={CY}
                 x2={x}
                 y2={y}
-                stroke={on ? "var(--color-signal)" : "var(--color-line)"}
-                strokeWidth={on ? 2 : 1}
+                stroke="var(--color-line)"
+                strokeWidth={1}
               />
             );
           })}
@@ -184,7 +184,12 @@ export function FactorRadar({
               className="absolute flex flex-col items-center leading-tight whitespace-nowrap"
               style={labelAt(i)}
             >
-              <span className="flex items-center gap-1">
+              <span
+                className={cn(
+                  "flex items-center gap-1",
+                  focus === p.factor && "bg-signal-soft -mx-2 rounded-full px-2 py-0.5",
+                )}
+              >
                 <FactorIcon factor={p.factor} className={cn("size-4.5", missing && "opacity-40")} />
                 <span
                   className={cn(

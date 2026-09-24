@@ -13,6 +13,7 @@ import { CardHead } from "@/components/ui/card";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorIcon } from "@/components/domain/factor-icon";
+import { SourceTag } from "@/components/domain/source-tag";
 import { FactorRadar } from "@/components/domain/factor-radar";
 import {
   useAvailability,
@@ -140,10 +141,16 @@ function PlanForm() {
             className="mx-auto mt-2 max-w-72"
           />
           {shownFocus && (
-            <p className="bg-signal-soft text-signal-deep mt-1 rounded-2xl px-4 py-2.5 text-center text-sm font-bold">
-              {focus ? `고른 힘 · ${shownFocus}` : `키울 힘 · ${shownFocus} — 가장 낮은 요인`}
+            <p className="mt-3 text-center text-sm font-bold">
+              <span className="text-ink-soft">{focus ? "고른 힘" : "키울 힘"}</span>{" "}
+              <span className="text-signal-deep font-extrabold">{shownFocus}</span>
+              {!focus && <span className="text-ink-soft"> · 가장 낮은 요인</span>}
             </p>
           )}
+          {/* 코치는 또래에게 실제로 처방된 운동에서 고른다(AI 파트 retrieve) */}
+          <SourceTag className="mt-2.5">
+            국민체력100 · {kid?.ageGroup ?? "같은 연령대"} 또래 운동처방
+          </SourceTag>
         </section>
 
         {/* AI 말고 직접 — 운동 찾기에서 동작을 담아 짠다 */}
@@ -213,18 +220,12 @@ function PlanForm() {
         <section className="card">
           <CardHead title="키우고 싶은 힘" />
           <div className="mt-2 grid grid-cols-3 gap-2" role="group" aria-label="키우고 싶은 힘">
-            <button
-              type="button"
-              aria-pressed={focus === null}
-              onClick={() => setFocus(null)}
-              className={cn(
-                "press col-span-3 flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-bold",
-                focus === null ? "bg-signal-strong text-white" : "bg-sub",
-              )}
-            >
-              <ArtIcon name="icon/menu-ai" className="size-5" />
-              알아서 골라 주세요
-            </button>
+            {/* 다른 고르기와 같은 칩이다. 폭을 다 채운 파랑 단추로 두었더니 아래 주 버튼과 누를 곳이 둘로 보였다 */}
+            <span className="col-span-3 flex">
+              <Chip on={focus === null} onClick={() => setFocus(null)}>
+                알아서 골라 주세요
+              </Chip>
+            </span>
             {FACTORS.map((f) => (
               <button
                 key={f}
