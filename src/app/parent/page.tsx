@@ -13,11 +13,18 @@ import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { ChildPanel } from "@/components/domain/child-panel";
-import { ChildSwitch } from "@/components/domain/child-switch";
+import { ChildPill } from "@/components/domain/child-pill";
+import { StreakChip } from "@/components/domain/streak-chip";
 import { ClipShelf } from "@/components/domain/clip-shelf";
 import { NotificationBell } from "@/components/domain/notification-bell";
 import { PanelCell, PanelCells, WeekPanel, weekTotals } from "@/components/domain/week-panel";
-import { useCalendar, useFitnessMap, useLatestFitnessTest, useMissions } from "@/lib/api/queries";
+import {
+  useCalendar,
+  useFitnessMap,
+  useLatestFitnessTest,
+  useMissions,
+  useProgress,
+} from "@/lib/api/queries";
 import { isFactor } from "@/lib/fitness-factors";
 import { useSession } from "@/lib/session";
 import { longDate, weekOf } from "@/lib/today";
@@ -63,12 +70,17 @@ export default function ParentHomePage() {
   const { data: latest } = useLatestFitnessTest(child?.profileId);
   const weakest = latest?.weakest?.factor;
 
+  // 며칠 이어서 했는가 — 서버가 센 연속. 끊긴 날은 세지 않고, 끊겼다고 말하지 않는다
+  const { data: progress } = useProgress(child?.profileId);
+
   const header = (
     <HomeHeader
       eyebrow={longDate()}
       title={map?.familyName ?? "우리집"}
       actions={
         <>
+          {/* 보고 있는 아이 — 오른쪽 위 이름 알약(닥터아이처럼). 여럿이면 여기서 바로 바꾼다 */}
+          <ChildPill kids={children} selectedId={child?.profileId} onSelect={setChild} />
           <NotificationBell profileId={profile?.profileId ?? undefined} />
           <IconLink href="/settings" label="설정">
             <Settings className="size-6" strokeWidth={1.8} />
@@ -113,8 +125,6 @@ export default function ParentHomePage() {
     <>
       {header}
       <Stage wide className="space-y-3">
-        <ChildSwitch kids={children} selectedId={child.profileId} onSelect={setChild} />
-
         <ChildPanel
           child={child}
           familyId={familyId ?? ""}
@@ -128,7 +138,13 @@ export default function ParentHomePage() {
           days={week.days}
           logs={calendar?.days}
           loading={calendarPending}
-          meta={calendarPending ? undefined : weekMeta(week.days, calendar?.days)}
+          meta={
+            progress && progress.streakDays > 1 ? (
+              <StreakChip days={progress.streakDays} />
+            ) : calendarPending ? undefined : (
+              weekMeta(week.days, calendar?.days)
+            )
+          }
         >
           <PanelCells>
             <PanelCell
