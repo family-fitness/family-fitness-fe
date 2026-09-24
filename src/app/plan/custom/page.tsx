@@ -179,7 +179,6 @@ function CustomPlan() {
           <EmptyState
             scene="no-mission"
             title="아직 담은 동작이 없어요"
-            description="운동 찾기에서 키우고 싶은 힘으로 골라 담아 주세요."
             action={
               <NavLink
                 href="/videos"
@@ -368,7 +367,7 @@ function CustomPlan() {
             })}
           </ul>
           <p className="text-caption text-ink-soft mt-2">
-            점이 있는 날이 운동할 수 있는 날이에요 ·{" "}
+            점 · 운동할 수 있는 날 ·{" "}
             <NavLink href="/settings/schedule" className="text-signal-deep font-bold">
               바꾸기
             </NavLink>

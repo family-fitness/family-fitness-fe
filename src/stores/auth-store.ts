@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-import { AUTH_STORAGE_KEY, setAccessToken } from "@/lib/api/client";
+import { AUTH_STORAGE_KEY, setAccessToken, setTokenSink } from "@/lib/api/client";
 
 /**
  * 로그인 토큰.
@@ -39,4 +39,9 @@ export const useAuthStore = create<AuthState>()(
       },
     },
   ),
+);
+
+// 401 뒤에 새로 받은 토큰을 저장소에도 남긴다 — 새로고침해도 새 토큰으로 이어지게
+setTokenSink(({ accessToken, refreshToken }) =>
+  useAuthStore.setState({ accessToken, refreshToken }),
 );

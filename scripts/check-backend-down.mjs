@@ -37,6 +37,7 @@ const ROUTES = [
   "/kid/badges",
   "/kid/play",
   "/calendar",
+  "/calendar/2026-09-23",
   "/notifications",
   "/plan",
   "/videos",

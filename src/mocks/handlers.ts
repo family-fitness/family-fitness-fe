@@ -156,6 +156,13 @@ const identity = [
     });
   }),
 
+  /** 액세스 토큰 새로 받기. 목은 토큰을 따지지 않으니 같은 모양으로 돌려준다 */
+  http.post(`${BASE}/auth/refresh`, async ({ request }) => {
+    const body = (await request.json().catch(() => ({}))) as { refreshToken?: string };
+    if (!body.refreshToken) return fail(401, "UNAUTHORIZED", "리프레시 토큰이 없습니다");
+    return HttpResponse.json({ accessToken: "mock-access-token", refreshToken: body.refreshToken });
+  }),
+
   http.post(`${BASE}/auth/dev-login`, async ({ request }) => {
     const body = (await request.json().catch(() => ({}))) as { providerUserId?: string };
     return HttpResponse.json(signIn(body.providerUserId));

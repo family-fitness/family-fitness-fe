@@ -53,7 +53,11 @@ export default function ChildDetailPage() {
     error: latestError,
   } = useLatestFitnessTest(profileId);
   const { data: history } = useFitnessTests(profileId);
-  const { data: progress } = useProgress(profileId);
+  const {
+    data: progress,
+    isPending: progressPending,
+    error: progressError,
+  } = useProgress(profileId);
   const localBody = useBodyStore((s) => s.byProfile[profileId]);
 
   const profile = family?.profiles?.find((p) => p.profileId === profileId);
@@ -91,11 +95,7 @@ export default function ChildDetailPage() {
       <>
         <AppBar back title="아이 기록" />
         <Stage>
-          <EmptyState
-            scene="no-record"
-            title="찾을 수 없는 프로필이에요"
-            description="다른 가족의 프로필이거나 지워진 프로필일 수 있어요."
-          />
+          <EmptyState scene="no-record" title="찾을 수 없는 프로필이에요" />
         </Stage>
       </>
     );
@@ -138,13 +138,19 @@ export default function ChildDetailPage() {
               <p className="text-lead mt-2 font-extrabold">아직 재지 않았어요</p>
             )}
           </div>
-          <FactorView points={latest?.radar} name={name} pending={false} />
+          <FactorView
+            points={latest?.radar}
+            name={name}
+            pending={false}
+            ageGroup={member?.ageGroup ?? profile.ageGroup}
+          />
         </Card>
 
         <MonthStats
           familyId={familyId ?? undefined}
           profileId={profileId}
           streak={progress?.streakDays}
+          streakState={progressError ? "error" : progressPending ? "pending" : "ready"}
         />
         <RecentDays familyId={familyId ?? undefined} profileId={profileId} />
 

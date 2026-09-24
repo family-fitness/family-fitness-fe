@@ -167,6 +167,32 @@ function Proposal() {
           </div>
         </section>
 
+        {/* 등록하면 제안 전부가 운동이 된다(서버가 한꺼번에 등록한다). 둘째부터도 근거 · 순서까지 다 보인다(규칙 6) */}
+        {(run.proposals ?? []).slice(1).map((p, i) => {
+          const list = orderSessions((p as ProposalWithSessions).sessions);
+          return (
+            <section key={`${p.title}-${i}`} className="card">
+              <CardHead
+                title={p.title ?? "같이 등록되는 운동"}
+                meta={[p.startDate, p.endDate && p.endDate !== p.startDate ? p.endDate : null]
+                  .filter(Boolean)
+                  .join(" ~ ")}
+              />
+              {p.rationale && (
+                <p className="bg-sub mt-2 rounded-2xl px-4 py-3 text-sm leading-relaxed">
+                  {p.rationale}
+                </p>
+              )}
+              <Citations items={p.citations} className="mt-2" />
+              {list.length > 0 && (
+                <div className="mt-2">
+                  <SessionList sessions={list} />
+                </div>
+              )}
+            </section>
+          );
+        })}
+
         {(approved || rejected) && (
           <div className="grid gap-2">
             {approved && (

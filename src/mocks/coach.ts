@@ -43,7 +43,8 @@ export interface PlanParams {
 type Run = CoachRun & { params?: PlanParams; startedAt?: number };
 
 const STEP_MS = 1100;
-const STEP_NAMES = ["assess", "focus", "retrieve", "select", "compose"] as const;
+/** AI 서비스의 네 단계 그대로(인터페이스 명세 §5.4) — assess · retrieve · compose · verify */
+const STEP_NAMES = ["assess", "retrieve", "compose", "verify"] as const;
 
 function nameOf(profileId: string) {
   return db.profiles.profiles.find((p) => p.profileId === profileId)?.name ?? "아이";
@@ -68,17 +69,13 @@ function stepSummary(name: (typeof STEP_NAMES)[number], p: PlanParams, focus: st
   );
   switch (name) {
     case "assess":
-      return `${who} · 측정 ${latest?.items?.length ?? 0}항목 · ${latest?.testedOn ?? "측정 없음"}`;
-    case "focus":
-      return p.focusFactor
-        ? `${focus} — 부모가 고른 힘이에요`
-        : `${focus} — 또래보다 가장 낮아서 키우기 좋아요`;
+      return `${who} · 측정 ${latest?.items?.length ?? 0}항목 · ${p.focusFactor ? `키울 힘 ${focus}(부모가 고름)` : `대상 요인 = ${focus}`}`;
     case "retrieve":
-      return `국민체력100 운동처방에서 ${focus} 처방 12건을 찾았어요`;
-    case "select":
-      return `클립 ${catalog.length}개 중 조건에 맞는 ${pool.length}개${p.quiet ? " · 조용한 것만" : ""}`;
+      return `국민체력100 운동처방 ${focus} 12건 · 클립 ${catalog.length}개 중 ${pool.length}개${p.quiet ? " · 조용한 것만" : ""}`;
     case "compose":
       return `준비 2 · 본 2 · 정리 2 · ${p.minutes}분`;
+    case "verify":
+      return "인용 2건 · 금지 어휘 0건";
   }
 }
 

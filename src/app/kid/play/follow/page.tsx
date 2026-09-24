@@ -102,7 +102,6 @@ export default function FollowPage() {
             {phase === "end" && (
               <>
                 <p className="text-lead font-extrabold">{FOLLOW_ROUNDS}가지를 다 따라 했어요!</p>
-                <p className="text-caption text-ink-soft mt-1">기억력도 몸도 쑥쑥</p>
               </>
             )}
           </div>

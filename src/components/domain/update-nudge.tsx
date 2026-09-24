@@ -1,7 +1,6 @@
 import { Card, CardHead } from "@/components/ui/card";
 import type { FitnessMapMember } from "@/lib/api/types";
 import { daysSince } from "@/lib/today";
-import { withJosa } from "@/lib/utils";
 import { ArtIcon } from "@/components/ui/art-icon";
 
 /**
@@ -28,10 +27,7 @@ export function UpdateNudge({ child }: { child: FitnessMapMember }) {
         </span>
         <div className="min-w-0 flex-1">
           <CardHead title="키 · 몸무게를 새로 잴 때예요" chevron />
-          <p className="text-caption text-ink-soft">
-            {withJosa(child.name ?? "아이", "은는")} 한 달 사이에도 자라요. 지난번에 잰 지 {days}일
-            됐어요
-          </p>
+          <p className="text-caption text-ink-soft">지난번에 잰 지 {days}일 됐어요</p>
         </div>
       </div>
     </Card>

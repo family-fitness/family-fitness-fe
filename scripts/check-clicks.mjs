@@ -63,7 +63,7 @@ async function checkRoute(mode, route) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await ctx.addInitScript(
     ([m, kid]) => {
-      // 이 기기에 남는 고른 값(닫은 카드 · 입체/평면 …)은 탭끼리 나눠 쓴다 — 앞 탭에서 누른 것이
+      // 이 기기에 남는 고른 값(소리 안내 …)은 탭끼리 나눠 쓴다 — 앞 탭에서 누른 것이
       // 다음 탭의 누를 것 개수를 바꾸지 않게 매번 비운다
       localStorage.removeItem("ff-prefs");
       localStorage.setItem(

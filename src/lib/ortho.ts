@@ -45,39 +45,3 @@ export function projectOrtho(
   const perUnit = height / (2 * spec.view);
   return { x: width / 2 + sx * perUnit, y: height / 2 - sy * perUnit };
 }
-
-/** 글자 한 장. `x` 는 가운데, `y` 는 아랫변 */
-export interface LabelBox {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
-
-/**
- * 겹치는 글자를 위로 비킨다. 돌려주는 것은 새 `y` 들.
- *
- * 위에 있는(뒤쪽) 글자를 올린다 — 아래(앞쪽) 글자를 내리면 제 기둥 꼭대기를 덮어
- * 고리와 기둥 사이 틈이 가려진다. 위가 모자라면 그때만 아래 것을 내린다.
- */
-export function separateLabels(boxes: LabelBox[], gap = 2): number[] {
-  const ys = boxes.map((b) => b.y);
-  for (let pass = 0; pass < 12; pass++) {
-    let moved = false;
-    for (let i = 0; i < boxes.length; i++) {
-      for (let j = i + 1; j < boxes.length; j++) {
-        const a = boxes[i];
-        const b = boxes[j];
-        if (Math.abs(a.x - b.x) >= (a.w + b.w) / 2 + gap) continue;
-        const [upper, lower] = ys[i] <= ys[j] ? [i, j] : [j, i];
-        const need = ys[upper] - (ys[lower] - boxes[lower].h - gap);
-        if (need <= 0) continue;
-        if (ys[upper] - boxes[upper].h - need >= 0) ys[upper] -= need;
-        else ys[lower] += need;
-        moved = true;
-      }
-    }
-    if (!moved) break;
-  }
-  return ys;
-}

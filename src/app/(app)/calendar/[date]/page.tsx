@@ -1,11 +1,13 @@
 "use client";
 
 import { CalendarDays, Check, ChevronLeft, ChevronRight } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { Card, CardHead } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +17,7 @@ import { DayRings } from "@/components/domain/day-rings";
 import { StickerArt } from "@/components/domain/sticker-art";
 import type { DayLog, Mission, MissionSession, ProfileWithSex } from "@/lib/api/types";
 import { useCalendar, useFamilyProfiles, useFitnessMap, useMissions } from "@/lib/api/queries";
-import { daySummary, plannedDay, plannedOn } from "@/lib/day";
+import { daySummary, didSomething, isRealDate, plannedDay, plannedOn } from "@/lib/day";
 import { callName } from "@/lib/family";
 import { VERIFIED_COPY } from "@/lib/mission";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
@@ -30,15 +32,27 @@ import { useRoleStore } from "@/stores/role-store";
  * 하루 기록 — 삼성헬스 「일일 활동」 처럼. 캘린더에서 날을 누르면 온다.
  *
  * 맨 위 날짜를 하루씩 넘기고, 그 아래 요일 줄의 작은 링으로 이번 주가 한눈에 보인다.
- * 가운데 큰 링 셋(움직인 시간 · 끝낸 운동 · 칭찬), 그 아래 칸 셋과 점선 요약 줄.
+ * 가운데 큰 링 둘(움직인 시간 · 끝낸 운동)과 가운데 받은 스티커, 그 아래 칸과 점선 요약 줄.
  * 한 운동은 영상 그림과 함께, 받은 스티커는 크게. 부모 · 아이가 같은 화면을 본다.
+ *
+ * 어느 아이의 날인지는 `?profileId=` 가 먼저다 — 아이가 둘이면 스티커를 붙인 아이의 날로 와야 한다.
+ * 아이 화면에서는 자기 것만 본다.
  */
 export default function DayPage() {
+  return (
+    <Suspense fallback={<DaySkeleton back="/" />}>
+      <Day />
+    </Suspense>
+  );
+}
+
+function Day() {
   const router = useRouter();
   const params = useParams<{ date: string }>();
+  const search = useSearchParams();
   const now = today();
-  // 주소창 값은 믿지 않는다 — 모양이 틀리면 오늘로
-  const date = /^\d{4}-\d{2}-\d{2}$/.test(params.date ?? "") ? params.date : now;
+  // 주소창 값은 믿지 않는다 — 달력에 없는 날(2026-13-01 · 2026-02-30)이면 오늘로
+  const date = isRealDate(params.date) ? params.date : now;
 
   const kidView = useIsKidView();
   const { familyId, isPending, error: sessionError } = useSession();
@@ -47,14 +61,20 @@ export default function DayPage() {
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
   const kids = (map?.members ?? []).filter((m) => m.role === "CHILD");
-  const who = kids.find((k) => k.profileId === childProfileId) ?? (kidView ? undefined : kids[0]);
+  const asked = kidView ? null : search.get("profileId");
+  const who =
+    kids.find((k) => k.profileId === asked) ??
+    kids.find((k) => k.profileId === childProfileId) ??
+    (kidView ? undefined : kids[0]);
 
   const week = weekOf(date);
-  const { data: calendar, isPending: calendarPending } = useCalendar(
-    familyId,
-    who?.profileId ?? undefined,
-    { from: week.from, to: week.to },
-  );
+  const {
+    data: calendar,
+    isPending: calendarPending,
+    error: calendarError,
+    refetch: refetchCalendar,
+    isRefetching,
+  } = useCalendar(familyId, who?.profileId ?? undefined, { from: week.from, to: week.to });
   const { data: active } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
   const { data: all } = useMissions(familyId, { scope: "ALL" });
 
@@ -70,27 +90,67 @@ export default function DayPage() {
       </>
     );
   }
-  if (isPending || mapPending || !who) return <DaySkeleton back={back} />;
+  if (isPending || mapPending) return <DaySkeleton back={back} />;
+  // 볼 아이가 없다 — 아이가 아직 누구인지 안 골랐거나, 가족에 아이가 없다. 빈 칸을 기다리게 두지 않는다
+  if (!who) {
+    return (
+      <>
+        <AppBar backHref={back} title="하루 기록" />
+        <Stage wide>
+          <EmptyState
+            scene="no-record"
+            title={kidView ? "누구인지 골라 주세요" : "아이를 등록해 주세요"}
+            action={
+              <NavLink
+                href={kidView ? "/start" : "/start/child"}
+                className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"
+              >
+                {kidView ? "고르러 가기" : "아이 등록하기"}
+              </NavLink>
+            }
+          />
+        </Stage>
+      </>
+    );
+  }
 
   const logs = new Map((calendar?.days ?? []).map((d) => [d.date, d]));
   const log = logs.get(date);
   const summary = daySummary(log);
+  // 한 칸이라도 한 것만 「한 운동」. 아직 시작 안 한 오늘 운동은 「할 운동」 이다
+  const doneEntries = (log?.entries ?? []).filter(didSomething);
   const planned = plannedOn(active?.missions ?? [], who.profileId ?? undefined, date, now).filter(
-    (m) => !log?.entries.some((e) => e.missionId === m.missionId),
+    (m) => !doneEntries.some((e) => e.missionId === m.missionId),
   );
   const plannedDays = new Set(
     (active?.missions ?? [])
       .filter((m) => m.participants?.some((p) => p.profileId === who.profileId))
       .map((m) => plannedDay(m, now))
-      .filter(Boolean),
+      .filter((d): d is string => Boolean(d)),
   );
+  // 갈 수 있는 날 — 오늘까지는 전부, 앞날은 운동을 잡아 둔 날만
+  const open = (d: string) => d <= now || plannedDays.has(d);
+  // 앞날에서 뒤로 갈 때는 그 앞의 잡아 둔 날, 없으면 오늘 — 하루씩 세며 돌지 않는다
+  const prev =
+    date > now
+      ? ([...plannedDays]
+          .filter((p) => p > now && p < date)
+          .sort()
+          .at(-1) ?? now)
+      : daysBefore(1, date);
+  const next = (() => {
+    const d = daysBefore(-1, date);
+    if (d <= now) return d;
+    return [...plannedDays].filter((p) => p > date).sort()[0] ?? null;
+  })();
   const nameOf = (profileId: string, fallback: string) =>
     callName(
       family?.profiles?.find((p) => p.profileId === profileId) as ProfileWithSex | undefined,
       fallback,
       kidView,
     );
-  const go = (d: string) => router.replace(`/calendar/${d}`, { scroll: false });
+  const suffix = asked && asked === who.profileId ? `?profileId=${encodeURIComponent(asked)}` : "";
+  const go = (d: string) => router.replace(`/calendar/${d}${suffix}`, { scroll: false });
   const sticker = log?.stickers[0];
 
   return (
@@ -100,7 +160,7 @@ export default function DayPage() {
         title="하루 기록"
         right={
           <NavLink
-            href={`/calendar?month=${monthOf(date)}`}
+            href={`/calendar?month=${monthOf(date)}${suffix ? `&${suffix.slice(1)}` : ""}`}
             aria-label="달력"
             className="press text-ink-soft grid size-10 place-items-center rounded-full"
           >
@@ -110,14 +170,23 @@ export default function DayPage() {
       />
       <Stage wide className="space-y-3">
         {!kidView && kids.length > 1 && (
-          <ChildSwitch kids={kids} selectedId={who.profileId} onSelect={(id) => setChild(id)} />
+          <ChildSwitch
+            kids={kids}
+            selectedId={who.profileId}
+            onSelect={(id) => {
+              setChild(id);
+              router.replace(`/calendar/${date}?profileId=${encodeURIComponent(id)}`, {
+                scroll: false,
+              });
+            }}
+          />
         )}
 
         {/* 날짜 — 하루씩 */}
         <div className="flex items-center justify-between">
           <button
             type="button"
-            onClick={() => go(daysBefore(1, date))}
+            onClick={() => go(prev)}
             aria-label="전날"
             className="press text-ink-soft grid size-11 place-items-center rounded-full"
           >
@@ -128,8 +197,8 @@ export default function DayPage() {
           </p>
           <button
             type="button"
-            onClick={() => go(daysBefore(-1, date))}
-            disabled={date >= now && !plannedDays.has(daysBefore(-1, date))}
+            onClick={() => next && go(next)}
+            disabled={!next}
             aria-label="다음 날"
             className="press text-ink-soft grid size-11 place-items-center rounded-full disabled:opacity-30"
           >
@@ -140,15 +209,16 @@ export default function DayPage() {
         {/* 요일 줄 — 그날마다 작은 링 */}
         <ol className="grid grid-cols-7">
           {week.days.map((d) => {
-            const future = d > now && !plannedDays.has(d);
+            const day = logs.get(d);
+            const got = day?.stickers[0] ? stickerOf(day.stickers[0].stickerId) : undefined;
             return (
               <li key={d}>
                 <button
                   type="button"
                   onClick={() => go(d)}
-                  disabled={future}
+                  disabled={!open(d)}
                   aria-pressed={d === date}
-                  aria-label={longDate(d)}
+                  aria-label={`${longDate(d)}${day && day.minutes > 0 ? ` · ${day.minutes}분` : ""}${got ? ` · ${got.label} 스티커` : ""}`}
                   className="press flex w-full flex-col items-center gap-1 disabled:opacity-40"
                 >
                   <span
@@ -165,7 +235,7 @@ export default function DayPage() {
                       d === date && "bg-signal-soft",
                     )}
                   >
-                    <DayRings log={logs.get(d)} size={34} stroke={4} gap={1.5} />
+                    <DayRings log={day} size={34} stroke={4.5} gap={2} />
                   </span>
                 </button>
               </li>
@@ -173,7 +243,15 @@ export default function DayPage() {
           })}
         </ol>
 
-        {calendarPending ? (
+        {calendarError ? (
+          <section className="card">
+            <ErrorState
+              error={calendarError}
+              onRetry={() => void refetchCalendar()}
+              retrying={isRefetching}
+            />
+          </section>
+        ) : calendarPending ? (
           <Skeleton className="h-[26rem] w-full rounded-3xl" />
         ) : (
           <section className="card-hero">
@@ -181,13 +259,19 @@ export default function DayPage() {
               <DayRings
                 log={log}
                 size={196}
-                stroke={18}
-                gap={4}
-                center={sticker ? <StickerArt id={sticker.stickerId} className="size-16" /> : null}
+                stroke={22}
+                gap={5}
+                center={sticker ? <StickerArt id={sticker.stickerId} className="size-20" /> : null}
               />
             </div>
 
-            <div className="mt-5 grid grid-cols-3 gap-2">
+            {/* 칭찬은 받은 날에만 칸으로 — 0장을 적어 두면 못 받은 날이 된다(규칙 12) */}
+            <div
+              className={cn(
+                "mt-5 grid gap-2",
+                summary.stickers > 0 ? "grid-cols-3" : "grid-cols-2",
+              )}
+            >
               <Tile
                 dot="bg-signal"
                 label="움직인 시간"
@@ -202,7 +286,9 @@ export default function DayPage() {
                 unit="개"
                 goal={summary.total ? `/ ${summary.total}개` : null}
               />
-              <Tile dot="bg-signal-deep" label="칭찬" value={summary.stickers} unit="장" />
+              {summary.stickers > 0 && (
+                <Tile dot="bg-signal-deep" label="칭찬" value={summary.stickers} unit="장" />
+              )}
             </div>
 
             {(summary.done > 0 || summary.verified.length > 0) && (
@@ -224,11 +310,11 @@ export default function DayPage() {
           </section>
         )}
 
-        {log && log.entries.length > 0 && (
+        {doneEntries.length > 0 && (
           <Card>
             <CardHead title="한 운동" />
             <ul className="mt-2 space-y-3">
-              {log.entries.map((entry) => (
+              {doneEntries.map((entry) => (
                 <EntryRows
                   key={entry.missionId}
                   entry={entry}

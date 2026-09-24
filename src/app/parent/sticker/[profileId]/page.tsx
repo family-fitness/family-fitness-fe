@@ -108,7 +108,7 @@ function StickerForm() {
           <h2 className="page-title mt-4">붙였어요</h2>
           <div className="mt-6 grid w-full gap-2">
             <NavLink
-              href={`/calendar/${now}`}
+              href={`/calendar/${now}?profileId=${encodeURIComponent(profileId)}`}
               className="press bg-sub flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold"
             >
               캘린더에서 보기

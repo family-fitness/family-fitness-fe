@@ -289,7 +289,7 @@ function AddMemberSheet({
           </div>
         </Field>
 
-        <Field label="역할" hint="한 번 정하면 바꿀 수 없어요" group>
+        <Field label="역할" group>
           <div className="flex gap-2">
             {(
               [
@@ -313,7 +313,9 @@ function AddMemberSheet({
         {/* 서버가 동의를 자동으로 찍지 않는다. 보호자가 두 가지를 각각 직접 켠다 */}
         {needsConsent && (
           <div role="group" aria-label="보호자 동의" className="space-y-2">
-            <p className="text-caption text-ink-soft">만 14세 미만 · 보호자 동의</p>
+            <p className="text-caption text-ink-soft">
+              만 14세 미만이라 보호자 동의가 있어야 저장돼요. 설정에서 언제든 철회할 수 있어요.
+            </p>
             {(
               [
                 [

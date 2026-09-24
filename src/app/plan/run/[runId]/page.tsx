@@ -8,6 +8,7 @@ import { AppBar } from "@/components/app-shell/app-bar";
 import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Stage } from "@/components/app-shell/stage";
 import { ErrorState } from "@/components/ui/error-state";
+import { NavLink } from "@/components/ui/nav-link";
 import { StoneTrail } from "@/components/scene/stone-trail";
 import { useCoachRun } from "@/lib/api/queries";
 import { cn } from "@/lib/utils";
@@ -24,18 +25,22 @@ import { cn } from "@/lib/utils";
  * 다 짜면 제안 화면으로 스스로 넘어간다.
  */
 
-/** 단계 코드를 화면 이름으로. 코드값을 그대로 내보내지 않는다 */
+/** 단계 코드를 화면 이름으로. 코드값을 그대로 내보내지 않는다 — AI 서비스의 네 단계(명세 §5.4) */
 const STEP_TITLE: Record<string, string> = {
   assess: "측정 기록 읽기",
-  focus: "키울 힘 찾기",
-  retrieve: "또래 처방 찾기",
-  select: "클립 고르기",
+  retrieve: "국민체력100 처방 · 영상 찾기",
   compose: "순서 짜기",
   verify: "근거 확인하기",
 };
 
 /** 서버가 아직 안 밟은 단계도 자리는 미리 보여 준다 — 몇 단계 남았는지 알게 */
-const PLANNED = ["assess", "focus", "retrieve", "select", "compose"];
+const PLANNED = ["assess", "retrieve", "compose", "verify"];
+
+/** 단계 상태 — AI 는 ok · partial · failed 를 준다. partial 도 지나간 단계다(돌지 않는다) */
+const stateOf = (status: string | undefined) => {
+  const s = (status ?? "").toLowerCase();
+  return s === "ok" || s === "partial" ? "passed" : s === "failed" ? "failed" : "running";
+};
 
 export default function PlanRunPage() {
   return (
@@ -72,10 +77,16 @@ function PlanRun() {
   const steps = run?.steps ?? [];
   const byName = new Map(steps.map((s) => [s.name ?? "", s]));
   const names = [...new Set([...PLANNED, ...steps.map((s) => s.name ?? "")])].filter(Boolean);
-  const done = steps.filter((s) => s.status === "ok").length;
+  // 지나간 단계 — ok · partial 만. failed 는 「마쳤어요」 로 세지 않는다
+  const passedAt = (n: string) => {
+    const step = byName.get(n);
+    return step != null && stateOf(step.status) === "passed";
+  };
+  const done = names.filter(passedAt).length;
   const finished = status != null && status !== "RUNNING";
-  const doneAt = names.flatMap((n, i) => (byName.get(n)?.status === "ok" ? [i] : []));
-  const nowAt = names.findIndex((n) => byName.get(n)?.status !== "ok");
+  const failedRun = status === "FAILED";
+  const doneAt = names.flatMap((n, i) => (passedAt(n) ? [i] : []));
+  const nowAt = names.findIndex((n) => !passedAt(n));
 
   return (
     <>
@@ -93,7 +104,11 @@ function PlanRun() {
             className="-mt-2"
           />
           <h2 className="text-lead mt-2 font-extrabold" aria-live="polite">
-            {finished ? "다 짰어요" : "코치가 오늘 운동을 짜고 있어요"}
+            {failedRun
+              ? "짜지 못했어요"
+              : finished
+                ? "다 짰어요"
+                : "코치가 오늘 운동을 짜고 있어요"}
           </h2>
           <p className="text-caption text-ink-soft mt-1">
             {finished ? " " : `${Math.min(done + 1, names.length)} / ${names.length}`}
@@ -103,8 +118,10 @@ function PlanRun() {
         <ol className="card divide-rows py-1" aria-label="짜는 단계">
           {names.map((name, i) => {
             const step = byName.get(name);
-            const ok = step?.status === "ok";
-            const running = step != null && !ok;
+            const state = step ? stateOf(step.status) : null;
+            const ok = state === "passed";
+            // 다 짠 뒤에 남은 단계는 돌지 않는다 — 서버가 단계를 끝에 한꺼번에 줄 때도 있다
+            const running = state === "running" && !finished;
             return (
               <li key={name} className="flex items-start gap-3 py-3.5">
                 <span
@@ -113,16 +130,19 @@ function PlanRun() {
                     "mt-0.5 grid size-7 shrink-0 place-items-center rounded-full",
                     ok && "bg-signal text-white",
                     running && "border-signal-soft border-t-signal animate-spin border-[3px]",
-                    !step && "bg-sub",
+                    (!step || state === "failed") && "bg-sub",
                   )}
                 >
                   {ok && <Check className="size-4" strokeWidth={3.2} />}
+                  {state === "failed" && (
+                    <span className="text-ink-soft text-sm leading-none font-extrabold">–</span>
+                  )}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className={cn("text-sm font-extrabold", !step && "text-faint")}>
                     {i + 1}. {STEP_TITLE[name] ?? name}
                   </p>
-                  {ok && step?.summary && (
+                  {(ok || state === "failed") && step?.summary && (
                     <p className="text-caption text-ink-soft mt-0.5 leading-relaxed">
                       {step.summary}
                     </p>
@@ -133,6 +153,16 @@ function PlanRun() {
             );
           })}
         </ol>
+
+        {/* 짜지 못했으면 멈춰 선 화면이 아니라 다시 짜는 길 */}
+        {failedRun && (
+          <NavLink
+            href="/plan"
+            className="press bg-signal-strong flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold text-white"
+          >
+            다시 짜기
+          </NavLink>
+        )}
       </Stage>
     </>
   );
