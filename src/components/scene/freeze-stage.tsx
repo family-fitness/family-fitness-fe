@@ -203,7 +203,7 @@ export function FreezeStage({
       };
     },
     [stage],
-    () => setReady(true),
+    setReady,
   );
 
   // 무대가 바뀌면 깨운다 — 춤 · 얼음 · 땡

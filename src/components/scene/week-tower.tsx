@@ -127,7 +127,7 @@ export function WeekTower({
       };
     },
     [key],
-    () => setReady(true),
+    setReady,
   );
 
   // 글자 자리 — 캔버스와 같은 셈으로 먼저 세운다

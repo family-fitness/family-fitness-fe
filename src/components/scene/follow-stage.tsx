@@ -192,7 +192,7 @@ export function FollowStage({
       };
     },
     [stage],
-    () => setReady(true),
+    setReady,
   );
 
   useEffect(() => {
