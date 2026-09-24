@@ -33,6 +33,8 @@ import type {
   Role,
   SupportMode,
   Uuid,
+  FamilyLeague,
+  RestDays,
 } from "./types";
 
 /**
@@ -51,6 +53,8 @@ export const qk = {
     /** 앞 세 칸으로 무효화한다 — 한 일이 생기면 그 가족의 달력은 다 다시 받는다 */
     calendar: (familyId: Uuid, profileId?: Uuid, from?: string, to?: string) =>
       ["family", familyId, "calendar", profileId ?? "-", from ?? "-", to ?? "-"] as const,
+    league: (familyId: Uuid, month: string) => ["family", familyId, "league", month] as const,
+    restDays: (familyId: Uuid, month: string) => ["family", familyId, "rest-days", month] as const,
   },
   profile: {
     latestTest: (profileId: Uuid) => ["profile", profileId, "fitness-tests", "latest"] as const,
@@ -664,5 +668,47 @@ export function useMarkNotificationsRead(profileId: Uuid | undefined) {
       qc.setQueryData<NotificationList>(qk.notifications(profileId ?? ""), (old) =>
         old ? { ...old, unread: 0 } : old,
       ),
+  });
+}
+
+/**
+ * 가족 리그 — 이번 달 티어 · 달성률 · 순위.
+ * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
+ */
+export function useFamilyLeague(familyId: Uuid | undefined, month: string) {
+  return useQuery({
+    queryKey: qk.family.league(familyId ?? "", month),
+    queryFn: () => api.get<FamilyLeague>(path`/families/${familyId}/league${query({ month })}`),
+    enabled: Boolean(familyId),
+  });
+}
+
+/**
+ * 쉬는 날 카드 — 이번 달 남은 장 · 쓴 날.
+ * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
+ */
+export function useRestDays(familyId: Uuid | undefined, month: string) {
+  return useQuery({
+    queryKey: qk.family.restDays(familyId ?? "", month),
+    queryFn: () => api.get<RestDays>(path`/families/${familyId}/rest-days${query({ month })}`),
+    enabled: Boolean(familyId),
+  });
+}
+
+/**
+ * 쉬는 날 카드를 쓰거나(`date`) 되돌린다(`cancel`).
+ * 쉬는 날은 달력 · 이어서 한 날 · 리그 달성률이 다 달라지니 그 가족 것과 사람마다의 진행을 다시 받는다.
+ */
+export function useRestDay(familyId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ date, cancel }: { date: string; cancel?: boolean }) =>
+      cancel
+        ? api.delete<RestDays>(path`/families/${familyId}/rest-days/${date}`)
+        : api.post<RestDays>(path`/families/${familyId}/rest-days`, { date }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["family", familyId] });
+      void qc.invalidateQueries({ queryKey: ["profile"] });
+    },
   });
 }
