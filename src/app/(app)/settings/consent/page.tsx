@@ -29,11 +29,7 @@ function ConsentPageContent() {
       <>
         <PageHeader title="보호자 동의" back />
         <Screen>
-          <EmptyState
-            scene="waiting"
-            title="이 설정은 보호자만 있어요"
-            description="건강 정보 동의는 보호자가 관리해요."
-          />
+          <EmptyState scene="waiting" title="이 설정은 보호자만 있어요" />
         </Screen>
       </>
     );

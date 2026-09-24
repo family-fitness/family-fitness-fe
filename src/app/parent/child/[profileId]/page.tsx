@@ -91,11 +91,7 @@ export default function ChildDetailPage() {
       <>
         <AppBar back title="아이 기록" />
         <Stage>
-          <EmptyState
-            scene="no-record"
-            title="찾을 수 없는 프로필이에요"
-            description="다른 가족의 프로필이거나 지워진 프로필일 수 있어요."
-          />
+          <EmptyState scene="no-record" title="찾을 수 없는 프로필이에요" />
         </Stage>
       </>
     );

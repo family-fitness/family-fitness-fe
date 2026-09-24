@@ -659,9 +659,11 @@ function Finish({
           {opened.map((u) => (
             <p key={u.id} className="border-line mt-3 border-t pt-3 text-sm">
               <b className="font-extrabold">새로 열렸어요 · {u.name}</b>
-              <span className="text-ink-soft mt-0.5 block text-xs">
-                {u.kind === "decoration" ? `섬에 ${withJosa(u.name, "이가")} 섰어요` : u.line}
-              </span>
+              {u.kind === "decoration" && (
+                <span className="text-ink-soft mt-0.5 block text-xs">
+                  섬에 {withJosa(u.name, "이가")} 섰어요
+                </span>
+              )}
               {u.kind === "game" && (
                 <NavLink
                   href={`/kid/play/${u.id}`}
@@ -702,7 +704,7 @@ function Finish({
       {told ? (
         <p className="bg-done-soft text-done mt-4 flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold">
           <Check aria-hidden className="size-4" strokeWidth={3} />
-          알렸어요 · 엄마 · 아빠가 보고 있어요
+          알렸어요 · 기다리는 중
         </p>
       ) : (
         parents.length > 0 && (

@@ -14,16 +14,6 @@ export const FACTORS = ["심폐지구력", "근력", "근지구력", "유연성"
 
 export type Factor = (typeof FACTORS)[number];
 
-/** 이 요인이 무엇인지 한 마디. 처음 보는 부모가 읽는다 */
-export const FACTOR_NOTE: Record<Factor, string> = {
-  심폐지구력: "오래 뛰어도 숨이 덜 차는 힘",
-  근력: "한 번에 낼 수 있는 힘",
-  근지구력: "같은 동작을 오래 버티는 힘",
-  유연성: "몸이 얼마나 부드럽게 굽는지",
-  민첩성: "방향을 빠르게 바꾸는 힘",
-  순발력: "짧은 순간에 터뜨리는 힘",
-};
-
 /** 육각형 한 꼭지점 */
 export interface FactorPointView {
   factor: Factor;

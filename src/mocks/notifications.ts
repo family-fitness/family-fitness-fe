@@ -89,7 +89,7 @@ function notificationsFor(profileId: string): NotificationView[] {
         notificationId: `remeasure-${kid.profileId}-${last}`,
         kind: "REMEASURE",
         title: `${kid.name} 키 · 몸무게를 새로 재 볼까요`,
-        body: "한 달 사이에 자랐을 거예요",
+        body: days != null ? `지난번에 잰 지 ${days}일` : "",
         aboutProfileId: kid.profileId ?? null,
         missionId: null,
         date: null,

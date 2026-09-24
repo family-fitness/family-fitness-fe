@@ -1,6 +1,6 @@
 import { FactorIcon } from "@/components/domain/factor-icon";
 import { BAND_COPY, type FitnessItem, type ItemResult, type RadarPoint } from "@/lib/api/types";
-import { FACTOR_NOTE, itemsByFactor, toHexagon } from "@/lib/fitness-factors";
+import { itemsByFactor, toHexagon } from "@/lib/fitness-factors";
 import { cn } from "@/lib/utils";
 
 /**
@@ -53,12 +53,10 @@ export function FactorTable({
               </div>
               <p className="text-micro text-ink-soft mt-0.5">
                 {missing
-                  ? howTo?.itemLabel
-                    ? `${howTo.itemLabel}로 재요 · ${FACTOR_NOTE[p.factor]}`
-                    : FACTOR_NOTE[p.factor]
+                  ? (howTo?.itemLabel ?? "")
                   : item
                     ? `${item.itemLabel} ${item.value}${item.unit ?? ""}${item.band ? ` · ${BAND_COPY[item.band]}` : ""}`
-                    : FACTOR_NOTE[p.factor]}
+                    : ""}
               </p>
               {!missing && (
                 <div className="record-rail mt-2 h-1.5" aria-hidden>

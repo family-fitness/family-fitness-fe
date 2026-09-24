@@ -110,7 +110,7 @@ function Calendar() {
         <Stage wide>
           <EmptyState
             scene="no-record"
-            title={kidView ? "누구인지 골라 주세요" : "아이를 등록하면 캘린더가 차요"}
+            title={kidView ? "누구인지 골라 주세요" : "아이를 등록해 주세요"}
             action={
               <NavLink
                 href={kidView ? "/start" : "/start/child"}

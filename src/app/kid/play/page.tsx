@@ -54,7 +54,6 @@ export default function PlaygroundPage() {
             <div className="min-w-0 flex-1">
               <p className="text-caption text-signal-deep font-extrabold">몸으로 하는 놀이</p>
               <h2 className="text-lead mt-0.5 font-extrabold">{hero.name}</h2>
-              <p className="text-caption text-ink-soft mt-1 leading-relaxed">{hero.line}</p>
             </div>
             <ArtIcon name={`play/play-${hero.id}`} className="size-20 shrink-0" />
           </div>
@@ -95,9 +94,11 @@ function GameRow({ game, open }: { game: Game; open: boolean }) {
         <span className={cn("block text-sm font-extrabold", !open && "text-ink-soft")}>
           {game.name}
         </span>
-        <span className="text-caption text-ink-soft mt-0.5 block">
-          {open ? game.line : `${withJosa(`Lv.${game.level}`, "이가")} 되면 열려요`}
-        </span>
+        {!open && (
+          <span className="text-caption text-ink-soft mt-0.5 block">
+            {withJosa(`Lv.${game.level}`, "이가")} 되면
+          </span>
+        )}
       </span>
     </>
   );

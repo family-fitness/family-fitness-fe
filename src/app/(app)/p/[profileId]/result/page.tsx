@@ -20,7 +20,7 @@ import { isFactor } from "@/lib/fitness-factors";
 import { useFamilyProfiles, useLatestFitnessTest } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { useIsKidView } from "@/lib/view-role";
-import { formatDate, withJosa } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 
 /** 측정 결과. */
 export default function ResultPage() {
@@ -57,7 +57,6 @@ export default function ResultPage() {
           <EmptyState
             scene="no-record"
             title="아직 기록이 없어요"
-            description="집에서 잴 수 있는 항목부터 넣어 보세요."
             action={
               <Link
                 href={`/p/${profileId}/measure`}
@@ -142,15 +141,6 @@ export default function ResultPage() {
             제안 · 미션 · 보호자는 부모의 말이라 아이 화면에서는 통째로 뺀다 */}
         {kidView ? (
           <Link href="/kid" className="card press bg-signal-soft block">
-            <p className="text-signal-deep text-sm font-extrabold">
-              {onlyOneFactor
-                ? "더 재 보면 더 잘 맞는 운동을 찾아 줄게"
-                : test.coachDirection === "STRENGTHEN"
-                  ? "잘하는 걸 더 키워 볼까"
-                  : strongest
-                    ? `${withJosa(strongest.factor ?? "", "이가")} 좋아지고 있어`
-                    : "오늘 할 운동을 해 볼까"}
-            </p>
             <p className="text-signal-deep mt-1 text-sm font-bold">오늘 운동 하러 가기</p>
           </Link>
         ) : (

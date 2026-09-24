@@ -117,7 +117,7 @@ await expect("엄마 · 아빠한테 알리기가 있다", async () => {
 });
 await page.getByRole("button", { name: "엄마 · 아빠한테 알리기" }).click();
 await expect("알리면 기다린다고 말한다 — 재촉하지 않는다", async () => {
-  await page.getByText(/엄마 · 아빠가 보고 있어요/).waitFor({ timeout: 5000 });
+  await page.getByText(/기다리는 중/).waitFor({ timeout: 5000 });
 });
 
 const text = await page.locator("body").innerText();

@@ -187,7 +187,6 @@ export default function KidHomePage() {
         ) : mine.length > 0 ? (
           <div className="card-hero text-center">
             <p className="text-lead font-extrabold">오늘 거 다 했어요!</p>
-            <p className="text-caption text-ink-soft mt-1">엄마 · 아빠가 보고 있어요</p>
           </div>
         ) : (
           <div className="card-hero">

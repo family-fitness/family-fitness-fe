@@ -289,7 +289,7 @@ function AddMemberSheet({
           </div>
         </Field>
 
-        <Field label="역할" hint="한 번 정하면 바꿀 수 없어요" group>
+        <Field label="역할" group>
           <div className="flex gap-2">
             {(
               [

@@ -21,7 +21,7 @@ import { useSession } from "@/lib/session";
 import { today } from "@/lib/today";
 import { bodyError, bodyValue, rangeHint } from "@/lib/body";
 import { useBodyStore } from "@/stores/body-store";
-import { cn, withJosa } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { ArtIcon } from "@/components/ui/art-icon";
 
 /** 체력 측정 입력. */
@@ -111,11 +111,7 @@ export default function MeasurePage() {
       <>
         <PageHeader title="체력 측정" back />
         <Screen>
-          <EmptyState
-            scene="waiting"
-            title="찾을 수 없는 프로필이에요"
-            description="다른 가족의 프로필이거나 지워진 프로필일 수 있어요."
-          />
+          <EmptyState scene="waiting" title="찾을 수 없는 프로필이에요" />
         </Screen>
       </>
     );
@@ -130,10 +126,9 @@ export default function MeasurePage() {
           <EmptyState
             scene="rest"
             title="만 4세부터 측정할 수 있어요"
-            description={`${withJosa(profile.name ?? "", "은는")} 아직 국민체력100 기준이 없어요.`}
             action={
               <Button size="md" variant="soft" onClick={() => router.push("/parent")}>
-                가족 미션 보기
+                홈으로
               </Button>
             }
           />
@@ -151,7 +146,6 @@ export default function MeasurePage() {
           <EmptyState
             scene="waiting"
             title="보호자 동의가 필요해요"
-            description="건강 정보를 저장하려면 보호자 동의가 있어야 해요."
             action={
               <Button size="md" onClick={() => router.push("/settings/consent")}>
                 동의 관리로 가기
