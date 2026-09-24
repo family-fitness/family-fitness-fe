@@ -195,9 +195,6 @@ function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
             );
           })}
         </ol>
-        <p className="text-caption text-ink-soft mt-3">
-          AI 에게 운동을 받을 때 이 시간이 기본으로 들어가요. 다른 날에 해도 괜찮아요.
-        </p>
       </section>
 
       <section className="card">

@@ -79,9 +79,6 @@ function ClaimContent() {
           <ArtIcon name="icon/menu-invite" className="size-11" />
         </span>
         <h1 className="page-title mt-3">초대코드를 넣어 주세요</h1>
-        <p className="text-ink-soft mt-2 text-sm leading-relaxed">
-          어느 자리로 들어올지는 이미 정해져 있어요
-        </p>
       </div>
 
       <div className="space-y-3">
