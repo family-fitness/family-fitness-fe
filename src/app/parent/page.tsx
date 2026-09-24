@@ -14,20 +14,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BodyCard } from "@/components/domain/body-card";
 import { ChildSwitch } from "@/components/domain/child-switch";
 import { FamilyCard } from "@/components/domain/family-card";
-import { FamilyWeekCard } from "@/components/domain/family-week-card";
 import { FinderCard } from "@/components/domain/finder-card";
-import { HomeEdit } from "@/components/domain/home-edit";
-import { LastWeekCard } from "@/components/domain/last-week-card";
 import { NotificationBell } from "@/components/domain/notification-bell";
 import { ProposalNudge } from "@/components/domain/proposal-nudge";
 import { TodayCard } from "@/components/domain/today-card";
 import { UpdateNudge } from "@/components/domain/update-nudge";
 import { WeekCard } from "@/components/domain/week-card";
-import { useCalendar, useFitnessMap, useMissions, useProgress } from "@/lib/api/queries";
-import { stageOf } from "@/lib/levels";
+import { useCalendar, useFitnessMap, useMissions } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { longDate, weekOf } from "@/lib/today";
-import { selectHidden, usePrefsStore } from "@/stores/prefs-store";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
@@ -50,9 +45,6 @@ export default function ParentHomePage() {
 
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
-  // 홈 편집에서 숨긴 카드
-  const hidden = usePrefsStore(selectHidden);
-  const show = (card: (typeof hidden)[number]) => !hidden.includes(card);
 
   const members = map?.members ?? [];
   const children = members.filter((m) => m.role === "CHILD");
@@ -66,8 +58,6 @@ export default function ParentHomePage() {
     child?.profileId,
     week,
   );
-  // 가족 다리를 건너는 키움이는 지금 보는 아이의 모습
-  const { data: progress } = useProgress(child?.profileId ?? undefined);
 
   const header = (
     <HomeHeader
@@ -123,14 +113,6 @@ export default function ParentHomePage() {
 
         <BodyCard child={child} />
         <UpdateNudge child={child} />
-        {/* 한 주가 시작되면 지난주를 짧게. 닫으면 다음 주까지 안 뜬다 */}
-        {show("recap") && (
-          <LastWeekCard
-            familyId={familyId ?? undefined}
-            childProfileId={child.profileId ?? undefined}
-            childName={child.name ?? "아이"}
-          />
-        )}
 
         <ProposalNudge familyId={familyId} />
 
@@ -143,25 +125,14 @@ export default function ParentHomePage() {
           weekLogs={calendar?.days}
         />
 
-        {show("week") && (
-          <WeekCard
-            days={week.days}
-            logs={calendar?.days}
-            loading={calendarPending}
-            href="/calendar"
-          />
-        )}
-        {show("bridge") && (
-          <FamilyWeekCard
-            familyId={familyId ?? undefined}
-            profileIds={members.flatMap((m) => (m.profileId ? [m.profileId] : []))}
-            stage={stageOf(progress?.level).stage}
-            editable
-          />
-        )}
-        {show("finder") && <FinderCard />}
-        {show("family") && <FamilyCard members={members} />}
-        <HomeEdit />
+        <WeekCard
+          days={week.days}
+          logs={calendar?.days}
+          loading={calendarPending}
+          href="/calendar"
+        />
+        <FinderCard />
+        <FamilyCard members={members} />
       </Stage>
     </>
   );

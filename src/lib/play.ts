@@ -5,16 +5,6 @@
  * 오늘 운동(TIMER · 영상으로 확인되는 것)과 섞지 않는다(규칙 2).
  */
 
-/** 운동 주사위 여섯 면. 주사위 면에 들어가니 짧게 */
-export const DICE_FACES = [
-  { name: "제자리 뛰기", amount: "20번" },
-  { name: "스쿼트", amount: "10번" },
-  { name: "팔 벌려 뛰기", amount: "15번" },
-  { name: "한 발로 서기", amount: "10초씩" },
-  { name: "무릎 올리기", amount: "20번" },
-  { name: "곰 걸음", amount: "10걸음" },
-] as const;
-
 /** 따라 해 봐 — 순서를 기억해 따라 하는 짧은 동작 */
 export const FOLLOW_MOVES = [
   "박수 두 번",
@@ -38,7 +28,7 @@ export function pick(n: number, avoid?: number): number {
     return buffer[0] % n;
   };
   const first = draw();
-  // 같은 게 바로 또 나오면 한 번만 다시 — 주사위다운 우연은 남기되 연달아 같은 건 덜 나오게
+  // 같은 게 바로 또 나오면 한 번만 다시 — 뽑기다운 우연은 남기되 연달아 같은 건 덜 나오게
   return first === avoid && n > 1 ? draw() : first;
 }
 
