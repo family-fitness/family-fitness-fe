@@ -316,7 +316,8 @@ function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
             type="button"
             onClick={() => void submit()}
             disabled={!changed || save.isPending}
-            className="press bg-signal-strong flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white disabled:opacity-50"
+            data-off={!changed && !save.isPending ? "" : undefined}
+            className="press bg-signal-strong data-off:bg-line data-off:text-ink-soft flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white disabled:opacity-100 data-off:shadow-none"
           >
             {save.isPending ? "저장하는 중" : "저장하기"}
           </button>

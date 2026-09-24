@@ -272,7 +272,8 @@ function PlanForm() {
           type="button"
           onClick={() => void submit()}
           disabled={start.isPending || !kid}
-          className="press bg-signal-strong shadow-lift flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white disabled:opacity-60"
+          data-off={!kid ? "" : undefined}
+          className="press bg-signal-strong shadow-lift data-off:bg-line data-off:text-ink-soft flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white disabled:opacity-100 data-off:shadow-none"
         >
           <ArtIcon name="icon/menu-ai" className="size-5" />
           {start.isPending ? "코치에게 보내는 중" : `AI에게 ${minutes}분 운동 받기`}
