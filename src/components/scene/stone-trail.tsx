@@ -279,7 +279,7 @@ export function StoneTrail({
       };
     },
     [count, layout, stage],
-    () => setReady(true),
+    setReady,
   );
 
   // 받은 값이 바뀌면 장면을 새로 짓지 않고 따라가게만 한다

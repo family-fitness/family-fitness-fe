@@ -290,7 +290,7 @@ export function RadarGapNote({ points }: { points: RadarPoint[] | null | undefin
   if (got === 0 || got === hex.length) return null;
   return (
     <p className="text-caption text-ink-soft mt-2 text-center">
-      여섯 가지 중 {got}가지를 쟀어요. 더 재면 육각형이 채워져요
+      여섯 가지 중 {got}가지를 쟀어요. 나머지도 재면 그래프가 채워져요
     </p>
   );
 }

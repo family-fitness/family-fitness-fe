@@ -205,7 +205,7 @@ export function FamilyBridge({
       };
     },
     [laid, stage],
-    () => setReady(true),
+    setReady,
   );
 
   return (

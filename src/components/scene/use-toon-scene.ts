@@ -86,10 +86,14 @@ export function useToonScene(
   camera: CameraSpec,
   build: (ctx: SceneContext) => SceneHandle | null,
   deps: readonly unknown[],
-  /** 첫 장면이 섰다 — 대신 세워 둔 것을 치울 때 */
-  onReady?: () => void,
+  /**
+   * 첫 장면이 섰다(`true`) — 대신 세워 둔 것을 치울 때.
+   * 컨텍스트를 잃었거나 장면을 다시 짓는 중이면 `false` — 대신 세워 둔 것을 다시 보일 때.
+   * 캔버스가 비켰는데 대신 세운 것도 숨어 있으면 칸이 빈다
+   */
+  onReady?: (ready: boolean) => void,
 ) {
-  const ready = useEffectEvent(() => onReady?.());
+  const ready = useEffectEvent((on: boolean) => onReady?.(on));
   const make = useEffectEvent((ctx: SceneContext) => build(ctx));
   const waker = useRef<() => void>(() => {});
 
@@ -277,7 +281,7 @@ export function useToonScene(
 
       draw();
       canvas.classList.replace("opacity-0", "opacity-100");
-      ready();
+      ready(true);
 
       let visible = true;
       waker.current = () => {
@@ -303,6 +307,7 @@ export function useToonScene(
         e.preventDefault();
         stop();
         canvas.style.opacity = "0";
+        ready(false);
       };
       canvas.addEventListener("webglcontextlost", lost);
 
@@ -327,6 +332,7 @@ export function useToonScene(
 
     return () => {
       disposed = true;
+      ready(false);
       teardown();
     };
     // 카메라는 처음 값으로 고정한다. 장면이 바뀌어야 하면 deps 로 다시 짓는다

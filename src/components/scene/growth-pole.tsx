@@ -151,7 +151,7 @@ export function GrowthPole({
       };
     },
     [key],
-    () => setReady(true),
+    setReady,
   );
 
   const width = useWidth(host, REF_WIDTH);

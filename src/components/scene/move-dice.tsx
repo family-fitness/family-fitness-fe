@@ -294,7 +294,7 @@ export function MoveDice({
       };
     },
     [faces.map((f) => f.name + f.amount).join()],
-    () => setReady(true),
+    setReady,
   );
 
   // 굴릴 차례가 오면 깨운다
