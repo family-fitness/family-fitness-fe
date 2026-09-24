@@ -68,7 +68,7 @@ kind: "DONE" | "CALL" | "PRAISE"
 
 `latest` 하나만 있어서 **자라는 기록에 추이를 그릴 수 없습니다.**
 "어떻게 자라고 있나" 가 이 서비스의 핵심인데 점 하나만 찍고 있습니다.
-아이 자세히 화면의 **신체 점수 흐름**과 **키 · 몸무게가 자란 만큼**이 이 값으로 그려집니다
+아이 기록 화면의 **신체 점수 흐름**과 **키 · 몸무게가 자란 만큼**이 이 값으로 그려집니다
 (목 서버로 먼저 만들어 뒀습니다).
 
 ```
@@ -119,7 +119,7 @@ sex: "M" | "F"
 
 ### `GET /families/{familyId}/calendar?profileId=&from=&to=`
 
-캘린더 한 칸과 홈의 **이번 주 막대**가 이것 하나로 그려집니다. 지금 계약에는
+캘린더 · 하루 기록 · 아이 기록(이번 달 칸 · 최근 기록) · 홈의 **이번 주 탑**이 이것 하나로 그려집니다. 지금 계약에는
 미션의 기간(startDate~endDate)만 있고 **그날 몇 분 했는지**가 없습니다 —
 날짜별 합은 활동 기록(`activityDate`)을 가진 서버만 정확히 냅니다.
 
@@ -195,7 +195,7 @@ stickerId: "star" | "thumb" | "medal" | "heart" | "crown" | "flag"
     aboutProfileId | null,   // 누구에 관한 알림인가 (부모 알림이면 그 아이)
     fromProfileId | null,    // 누가 보냈나 — 스티커 · 칭찬 · 고마워요. 아이가 고마워요를 돌려보낼 곳
     missionId | null,
-    date | null,             // YYYY-MM-DD — 캘린더 그날로 갈 때
+    date | null,             // YYYY-MM-DD — 그날 하루 기록(/calendar/[date])으로 갈 때
     stickerId | null,
     createdAt, read
   }],
@@ -282,7 +282,7 @@ sessions: [{
 ### `GET /clips?factor=&phase=&quiet=&q=&list=&profileId=` · `POST /clips/{clipId}/favorite`
 
 「키우고 싶은 힘으로 찾기」 화면. AI 쪽이 영상 48편을 491개 클립으로 끊어 둔 표
-(`video_clips.csv`)를 그대로 주시면 됩니다. `list=FAVORITE` 는 즐겨찾기만.
+(`video_clips.csv`)를 그대로 주시면 됩니다. `list=FAVORITES` 는 즐겨찾기만.
 
 ```
 {
