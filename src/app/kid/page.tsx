@@ -12,6 +12,7 @@ import { Illustration } from "@/components/ui/illustration";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StickerArt } from "@/components/domain/sticker-art";
+import { StreakChip } from "@/components/domain/streak-chip";
 import { PanelCell, PanelCells, WeekPanel } from "@/components/domain/week-panel";
 import { KiumIsland } from "@/components/scene/kium-island";
 import { NotificationBell } from "@/components/domain/notification-bell";
@@ -211,9 +212,7 @@ export default function KidHomePage() {
           meta={
             // 이어서 한 날은 이번 주와 다른 수다(지난주부터 이어질 수 있다) — 머리 곁에 따로. 끊긴 날은 말하지 않는다
             progress && progress.streakDays > 1 ? (
-              <span className="bg-mark-soft text-ink rounded-full px-2.5 py-1 font-extrabold">
-                {progress.streakDays}일째 이어서
-              </span>
+              <StreakChip days={progress.streakDays} />
             ) : undefined
           }
         >
