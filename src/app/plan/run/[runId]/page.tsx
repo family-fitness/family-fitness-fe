@@ -8,6 +8,7 @@ import { AppBar } from "@/components/app-shell/app-bar";
 import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Stage } from "@/components/app-shell/stage";
 import { ErrorState } from "@/components/ui/error-state";
+import { NavLink } from "@/components/ui/nav-link";
 import { StoneTrail } from "@/components/scene/stone-trail";
 import { useCoachRun } from "@/lib/api/queries";
 import { cn } from "@/lib/utils";
@@ -76,12 +77,14 @@ function PlanRun() {
   const steps = run?.steps ?? [];
   const byName = new Map(steps.map((s) => [s.name ?? "", s]));
   const names = [...new Set([...PLANNED, ...steps.map((s) => s.name ?? "")])].filter(Boolean);
+  // 지나간 단계 — ok · partial 만. failed 는 「마쳤어요」 로 세지 않는다
   const passedAt = (n: string) => {
     const step = byName.get(n);
-    return step != null && stateOf(step.status) !== "running";
+    return step != null && stateOf(step.status) === "passed";
   };
   const done = names.filter(passedAt).length;
   const finished = status != null && status !== "RUNNING";
+  const failedRun = status === "FAILED";
   const doneAt = names.flatMap((n, i) => (passedAt(n) ? [i] : []));
   const nowAt = names.findIndex((n) => !passedAt(n));
 
@@ -101,7 +104,11 @@ function PlanRun() {
             className="-mt-2"
           />
           <h2 className="text-lead mt-2 font-extrabold" aria-live="polite">
-            {finished ? "다 짰어요" : "코치가 오늘 운동을 짜고 있어요"}
+            {failedRun
+              ? "짜지 못했어요"
+              : finished
+                ? "다 짰어요"
+                : "코치가 오늘 운동을 짜고 있어요"}
           </h2>
           <p className="text-caption text-ink-soft mt-1">
             {finished ? " " : `${Math.min(done + 1, names.length)} / ${names.length}`}
@@ -123,10 +130,13 @@ function PlanRun() {
                     "mt-0.5 grid size-7 shrink-0 place-items-center rounded-full",
                     ok && "bg-signal text-white",
                     running && "border-signal-soft border-t-signal animate-spin border-[3px]",
-                    !step && "bg-sub",
+                    (!step || state === "failed") && "bg-sub",
                   )}
                 >
                   {ok && <Check className="size-4" strokeWidth={3.2} />}
+                  {state === "failed" && (
+                    <span className="text-ink-soft text-sm leading-none font-extrabold">–</span>
+                  )}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className={cn("text-sm font-extrabold", !step && "text-faint")}>
@@ -143,6 +153,16 @@ function PlanRun() {
             );
           })}
         </ol>
+
+        {/* 짜지 못했으면 멈춰 선 화면이 아니라 다시 짜는 길 */}
+        {failedRun && (
+          <NavLink
+            href="/plan"
+            className="press bg-signal-strong flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold text-white"
+          >
+            다시 짜기
+          </NavLink>
+        )}
       </Stage>
     </>
   );
