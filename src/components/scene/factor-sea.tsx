@@ -202,7 +202,7 @@ export function FactorSea({
         root.add(streak);
       }
 
-      /* 물높이 선(또래 평균) — 물 둘레와 앞쪽 모서리. 뒤쪽 모서리는 그리지 않는다 */
+      /* 물높이 선(또래 평균) — 물 둘레만. 세로 모서리 선은 끝 기둥 앞을 가로질러 긋지 않는다 */
       const shore = corners(POOL);
       const lift = WATER + 0.01;
       const rim: number[] = [];
@@ -210,10 +210,7 @@ export function FactorSea({
         const [nx, nz] = shore[(k + 1) % shore.length];
         rim.push(x, lift, z, nx, lift, nz);
       });
-      const front: number[] = [];
-      for (const [x, z] of shore.slice(0, 4)) front.push(x, 0.01, z, x, lift, z);
       root.add(segments(rim, line(2.5)));
-      root.add(segments(front, line(1.2)));
 
       /* 고리 — 기둥마다 물 위에 그 기둥의 50 자리. 안 잰 요인에는 두지 않는다 */
       const collar: number[] = [];
