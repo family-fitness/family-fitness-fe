@@ -111,7 +111,7 @@ function StickerForm() {
           </p>
           <div className="mt-6 grid w-full gap-2">
             <NavLink
-              href={`/calendar?date=${now}`}
+              href={`/calendar/${now}`}
               className="press bg-sub flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold"
             >
               캘린더에서 보기
