@@ -4,12 +4,20 @@
  */
 import type * as T from "three";
 
+import type { BuddyFrame } from "./buddy";
 import { mascotImage } from "./kium-island";
-import type { SceneContext } from "./use-toon-scene";
+import type { CameraSpec, SceneContext } from "./use-toon-scene";
 
-/** 키움이 키(발끝~머리). 그림(160칸)에서 발끝은 151칸째, 머리 꼭대기는 54칸째 */
+/**
+ * 무대 카메라 — 섬 밑동 끝(아래)부터 가장 높이 뛴 새싹(위)까지 한 화면에 든다.
+ * 밑동 끝이 캔버스 가장자리에 걸리면 외곽선이 잘려 섬이 잘린 것처럼 보인다.
+ */
+export const PLAY_CAMERA: CameraSpec = { elevation: 24, azimuth: 0, target: 0.47, view: 1.65 };
+
+/** 키움이 키(발끝~모자 꼭대기, 세계 단위) */
 export const BUDDY = 1.2;
-export const BUDDY_SCALE = BUDDY / ((151 - 54) / 160);
+/** 그림 한 장의 크기 — 몸이 BUDDY 가 되게. 그림마다 몸 비율이 달라 비율로 나눈다 */
+export const buddyScale = (frame: BuddyFrame) => BUDDY / frame.body;
 
 export interface PlayStage {
   /** 키움이가 서는 자리 — 카메라 쪽으로 살짝 당겨 두었다 */
@@ -28,6 +36,7 @@ export function buildPlayStage(
   { THREE, addons, kit, palette, scene, toward, invalidate }: SceneContext,
   stands: (HTMLElement | null)[],
   onSprites: (sprites: T.Sprite[]) => void,
+  frame: BuddyFrame,
 ): PlayStage {
   const { keep, toon, solid } = kit;
   const edge = keep(
@@ -66,8 +75,8 @@ export function buildPlayStage(
         const sprite = new THREE.Sprite(
           keep(new THREE.SpriteMaterial({ map: texture, transparent: true, alphaTest: 0.35 })),
         );
-        sprite.center.set(0.5, 9 / 160);
-        sprite.scale.set(BUDDY_SCALE, BUDDY_SCALE, 1);
+        sprite.center.set(0.5, frame.feet);
+        sprite.scale.set(buddyScale(frame), buddyScale(frame), 1);
         return sprite;
       });
       sprites.forEach((s, i) => {
