@@ -7,6 +7,7 @@ import { LevelBuddy } from "@/components/domain/level-buddy";
 import type { Stage } from "@/lib/levels";
 import { cn } from "@/lib/utils";
 
+import { buddyFrame } from "./buddy";
 import { mascotImage } from "./kium-island";
 import { useToonScene, type CameraSpec } from "./use-toon-scene";
 
@@ -167,8 +168,9 @@ export function FamilyBridge({
           const sprite = new THREE.Sprite(
             keep(new THREE.SpriteMaterial({ map: texture, transparent: true, alphaTest: 0.35 })),
           );
-          const tall = 0.7 / ((151 - 54) / 160);
-          sprite.center.set(0.5, 9 / 160);
+          const frame = buddyFrame(stage);
+          const tall = 0.7 / frame.body;
+          sprite.center.set(0.5, frame.feet);
           sprite.scale.set(tall, tall, 1);
           figure.add(sprite);
           invalidate();

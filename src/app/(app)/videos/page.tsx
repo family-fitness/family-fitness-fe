@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { VideoThumb } from "@/components/ui/video-thumb";
 import { ClipPlayer } from "@/components/domain/clip-player";
 import { FactorIcon } from "@/components/domain/factor-icon";
 import type { ClipView, SessionPhase } from "@/lib/api/types";
@@ -249,13 +250,7 @@ function ClipRow({
         aria-label={`${c.title} 시범 보기`}
         className="press relative shrink-0 overflow-hidden rounded-xl"
       >
-        {/* eslint-disable-next-line @next/next/no-img-element -- 유튜브 썸네일은 외부 주소라 최적화가 안 된다 */}
-        <img
-          src={`https://i.ytimg.com/vi/${encodeURIComponent(c.videoId)}/mqdefault.jpg`}
-          alt=""
-          loading="lazy"
-          className="bg-sub aspect-video w-28 object-cover"
-        />
+        <VideoThumb videoId={c.videoId} className="aspect-video w-28" />
         <span className="text-micro absolute right-1 bottom-1 rounded-md bg-black/70 px-1.5 py-0.5 font-bold text-white">
           {clock(length)}
         </span>

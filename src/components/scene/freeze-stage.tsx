@@ -7,8 +7,9 @@ import { LevelBuddy } from "@/components/domain/level-buddy";
 import type { Stage } from "@/lib/levels";
 import { cn } from "@/lib/utils";
 
-import { BUDDY_SCALE, buildPlayStage } from "./play-stage";
-import { useToonScene, type CameraSpec } from "./use-toon-scene";
+import { buddyFrame } from "./buddy";
+import { PLAY_CAMERA, buddyScale, buildPlayStage } from "./play-stage";
+import { useToonScene } from "./use-toon-scene";
 
 /**
  * 얼음땡 무대 — 작은 섬 위에서 키움이가 박자에 맞춰 뛴다.
@@ -20,7 +21,6 @@ import { useToonScene, type CameraSpec } from "./use-toon-scene";
  */
 export type FreezeMode = "idle" | "dance" | "frozen" | "thaw";
 
-const CAMERA: CameraSpec = { elevation: 24, azimuth: 0, target: 0.5, view: 1.55 };
 const ICE = { radius: 0.74, height: 1.72 };
 const SHARDS = 16;
 
@@ -43,20 +43,28 @@ export function FreezeStage({
   /** 입체가 섰다 — 그 전 · WebGL 이 없을 때는 키움이 그림이 무대 자리에 선다 */
   const [ready, setReady] = useState(false);
   const live = useRef({ mode, phase });
+  /** 키움이 그림의 몸 비율 — 주문한 그림과 코드 그림이 다르다 */
+  const frame = buddyFrame(stage);
   useEffect(() => {
     live.current = { mode, phase };
   });
 
   const wake = useToonScene(
     host,
-    CAMERA,
+    PLAY_CAMERA,
     (ctx) => {
       const { THREE, kit, palette, scene, still, clock } = ctx;
       const { keep, toon, solid } = kit;
       let sprite: T.Sprite | null = null;
-      const stage = buildPlayStage(ctx, [standIn.current], ([s]) => {
-        sprite = s ?? null;
-      });
+      const scale = buddyScale(frame);
+      const stage = buildPlayStage(
+        ctx,
+        [standIn.current],
+        ([s]) => {
+          sprite = s ?? null;
+        },
+        frame,
+      );
       const { lines } = stage;
 
       /* 얼음 기둥 — 비치는 연한 파랑, 남색 모서리, 흰 빛줄 둘 */
@@ -165,7 +173,7 @@ export function FreezeStage({
               if (k < 1) hop = Math.sin(Math.PI * k) * 0.35;
             }
             sprite.position.y = hop;
-            sprite.scale.set(BUDDY_SCALE * (1 + squash), BUDDY_SCALE * (1 - squash), 1);
+            sprite.scale.set(scale * (1 + squash), scale * (1 - squash), 1);
             material.rotation = sway;
           }
 

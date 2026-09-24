@@ -7,8 +7,9 @@ import { LevelBuddy } from "@/components/domain/level-buddy";
 import type { Stage } from "@/lib/levels";
 import { cn } from "@/lib/utils";
 
-import { BUDDY_SCALE, buildPlayStage } from "./play-stage";
-import { useToonScene, type CameraSpec } from "./use-toon-scene";
+import { buddyFrame } from "./buddy";
+import { PLAY_CAMERA, buddyScale, buildPlayStage } from "./play-stage";
+import { useToonScene } from "./use-toon-scene";
 
 /**
  * 따라 해 봐 무대 — 키움이가 동작을 먼저 해 보인다. 아이는 보고 따라 한다.
@@ -19,7 +20,6 @@ import { useToonScene, type CameraSpec } from "./use-toon-scene";
  *
  * 동작 차례는 `lib/play.ts` 의 `FOLLOW_MOVES` 와 같다.
  */
-const CAMERA: CameraSpec = { elevation: 24, azimuth: 0, target: 0.5, view: 1.55 };
 /** 동작 하나에 걸리는 초 */
 export const MOVE_SECONDS = 1.6;
 
@@ -56,22 +56,30 @@ export function FollowStage({
   const [ready, setReady] = useState(false);
   const cheerIn = useRef<HTMLDivElement>(null);
   const live = useRef({ move, playKey });
+  /** 키움이 그림의 몸 비율 — 주문한 그림과 코드 그림이 다르다 */
+  const frame = buddyFrame(stage);
   useEffect(() => {
     live.current = { move, playKey };
   });
 
   const wake = useToonScene(
     host,
-    CAMERA,
+    PLAY_CAMERA,
     (ctx) => {
       const { THREE, kit, palette, scene, toward, still } = ctx;
       const { keep } = kit;
       let normal: T.Sprite | null = null;
       let cheer: T.Sprite | null = null;
-      const play = buildPlayStage(ctx, [standIn.current, cheerIn.current], ([a, b]) => {
-        normal = a ?? null;
-        cheer = b ?? null;
-      });
+      const scale = buddyScale(frame);
+      const play = buildPlayStage(
+        ctx,
+        [standIn.current, cheerIn.current],
+        ([a, b]) => {
+          normal = a ?? null;
+          cheer = b ?? null;
+        },
+        frame,
+      );
 
       /* 동그라미 — 박수 치는 앞, 발 구르는 바닥 */
       const ringMaterial = keep(
@@ -162,7 +170,7 @@ export function FollowStage({
             if (!s) continue;
             s.visible = s === shown;
             s.position.y = p.hop;
-            s.scale.set(BUDDY_SCALE * (1 + p.squash) * p.turn, BUDDY_SCALE * (1 - p.squash), 1);
+            s.scale.set(scale * (1 + p.squash) * p.turn, scale * (1 - p.squash), 1);
             s.material.rotation = p.tilt;
           }
           // 퍼지면서 옅어진다

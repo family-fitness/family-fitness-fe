@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Ring } from "@/components/ui/ring";
 import { Skeleton } from "@/components/ui/skeleton";
+import { VideoThumb } from "@/components/ui/video-thumb";
 import { ClipPlayer } from "@/components/domain/clip-player";
 import { Confetti } from "@/components/scene/confetti";
 import { KiumIsland } from "@/components/scene/kium-island";
@@ -528,13 +529,7 @@ function Step({
           )}
         >
           {clip?.videoId ? (
-            // eslint-disable-next-line @next/next/no-img-element -- 유튜브 썸네일은 외부 주소라 최적화가 안 된다
-            <img
-              src={`https://i.ytimg.com/vi/${encodeURIComponent(clip.videoId)}/mqdefault.jpg`}
-              alt=""
-              loading="lazy"
-              className="bg-sub aspect-video w-24 shrink-0 rounded-xl object-cover"
-            />
+            <VideoThumb videoId={clip.videoId} className="aspect-video w-24 shrink-0 rounded-xl" />
           ) : (
             <span className="bg-sub aspect-video w-24 shrink-0 rounded-xl" />
           )}
