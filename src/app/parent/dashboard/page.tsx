@@ -9,7 +9,7 @@ import { Stage } from "@/components/app-shell/stage";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
-import { Initial } from "@/components/ui/initial";
+import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InviteSheet } from "@/components/domain/invite-sheet";
@@ -298,7 +298,11 @@ function MemberLine({
 
   const body = (
     <>
-      <Initial name={member.name} tone={child ? "signal" : "mark"} />
+      <ProfileAvatar
+        profileId={member.profileId}
+        name={member.name}
+        tone={child ? "signal" : "mark"}
+      />
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
           <span className="truncate font-extrabold">{member.name}</span>

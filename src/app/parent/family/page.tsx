@@ -21,7 +21,8 @@ import { useSession } from "@/lib/session";
 import { ageOf, today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useRoleStore } from "@/stores/role-store";
-import { Initial } from "@/components/ui/initial";
+import { PhotoSheet } from "@/components/domain/photo-sheet";
+import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { InviteSheet } from "@/components/domain/invite-sheet";
 
 /** 가족 더하기. */
@@ -114,10 +115,31 @@ export default function MembersPage() {
 }
 
 function MemberRow({ profile, onInvite }: { profile: ProfileSummary; onInvite: () => void }) {
+  const [photoOpen, setPhotoOpen] = useState(false);
   return (
     <li className="py-3.5">
       <div className="flex items-center gap-3">
-        <Initial name={profile.name} tone={profile.role === "CHILD" ? "signal" : "mark"} />
+        {/* 누르면 사진 바꾸기 — 계정 없는 아이 사진도 부모가 붙인다 */}
+        <button
+          type="button"
+          onClick={() => setPhotoOpen(true)}
+          aria-label={`${profile.name ?? ""} 사진 바꾸기`}
+          className="press grid size-11 shrink-0 place-items-center rounded-full"
+        >
+          <ProfileAvatar
+            profileId={profile.profileId}
+            name={profile.name}
+            tone={profile.role === "CHILD" ? "signal" : "mark"}
+          />
+        </button>
+        {profile.profileId && (
+          <PhotoSheet
+            open={photoOpen}
+            onClose={() => setPhotoOpen(false)}
+            profileId={profile.profileId}
+            name={profile.name ?? ""}
+          />
+        )}
         <div className="min-w-0 flex-1">
           <p className="text-body font-bold">{profile.name}</p>
           <p className="text-faint mt-0.5 text-xs">

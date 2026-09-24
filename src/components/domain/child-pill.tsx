@@ -3,7 +3,7 @@
 import { Check, ChevronDown, Plus } from "lucide-react";
 import { useState } from "react";
 
-import { Initial } from "@/components/ui/initial";
+import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { NavLink } from "@/components/ui/nav-link";
 import { Sheet } from "@/components/ui/sheet";
 import type { FitnessMapMember } from "@/lib/api/types";
@@ -38,7 +38,13 @@ export function ChildPill({
         aria-label={`보고 있는 아이 ${current.name ?? ""} · 바꾸기`}
         className="press bg-signal-soft text-signal-deep mr-1 flex min-h-11 items-center gap-1.5 rounded-full py-1 pr-2.5 pl-1.5 text-sm font-extrabold"
       >
-        <Initial name={current.name} size="sm" tone="sub" className="bg-paper text-signal-deep" />
+        <ProfileAvatar
+          profileId={current.profileId}
+          name={current.name}
+          size="sm"
+          tone="sub"
+          className="bg-paper text-signal-deep"
+        />
         <span className="max-w-20 truncate">{current.name}</span>
         <ChevronDown aria-hidden className="size-4" strokeWidth={2.6} />
       </button>
@@ -58,7 +64,11 @@ export function ChildPill({
                   }}
                   className="press flex min-h-14 w-full items-center gap-3 text-left"
                 >
-                  <Initial name={k.name} tone={on ? "signal" : "sub"} />
+                  <ProfileAvatar
+                    profileId={k.profileId}
+                    name={k.name}
+                    tone={on ? "signal" : "sub"}
+                  />
                   <span className="min-w-0 flex-1">
                     <span className={cn("block truncate font-extrabold", on && "text-signal-deep")}>
                       {k.name}

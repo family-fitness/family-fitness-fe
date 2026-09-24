@@ -10,7 +10,7 @@ import { Stage } from "@/components/app-shell/stage";
 import { Card, CardHead } from "@/components/ui/card";
 import { Dock } from "@/components/ui/dock";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Initial } from "@/components/ui/initial";
+import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { NavLink } from "@/components/ui/nav-link";
 import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -315,7 +315,8 @@ function CustomPlan() {
                       on ? "bg-signal-soft text-signal-deep ring-signal ring-2" : "bg-sub",
                     )}
                   >
-                    <Initial
+                    <ProfileAvatar
+                      profileId={p.profileId}
                       name={p.name}
                       size="sm"
                       tone={p.role === "CHILD" ? "signal" : "mark"}
