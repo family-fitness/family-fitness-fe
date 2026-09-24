@@ -6,7 +6,7 @@ import { Card, CardHead } from "@/components/ui/card";
 import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorRadar, RadarGapNote } from "@/components/domain/factor-radar";
-import { FactorPillars } from "@/components/scene/factor-pillars";
+import { FactorSea } from "@/components/scene/factor-sea";
 import type { FitnessMapMember } from "@/lib/api/types";
 import { useLatestFitnessTest } from "@/lib/api/queries";
 import { formatDate } from "@/lib/utils";
@@ -103,7 +103,7 @@ const VIEWS = [
 ] as const;
 
 /**
- * 여섯 요인 — 입체 기둥 또는 평면 육각형. 같은 값을 다르게 볼 뿐이다.
+ * 여섯 요인 — 입체(또래 바다) 또는 평면 육각형. 같은 값을 다르게 볼 뿐이다.
  * 고른 쪽은 이 기기에 남는다. 표(요인별)는 아이 자세히에 늘 같이 있다.
  */
 export function FactorView({
@@ -129,9 +129,9 @@ export function FactorView({
         />
       </div>
       {pending ? (
-        <Skeleton className="mx-auto mt-2 aspect-[320/276] w-full rounded-3xl" />
+        <Skeleton className="mx-auto mt-2 aspect-[320/233] w-full rounded-3xl" />
       ) : view === "3d" ? (
-        <FactorPillars points={points} name={name} className="mt-1" />
+        <FactorSea points={points} name={name} className="mt-1" />
       ) : (
         <FactorRadar points={points} name={name} className="mt-1" />
       )}
