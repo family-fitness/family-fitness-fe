@@ -255,6 +255,14 @@ function Day() {
           <Skeleton className="h-[26rem] w-full rounded-3xl" />
         ) : (
           <section className="card-hero">
+            {/* 쉬는 날 카드를 쓴 날 — 빈 날이 아니라 쉬기로 한 날이다 */}
+            {log?.rest && (
+              <p className="mb-2 flex justify-center">
+                <span className="bg-mark-soft text-ink text-caption rounded-full px-3 py-1 font-extrabold">
+                  쉬기로 한 날 · 쉬는 날 카드
+                </span>
+              </p>
+            )}
             <div className="grid place-items-center pt-2">
               <DayRings
                 log={log}

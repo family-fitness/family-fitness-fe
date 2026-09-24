@@ -220,6 +220,13 @@ function Calendar() {
               <span className="bg-mark size-2 rounded-full" />
               끝낸 운동
             </li>
+            {/* 쉬는 날을 쓴 달에만 — 없는 것을 범례에 두면 찾게 된다 */}
+            {[...logs.values()].some((d) => d.rest && monthOf(d.date) === month) && (
+              <li className="flex items-center gap-1.5">
+                <span className="bg-mark-soft ring-mark size-2.5 rounded-full ring-1" />
+                쉬는 날
+              </li>
+            )}
           </ul>
 
           {/* 이 달 — 칸 셋(칭찬을 받은 달) · 둘 */}
@@ -272,6 +279,7 @@ function DayCell({
 }) {
   const day = Number(date.slice(8));
   const moved = log && log.minutes > 0 ? log : undefined;
+  const rest = Boolean(log?.rest);
   const summary = daySummary(log);
   const sticker = log?.stickers[0] ? stickerOf(log.stickers[0].stickerId) : undefined;
   const size = 38;
@@ -282,13 +290,15 @@ function DayCell({
     <button
       type="button"
       onClick={onPick}
-      disabled={future && !planned}
+      disabled={future && !planned && !rest}
       // 링 둘이 말하는 것을 다 읽어 준다 — 범례는 화면 읽기에서 숨어 있다
-      aria-label={`${longDate(date)}${moved ? ` · 움직인 시간 ${moved.minutes}분 · 끝낸 운동 ${summary.done}개` : ""}${sticker ? ` · ${sticker.label} 스티커` : ""}${planned && !moved ? " · 운동 잡혀 있음" : ""}`}
+      aria-label={`${longDate(date)}${rest ? " · 쉬는 날" : ""}${moved ? ` · 움직인 시간 ${moved.minutes}분 · 끝낸 운동 ${summary.done}개` : ""}${sticker ? ` · ${sticker.label} 스티커` : ""}${planned && !moved ? " · 운동 잡혀 있음" : ""}`}
       className={cn(
         "press relative grid size-11 place-items-center rounded-full",
         isToday && "bg-signal-soft",
-        future && !planned && "opacity-40",
+        // 쉬는 날 카드를 쓴 날 — 빈 날이 아니라 「쉬기로 한 날」. 노랑 옅은 면으로
+        rest && !moved && "bg-mark-soft",
+        future && !planned && !rest && "opacity-40",
       )}
     >
       {planned && !moved && (

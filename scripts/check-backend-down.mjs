@@ -32,6 +32,7 @@ const ROUTES = [
   "/parent",
   "/parent/family",
   "/parent/dashboard",
+  "/parent/league",
   `/parent/child/${KID}`,
   "/kid",
   "/kid/m/seed-today",

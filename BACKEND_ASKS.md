@@ -38,6 +38,49 @@ AI 네 단계 이름(`assess · retrieve · compose · verify`)과 `partial`, �
 | 칸 끝을 초로               | 타이머가 초로 돈다(쉬는 시간 · +10초). 지금은 분 단위(1~180)만 받는다                                       | `sessions/done` · `activity/timer` 에 `seconds`                                                        |
 | 클립 목록                  | 운동 찾기 · 직접 짜기의 동작 목록. AI 가 이미 531 클립 · 48 영상을 냈다(`data/release/video_clips.csv`)     | 안정된 id(`videoId-seq`)로 들여와 `GET /clips`                                                         |
 
+## 0-3. 9/25 새로 — 가족 리그 · 쉬는 날 카드
+
+화면은 목 서버로 먼저 지었습니다(`src/mocks/league.ts`). 아래 모양이면 목을 끄고 그대로 붙습니다.
+
+### `GET /families/{familyId}/league?month=YYYY-MM`
+
+```
+{
+  month, tier: "BRONZE" | "SILVER" | "GOLD" | "PLATINUM" | "DIAMOND",
+  rate,                       // 이번 달 목표 달성률(%) — 아래 셈
+  rank, groupSize,            // 이 리그 묶음에서 우리 자리 · 묶음 크기(열 가족 안팎)
+  promote, demote,            // 달이 바뀌면 올라가는 · 내려가는 자리 수(다이아 promote 0, 브론즈 demote 0)
+  daysLeft,
+  standings: [{ familyName, rate, me }]   // 달성률 순. 가족 이름만
+}
+```
+
+- **달성률 = 잡힌 운동 날 중 해낸 날 ÷ 잡힌 운동 날**, 쉬는 날은 빼고, 아이들 평균. 체력 점수로 겨루지 않습니다 —
+  식구 수 · 운동 실력과 상관없이 한 만큼만 오르게
+- 이름은 가족 단위로만. 가족 안에서 누가 더 했는지는 응답에 넣지 말아 주세요(형제 비교)
+- 한 달이 한 판입니다. 매달 1일에 위 `promote` 집은 한 티어 올리고 아래 `demote` 집은 내리고, 새 묶음을 짜 주세요.
+  처음 만든 가족은 브론즈에서 시작합니다
+- 같은 묶음에 가족이 모자라면 **가짜 가족을 채우지 말아 주세요**(목에는 시연용 이웃 아홉이 있습니다)
+
+### 쉬는 날 카드 — `GET · POST /families/{familyId}/rest-days`, `DELETE /families/{familyId}/rest-days/{date}`
+
+```
+GET  ?month=YYYY-MM   → { month, perMonth: 2, left, days: ["2026-09-26"] }
+POST { date }         → 201 같은 모양
+DELETE …/{date}       → 200 같은 모양(카드가 돌아온다)
+```
+
+| 오류                    | 언제                         |
+| ----------------------- | ---------------------------- |
+| 422 `INVALID_DATE`      | 지난 날 · 다른 달            |
+| 409 `ALREADY_REST_DAY`  | 이미 쉬는 날                 |
+| 409 `NO_REST_CARD_LEFT` | 이번 달 두 장을 다 씀        |
+| 422 `ALREADY_MOVED`     | 그날 이미 운동한 아이가 있음 |
+
+- 가족 단위, 부모만 쓸 수 있게(`NOT_A_PARENT`). 매달 1일에 두 장으로
+- 쉬는 날은 **캘린더 응답에 `rest: true`**, **이어서 한 날(`streakDays`)은 쉬는 날을 건너 이어지게**,
+  리그 달성률에서 빼 주세요. 그날은 운동 알림도 보내지 않습니다
+
 **이제 필요 없는 것**: 가족 주간 목표 · `familyMinutes` · 주간 리포트 · 코치 대화(`coach/chat`) — 화면에서 뺐습니다.
 `GET /missions/{missionId}` · `PATCH /profiles/{id}/body` 는 부르는 곳이 없어 뒤로 미뤄도 됩니다(키 · 몸무게는 위 「가입 때」 가 대신).
 

@@ -9,6 +9,7 @@ import { HttpResponse } from "msw";
 import type {
   CheerLog,
   FitnessTestSummary,
+  LeagueTier,
   ApiErrorBody,
   Band,
   CoachApproveResult,
@@ -182,6 +183,7 @@ export const RUN_KEY = "ff-mock-run";
 export const ACTING_KEY = "ff-mock-acting";
 export const STAGE_KEY = "ff-mock-stage";
 export const FAMILY_KEY = "ff-mock-family";
+export const REST_KEY = "ff-mock-rest";
 
 export const DEMO = {
   familyId: "00000000-0000-4000-8000-000000000010",
@@ -230,6 +232,10 @@ export const db = {
    * 새로 만든 가족은 아직 안 돌렸다 — `latest` 가 404 여야 「제안 만들기」 가 뜬다.
    */
   hasCoachRun: true,
+  /** 쉬는 날 카드를 쓴 날(YYYY-MM-DD). 가족 단위 — 그날은 가족 모두의 「쉬기로 한 날」 */
+  restDays: loadRestDays(),
+  /** 이번 달 가족 리그 티어. 시연 가족은 골드, 새로 만든 가족은 브론즈에서 시작한다 */
+  leagueTier: "GOLD" as LeagueTier,
 };
 
 /**
@@ -647,4 +653,23 @@ export function bandOf(percentile: number): Band {
   if (percentile >= 75) return "strength";
   if (percentile >= 25) return "steady";
   return "growth";
+}
+
+/** 쉬는 날 카드를 쓴 날 — 탭 저장소에서. 새로고침해도 방금 쓴 카드가 되돌아오지 않게 */
+export function loadRestDays(): string[] {
+  try {
+    const saved = sessionStorage.getItem(REST_KEY);
+    if (saved) return JSON.parse(saved) as string[];
+  } catch {
+    return [];
+  }
+  return [];
+}
+
+export function saveRestDays() {
+  try {
+    sessionStorage.setItem(REST_KEY, JSON.stringify(db.restDays));
+  } catch {
+    // 저장이 안 돼도 화면은 돌아야 한다
+  }
 }

@@ -25,12 +25,13 @@ import {
   useFitnessMap,
   useMissions,
   useProgress,
+  useRestDays,
 } from "@/lib/api/queries";
 import { callName } from "@/lib/family";
 import { badgeArt, levelProgress, stageOf } from "@/lib/levels";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
-import { dayOf, longDate, today, weekOf } from "@/lib/today";
+import { dayOf, longDate, monthOf, today, weekOf } from "@/lib/today";
 import { stickerOf } from "@/lib/stickers";
 import { useRoleStore } from "@/stores/role-store";
 
@@ -64,6 +65,8 @@ export default function KidHomePage() {
     week,
   );
   const { data: cheers } = useCheers(familyId, childProfileId ?? undefined);
+  // 쉬는 날 카드 — 부모가 쓴다. 쓴 날이면 오늘 운동 대신 「쉬는 날」
+  const { data: rest } = useRestDays(familyId ?? undefined, monthOf(today()));
   const { data: family } = useFamilyProfiles(familyId);
   // 아이에게 부모는 엄마 · 아빠다
   const nameOf = (profileId: string, fallback: string) =>
@@ -125,6 +128,7 @@ export default function KidHomePage() {
   const trees = progress?.activeDays ?? 0;
   const bar = progress ? levelProgress(progress) : null;
   const score = me.latest?.overallPercentile ?? null;
+  const restToday = Boolean(rest?.days.includes(now));
   // 가장 최근에 받은 스티커 · 업적 하나씩. 개수를 세지 않는다 — 모아야 할 것이 되면 못 받은 날이 실패가 된다
   const sticker = (cheers?.cheers ?? [])
     .filter((c) => c.stickerId && stickerOf(c.stickerId))
@@ -188,7 +192,20 @@ export default function KidHomePage() {
         </section>
 
         {/* 오늘 할 일 하나. 이 화면에서 누를 큰 것은 이것뿐이다 */}
-        {todo ? (
+        {restToday ? (
+          // 쉬는 날 카드를 쓴 날 — 「안 한 날」 이 아니라 「쉬기로 한 날」. 그래도 하고 싶으면 한다
+          <div className="card-hero text-center">
+            <p className="text-lead font-extrabold">오늘은 쉬는 날이에요</p>
+            {todo && (
+              <NavLink
+                href={`/kid/m/${todo.missionId}`}
+                className="press text-signal-deep mt-2 inline-flex min-h-11 items-center text-sm font-extrabold"
+              >
+                그래도 할래요
+              </NavLink>
+            )}
+          </div>
+        ) : todo ? (
           <TodayHero mission={todo} />
         ) : mine.length > 0 ? (
           <div className="card-hero text-center">

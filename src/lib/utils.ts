@@ -33,6 +33,8 @@ const JOSA = {
   을를: ["을", "를"],
   은는: ["은", "는"],
   와과: ["과", "와"],
+  /** 「플래티넘으로 · 골드로」. 받침 ㄹ 뒤는 「로」(서울로) */
+  으로로: ["으로", "로"],
 } as const;
 
 export function josa(word: string, kind: keyof typeof JOSA): string {
@@ -46,8 +48,10 @@ export function josa(word: string, kind: keyof typeof JOSA): string {
   // 한글 음절 영역이 아니면(숫자 · 영문 등) 받침 없음으로 본다
   if (code < 0xac00 || code > 0xd7a3) return JOSA[kind][1];
 
-  const hasFinal = (code - 0xac00) % 28 !== 0;
-  return JOSA[kind][hasFinal ? 0 : 1];
+  const final = (code - 0xac00) % 28;
+  // 받침 ㄹ(8) 뒤의 「으로」 는 「로」 다 — 「서울로」, 「교실로」
+  if (kind === "으로로" && final === 8) return JOSA[kind][1];
+  return JOSA[kind][final !== 0 ? 0 : 1];
 }
 
 /** "앉아윗몸앞으로굽히기가" 처럼 붙여서 돌려준다 */

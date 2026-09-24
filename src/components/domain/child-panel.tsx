@@ -9,10 +9,10 @@ import { NavLink } from "@/components/ui/nav-link";
 import { FactorView, FirstMeasure } from "@/components/domain/factor-view";
 import { REMEASURE_DAYS } from "@/lib/remeasure";
 import type { FitnessMapMember, Mission } from "@/lib/api/types";
-import { useCheers, useLatestCoachRun, useLatestFitnessTest } from "@/lib/api/queries";
+import { useCheers, useLatestCoachRun, useLatestFitnessTest, useRestDays } from "@/lib/api/queries";
 import { VERIFIED_COPY } from "@/lib/mission";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
-import { dayOf, daysSince, today } from "@/lib/today";
+import { dayOf, daysSince, monthOf, today } from "@/lib/today";
 import { cn, formatDate, withJosa } from "@/lib/utils";
 
 /**
@@ -132,10 +132,13 @@ function TodaySection({
 }) {
   const { data: given } = useCheers(familyId, childProfileId);
   const { data: run } = useLatestCoachRun(familyId);
+  // 쉬는 날 카드를 쓴 날 — 「아직 시작 전」 이 아니라 「쉬는 날」
+  const { data: rest } = useRestDays(familyId, monthOf(today()));
   const stickerHref = (missionId?: string) =>
     `/parent/sticker/${childProfileId}${missionId ? `?missionId=${missionId}` : ""}`;
 
   const now = today();
+  const restToday = Boolean(rest?.days.includes(now));
   const mine = (missions ?? []).filter(
     (m) =>
       (m.startDate ?? "") <= now &&
@@ -173,7 +176,9 @@ function TodaySection({
       <>
         {head}
         <p className="text-ink-soft mt-1 text-sm">
-          {withJosa(childName, "은는")} 아직 오늘 운동이 없어요
+          {restToday
+            ? "오늘은 쉬는 날이에요"
+            : `${withJosa(childName, "은는")} 아직 오늘 운동이 없어요`}
         </p>
         {proposal}
         {/* 두 길 — AI에게 받거나, 직접 골라 짜거나 */}
@@ -230,9 +235,11 @@ function TodaySection({
           >
             {finished
               ? `${withJosa(childName, "이가")} 다 했어요`
-              : doneCount > 0
-                ? `${doneCount}개 했어요 · ${sessions.length - doneCount}개 남음`
-                : "아직 시작 전이에요"}
+              : restToday
+                ? "오늘은 쉬는 날이에요"
+                : doneCount > 0
+                  ? `${doneCount}개 했어요 · ${sessions.length - doneCount}개 남음`
+                  : "아직 시작 전이에요"}
           </p>
         </div>
       )}

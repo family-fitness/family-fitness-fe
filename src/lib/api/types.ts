@@ -238,6 +238,11 @@ export interface DayLog {
   entries: DayEntry[];
   /** 그날 받은 칭찬 스티커 */
   stickers: StickerLog[];
+  /**
+   * 쉬는 날 카드를 쓴 날. 빈 날이 아니라 「쉬기로 한 날」 이다 — 이어서 한 날이 끊기지 않고
+   * 리그 달성률에서 빠진다. ▲ 요청: 캘린더 응답에 `rest`
+   */
+  rest?: boolean;
 }
 
 /** 그날 한 운동 하나 */
@@ -447,4 +452,47 @@ export interface NotificationList {
   items: NotificationView[];
   /** 안 읽은 수. 화면은 숫자를 쓰지 않고 점 하나만 찍는다 */
   unread: number;
+}
+
+/* ─── 가족 리그 · 쉬는 날 카드 ─────────────────────────────── */
+
+/** 리그 티어 — 아래부터 브론즈 · 실버 · 골드 · 플래티넘 · 다이아 */
+export type LeagueTier = "BRONZE" | "SILVER" | "GOLD" | "PLATINUM" | "DIAMOND";
+
+/**
+ * 가족 리그 — 이번 달 우리 가족이 있는 리그와 순위.
+ *
+ * 겨루는 값은 체력이 아니라 **목표 달성률**이다(잡힌 운동 날 중 해낸 날, 쉬는 날 뺌, 아이들 평균).
+ * 운동 잘하는 집도 식구 많은 집도 유리하지 않다. 가족 단위로만 겨룬다 — 집 안에서 누가 더 했는지는
+ * 어디에도 나오지 않는다(규칙 10). 달이 바뀌면 위 `promote` 집은 한 티어 올라가고 아래 `demote` 집은 내려간다.
+ *
+ * ▲ 요청: `GET /families/{familyId}/league?month=YYYY-MM`
+ */
+export interface FamilyLeague {
+  month: string;
+  tier: LeagueTier;
+  /** 이번 달 목표 달성률(%) */
+  rate: number;
+  /** 이 리그 묶음에서 우리 가족 자리(1부터) */
+  rank: number;
+  groupSize: number;
+  /** 달이 바뀌면 올라가는 · 내려가는 자리 수. 맨 위 · 맨 아래 티어는 0 */
+  promote: number;
+  demote: number;
+  /** 이 달이 끝나기까지 남은 날 */
+  daysLeft: number;
+  /** 달성률 순. 이름은 가족 이름만 */
+  standings: { familyName: string; rate: number; me: boolean }[];
+}
+
+/**
+ * 쉬는 날 카드 — 한 달에 `perMonth` 장. 쓴 날은 「안 한 날」 이 아니라 「쉬기로 한 날」.
+ * ▲ 요청: `GET · POST /families/{familyId}/rest-days` · `DELETE /families/{familyId}/rest-days/{date}`
+ */
+export interface RestDays {
+  month: string;
+  perMonth: number;
+  left: number;
+  /** 쓴 날(YYYY-MM-DD) */
+  days: string[];
 }

@@ -203,10 +203,13 @@ export const history = [
       .map((date) => {
         const base = dayLogFor(profileId, date);
         const stickers = stickersOn(profileId, date);
-        if (!base && stickers.length === 0) return null;
+        // 쉬는 날 카드를 쓴 날 — 가족 모두의 「쉬기로 한 날」. 빈 날이 아니다
+        const rest = db.restDays.includes(date);
+        if (!base && stickers.length === 0 && !rest) return null;
         return {
           ...(base ?? { date, minutes: 0, plannedMinutes: null, entries: [] }),
           stickers,
+          ...(rest ? { rest: true } : {}),
         };
       })
       .filter((d): d is DayLog => d !== null);
