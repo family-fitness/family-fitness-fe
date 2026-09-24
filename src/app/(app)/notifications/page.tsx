@@ -178,7 +178,7 @@ function Thanks({ item, to, until }: { item: NotificationView; to: string; until
 
   if (!kidId || isPending) return null;
   return (
-    <div className="-mt-3 pb-2 pl-15">
+    <div className="-mt-1 pb-3 pl-15">
       {sent ? (
         <p className="text-caption text-done flex min-h-10 items-center gap-1 font-bold">
           <Check aria-hidden className="size-4" strokeWidth={3} />
