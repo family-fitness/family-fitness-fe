@@ -77,7 +77,8 @@ function Finder() {
   useRoutineReady();
   const toggleMove = useRoutineStore((s) => s.toggle);
   const clearMoves = useRoutineStore((s) => s.clear);
-  const [preview, setPreview] = useState<ClipView | null>(null);
+  // 시범으로 연 클립. 홈의 영상 줄에서 `?clip=` 으로 오면 그 클립이 바로 열린다
+  const [previewId, setPreviewId] = useState<string | null>(params.get("clip"));
 
   const { data, isPending, isFetching } = useClips({
     factor,
@@ -88,6 +89,7 @@ function Finder() {
     profileId: owner,
   });
   const clips = data?.clips ?? [];
+  const preview = previewId ? (clips.find((c) => c.clipId === previewId) ?? null) : null;
 
   const inTray = (c: ClipView) => moves.some((m) => m.clip.clipId === c.clipId);
 
@@ -210,7 +212,7 @@ function Finder() {
                 picked={inTray(c)}
                 canPick={!kidView}
                 onPick={() => toggleMove(c)}
-                onPreview={() => setPreview(c)}
+                onPreview={() => setPreviewId(c.clipId)}
               />
             ))}
           </ul>
@@ -219,7 +221,7 @@ function Finder() {
 
       {!kidView && moves.length > 0 && <Tray onClear={clearMoves} />}
 
-      <Sheet open={preview != null} onClose={() => setPreview(null)} title={preview?.title ?? ""}>
+      <Sheet open={preview != null} onClose={() => setPreviewId(null)} title={preview?.title ?? ""}>
         {preview && <Preview clip={preview} />}
       </Sheet>
     </>

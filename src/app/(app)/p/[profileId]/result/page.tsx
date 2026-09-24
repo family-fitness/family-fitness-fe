@@ -15,10 +15,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorIcon } from "@/components/domain/factor-icon";
-import { FactorView } from "@/components/domain/body-card";
+import { FactorView } from "@/components/domain/factor-view";
 import { RecordRow } from "@/components/domain/record-bar";
 import { isFactor } from "@/lib/fitness-factors";
-import { useFamilyProfiles, useLatestFitnessTest } from "@/lib/api/queries";
+import { useFamilyProfiles, useFitnessMap, useLatestFitnessTest } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { useIsKidView } from "@/lib/view-role";
 import { formatDate } from "@/lib/utils";
@@ -32,6 +32,8 @@ export default function ResultPage() {
   // 가족 전체에서 찾는다. useSession().profiles 는 이 계정이 관리하는 프로필만이라
   // 자녀가 자기 계정을 가지면 거기서 빠진다
   const { data: family } = useFamilyProfiles(familyId);
+  const { data: map } = useFitnessMap(familyId);
+  const member = map?.members?.find((m) => m.profileId === profileId);
   const profile = family?.profiles?.find((p) => p.profileId === profileId);
 
   const { data: test, isPending, error, refetch, isRefetching } = useLatestFitnessTest(profileId);
@@ -97,11 +99,13 @@ export default function ResultPage() {
         {!kidView && radar.length > 0 && (
           <section className="card-hero">
             <CardHead title="요인별 모양" />
+            {/* 육각형 · 그 아래 통합 신체 점수(9/25) — 점수는 가족 체력 지도가 준 이 회차의 또래 백분위 */}
             <FactorView
               points={radar}
               name={profile?.name ?? "나"}
               pending={false}
               ageGroup={profile?.ageGroup}
+              score={member?.latest?.overallPercentile ?? null}
             />
           </section>
         )}

@@ -36,7 +36,7 @@ export function UnlockLadder({ level }: { level: number }) {
               </span>
               <div className="min-w-0 flex-1">
                 <p className={cn("text-sm font-extrabold", !open && !next && "text-ink-soft")}>
-                  {u.kind === "game" ? `놀이 · ${u.name}` : `섬 · ${u.name}`}
+                  섬 · {u.name}
                 </p>
                 {next && (
                   <p className="text-caption text-ink-soft mt-0.5">

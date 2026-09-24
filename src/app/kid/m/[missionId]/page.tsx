@@ -592,7 +592,7 @@ function Finish({
   const leveledUp = progress != null && levelBefore != null && progress.level > levelBefore;
   const opened = newlyUnlocked(levelBefore, progress?.level);
   // 섬에 새로 선 장식이 있으면 나무 다음에 튀어나온다
-  const unveil = opened.flatMap((u) => (u.kind === "decoration" ? [u.id] : [])).at(-1) ?? null;
+  const unveil = opened.at(-1)?.id ?? null;
   const parents = (family?.profiles ?? []).filter((p) => p.role === "PARENT");
 
   const tell = async () => {
@@ -607,7 +607,6 @@ function Finish({
             // 남는 말이라 「오늘」 을 넣지 않는다 — 다음 날 알림함에서 읽으면 틀린 말이 된다
             message: `${allDone ? "운동 다 했어요!" : `운동 ${doneCount}개 했어요!`}${feel ? ` ${FEEL_LINE[feel]}` : ""}`,
             missionId,
-            kind: "DONE",
           }),
         ),
       );
@@ -657,23 +656,13 @@ function Finish({
             {stage.name}
             {bar?.left != null && ` · 다음 레벨까지 ${bar.left}`}
           </p>
-          {/* 레벨이 올라 새로 열린 것. 섬 장식은 위 섬에 방금 섰고, 놀이는 놀이터로 가는 길 */}
+          {/* 레벨이 올라 새로 열린 것 — 위 섬에 방금 섰다 */}
           {opened.map((u) => (
             <p key={u.id} className="border-line mt-3 border-t pt-3 text-sm">
               <b className="font-extrabold">새로 열렸어요 · {u.name}</b>
-              {u.kind === "decoration" && (
-                <span className="text-ink-soft mt-0.5 block text-xs">
-                  섬에 {withJosa(u.name, "이가")} 섰어요
-                </span>
-              )}
-              {u.kind === "game" && (
-                <NavLink
-                  href={`/kid/play/${u.id}`}
-                  className="press text-signal-deep mt-1 inline-flex min-h-10 items-center text-sm font-extrabold"
-                >
-                  {u.name} 하러 가기
-                </NavLink>
-              )}
+              <span className="text-ink-soft mt-0.5 block text-xs">
+                섬에 {withJosa(u.name, "이가")} 섰어요
+              </span>
             </p>
           ))}
         </div>

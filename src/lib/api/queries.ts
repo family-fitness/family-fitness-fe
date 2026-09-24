@@ -33,7 +33,6 @@ import type {
   Role,
   SupportMode,
   Uuid,
-  CheerKind,
 } from "./types";
 
 /**
@@ -454,8 +453,6 @@ export function useSendCheer(familyId: Uuid) {
       missionId?: string;
       /** 붙일 스티커. ▲ 계약에 칸이 없어 `emoji` 에 싣는다 */
       stickerId?: string;
-      /** 아이가 보내는 말의 종류. ▲ 요청: cheer `kind` */
-      kind?: CheerKind;
     }) =>
       api.post<Cheer>(path`/families/${familyId}/cheers`, { ...body, emoji: stickerId ?? null }),
     onSuccess: (_saved, sent) => {

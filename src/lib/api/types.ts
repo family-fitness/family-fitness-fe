@@ -95,16 +95,8 @@ export type VideoLabel = S["VideoLabel"];
  * **주의 — 이 아래는 생성된 스키마가 아니다.**
  * ▲ 요청: `GET /families/{familyId}/cheers?toProfileId=&size=`
  */
-/**
- * 아이가 부모에게 보내는 말이 무엇인가 — 다 했어요(DONE) · 같이 하자(CALL).
- * ▲ 요청: cheer `kind`(BACKEND_ASKS 「cheer 에 kind 칸」). 없던 동안 스티커 없는 말은 전부 「다 했어요」 로
- * 읽혀서, 아이가 같이 하자고 부른 것이 부모 종에 「운동을 마쳤어요」 로 떴다
- */
-export type CheerKind = "DONE" | "CALL";
-
 export interface CheerLog {
   cheerId: Uuid;
-  kind?: CheerKind | null;
   fromProfileId: Uuid;
   fromName: string;
   toProfileId: Uuid;
@@ -428,9 +420,7 @@ export type NotificationKind =
   /** 아이에게 — 새 업적 */
   | "ACHIEVEMENT"
   /** 부모에게 — 아이가 고마워요 스티커를 보냈다 */
-  | "KID_THANKS"
-  /** 부모에게 — 오늘 운동이 없는 아이가 같이 하자고 불렀다 */
-  | "KID_CALL";
+  | "KID_THANKS";
 
 export interface NotificationView {
   notificationId: string;

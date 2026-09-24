@@ -68,22 +68,6 @@ function notificationsFor(profileId: string): NotificationView[] {
         });
         continue;
       }
-      // 같이 하자고 불렀다 — 운동을 마친 게 아니다. 누르면 오늘 운동을 짜러
-      if (c.kind === "CALL") {
-        items.push({
-          notificationId: `call-${c.cheerId}`,
-          kind: "KID_CALL",
-          title: `${subject(kid.name ?? "아이")} 같이 하재요`,
-          body: c.message,
-          aboutProfileId: kid.profileId ?? null,
-          fromProfileId: kid.profileId ?? null,
-          missionId: null,
-          date: dayOf(c.createdAt),
-          stickerId: null,
-          createdAt: c.createdAt,
-        });
-        continue;
-      }
       items.push({
         notificationId: `done-${c.cheerId}`,
         kind: "KID_DONE",
