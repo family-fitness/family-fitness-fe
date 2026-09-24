@@ -716,7 +716,7 @@ function Finish({
             disabled={send.isPending}
             className="press bg-signal-strong mt-4 flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white"
           >
-            엄마 · 아빠한테 알리기
+            {send.isPending ? "알리는 중" : "엄마 · 아빠한테 알리기"}
           </button>
         )
       )}

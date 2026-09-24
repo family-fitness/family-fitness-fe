@@ -225,7 +225,12 @@ function StickerForm() {
         >
           <Check aria-hidden className="size-5" strokeWidth={3} />
           {/* 이름은 늘 「붙이기」 — 고르기 전에 단추가 「골라 주세요」 로 바뀌면 같은 자리의 이름이 바뀐다 */}
-          {send.isPending ? "붙이는 중" : sticker ? `${sticker.label} 붙이기` : "붙이기"}
+          {/* 직접 적은 걸음수를 확인하는 동안(confirm)도 붙이는 중이다 — 누른 뒤 아무 일도 없어 보이지 않게 */}
+          {send.isPending || confirm.isPending
+            ? "붙이는 중"
+            : sticker
+              ? `${sticker.label} 붙이기`
+              : "붙이기"}
         </button>
       </Dock>
     </>
