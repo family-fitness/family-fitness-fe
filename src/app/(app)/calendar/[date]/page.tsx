@@ -5,17 +5,17 @@ import { useParams, useRouter } from "next/navigation";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
-import { ActivityRings, type RingValue } from "@/components/ui/activity-rings";
 import { Card, CardHead } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoThumb } from "@/components/ui/video-thumb";
 import { ChildSwitch } from "@/components/domain/child-switch";
+import { DayRings } from "@/components/domain/day-rings";
 import { StickerArt } from "@/components/domain/sticker-art";
 import type { DayLog, Mission, MissionSession, ProfileWithSex } from "@/lib/api/types";
 import { useCalendar, useFamilyProfiles, useFitnessMap, useMissions } from "@/lib/api/queries";
-import { dayRings, daySummary, plannedDay, plannedOn, type DaySummary } from "@/lib/day";
+import { daySummary, plannedDay, plannedOn } from "@/lib/day";
 import { callName } from "@/lib/family";
 import { VERIFIED_COPY } from "@/lib/mission";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
@@ -33,21 +33,6 @@ import { useRoleStore } from "@/stores/role-store";
  * 가운데 큰 링 셋(움직인 시간 · 끝낸 운동 · 칭찬), 그 아래 칸 셋과 점선 요약 줄.
  * 한 운동은 영상 그림과 함께, 받은 스티커는 크게. 부모 · 아이가 같은 화면을 본다.
  */
-const RING = {
-  time: { color: "var(--color-signal)", track: "var(--color-signal-soft)" },
-  work: { color: "var(--color-mark)", track: "var(--color-mark-soft)" },
-  praise: { color: "var(--color-signal-deep)", track: "var(--color-deep-soft)" },
-} as const;
-
-function ringsOf(s: DaySummary): RingValue[] {
-  const [time, work, praise] = dayRings(s);
-  return [
-    { label: "움직인 시간", value: time, max: 1, text: `${s.moved}분`, ...RING.time },
-    { label: "끝낸 운동", value: work, max: 1, text: `${s.done}개`, ...RING.work },
-    { label: "칭찬", value: praise, max: 1, text: `${s.stickers}장`, ...RING.praise },
-  ];
-}
-
 export default function DayPage() {
   const router = useRouter();
   const params = useParams<{ date: string }>();
@@ -180,13 +165,7 @@ export default function DayPage() {
                       d === date && "bg-signal-soft",
                     )}
                   >
-                    <ActivityRings
-                      legend={false}
-                      size={34}
-                      stroke={4}
-                      gap={1.5}
-                      rings={ringsOf(daySummary(logs.get(d)))}
-                    />
+                    <DayRings log={logs.get(d)} size={34} stroke={4} gap={1.5} />
                   </span>
                 </button>
               </li>
@@ -199,12 +178,11 @@ export default function DayPage() {
         ) : (
           <section className="card-hero">
             <div className="grid place-items-center pt-2">
-              <ActivityRings
-                legend={false}
+              <DayRings
+                log={log}
                 size={196}
                 stroke={18}
                 gap={4}
-                rings={ringsOf(summary)}
                 center={sticker ? <StickerArt id={sticker.stickerId} className="size-16" /> : null}
               />
             </div>
