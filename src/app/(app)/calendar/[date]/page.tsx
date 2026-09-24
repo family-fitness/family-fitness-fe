@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { Card, CardHead } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -70,7 +71,29 @@ export default function DayPage() {
       </>
     );
   }
-  if (isPending || mapPending || !who) return <DaySkeleton back={back} />;
+  if (isPending || mapPending) return <DaySkeleton back={back} />;
+  // 볼 아이가 없다 — 아이가 아직 누구인지 안 골랐거나, 가족에 아이가 없다. 빈 칸을 기다리게 두지 않는다
+  if (!who) {
+    return (
+      <>
+        <AppBar backHref={back} title="하루 기록" />
+        <Stage wide>
+          <EmptyState
+            scene="no-record"
+            title={kidView ? "누구인지 골라 주세요" : "아이를 등록해 주세요"}
+            action={
+              <NavLink
+                href={kidView ? "/start" : "/start/child"}
+                className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"
+              >
+                {kidView ? "고르러 가기" : "아이 등록하기"}
+              </NavLink>
+            }
+          />
+        </Stage>
+      </>
+    );
+  }
 
   const logs = new Map((calendar?.days ?? []).map((d) => [d.date, d]));
   const log = logs.get(date);
