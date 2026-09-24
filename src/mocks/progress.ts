@@ -116,7 +116,8 @@ export function progressOf(profileId: string): ProgressView {
     xp,
     levelFloorXp: LEVEL_FLOOR[level - 1],
     nextLevelXp: level < LEVEL_FLOOR.length ? LEVEL_FLOOR[level] : null,
-    streakDays: streakOf(active),
+    // 쉬는 날 카드를 쓴 날은 이어 붙인다 — 쉬기로 한 날에 끊기면 카드가 뜻이 없다
+    streakDays: streakOf(new Set([...active, ...db.restDays])),
     activeDays: active.size,
     achievements: achievementsOf(
       profileId,

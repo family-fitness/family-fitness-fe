@@ -24,11 +24,13 @@ import {
   type MapMember,
   type MissionRow,
   type Profile,
+  saveRestDays,
 } from "./db";
 
 import { clips } from "./clips";
 import { coaching } from "./coach";
 import { history } from "./history";
+import { league } from "./league";
 import { notifications } from "./notifications";
 import { progress } from "./progress";
 
@@ -115,9 +117,13 @@ function startFamily(familyName: string, owner: Profile) {
   db.latest = {};
   db.body = {};
   db.hasCoachRun = false;
+  // 새 가족은 쉬는 날도 리그도 처음부터 — 브론즈에서 시작한다
+  db.restDays = [];
+  db.leagueTier = "BRONZE";
   saveMissions();
   saveCheers(db.cheers);
   saveFamily();
+  saveRestDays();
 }
 
 /** 프로필 하나를 체력 지도의 한 줄로 */
@@ -848,6 +854,7 @@ export const handlers = [
   ...missions,
   ...videos,
   ...history,
+  ...league,
   ...progress,
   ...clips,
   ...notifications,
