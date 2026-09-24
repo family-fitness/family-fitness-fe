@@ -4,7 +4,6 @@ import { Card, CardHead } from "@/components/ui/card";
 import { KiumIsland } from "@/components/scene/kium-island";
 import { useProgress } from "@/lib/api/queries";
 import { stageOf } from "@/lib/levels";
-import { withJosa } from "@/lib/utils";
 
 /**
  * 아이의 섬 — 부모도 아이가 보는 섬을 본다.
@@ -32,9 +31,6 @@ export function IslandCard({ profileId, name }: { profileId: string; name: strin
         label={`${name}의 섬. 운동한 날마다 나무가 하나씩 자라요. 지금 ${trees}그루`}
         className="-mt-3"
       />
-      <p className="text-caption text-ink-soft text-center text-balance">
-        {withJosa(name, "이가")} 운동한 날마다 나무가 하나씩 자라요. 아이 화면에도 같은 섬이 있어요
-      </p>
     </Card>
   );
 }

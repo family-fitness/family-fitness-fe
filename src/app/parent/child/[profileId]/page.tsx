@@ -119,7 +119,7 @@ export default function ChildDetailPage() {
         </Card>
 
         <Card>
-          <CardHead title="요인별" meta="막대 가운데 눈금이 또래 평균" />
+          <CardHead title="요인별" meta="눈금 · 또래 평균 50" />
           <FactorTable radar={latest?.radar} results={latest?.items} catalog={catalog?.items} />
         </Card>
 
@@ -127,11 +127,6 @@ export default function ChildDetailPage() {
           <Card>
             <CardHead title="신체 점수 흐름" meta={`${tests.length}번 쟀어요`} />
             <ScoreTrend tests={tests} />
-            {tests.length === 1 && (
-              <p className="text-caption text-ink-soft mt-1 text-center">
-                한 번 더 재면 흐름이 그려져요
-              </p>
-            )}
           </Card>
         )}
 
@@ -164,9 +159,6 @@ export default function ChildDetailPage() {
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-extrabold">10년 위 연령대는 어디쯤일까</p>
-              <p className="text-caption text-ink-soft mt-0.5">
-                지금과 같은 조건의 10년 위 연령대를 보여 드려요
-              </p>
             </div>
             <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
           </div>

@@ -45,19 +45,9 @@ export default function SettingsPage() {
 
         <ul className="card divide-rows py-1">
           {/* 탭바가 없으니 역할을 바꾸는 길이 여기다 */}
-          <ListRow
-            href="/start"
-            art="icon/menu-switch"
-            title="누가 쓰는지 바꾸기"
-            description="부모 화면과 아이 화면을 오가요"
-          />
+          <ListRow href="/start" art="icon/menu-switch" title="누가 쓰는지 바꾸기" />
           {parentView && (
-            <ListRow
-              href="/settings/consent"
-              art="icon/menu-consent"
-              title="보호자 동의"
-              description="만 14세 미만 가족의 건강정보 동의"
-            />
+            <ListRow href="/settings/consent" art="icon/menu-consent" title="보호자 동의" />
           )}
         </ul>
 
