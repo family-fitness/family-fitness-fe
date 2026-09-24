@@ -149,13 +149,16 @@ export function RecentDays({
                       {s.total > 0 ? `${s.done} / ${s.total}개` : ""}
                     </span>
                   </span>
-                  <span className="shrink-0 text-right text-base font-extrabold tabular-nums">
+                  <span className="w-12 shrink-0 text-right text-base font-extrabold tabular-nums">
                     {d.minutes}
                     <span className="text-ink-soft text-caption ml-0.5 font-bold">분</span>
                   </span>
-                  {d.stickers[0] && (
-                    <StickerArt id={d.stickers[0].stickerId} className="size-8 shrink-0" />
-                  )}
+                  {/* 스티커 자리는 늘 비워 둔다 — 있는 줄 · 없는 줄의 분이 한 세로줄에 서게 */}
+                  <span className="size-8 shrink-0">
+                    {d.stickers[0] && (
+                      <StickerArt id={d.stickers[0].stickerId} className="size-8" />
+                    )}
+                  </span>
                 </NavLink>
               </li>
             );
