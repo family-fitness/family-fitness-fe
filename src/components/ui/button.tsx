@@ -15,7 +15,9 @@ const button = cva(
   {
     variants: {
       variant: {
-        primary: "bg-signal-strong text-white",
+        // 못 누를 때는 회색 면에 진한 글자. 흐린 파랑 위 흰 글자는 읽히지 않았다
+        primary:
+          "bg-signal-strong text-white disabled:bg-line disabled:text-ink-soft disabled:opacity-100",
         soft: "bg-signal-soft text-signal-deep",
         outline: "border-line text-ink border-1.5 border",
         ghost: "text-ink-soft",
