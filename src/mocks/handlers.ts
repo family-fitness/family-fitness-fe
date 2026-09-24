@@ -282,7 +282,8 @@ const identity = [
       {
         claimCode: "K7M2QT",
         expiresAt: new Date(Date.now() + 7 * 864e5).toISOString(),
-        shareUrl: "http://localhost:3000/claim?code=K7M2QT",
+        // 목은 지금 연 주소로 — 3000 에 박아 두면 다른 포트로 띄운 개발 서버에서 링크가 남의 곳으로 간다
+        shareUrl: `${location.origin}/claim?code=K7M2QT`,
       },
       { status: 201 },
     ),
