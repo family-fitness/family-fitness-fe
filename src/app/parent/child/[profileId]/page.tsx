@@ -11,7 +11,6 @@ import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorView, ScoreLine } from "@/components/domain/body-card";
-import { RadarGapNote } from "@/components/domain/factor-radar";
 import { GrowthPole } from "@/components/scene/growth-pole";
 import { FactorTable } from "@/components/domain/factor-table";
 import { IslandCard } from "@/components/domain/island-card";
@@ -117,7 +116,6 @@ export default function ChildDetailPage() {
             <p className="text-lead mt-2 font-extrabold">아직 재지 않았어요</p>
           )}
           <FactorView points={latest?.radar} name={name} pending={false} />
-          <RadarGapNote points={latest?.radar} />
         </Card>
 
         <Card>

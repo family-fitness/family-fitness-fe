@@ -15,7 +15,6 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorIcon } from "@/components/domain/factor-icon";
 import { FactorView } from "@/components/domain/body-card";
-import { RadarGapNote } from "@/components/domain/factor-radar";
 import { RecordRow } from "@/components/domain/record-bar";
 import { isFactor } from "@/lib/fitness-factors";
 import { useFamilyProfiles, useLatestFitnessTest } from "@/lib/api/queries";
@@ -99,7 +98,6 @@ export default function ResultPage() {
           <section className="card-hero">
             <CardHead title="요인별 모양" />
             <FactorView points={radar} name={profile?.name ?? "나"} pending={false} />
-            <RadarGapNote points={radar} />
           </section>
         )}
 

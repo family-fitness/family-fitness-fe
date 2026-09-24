@@ -3,14 +3,11 @@
 import Link from "next/link";
 
 import { Card, CardHead } from "@/components/ui/card";
-import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FactorRadar, RadarGapNote } from "@/components/domain/factor-radar";
-import { FactorSea } from "@/components/scene/factor-sea";
+import { FactorRadar } from "@/components/domain/factor-radar";
 import type { FitnessMapMember } from "@/lib/api/types";
 import { useLatestFitnessTest } from "@/lib/api/queries";
 import { formatDate } from "@/lib/utils";
-import { usePrefsStore, type ChartView } from "@/stores/prefs-store";
 
 /**
  * 부모 홈의 주인공 — 「우리 아이가 이 정도다」.
@@ -37,7 +34,6 @@ export function BodyCard({ child }: { child: FitnessMapMember }) {
       {score == null ? <FirstMeasure child={child} /> : <ScoreLine score={score} />}
 
       <FactorView points={latest?.radar} name={name} pending={isPending} />
-      <RadarGapNote points={latest?.radar} />
 
       {/* 서버가 준 한 줄을 그대로. 고쳐 쓰면 두 화면이 다른 말을 한다(규칙 9) */}
       {child.headline && (
@@ -97,15 +93,7 @@ function FirstMeasure({ child }: { child: FitnessMapMember }) {
   );
 }
 
-const VIEWS = [
-  { value: "3d", label: "입체" },
-  { value: "flat", label: "육각형" },
-] as const;
-
-/**
- * 여섯 요인 — 입체(또래 바다) 또는 평면 육각형. 같은 값을 다르게 볼 뿐이다.
- * 고른 쪽은 이 기기에 남는다. 표(요인별)는 아이 자세히에 늘 같이 있다.
- */
+/** 여섯 요인 — 체력 육각형 하나. 표(요인별)는 아이 자세히에 같이 있다 */
 export function FactorView({
   points,
   name,
@@ -115,25 +103,12 @@ export function FactorView({
   name: string;
   pending: boolean;
 }) {
-  const view = usePrefsStore((s) => s.chartView);
-  const setView = usePrefsStore((s) => s.setChartView);
-
   return (
-    <div className="mt-3">
-      <div className="flex justify-end">
-        <Segmented<ChartView>
-          value={view}
-          options={VIEWS}
-          onChange={setView}
-          label="체력 그래프 보기"
-        />
-      </div>
+    <div className="mt-4">
       {pending ? (
-        <Skeleton className="mx-auto mt-2 aspect-[320/278] w-full rounded-3xl" />
-      ) : view === "3d" ? (
-        <FactorSea points={points} name={name} className="mt-1" />
+        <Skeleton className="mx-auto aspect-[320/290] w-full rounded-3xl" />
       ) : (
-        <FactorRadar points={points} name={name} className="mt-1" />
+        <FactorRadar points={points} name={name} />
       )}
     </div>
   );
