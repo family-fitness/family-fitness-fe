@@ -81,6 +81,14 @@ DELETE …/{date}       → 200 같은 모양(카드가 돌아온다)
 - 쉬는 날은 **캘린더 응답에 `rest: true`**, **이어서 한 날(`streakDays`)은 쉬는 날을 건너 이어지게**,
   리그 달성률에서 빼 주세요. 그날은 운동 알림도 보내지 않습니다
 
+### 프로필 사진 — `PUT · DELETE /profiles/{profileId}/photo`
+
+첫 시작 · 설정 · 가족 관리에서 사진을 고릅니다(9/25). 지금은 **이 기기에만** 둡니다(정사각 320px JPEG).
+
+- `PUT` multipart(image/jpeg, 1MB 이하) → `{ photoUrl }`, `ProfileSummary` · 가족 체력 지도 `members[]` 에 `photoUrl`
+- 아이 사진은 보호자 동의(개인정보)가 있어야 올리게, 철회하면 지워 주세요
+- 사진 주소는 가족 밖에서 열리지 않게(서명된 주소 · 짧은 만료)
+
 **이제 필요 없는 것**: 가족 주간 목표 · `familyMinutes` · 주간 리포트 · 코치 대화(`coach/chat`) — 화면에서 뺐습니다.
 `GET /missions/{missionId}` · `PATCH /profiles/{id}/body` 는 부르는 곳이 없어 뒤로 미뤄도 됩니다(키 · 몸무게는 위 「가입 때」 가 대신).
 
