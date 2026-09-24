@@ -30,14 +30,14 @@ export function WeekCard({
   const now = today();
 
   return (
-    <Card href={href} label={`이번 주 ${total}분, ${active}일 움직였어요. 캘린더 보기`}>
+    <Card href={href} label={`이번 주 ${total}분, ${active}일 운동했어요. 캘린더 보기`}>
       <CardHead title="이번 주" chevron />
       <div className="mt-1 flex items-baseline gap-3">
         <p className="metric-value text-metric">
           {total}
           <span className="metric-unit">분</span>
         </p>
-        <p className="text-caption text-ink-soft font-semibold">{active}일 움직였어요</p>
+        <p className="text-caption text-ink-soft font-semibold">{active}일 운동했어요</p>
       </div>
       {loading ? (
         <Skeleton className="mt-1 aspect-[320/150] w-full rounded-2xl" />
