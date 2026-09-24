@@ -84,6 +84,27 @@ function savedRefreshToken(): string | null {
   }
 }
 
+/**
+ * 새 토큰을 저장소(ff-auth)에도 바로 적는다. auth-store 는 몇몇 화면에서만 불러와서 sink 가 없는
+ * 화면이 있다 — 그때 저장소가 옛 토큰으로 남으면 새로고침하거나 설정으로 가는 순간 옛 토큰이 되살아난다.
+ */
+function persistTokens(access: string, refresh: string | null) {
+  if (typeof window === "undefined") return;
+  try {
+    const raw = window.localStorage.getItem(AUTH_STORAGE_KEY);
+    const saved = raw ? (JSON.parse(raw) as { state?: Record<string, unknown> }) : {};
+    window.localStorage.setItem(
+      AUTH_STORAGE_KEY,
+      JSON.stringify({
+        ...saved,
+        state: { ...(saved.state ?? {}), accessToken: access, refreshToken: refresh },
+      }),
+    );
+  } catch {
+    // 저장소를 못 써도 이번 탭은 메모리 토큰으로 돈다
+  }
+}
+
 let refreshing: Promise<boolean> | null = null;
 
 /**
@@ -109,6 +130,7 @@ function refreshOnce(): Promise<boolean> {
       } | null;
       if (!body?.accessToken) return false;
       accessToken = body.accessToken;
+      persistTokens(body.accessToken, body.refreshToken ?? token);
       tokenSink?.({ accessToken: body.accessToken, refreshToken: body.refreshToken ?? token });
       return true;
     })
@@ -151,9 +173,13 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
 
-  // 토큰이 끝났다 — 한 번만 새로 받고 다시 부른다. 로그인 · 새로 받기 자체는 다시 부르지 않는다
-  if (res.status === 401 && !retried && !path.startsWith("/auth/") && (await refreshOnce())) {
-    return request<T>(path, { ...options, retried: true });
+  // 토큰이 끝났다 — 한 번만 새로 받고 다시 부른다. 로그인 · 새로 받기 자체는 다시 부르지 않는다.
+  // 그 사이 다른 요청이 이미 새로 받아 왔으면(토큰이 바뀌었으면) 또 받지 않고 그 토큰으로 다시 부른다
+  if (res.status === 401 && !retried && !path.startsWith("/auth/")) {
+    const latest = currentToken();
+    if ((latest != null && latest !== token) || (await refreshOnce())) {
+      return request<T>(path, { ...options, retried: true });
+    }
   }
 
   if (res.status === 204) return undefined as T;

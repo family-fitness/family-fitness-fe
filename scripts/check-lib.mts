@@ -239,18 +239,28 @@ check(
   "하나도 안 한 운동은 할 운동",
   !didSomething({
     ...dayLog.entries[0],
+    minutes: 0,
     completed: false,
     sessions: [{ title: "a", phase: "MAIN", minutes: 1, done: false }],
   }),
 );
-check("직접 적어 낸 걸음수는 한 것으로 보인다", didSomething(dayLog.entries[1]));
+check(
+  "칸 없이 움직인 분만 있어도 한 운동(반쯤 본 영상)",
+  didSomething({ missionId: "v", title: "영상", minutes: 3, verifiedBy: null, completed: false }),
+);
+check(
+  "직접 적어 낸 걸음수는 확인 전에도 한 것으로 보인다",
+  didSomething({ ...dayLog.entries[1], completed: false }),
+);
 check("달력에 있는 날", isRealDate("2026-09-23") && isRealDate("2024-02-29"));
 check(
   "달력에 없는 날은 거른다",
   !isRealDate("2026-13-01") &&
     !isRealDate("2026-02-30") &&
     !isRealDate("../x") &&
-    !isRealDate(null),
+    !isRealDate(null) &&
+    !isRealDate("1000-01-01") &&
+    !isRealDate("9999-12-31"),
 );
 const mission = (startDate: string, endDate: string, targetMetric = "TIMER_MINUTES") =>
   ({ missionId: "x", startDate, endDate, targetMetric }) as unknown as Parameters<
@@ -272,6 +282,58 @@ check(
   "걸음수는 잡아 둔 운동이 아니다",
   plannedDay(mission("2026-09-26", "2026-09-26", "STEPS"), "2026-09-24") === null,
 );
+
+/* ─── 토큰 새로 받기(401 → /auth/refresh → 다시 부르기) ───────────── */
+
+{
+  const saved = new Map<string, string>();
+  const g = globalThis as unknown as {
+    window?: { localStorage: Pick<Storage, "getItem" | "setItem" | "removeItem"> };
+    fetch: typeof fetch;
+  };
+  g.window = {
+    localStorage: {
+      getItem: (k) => saved.get(k) ?? null,
+      setItem: (k, v) => void saved.set(k, v),
+      removeItem: (k) => void saved.delete(k),
+    },
+  };
+  saved.set("ff-auth", JSON.stringify({ state: { accessToken: "old", refreshToken: "r1" } }));
+  let refreshCalls = 0;
+  g.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    const auth = (init?.headers as Record<string, string> | undefined)?.Authorization;
+    const json = (status: number, body: unknown) =>
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { "Content-Type": "application/json" },
+      });
+    if (url.endsWith("/auth/refresh")) {
+      refreshCalls += 1;
+      return json(200, { accessToken: "new", refreshToken: "r2" });
+    }
+    return auth === "Bearer new"
+      ? json(200, { ok: true })
+      : json(401, { error: { code: "UNAUTHORIZED", message: "expired" } });
+  }) as typeof fetch;
+
+  const { api } = await import("@/lib/api/client");
+  const [a, b] = await Promise.all([
+    api.get<{ ok: boolean }>("/x"),
+    api.get<{ ok: boolean }>("/y"),
+  ]);
+  check("401 이면 새로 받아 다시 부른다", a.ok === true && b.ok === true);
+  check("같이 맞아도 새로 받기는 한 번", refreshCalls === 1, `${refreshCalls}번`);
+  const stored = JSON.parse(saved.get("ff-auth") ?? "{}") as {
+    state?: { accessToken?: string; refreshToken?: string };
+  };
+  check(
+    "새 토큰이 저장소에 남는다(새로고침해도 이어진다)",
+    stored.state?.accessToken === "new" && stored.state?.refreshToken === "r2",
+  );
+  const c = await api.get<{ ok: boolean }>("/z");
+  check("다음 요청은 새 토큰으로 바로 간다", c.ok === true && refreshCalls === 1);
+}
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);
