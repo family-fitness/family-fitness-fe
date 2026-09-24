@@ -10,14 +10,14 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FactorView, ScoreLine } from "@/components/domain/body-card";
+import { FactorView } from "@/components/domain/factor-view";
 import { MonthStats, RecentDays } from "@/components/domain/child-stats";
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { GrowthPole } from "@/components/scene/growth-pole";
 import { FactorTable } from "@/components/domain/factor-table";
 import { IslandCard } from "@/components/domain/island-card";
 import { ScoreTrend } from "@/components/domain/score-trend";
-import { REMEASURE_DAYS } from "@/components/domain/update-nudge";
+import { REMEASURE_DAYS } from "@/lib/remeasure";
 import type { FitnessTestSummary } from "@/lib/api/types";
 import {
   useFamilyProfiles,
@@ -132,17 +132,15 @@ export default function ChildDetailPage() {
             <p className="text-caption text-ink-soft font-bold">
               체력{latest?.testedOn && ` · ${formatDate(latest.testedOn)} 측정`}
             </p>
-            {score != null ? (
-              <ScoreLine score={score} />
-            ) : (
-              <p className="text-lead mt-2 font-extrabold">아직 재지 않았어요</p>
-            )}
+            {score == null && <p className="text-lead mt-2 font-extrabold">아직 재지 않았어요</p>}
           </div>
+          {/* 육각형 · 그 아래 통합 신체 점수(9/25) · 출처 */}
           <FactorView
             points={latest?.radar}
             name={name}
             pending={false}
             ageGroup={member?.ageGroup ?? profile.ageGroup}
+            score={score}
           />
         </Card>
 

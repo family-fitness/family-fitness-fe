@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FactorIcon } from "@/components/domain/factor-icon";
 import { SourceTag } from "@/components/domain/source-tag";
 import { FactorRadar } from "@/components/domain/factor-radar";
+import { ScoreLine } from "@/components/domain/factor-view";
 import {
   useAvailability,
   useFitnessMap,
@@ -140,6 +141,10 @@ function PlanForm() {
             legend={false}
             className="mx-auto mt-2 max-w-72"
           />
+          {/* 육각형 아래 통합 신체 점수(9/25). 안 쟀으면 그리지 않는다 */}
+          {kid?.latest?.overallPercentile != null && (
+            <ScoreLine score={kid.latest.overallPercentile} />
+          )}
           {shownFocus && (
             <p className="mt-3 text-center text-sm font-bold">
               <span className="text-ink-soft">{focus ? "고른 힘" : "키울 힘"}</span>{" "}
