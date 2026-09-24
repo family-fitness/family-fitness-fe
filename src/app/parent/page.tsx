@@ -20,14 +20,17 @@ import { NotificationBell } from "@/components/domain/notification-bell";
 import { PanelCell, PanelCells, WeekPanel, weekTotals } from "@/components/domain/week-panel";
 import {
   useCalendar,
+  useFamilyLeague,
   useFitnessMap,
   useLatestFitnessTest,
   useMissions,
   useProgress,
 } from "@/lib/api/queries";
+import { artFor } from "@/lib/art";
 import { isFactor } from "@/lib/fitness-factors";
+import { tierArt, tierName } from "@/lib/league";
 import { useSession } from "@/lib/session";
-import { longDate, weekOf } from "@/lib/today";
+import { longDate, monthOf, today, weekOf } from "@/lib/today";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
@@ -72,6 +75,7 @@ export default function ParentHomePage() {
 
   // 며칠 이어서 했는가 — 서버가 센 연속. 끊긴 날은 세지 않고, 끊겼다고 말하지 않는다
   const { data: progress } = useProgress(child?.profileId);
+  const { data: league } = useFamilyLeague(familyId ?? undefined, monthOf(today()));
 
   const header = (
     <HomeHeader
@@ -154,10 +158,18 @@ export default function ParentHomePage() {
               label="캘린더"
               art={<ArtIcon name="icon/menu-calendar" className="size-9" />}
             />
+            {/* 다른 가족들과 겨루는 자리. 운동 찾기는 아래 영상 줄 머리와 「직접 짜서 더하기」 에 있다 */}
             <PanelCell
-              href="/videos"
-              label="운동 찾기"
-              art={<ArtIcon name="icon/menu-video" className="size-9" />}
+              href="/parent/league"
+              label="가족 리그"
+              note={league ? `${tierName(league.tier)} · ${league.rank}등` : undefined}
+              art={
+                league && artFor(tierArt(league.tier)) ? (
+                  <ArtIcon name={tierArt(league.tier)} className="size-9" />
+                ) : (
+                  <ArtIcon name="icon/menu-trophy" className="size-9" />
+                )
+              }
             />
             <PanelCell
               href="/parent/dashboard"

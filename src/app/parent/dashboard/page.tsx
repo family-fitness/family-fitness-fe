@@ -13,6 +13,8 @@ import { Initial } from "@/components/ui/initial";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InviteSheet } from "@/components/domain/invite-sheet";
+import { LeagueRow } from "@/components/domain/league-row";
+import { RestCardRow } from "@/components/domain/rest-card";
 import { StreakChip } from "@/components/domain/streak-chip";
 import type { DayLog, FitnessMapMember, Mission } from "@/lib/api/types";
 import {
@@ -98,6 +100,8 @@ export default function FamilyDashboardPage() {
         {/* 첫 묶음 — 이번 달 우리 가족. 누가 했는지 가르지 않고 한 곳에 모은다 */}
         <section className="card-hero" aria-label="이번 달 우리 가족">
           <CardHead title="이번 달 우리 가족" meta={monthLabel(month)} />
+          {/* 다른 가족들과 겨루는 자리 — 가족 단위로만. 누르면 리그 화면 */}
+          <LeagueRow familyId={familyId ?? undefined} className="mt-1" />
           <div className="mt-2 grid grid-cols-2">
             <FamilyStat
               label="가족이 운동한 날"
@@ -133,9 +137,20 @@ export default function FamilyDashboardPage() {
               />
             )}
           </div>
+          {/* 쉬는 날 카드 — 오늘 이미 움직인 아이가 있으면 오늘은 못 고른다 */}
+          <div className="border-line mt-3 border-t pt-2">
+            <RestCardRow
+              familyId={familyId ?? undefined}
+              movedToday={members.some(
+                (m) =>
+                  m.role === "CHILD" &&
+                  (logsOf(m.profileId).find((d) => d.date === now)?.minutes ?? 0) > 0,
+              )}
+            />
+          </div>
           <NavLink
             href="/plan"
-            className="press border-line mt-3 flex min-h-12 items-center gap-3 border-t pt-3"
+            className="press border-line mt-2 flex min-h-12 items-center gap-3 border-t pt-3"
           >
             <ArtIcon name="icon/menu-ai" className="size-8" />
             <span className="min-w-0 flex-1">
