@@ -44,8 +44,9 @@ export function KidsOverview({
   const ids = kids.map((k) => k.profileId ?? "").filter(Boolean);
   // 부모 홈 「이번 주」 와 같은 범위 · 같은 키 — 고른 아이 것은 캐시를 나눠 쓴다
   const calendars = useFamilyCalendars(familyId, ids, { from: week.from, to: week.to });
+  // 못 받았으면 undefined — 빈 한 주로 그리지 않는다
   const logsOf = (profileId: string | undefined) =>
-    (profileId ? calendars[ids.indexOf(profileId)]?.data?.days : undefined) ?? [];
+    profileId ? calendars[ids.indexOf(profileId)]?.data?.days : undefined;
 
   return (
     <section className="card" aria-label="우리 아이">
@@ -98,7 +99,8 @@ function KidLine({
   kid: FitnessMapMember;
   selected: boolean;
   onSelect: () => void;
-  logs: DayLog[];
+  /** 이번 주 기록. 받는 중 · 못 받음이면 undefined */
+  logs: DayLog[] | undefined;
   missions: Mission[] | undefined;
   missionsFailed: boolean;
   /** 이번 주 월~일 */
@@ -106,7 +108,7 @@ function KidLine({
 }) {
   const { data: progress } = useProgress(kid.profileId);
   const now = today();
-  const rest = Boolean(logs.find((l) => l.date === now)?.rest);
+  const rest = Boolean(logs?.find((l) => l.date === now)?.rest);
   // 운동 목록을 못 받았으면 오늘을 말하지 않는다 — 「오늘 운동 없어요」 로 그리면 부모가 같은 운동을 또 받는다
   const status = missions ? todayLine(dayWork(missions, kid.profileId, now), rest) : null;
   const score = kid.latest?.overallPercentile ?? null;

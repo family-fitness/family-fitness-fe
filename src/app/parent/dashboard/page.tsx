@@ -84,9 +84,11 @@ export default function FamilyDashboardPage() {
   }
   if (isPending || mapLoading) return <DashboardSkeleton />;
 
-  // 받은 순서가 아니라 아이디로 잇는다 — 아이디 없는 사람이 끼면 기록이 옆 사람에게 붙었다
-  const logsOf = (profileId: string | undefined) =>
-    (profileId ? calendars[ids.indexOf(profileId)]?.data?.days : undefined) ?? [];
+  // 받은 순서가 아니라 아이디로 잇는다 — 아이디 없는 사람이 끼면 기록이 옆 사람에게 붙었다.
+  // 못 받았으면 undefined(사람 줄의 점이 빈 한 주로 서지 않게), 합계에는 빈 목록으로
+  const daysOf = (profileId: string | undefined) =>
+    profileId ? calendars[ids.indexOf(profileId)]?.data?.days : undefined;
+  const logsOf = (profileId: string | undefined) => daysOf(profileId) ?? [];
   const monthLogs = members.flatMap((m) =>
     logsOf(m.profileId).filter((d) => monthOf(d.date) === month),
   );
@@ -185,7 +187,7 @@ export default function FamilyDashboardPage() {
                 hasAccount={
                   profiles.find((p) => p.profileId === m.profileId)?.hasAccount ?? m.hasAccount
                 }
-                logs={logsOf(m.profileId)}
+                logs={daysOf(m.profileId)}
                 missions={missions?.missions}
                 missionsFailed={Boolean(missionsError)}
                 onInvite={() => setInviting(m.profileId ?? null)}
@@ -281,7 +283,8 @@ function MemberLine({
   member: FitnessMapMember;
   me: boolean;
   hasAccount: boolean | undefined;
-  logs: DayLog[];
+  /** 이번 주 기록. 받는 중 · 못 받음이면 undefined */
+  logs: DayLog[] | undefined;
   /** 아직 못 받았으면 undefined — 오늘 한마디를 말하지 않는다 */
   missions: Mission[] | undefined;
   missionsFailed: boolean;
@@ -291,7 +294,7 @@ function MemberLine({
   const child = member.role === "CHILD";
   const week = weekOf();
   const now = today();
-  const rest = Boolean(logs.find((l) => l.date === now)?.rest);
+  const rest = Boolean(logs?.find((l) => l.date === now)?.rest);
   // 부모 홈의 아이 줄과 같은 한마디 — 같은 아이의 오늘을 두 화면이 다르게 말하지 않게
   const today_ = missions
     ? todayLine(dayWork(missions, member.profileId, now), rest)
