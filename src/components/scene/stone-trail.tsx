@@ -7,8 +7,7 @@ import { LevelBuddy } from "@/components/domain/level-buddy";
 import type { Stage } from "@/lib/levels";
 import { cn } from "@/lib/utils";
 
-import { buddyFrame } from "./buddy";
-import { mascotImage } from "./kium-island";
+import { BUDDY_FRAME, mascotImage } from "./buddy";
 import { useToonScene, type CameraSpec } from "./use-toon-scene";
 
 /**
@@ -89,13 +88,15 @@ export function StoneTrail({
       const prismLines = lines(prism);
       // 넓은 판에서만 받침을 단다 — 작은 섬처럼 떠 있다. 좁은 띠에선 가는 선으로만 남아 어지럽다
       const floating = layout === "zigzag";
-      const under = keep(new THREE.CylinderGeometry(STONE * 0.9, STONE * 0.22, 0.38, 6));
-      under.rotateY(Math.PI / 6);
-      under.translate(0, -0.19, 0);
-      const underLines = lines(under);
+      const under = floating
+        ? keep(new THREE.CylinderGeometry(STONE * 0.9, STONE * 0.22, 0.38, 6))
+            .rotateY(Math.PI / 6)
+            .translate(0, -0.19, 0)
+        : null;
+      const underLines = under ? lines(under) : null;
+      const pale = under ? toon(palette.base, palette.baseShade, true) : null;
 
       const white = toon(palette.white, palette.whiteShade, true, -1);
-      const pale = toon(palette.base, palette.baseShade, true);
       const blue = toon(palette.blue, palette.blueShade, true);
       const yellow = toon(palette.yellow, palette.yellowShade, true);
       // 옆면은 섬처럼 파란 띠. 윗면이 무엇인지 말한다 — 흰 남은 돌 · 노랑 지금 · 파랑 끝낸 돌
@@ -112,7 +113,9 @@ export function StoneTrail({
         const slabEdges = new addons.LineSegments2(prismLines, edge);
         slabEdges.scale.y = LOW;
         group.add(slab, slabEdges);
-        if (floating) group.add(solid(under, pale), new addons.LineSegments2(underLines, edge));
+        if (under && underLines && pale) {
+          group.add(solid(under, pale), new addons.LineSegments2(underLines, edge));
+        }
         root.add(group);
         return { group, slab, slabEdges, thick: LOW, rise: null as number | null, index: i };
       });
@@ -160,7 +163,7 @@ export function StoneTrail({
           const sprite = new THREE.Sprite(
             keep(new THREE.SpriteMaterial({ map: texture, transparent: true, alphaTest: 0.35 })),
           );
-          const frame = buddyFrame(stage);
+          const frame = BUDDY_FRAME;
           const tall = BUDDY[layout] / frame.body;
           sprite.center.set(0.5, frame.feet);
           sprite.scale.set(tall, tall, 1);

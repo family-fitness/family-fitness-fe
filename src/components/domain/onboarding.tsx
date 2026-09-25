@@ -18,7 +18,6 @@ import {
   useSaveAvailability,
   useUpdateSupportMode,
 } from "@/lib/api/queries";
-import { artFor } from "@/lib/art";
 import { bodyError, bodyValue, rangeHint } from "@/lib/body";
 import { errorMessage } from "@/lib/errors";
 import { useSession } from "@/lib/session";
@@ -389,14 +388,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
         return (
           <WizardShell
             {...common}
-            art={
-              // 주문한 인사 그림이 오면 그것으로, 오기 전에는 레벨 캐릭터가 선다
-              artFor("scene/kiumi-hello") ? (
-                <Illustration name="scene/kiumi-hello" size={200} priority />
-              ) : (
-                <LevelBuddy stage={3} size={168} cheer />
-              )
-            }
+            art={<Illustration name="scene/kiumi-hello" size={200} priority />}
             title="안녕하세요! 저는 키움이에요"
           />
         );

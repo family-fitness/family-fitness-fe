@@ -7,8 +7,7 @@ import type { Stage } from "@/lib/levels";
 import { projectOrtho, type OrthoSpec } from "@/lib/ortho";
 import { cn } from "@/lib/utils";
 
-import { buddyFrame } from "./buddy";
-import { mascotImage } from "./kium-island";
+import { BUDDY_FRAME, mascotImage } from "./buddy";
 import { useToonScene } from "./use-toon-scene";
 import { useWidth } from "./use-width";
 
@@ -130,7 +129,7 @@ export function GrowthPole({
             keep(new THREE.SpriteMaterial({ map: texture, transparent: true, alphaTest: 0.35 })),
           );
           // 모자 꼭대기가 마지막 눈금에 닿게 — 새싹은 그 위로 솟는다
-          const frame = buddyFrame(stage);
+          const frame = BUDDY_FRAME;
           const tall = latest / frame.body;
           sprite.center.set(0.5, frame.feet);
           sprite.scale.set(tall, tall, 1);

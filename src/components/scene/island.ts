@@ -19,7 +19,7 @@ import type * as T from "three";
 
 import type { DecorationId } from "@/lib/unlocks";
 
-import type { BuddyFrame } from "./buddy";
+import { BUDDY_FRAME } from "./buddy";
 import {
   DECOR_CLEAR,
   DECOR_SPOTS,
@@ -46,8 +46,6 @@ export const ISLAND = {
   view: 3,
   /** 캐릭터 키가 캔버스 높이의 몇 배인가 */
   mascot: 0.42,
-  /** 그림 아래에서 발까지. 키움이 그림은 160 칸 중 151 칸째에 발이 닿는다 */
-  feet: 9 / 160,
 } as const;
 
 /** 나무가 설 수 있는 자리 수. 이보다 많이 운동하면 나무가 조금씩 커진다 */
@@ -179,8 +177,6 @@ export interface Island {
   sprout(t: number): void;
   /** 방금 열린 장식이 튀어나온다(레벨 업 순간). 나무가 자란 뒤에 */
   reveal(t: number): void;
-  /** 나무를 몇 그루 세웠나 */
-  plants: number;
   /** 가장 최근 나무가 섬 위 어느 방향에 있나(라디안). 없으면 null */
   newest: number | null;
   /** 방금 열린 장식이 섬 위 어느 방향에 있나(라디안). 없으면 null */
@@ -199,7 +195,6 @@ export function buildIsland(
     seed,
     decorations = [],
     unveil = null,
-    frame,
     palette,
     mascot,
     light,
@@ -211,8 +206,6 @@ export function buildIsland(
     decorations?: DecorationId[];
     /** 방금 열린 장식. `reveal` 전까지 숨어 있다 */
     unveil?: DecorationId | null;
-    /** 캐릭터 그림의 몸 비율(발끝 자리). 없으면 코드 그림 값 */
-    frame?: BuddyFrame;
     palette: Palette;
     /** 캐릭터 그림. 없으면 섬만 */
     mascot: HTMLImageElement | null;
@@ -375,7 +368,7 @@ export function buildIsland(
   const scale = new THREE.Vector3();
   const scratch = new THREE.Matrix4();
 
-  /** 나무 자리를 다시 셈한다. 흔들림 · 자라남이 없으면 한 번이면 된다 */
+  /** 나무 자리를 다시 셈한다. 자라는 나무가 없으면 한 번이면 된다 */
   let plantsDirty = true;
   const placePlants = (t: number) => {
     plantState.forEach((p, i) => {
@@ -415,7 +408,7 @@ export function buildIsland(
       new THREE.SpriteMaterial({ map: texture, transparent: true, alphaTest: 0.35 }),
     );
     sprite = new THREE.Sprite(material);
-    sprite.center.set(0.5, frame?.feet ?? ISLAND.feet);
+    sprite.center.set(0.5, BUDDY_FRAME.feet);
     const tall = ISLAND.mascot * 2 * ISLAND.view;
     sprite.scale.set(tall, tall, 1);
     figure.add(sprite);
@@ -494,7 +487,6 @@ export function buildIsland(
     root,
     clouds,
     figure,
-    plants: shown,
     newest: newestSlot ? Math.atan2(newestSlot.x, newestSlot.z) : null,
     unveiled:
       unveil && decorations.includes(unveil) ? decorationSpot(unveil, ISLAND.azimuth).a : null,
