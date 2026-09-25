@@ -14,7 +14,7 @@ import {
 } from "./toon";
 
 /**
- * 키움 섬 결의 입체 한 칸을 띄우는 틀. 그래프 · 징검다리 · 게임이 전부 이걸로 선다.
+ * 키움 섬 결의 입체 한 칸을 띄우는 틀. 요일 탑 · 키 자 · 징검다리가 이걸로 선다.
  *
  * 틀이 맡는 것 — three 를 늦게 받기, 정사영 카메라, 캔버스 크기, 화면 밖 · 탭 숨김이면
  * 멈추기, 움직임 줄이기, 떠날 때 WebGL 컨텍스트 돌려주기, 컨텍스트를 잃으면 비키기.
@@ -29,40 +29,30 @@ interface SceneContext {
   palette: Palette;
   kit: ToonKit;
   scene: T.Scene;
-  camera: T.OrthographicCamera;
   /** 카메라 쪽을 가리키는 단위 벡터. 종이 인형을 앞으로 당길 때 쓴다 */
   toward: T.Vector3;
   /** 움직임 줄이기 — 켜져 있으면 한 장면만 그린다 */
   still: boolean;
-  /** 초 */
-  clock(): number;
   /**
    * 화면에 처음 들어온 뒤 몇 초. 들어오기 전에는 `Infinity` 다 —
    * 자라나는 장면은 이걸로 셈하면 보이기 전엔 **다 자란 모습**, 보이는 순간부터 자란다.
    * 아래쪽 카드가 아무도 안 볼 때 혼자 자라 버리지 않고, 인쇄 · 전체 화면 캡처에도 값이 남는다
    */
   seen(): number;
-  /** 다시 그려 달라(움직임 줄이기에서 손으로 돌릴 때) */
+  /** 한 번 더 그려 달라 — 쉬고 있을 때 그림이 뒤늦게 도착했을 때 */
   invalidate(): void;
-  /** 캔버스 크기(CSS 픽셀) */
-  size: { width: number; height: number };
-  /** 세계 좌표 한 점이 캔버스 위 어디인지(CSS 픽셀). 글자 덧대기에 쓴다 */
-  project(point: T.Vector3): { x: number; y: number };
 }
 
 interface SceneHandle {
   /** 매 장면. 움직임 줄이기면 처음 한 번과 invalidate 때만 불린다 */
   update?(t: number, dt: number): void;
   /**
-   * 아직 움직이는 중인가. 없으면 늘 움직인다(떠 있는 섬처럼).
+   * 아직 움직이는 중인가. 없으면 늘 움직인다.
    * `false` 면 다음 `wake` 까지 그리기를 쉰다 — 다 자란 그래프가 배터리를 먹지 않게
    */
   busy?(): boolean;
   /** 크기가 바뀌었다 — 외곽선 굵기 · 글자 자리 */
   resize?(width: number, height: number): void;
-  /** 손가락. 가로로 민 만큼(dx) · 톡(tap) */
-  drag?(dx: number): void;
-  tap?(x: number, y: number): void;
   dispose?(): void;
 }
 
@@ -116,7 +106,8 @@ export function useToonScene(
 
       let renderer: T.WebGLRenderer;
       try {
-        renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        // 2배 화면이면 계단이 보이지 않는다 — 안티에일리어싱을 끄고 가볍게(장면 둘셋이 한 화면에 선다)
+        renderer = new THREE.WebGLRenderer({ alpha: true, antialias: window.devicePixelRatio < 2 });
       } catch {
         return; // WebGL 이 없다
       }
@@ -151,7 +142,6 @@ export function useToonScene(
       const scene = new THREE.Scene();
 
       const size = { width: el.clientWidth || 1, height: el.clientHeight || 1 };
-      const scratch = new THREE.Vector3();
       let raf = 0;
       let running = false;
       let last = performance.now();
@@ -174,20 +164,10 @@ export function useToonScene(
         palette,
         kit,
         scene,
-        camera: cam,
         toward,
         still,
-        clock,
         seen,
         invalidate,
-        size,
-        project(point) {
-          scratch.copy(point).project(cam);
-          return {
-            x: ((scratch.x + 1) / 2) * size.width,
-            y: ((1 - scratch.y) / 2) * size.height,
-          };
-        },
       };
 
       const fit = () => {
@@ -205,15 +185,23 @@ export function useToonScene(
       };
       fit();
 
-      try {
-        handle = make(ctx);
-      } catch {
+      /** 세우지 못했다 — 컨텍스트까지 돌려주고 비킨다. 대신 세워 둔 것이 그대로 남는다 */
+      const giveUp = () => {
+        handle?.dispose?.();
         kit.dispose();
         renderer.dispose();
+        renderer.forceContextLoss();
         canvas.remove();
+      };
+      try {
+        handle = make(ctx);
+        if (!handle) throw new Error("장면 없음");
+        handle.resize?.(size.width, size.height);
+        draw();
+      } catch {
+        giveUp();
         return;
       }
-      handle?.resize?.(size.width, size.height);
 
       const frame = (now: number) => {
         const dt = Math.min(0.05, (now - last) / 1000);
@@ -239,47 +227,6 @@ export function useToonScene(
         cancelAnimationFrame(raf);
       };
 
-      /* 손가락 — 가로로 밀면 drag, 짧게 누르면 tap. 세로로 밀면 화면이 내려간다 */
-      let press: { x: number; y: number; at: number; last: number; moved: number } | null = null;
-      const down = (e: PointerEvent) => {
-        press = { x: e.clientX, y: e.clientY, at: performance.now(), last: e.clientX, moved: 0 };
-        try {
-          el.setPointerCapture(e.pointerId);
-        } catch {}
-      };
-      const move = (e: PointerEvent) => {
-        if (!press) return;
-        const dx = e.clientX - press.last;
-        press.last = e.clientX;
-        press.moved += Math.abs(dx) + Math.abs(e.movementY);
-        if (handle?.drag) {
-          handle.drag(dx);
-          invalidate();
-        }
-      };
-      const up = (e: PointerEvent) => {
-        if (!press) return;
-        const tap = press.moved < 6 && performance.now() - press.at < 400;
-        press = null;
-        if (tap && handle?.tap) {
-          const box = el.getBoundingClientRect();
-          handle.tap(e.clientX - box.left, e.clientY - box.top);
-          invalidate();
-        }
-      };
-      const cancel = () => {
-        press = null;
-      };
-      // 손으로 만지는 장면만 손가락을 받는다. 그래프가 누르는 카드 안에 있으면 카드가 받아야 한다
-      const touchable = Boolean(handle?.drag || handle?.tap);
-      if (touchable) {
-        el.addEventListener("pointerdown", down);
-        el.addEventListener("pointermove", move);
-        el.addEventListener("pointerup", up);
-        el.addEventListener("pointercancel", cancel);
-      }
-
-      draw();
       canvas.classList.replace("opacity-0", "opacity-100");
       ready(true);
 
@@ -289,8 +236,9 @@ export function useToonScene(
         if (still || !visible || document.hidden) invalidate();
         else start();
       };
-      const observer = new IntersectionObserver(([entry]) => {
-        visible = entry.isIntersecting;
+      // 한 번에 여러 개가 오면 마지막이 지금이다
+      const observer = new IntersectionObserver((entries) => {
+        visible = entries[entries.length - 1].isIntersecting;
         if (visible && !document.hidden) start();
         else stop();
       });
@@ -317,16 +265,8 @@ export function useToonScene(
         observer.disconnect();
         resizer.disconnect();
         document.removeEventListener("visibilitychange", onVisibility);
-        el.removeEventListener("pointerdown", down);
-        el.removeEventListener("pointermove", move);
-        el.removeEventListener("pointerup", up);
-        el.removeEventListener("pointercancel", cancel);
         canvas.removeEventListener("webglcontextlost", lost);
-        handle?.dispose?.();
-        kit.dispose();
-        renderer.dispose();
-        renderer.forceContextLoss();
-        canvas.remove();
+        giveUp();
       };
     })();
 
