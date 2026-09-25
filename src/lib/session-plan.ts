@@ -1,4 +1,10 @@
-import type { Mission, MissionSession, MissionWithSessions, SessionPhase } from "./api/types";
+import type {
+  Mission,
+  MissionParticipant,
+  MissionSession,
+  MissionWithSessions,
+  SessionPhase,
+} from "./api/types";
 
 /**
  * 하루치 미션을 **세션 셋**으로 읽는 곳.
@@ -21,18 +27,30 @@ export const PHASE_LABEL: Record<SessionPhase, string> = {
 const PHASE_ORDER: Record<SessionPhase, number> = { WARMUP: 0, MAIN: 1, COOLDOWN: 2 };
 
 /**
- * 미션에서 세션 목록을 읽는다.
+ * 미션에서 **한 사람의** 세션 목록을 읽는다. 끝냈는지는 그 사람의 기록(`doneSessions`)으로 채운다 —
+ * 형제가 같은 운동을 받았을 때 한 아이가 끝낸 칸이 다른 아이에게 끝난 칸으로 보이면 안 된다.
+ * 참여자가 아닌 사람이면 끝낸 칸이 없다.
  *
  * **세션이 안 오면 본운동 한 칸만 만든다.** 준비·정리를 프론트가 지어내면
  * 코치가 짜지 않은 운동을 아이에게 시키는 게 된다.
  */
-export function sessionsOf(mission: MissionWithSessions | Mission | undefined): MissionSession[] {
+export function sessionsOf(
+  mission: MissionWithSessions | Mission | undefined,
+  profileId: string | null | undefined,
+): MissionSession[] {
   if (!mission) return [];
+  const me = mission.participants?.find((p) => p.profileId === profileId) as
+    MissionParticipant | undefined;
   const given = (mission as MissionWithSessions).sessions;
-  if (given && given.length > 0) return orderSessions(given);
+  if (given && given.length > 0) {
+    const done = new Set(me?.doneSessions ?? []);
+    return orderSessions(given).map((s) => {
+      const completed = Boolean(me?.completed) || done.has(s.position);
+      return { ...s, completed, verifiedBy: completed ? (me?.verifiedBy ?? null) : null };
+    });
+  }
 
   /* 세션이 없는 미션도 하나는 해야 한다. 미션 자체를 본운동 한 칸으로 본다 */
-  const me = mission.participants?.[0];
   return [
     {
       position: 1,

@@ -25,8 +25,11 @@ import {
   type Concrete,
   type MapMember,
   type MissionRow,
+  type ParticipantRow,
   type Profile,
+  participantOf,
   saveRestDays,
+  sessionsOfRow,
 } from "./db";
 
 import { clips } from "./clips";
@@ -34,7 +37,7 @@ import { coaching } from "./coach";
 import { history } from "./history";
 import { league } from "./league";
 import { notifications } from "./notifications";
-import { progress } from "./progress";
+import { progress, progressOf } from "./progress";
 
 export { DEMO, setActingProfile } from "./db";
 
@@ -698,8 +701,17 @@ const missions = [
         completed: false,
         verifiedBy: null,
         needsGuardianCheck: false,
+        doneSessions: [],
       })),
-      ...(body.sessions?.length ? { sessions: body.sessions } : {}),
+      // 칸의 끝냄은 사람마다 따로 든다 — 보낸 쪽이 칸에 적어 온 끝냄은 믿지 않는다
+      ...(body.sessions?.length
+        ? {
+            sessions: body.sessions.map((s) => {
+              const { completed: _c, verifiedBy: _v, ...rest } = s as Record<string, unknown>;
+              return rest;
+            }),
+          }
+        : {}),
     } as MissionRow;
     db.missions.push(mission);
     saveMissions();
@@ -731,48 +743,40 @@ const missions = [
       const body = (await request.json()) as { profileId: string; activeSeconds: number };
       const mission = db.missions.find((m) => m.missionId === String(params.missionId));
       if (!mission) return fail(404, "MISSION_NOT_FOUND", "미션이 없습니다");
-      const sessions =
-        (
-          mission as unknown as {
-            sessions?: {
-              position: number;
-              minutes?: number | null;
-              completed?: boolean;
-              verifiedBy?: string | null;
-            }[];
-          }
-        ).sessions ?? [];
+      const sessions = sessionsOfRow(mission);
       const session = sessions.find((s) => s.position === Number(params.position));
       if (!session) return fail(404, "SESSION_NOT_FOUND", "그 칸이 없습니다");
+      const me = participantOf(mission, body.profileId);
+      if (!me) return fail(403, "NOT_A_PARTICIPANT", "이 운동을 하는 사람이 아닙니다");
       // 잡힌 시간의 절반도 안 했으면 끝낸 것으로 치지 않는다
       const planned = (session.minutes ?? 1) * 60;
       if ((body.activeSeconds ?? 0) < planned * 0.5) {
         return fail(422, "TOO_SHORT", "잡힌 시간의 절반도 하지 않았습니다");
       }
 
-      const first = !session.completed;
-      session.completed = true;
-      session.verifiedBy = "TIMER";
+      // 경험치는 레벨이 세는 것과 같은 셈으로 — 끝내기 전과 뒤의 차이. 두 번 눌러도 두 번 쌓이지 않는다
+      const before = progressOf(body.profileId).xp;
+      // 끝낸 사람과, 같이 하기로 한 보호자가 이 칸을 끝낸다 — 아이 폰 하나로 같이 한다.
+      // 형제는 저마다 한다: 한 아이가 끝낸 칸이 다른 아이 것이 되지 않는다
+      const roleOf = (id: string | undefined) =>
+        db.profiles.profiles.find((p) => p.profileId === id)?.role;
       const total = sessions.reduce((sum, s) => sum + (s.minutes ?? 0), 0) || 1;
-      const done = sessions
-        .filter((s) => s.completed)
-        .reduce((sum, s) => sum + (s.minutes ?? 0), 0);
-      const allDone = sessions.every((s) => s.completed);
-      const me = (mission.participants ?? []).find((p) => p.profileId === body.profileId);
-      if (me) {
-        me.progress = done / total;
-        me.verifiedBy = "TIMER";
-        if (allDone) me.completed = true;
+      for (const p of (mission.participants ?? []) as ParticipantRow[]) {
+        if (p !== me && roleOf(p.profileId) !== "PARENT") continue;
+        p.doneSessions = [...new Set([...(p.doneSessions ?? []), session.position])];
+        const done = sessions.filter((s) => p.doneSessions.includes(s.position));
+        p.progress = done.reduce((sum, s) => sum + (s.minutes ?? 0), 0) / total;
+        p.verifiedBy = "TIMER";
+        p.completed = done.length === sessions.length;
       }
       saveMissions();
 
       return HttpResponse.json({
         position: session.position,
         verifiedBy: "TIMER",
-        missionProgress: done / total,
-        missionCompleted: allDone,
-        // 두 번 눌러도 두 번 쌓이지 않는다
-        xpGained: first ? 5 + (allDone ? 20 : 0) : 0,
+        missionProgress: me.progress,
+        missionCompleted: me.completed,
+        xpGained: progressOf(body.profileId).xp - before,
       });
     },
   ),
@@ -790,18 +794,33 @@ const missions = [
     });
   }),
 
-  http.post(`${BASE}/missions/:missionId/participants/:profileId/confirm`, ({ params }) => {
-    const me = acting();
-    if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자가 아닙니다");
-    return HttpResponse.json({
-      missionId: String(params.missionId),
-      profileId: String(params.profileId),
-      completed: true,
-      verifiedBy: "SELF_REPORT",
-      confirmedBy: db.actingProfileId,
-      verifiedAt: new Date().toISOString(),
-    });
-  }),
+  /** 직접 적은 기록을 보호자가 확인한다 — 확인해야 완료가 된다(규칙 2) */
+  http.post<PathParams>(
+    `${BASE}/missions/:missionId/participants/:profileId/confirm`,
+    ({ params }) => {
+      const me = acting();
+      if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자가 아닙니다");
+      const mission = db.missions.find((m) => m.missionId === String(params.missionId));
+      if (!mission) return fail(404, "MISSION_NOT_FOUND", "미션이 없습니다");
+      const who = participantOf(mission, String(params.profileId));
+      if (!who) return fail(404, "PARTICIPANT_NOT_FOUND", "참여자가 아닙니다");
+      if ((who.progress ?? 0) < 1) {
+        return fail(422, "TARGET_NOT_REACHED", "목표에 닿지 않았습니다");
+      }
+      who.completed = true;
+      who.needsGuardianCheck = false;
+      who.verifiedBy = "SELF_REPORT";
+      saveMissions();
+      return HttpResponse.json({
+        missionId: mission.missionId,
+        profileId: who.profileId,
+        completed: true,
+        verifiedBy: "SELF_REPORT",
+        confirmedBy: db.actingProfileId,
+        verifiedAt: new Date().toISOString(),
+      });
+    },
+  ),
 ];
 
 const videos = [

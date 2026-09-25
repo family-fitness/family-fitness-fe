@@ -210,7 +210,7 @@ function TodaySection({
   }
 
   const main = timed[0];
-  const sessions = main ? sessionsOf(main) : [];
+  const sessions = main ? sessionsOf(main, childProfileId) : [];
   const minutes = totalMinutes(sessions);
   const doneCount = sessions.filter((s) => s.completed).length;
   const me = main?.participants?.find((p) => p.profileId === childProfileId);

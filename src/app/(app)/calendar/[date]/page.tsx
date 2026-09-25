@@ -430,7 +430,8 @@ function Thumb({ videoId }: { videoId?: string | null }) {
 
 /** 그날 한 운동 한 개 — 칸마다 한 줄. 칸 없이 직접 적은 것(걷기 등)은 무엇으로 확인했는지만 */
 function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; mission?: Mission }) {
-  const clips = sessionsOf(mission);
+  // 칸 이름과 영상만 쓴다 — 끝냈는지는 그날 기록(`entry.sessions`)이 말한다
+  const clips = sessionsOf(mission, null);
   if (!entry.sessions || entry.sessions.length === 0) {
     return (
       <li className="flex items-center gap-3">
@@ -487,7 +488,8 @@ function PlannedRows({
   mission: Mission;
   nameOf: (profileId: string, fallback: string) => string;
 }) {
-  const sessions = sessionsOf(mission);
+  // 앞으로 할 운동이라 끝낸 칸이 없다 — 칸 이름 · 시간 · 영상만 쓴다
+  const sessions = sessionsOf(mission, null);
   const together = (mission.participants?.length ?? 0) > 1;
   return (
     <li>

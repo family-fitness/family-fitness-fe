@@ -128,7 +128,7 @@ export default function KidHomePage() {
   // 쉬는 날 카드(부모가 쓴다) — 이번 주 기록에 같이 온다. 쓴 날이면 오늘 운동 대신 「쉬는 날」
   const restToday = Boolean(calendar?.days.find((d) => d.date === now)?.rest);
   // 쉬는 날에도 「그래도 할래요」 로 시작했으면 이어서 하게 둔다
-  const started = todo ? sessionsOf(todo).some((s) => s.completed) : false;
+  const started = todo ? sessionsOf(todo, childProfileId).some((s) => s.completed) : false;
   // 가장 최근에 받은 스티커 · 업적 하나씩. 개수를 세지 않는다 — 모아야 할 것이 되면 못 받은 날이 실패가 된다
   const sticker = (cheers?.cheers ?? [])
     .filter((c) => c.stickerId && stickerOf(c.stickerId))
@@ -199,7 +199,7 @@ export default function KidHomePage() {
             )}
           </div>
         ) : todo ? (
-          <TodayHero mission={todo} />
+          <TodayHero mission={todo} profileId={childProfileId} />
         ) : (
           <div className="card-hero text-center">
             <p className="text-lead font-extrabold">오늘 운동이 아직 없어요</p>
@@ -270,8 +270,8 @@ export default function KidHomePage() {
 }
 
 /** 오늘 운동 — 파랑 큰 카드. 누르면 바로 운동하기로 */
-function TodayHero({ mission }: { mission: Mission }) {
-  const sessions = sessionsOf(mission);
+function TodayHero({ mission, profileId }: { mission: Mission; profileId: string | null }) {
+  const sessions = sessionsOf(mission, profileId);
   const minutes = totalMinutes(sessions);
   const phases = (["WARMUP", "MAIN", "COOLDOWN"] as const)
     .map((p) => [p, sessions.filter((s) => s.phase === p).length] as const)

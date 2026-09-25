@@ -134,10 +134,18 @@ function seedTests(): Record<string, FitnessTestSummary[]> {
       row("00000000-0000-4000-8000-0000000000u2", "2026-09-10", 62, 163, 56),
       row("00000000-0000-4000-8000-0000000000u1", "2026-04-20", 57, 163, 57.4),
     ],
+    "00000000-0000-4000-8000-000000000013": [
+      row("00000000-0000-4000-8000-0000000000v1", "2026-08-30", 29, 176, 81),
+    ],
   };
 }
 
 /** 아이는 월 · 수 · 금 저녁과 토요일 오전, 엄마는 토요일 오전에 같이 */
+/** 시연 가족이 처음 적어 둔 운동 시간. 지난 기록은 이 요일로 심는다 — 지금 시간표를 고쳐도 지난날은 그대로 */
+export const DEMO_SCHEDULE: Readonly<
+  Record<string, readonly { day: string; start: string; minutes: number }[]>
+> = seedAvailability();
+
 function seedAvailability(): Record<string, { day: string; start: string; minutes: number }[]> {
   return {
     [KID_ID]: [
@@ -169,9 +177,28 @@ function demoMap() {
  * `sex` 는 생성된 스키마에 아직 없다 — 가족을 만들 때는 받으면서 조회 응답에는
  * 안 돌려준다(`BACKEND_ASKS.md`). 목은 요청한 모양대로 돌려준다.
  */
-export type Profile = Concrete<ProfileSummary> & { sex?: "M" | "F" };
+export type Profile = Concrete<ProfileSummary> & {
+  sex?: "M" | "F";
+  /** 목만 든다 — 동의를 다시 줬을 때 만 4세가 넘었는지 다시 보려고 */
+  birthDate?: string;
+};
 export type MapMember = Concrete<FitnessMap>["members"][number];
 export type MissionRow = Concrete<Mission>;
+/** 참여자 한 사람 — 끝낸 칸을 사람마다 든다(`MissionParticipant.doneSessions`) */
+export type ParticipantRow = MissionRow["participants"][number] & { doneSessions: number[] };
+/** 미션의 칸. ▲ 서버에 아직 없다 */
+export type SessionRow = { position: number; minutes?: number | null };
+
+/** 미션에 든 칸 */
+export function sessionsOfRow(m: MissionRow): SessionRow[] {
+  return (m as unknown as { sessions?: SessionRow[] }).sessions ?? [];
+}
+
+/** 참여자 한 사람 */
+export function participantOf(m: MissionRow, profileId: string): ParticipantRow | undefined {
+  return (m.participants ?? []).find((p) => p.profileId === profileId) as
+    ParticipantRow | undefined;
+}
 
 export const BASE = "/api/v1";
 const CHEER_KEY = "ff-mock-cheers";
@@ -500,8 +527,6 @@ export function sessionsFor(
     factor: c.factor,
     minutes: m,
     clip: clip(c),
-    completed: false,
-    verifiedBy: null,
   }));
 }
 
@@ -514,9 +539,7 @@ export function sessionsFor(
  */
 function seedMissions(): MissionRow[] {
   const today = dayOf(daysAgo(0, 12));
-  const sessions = sessionsFor("유연성", 12).map((s, i) =>
-    i < 2 ? { ...s, completed: true, verifiedBy: "TIMER" } : s,
-  );
+  const sessions = sessionsFor("유연성", 12);
   return [
     {
       missionId: "seed-today",
@@ -539,6 +562,7 @@ function seedMissions(): MissionRow[] {
           completed: false,
           verifiedBy: "TIMER",
           needsGuardianCheck: false,
+          doneSessions: [1, 2],
         },
       ],
     },
@@ -567,6 +591,7 @@ function seedMissions(): MissionRow[] {
           completed: false,
           verifiedBy: "SELF_REPORT",
           needsGuardianCheck: true,
+          doneSessions: [],
         },
       ],
     },
@@ -602,11 +627,27 @@ function freshCoachRun() {
 function loadMissions(): MissionRow[] {
   try {
     const saved = sessionStorage.getItem(MISSION_KEY);
-    if (saved) return JSON.parse(saved) as MissionRow[];
+    if (saved) return perPerson(JSON.parse(saved) as MissionRow[]);
   } catch {
     return seedMissions();
   }
   return seedMissions();
+}
+
+/**
+ * 칸에 끝냄을 하나만 두던 옛 저장분을 사람마다로 옮긴다 — 열어 둔 탭에서 방금 한 칸이
+ * 안 한 칸으로 돌아가지 않게.
+ */
+function perPerson(missions: MissionRow[]): MissionRow[] {
+  for (const m of missions) {
+    const sessions = sessionsOfRow(m) as (SessionRow & { completed?: boolean })[];
+    const done = sessions.filter((s) => s.completed).map((s) => s.position);
+    for (const p of (m.participants ?? []) as ParticipantRow[]) {
+      if (!Array.isArray(p.doneSessions)) p.doneSessions = done;
+    }
+    for (const s of sessions) delete s.completed;
+  }
+  return missions;
 }
 
 export function saveMissions() {

@@ -289,7 +289,7 @@ function MemberLine({
       now <= (m.endDate ?? "") &&
       m.participants?.some((p) => p.profileId === member.profileId),
   );
-  const sessions = mine.flatMap((m) => sessionsOf(m));
+  const sessions = mine.flatMap((m) => sessionsOf(m, member.profileId));
   const doneCount = sessions.filter((s) => s.completed).length;
   const today_ =
     mine.length === 0

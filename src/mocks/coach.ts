@@ -279,6 +279,7 @@ export const coaching = [
         completed: false,
         verifiedBy: null,
         needsGuardianCheck: false,
+        doneSessions: [],
       })),
     } as unknown as MissionRow;
     db.missions = [...db.missions, mission];

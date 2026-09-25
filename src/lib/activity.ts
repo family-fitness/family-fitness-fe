@@ -51,7 +51,7 @@ export function todayActivity({
       m.targetMetric !== "STEPS" &&
       m.participants?.some((p) => p.profileId === profileId),
   );
-  const sessions = mine.flatMap((m) => sessionsOf(m));
+  const sessions = mine.flatMap((m) => sessionsOf(m, profileId));
   const log = weekLogs?.find((d) => d.date === now);
   const slots = availability?.slots ?? [];
   const planned = sessions.reduce((sum, s) => sum + (s.minutes ?? 0), 0);

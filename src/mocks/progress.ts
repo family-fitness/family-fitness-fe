@@ -44,11 +44,27 @@ function levelOf(xp: number) {
   return level;
 }
 
+/** 경험치를 세는 운동 — 직접 적은 기록(걸음수)은 뺀다. 서버가 확인하지 못한 값이다(규칙 2) */
+function counted(log: DayLog) {
+  return log.entries.filter((e) => e.verifiedBy !== "SELF_REPORT");
+}
+
+/** 그날 잡힌 것을 다 했나 */
+function dayDone(log: DayLog) {
+  const entries = counted(log);
+  return entries.length > 0 && entries.every((e) => e.completed);
+}
+
 function dayXp(log: DayLog): number {
-  const sessions = log.entries.flatMap((e) => e.sessions ?? []);
-  const done = sessions.filter((s) => s.done).length;
-  const allDone = log.entries.length > 0 && log.entries.every((e) => e.completed);
-  return done * XP.SESSION + (allDone ? XP.DAY_DONE : 0);
+  const done = counted(log)
+    .flatMap((e) => e.sessions ?? [])
+    .filter((s) => s.done).length;
+  return done * XP.SESSION + (dayDone(log) ? XP.DAY_DONE : 0);
+}
+
+/** 그날 일의 시각 — 오늘이면 지금. 저녁 7시로 적으면 낮에 열었을 때 아직 오지 않은 시각이 되어 알림에서 빠진다 */
+function timeOn(date: string) {
+  return date === today() ? new Date().toISOString() : `${date}T19:00:00+09:00`;
 }
 
 /**
@@ -82,10 +98,9 @@ export function progressOf(profileId: string): ProgressView {
 
   const events: XpEvent[] = [
     ...logs.map((l) => ({
-      reason: l.entries.every((e) => e.completed) ? "운동을 다 했어요" : "운동을 했어요",
+      reason: dayDone(l) ? "운동을 다 했어요" : "운동을 했어요",
       amount: dayXp(l),
-      // 오늘 것은 지금 시각. 저녁 7시로 적으면 낮에 열었을 때 아직 오지 않은 시각이 된다
-      at: l.date === today() ? new Date().toISOString() : `${l.date}T19:00:00+09:00`,
+      at: timeOn(l.date),
     })),
     ...stickers.map((c) => ({
       reason: `${fromOf(c.fromProfileId, c.fromName)}${josa(fromOf(c.fromProfileId, c.fromName), "이가")} 붙여 준 스티커`,
@@ -95,7 +110,7 @@ export function progressOf(profileId: string): ProgressView {
     ...tests.slice(0, -1).map((t) => ({
       reason: "키 · 몸무게를 새로 쟀어요",
       amount: XP.MEASURE,
-      at: `${t.testedOn}T10:00:00+09:00`,
+      at: timeOn(t.testedOn),
     })),
   ].filter((e) => e.amount > 0);
 
@@ -129,7 +144,8 @@ export function progressOf(profileId: string): ProgressView {
     achievements: achievementsOf(
       profileId,
       logs,
-      tests.length,
+      // 두 번째로 잰 날 — 처음 다시 잰 날이다. 이력은 최근 것이 먼저 온다
+      tests.at(-2)?.testedOn,
       stickers.map((c) => c.createdAt),
     ),
     // 시각이 「Z」 와 「+09:00」 으로 섞여 온다 — 글자가 아니라 시각으로 줄 세운다
@@ -146,10 +162,10 @@ export function progressOf(profileId: string): ProgressView {
 function achievementsOf(
   profileId: string,
   logs: DayLog[],
-  testCount: number,
+  remeasuredOn: string | undefined,
   stickerTimes: string[],
 ): AchievementView[] {
-  const at = (date: string | undefined) => (date ? `${date}T19:00:00+09:00` : null);
+  const at = (date: string | undefined) => (date ? timeOn(date) : null);
   const sorted = [...logs].sort((a, b) => a.date.localeCompare(b.date));
 
   // 합친 분이 처음 n 을 넘은 날
@@ -244,7 +260,7 @@ function achievementsOf(
       code: "REMEASURE",
       title: "자란 만큼 다시",
       description: "키 · 몸무게를 새로 재요",
-      earnedAt: testCount >= 2 ? at(today()) : null,
+      earnedAt: at(remeasuredOn),
     },
     {
       code: "FIRST_STICKER",

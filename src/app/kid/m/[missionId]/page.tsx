@@ -99,7 +99,7 @@ export default function PlayPage() {
   }, []);
 
   const sessions: MissionSession[] = mission
-    ? sessionsOf(mission).map((s) =>
+    ? sessionsOf(mission, kidId).map((s) =>
         doneHere.includes(s.position) ? { ...s, completed: true, verifiedBy: "TIMER" } : s,
       )
     : [];

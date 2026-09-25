@@ -201,12 +201,27 @@ export interface MissionSession {
   /** 이 세션에 잡힌 시간(분) */
   minutes?: number | null;
   clip?: VideoClip | null;
+  /**
+   * 이 사람이 끝냈나. 서버가 칸에 싣는 값이 아니라 `sessionsOf(mission, profileId)` 가
+   * 그 사람의 `doneSessions` 로 채운다 — 끝냄은 칸이 아니라 사람마다다
+   */
   completed?: boolean;
   verifiedBy?: VerifiedBy | null;
 }
 
 /** 서버가 세션을 붙여 줄 수 있다 */
 export type MissionWithSessions = Mission & { sessions?: MissionSession[] | null };
+
+/**
+ * 미션의 참여자 한 사람.
+ *
+ * ▲ 요청: `MissionParticipantView.doneSessions` — 이 사람이 끝낸 칸의 position.
+ * 칸 하나에 끝냄을 하나만 두면 형제가 같은 운동을 받았을 때 한 아이가 끝낸 칸이
+ * 다른 아이에게도 끝난 칸이 된다.
+ */
+export type MissionParticipant = NonNullable<Mission["participants"]>[number] & {
+  doneSessions?: number[] | null;
+};
 export type ProposalWithSessions = CoachProposal & {
   sessions?: MissionSession[] | null;
   /** 이번 주 어느 요일에 넣을지. ▲ 요청: `ProposalView.days` */

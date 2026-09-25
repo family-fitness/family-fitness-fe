@@ -110,7 +110,7 @@ function KidLine({
       now <= (m.endDate ?? "") &&
       m.participants?.some((p) => p.profileId === kid.profileId),
   );
-  const sessions = mine.flatMap((m) => sessionsOf(m));
+  const sessions = mine.flatMap((m) => sessionsOf(m, kid.profileId));
   const doneCount = sessions.filter((s) => s.completed).length;
   const status =
     sessions.length > 0 && doneCount === sessions.length
