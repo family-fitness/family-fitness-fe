@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronRight, Heart, Play, Plus, Search, X } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Fragment, Suspense, useDeferredValue, useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -57,6 +57,7 @@ export default function VideosPage() {
 }
 
 function Finder() {
+  const router = useRouter();
   const params = useSearchParams();
   const kidView = useIsKidView();
   const { profile } = useSession();
@@ -88,6 +89,15 @@ function Finder() {
   // 닫아도 고른 클립은 남긴다 — 시트가 내려가는 동안 제목과 영상이 비지 않게
   const [previewId, setPreviewId] = useState<string | null>(params.get("clip"));
   const [previewOpen, setPreviewOpen] = useState(Boolean(params.get("clip")));
+  const closePreview = () => {
+    setPreviewOpen(false);
+    // 홈에서 `?clip=` 으로 왔으면 주소에서 뗀다 — 새로고침하거나 뒤로 돌아오면 닫은 시범이 다시 떴다
+    if (!params.has("clip")) return;
+    const next = new URLSearchParams(params.toString());
+    next.delete("clip");
+    const rest = next.toString();
+    router.replace(`/videos${rest ? `?${rest}` : ""}`, { scroll: false });
+  };
   // 치는 동안은 앞 결과를 둔다 — 한 글자마다 서버에 묻지 않게
   const search = useDeferredValue(q.trim());
 
@@ -240,7 +250,7 @@ function Finder() {
 
       <Sheet
         open={previewOpen && preview != null}
-        onClose={() => setPreviewOpen(false)}
+        onClose={closePreview}
         title={preview?.title ?? "시범"}
       >
         {preview && <Preview clip={preview} />}
