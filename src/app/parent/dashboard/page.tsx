@@ -207,7 +207,6 @@ export default function FamilyDashboardPage() {
       </Stage>
 
       <InviteSheet
-        key={inviting ?? "any"}
         open={inviting !== undefined}
         onClose={() => setInviting(undefined)}
         familyName={map?.familyName ?? "우리 가족"}

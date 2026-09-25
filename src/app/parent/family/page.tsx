@@ -113,7 +113,6 @@ export default function MembersPage() {
 
         <AddMemberSheet open={adding} onClose={() => setAdding(false)} familyId={familyId ?? ""} />
         <InviteSheet
-          key={inviting ?? "any"}
           open={inviting !== undefined}
           onClose={() => setInviting(undefined)}
           familyName={family?.familyName ?? "우리 가족"}
