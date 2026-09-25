@@ -179,16 +179,11 @@ export default function ResultPage() {
           <ArtIcon name="icon/menu-ai" className="size-5" />
           AI에게 운동 받기
         </Link>
-        <ul className="card divide-rows py-1">
-          <ListRow
-            href={`/p/${profileId}/future`}
-            art="icon/menu-future"
-            title="10년 위 연령대 보기"
-          />
-          {measurable && (
+        {measurable && (
+          <ul className="card divide-rows py-1">
             <ListRow href={`/p/${profileId}/measure`} art="icon/menu-measure" title="새로 재기" />
-          )}
-        </ul>
+          </ul>
+        )}
       </Stage>
     </>
   );

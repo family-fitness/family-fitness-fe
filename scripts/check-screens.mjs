@@ -49,7 +49,6 @@ const ROUTES = [
   "/settings/schedule",
   `/p/${KID}/measure`,
   `/p/${KID}/result`,
-  `/p/${KID}/future`,
   "/offline",
 ];
 
@@ -98,7 +97,7 @@ const KID_ROUTES = [
 ];
 
 /** 부모 화면 — 아이 모드로 열면 아이 홈으로 돌아가야 한다(백분위 · 등급 · 약한 요인은 부모의 것, 규칙 10) */
-const PARENT_ONLY = [`/p/${KID}/result`, `/p/${KID}/future`, `/p/${KID}/measure`, "/parent"];
+const PARENT_ONLY = [`/p/${KID}/result`, `/p/${KID}/measure`, "/parent"];
 
 const browser = await chromium.launch({ channel: "chrome" });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
