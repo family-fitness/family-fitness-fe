@@ -76,9 +76,15 @@ for (const file of walk(SRC_DIR)) {
   }
   // "move/move-x" 처럼 따옴표 안에 직접 적힌 것 (fitness-items.ts 의 매핑표)
   for (const [, name] of text.matchAll(
-    /["']((?:deco|item|scene|level|sticker|badge|icon|stamp)\/[a-z0-9-]+)["']/g,
+    /["']((?:deco|item|scene|level|sticker|badge|icon|stamp|league)\/[a-z0-9-]+)["']/g,
   )) {
     note(relative(ROOT, file), name);
+  }
+  // 리그 메달은 틀로 만든다(`league/tier-${tier}`) — 따옴표 안에 이름이 없어 위에서 못 본다
+  if (text.includes("league/tier-${")) {
+    for (const tier of ["bronze", "silver", "gold", "platinum", "diamond"]) {
+      note(relative(ROOT, file), `league/tier-${tier}`);
+    }
   }
 }
 
