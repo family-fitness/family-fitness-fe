@@ -15,6 +15,7 @@ import { useProgress } from "@/lib/api/queries";
 import { STAGES, stageOf } from "@/lib/levels";
 import { whenOf } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
+import { useHydrated } from "@/lib/view-role";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
@@ -31,8 +32,10 @@ export default function BadgesPage() {
   const childProfileId = useRoleStore((s) => s.childProfileId);
   // 꺼진 조회(아이를 아직 안 골랐을 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
   const { data: progress, isLoading, error, refetch } = useProgress(childProfileId ?? undefined);
+  // 고른 아이는 이 기기에 있다 — 서버가 그린 첫 화면에는 없어서, 새로고침하면 「누구인지 골라 주세요」 가 번쩍였다
+  const hydrated = useHydrated();
 
-  if (isLoading) return <BadgesSkeleton />;
+  if (!hydrated || isLoading) return <BadgesSkeleton />;
   if (!childProfileId) {
     return (
       <>
