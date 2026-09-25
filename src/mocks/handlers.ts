@@ -375,8 +375,9 @@ const identity = [
     const given = body.personalData && body.healthData;
     profile.consentGiven = given;
     // 철회하면 그 순간부터 측정이 막힌다. 다시 주면 만 4세가 넘었는지로 — 연령대(유아기 0~6세)로 보면
-    // 동의를 한 번 거둔 5살은 영영 못 잰다
-    profile.measurable = given && (ageOf((profile as Profile).birthDate) ?? 99) >= 4;
+    // 동의를 한 번 거둔 5살은 영영 못 잰다. 생일을 모르면 유아기만 막아 둔다(만 4세 미만일 수 있다)
+    const age = ageOf((profile as Profile).birthDate);
+    profile.measurable = given && (age != null ? age >= 4 : profile.ageGroup !== "유아기");
     syncMapMember(profile);
     saveFamily();
 
