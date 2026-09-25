@@ -44,7 +44,7 @@ import { ArtIcon } from "@/components/ui/art-icon";
  */
 export default function ChildDetailPage() {
   const { profileId } = useParams<{ profileId: string }>();
-  const { familyId, isPending, error: sessionError } = useSession();
+  const { familyId, isPending, error: sessionError, refetch: refetchMe } = useSession();
 
   // 꺼진 조회의 isPending 은 영영 true 다 — 가족을 기다릴 때는 isLoading 으로 본다.
   // 안 기다리면 가족이 오기 전에 「찾을 수 없는 프로필이에요」 가 번쩍 떴다
@@ -96,7 +96,9 @@ export default function ChildDetailPage() {
         <Stage>
           <ErrorState
             error={failure}
-            onRetry={() => void (familyError ? refetchFamily() : refetchLatest())}
+            onRetry={() =>
+              void (sessionError ? refetchMe() : !family ? refetchFamily() : refetchLatest())
+            }
           />
         </Stage>
       </>

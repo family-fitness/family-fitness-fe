@@ -21,7 +21,12 @@ import { ProfileAvatar } from "@/components/domain/profile-avatar";
 
 /** 보호자 동의 관리. */
 function ConsentPageContent() {
-  const { familyId, isPending: sessionPending, error: sessionError } = useSession();
+  const {
+    familyId,
+    isPending: sessionPending,
+    error: sessionError,
+    refetch: refetchMe,
+  } = useSession();
   const {
     data: family,
     isLoading: familyLoading,
@@ -34,13 +39,17 @@ function ConsentPageContent() {
   if (sessionPending || familyLoading) return <ConsentSkeleton />;
 
   // 못 받은 것을 「동의가 필요한 가족이 없어요」 로 그리지 않는다
-  const failure = sessionError ?? familyError;
+  const failure = sessionError ?? (family ? null : familyError);
   if (failure) {
     return (
       <>
         <PageHeader title="보호자 동의" back />
         <Screen>
-          <ErrorState error={failure} onRetry={() => void refetch()} retrying={isRefetching} />
+          <ErrorState
+            error={failure}
+            onRetry={() => void (sessionError ? refetchMe() : refetch())}
+            retrying={isRefetching}
+          />
         </Screen>
       </>
     );

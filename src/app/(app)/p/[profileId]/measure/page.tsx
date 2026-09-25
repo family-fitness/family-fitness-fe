@@ -34,7 +34,12 @@ export default function MeasurePage() {
   // 첫 시작에서 왔다 — 여기까지 전부 바꿔치기라 뒤로 갈 곳이 없다(홈 화면 앱이면 앱을 나간다). 뒤로는 홈으로
   const fromStart = useSearchParams().get("from") === "start";
   const nav = fromStart ? { backHref: "/parent" } : { back: true };
-  const { familyId, isPending: sessionPending, error: sessionError } = useSession();
+  const {
+    familyId,
+    isPending: sessionPending,
+    error: sessionError,
+    refetch: refetchMe,
+  } = useSession();
 
   /** 측정은 **주소의 프로필**에 저장한다. 로그인한 사람이 아니다. */
   // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
@@ -113,7 +118,9 @@ export default function MeasurePage() {
         <Screen>
           <ErrorState
             error={failure}
-            onRetry={() => void (familyError ? refetchFamily() : refetchItems())}
+            onRetry={() =>
+              void (sessionError ? refetchMe() : !family ? refetchFamily() : refetchItems())
+            }
           />
         </Screen>
       </>
