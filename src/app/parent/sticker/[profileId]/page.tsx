@@ -176,8 +176,8 @@ function StickerForm() {
               {log.entries.map((e) => e.title).join(" · ")}
             </p>
           )}
-          {/* 고른 것 하나가 크게 */}
-          <div className="bg-sub mt-4 grid h-36 place-items-center rounded-2xl">
+          {/* 고른 것 하나가 크게 — 둥근 회색 면에 담지 않는다 */}
+          <div className="mt-4 grid h-36 place-items-center">
             {sticker ? (
               <div key={sticker.id} className="badge-pop flex flex-col items-center gap-1">
                 <StickerArt id={sticker.id} className="size-24" />

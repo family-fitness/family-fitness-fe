@@ -227,13 +227,8 @@ function Calendar() {
             )}
           </ul>
 
-          {/* 이 달 — 칸 셋(칭찬을 받은 달) · 둘 */}
-          <div
-            className={cn(
-              "mt-4 grid gap-2",
-              stickers > 0 || tileState !== "ready" ? "grid-cols-3" : "grid-cols-2",
-            )}
-          >
+          {/* 이 달 — 칸 셋(칭찬을 받은 달) · 둘. 둥근 회색 면 없이 선으로 나눈다(이번 주 칸과 같다) */}
+          <div className="divide-line border-line mt-4 grid auto-cols-fr grid-flow-col divide-x border-t pt-4">
             <MonthTile label="운동한 날" value={days.length} unit="일" state={tileState} />
             <MonthTile label="움직인 시간" value={total} unit="분" state={tileState} />
             {/* 칭찬은 받은 달에만 칸으로 — 0장을 적어 두면 못 받은 달이 된다(규칙 12) */}
@@ -348,7 +343,7 @@ function MonthTile({
   state: "pending" | "error" | "ready";
 }) {
   return (
-    <div className="bg-sub rounded-2xl px-2 py-3 text-center">
+    <div className="px-2 text-center">
       <p className="text-micro text-ink-soft font-bold">{label}</p>
       {state === "ready" ? (
         <p className="metric-value mt-1 text-2xl">

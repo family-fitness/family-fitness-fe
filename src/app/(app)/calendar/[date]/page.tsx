@@ -278,13 +278,9 @@ function Day() {
               />
             </div>
 
-            {/* 칭찬은 받은 날에만 칸으로 — 0장을 적어 두면 못 받은 날이 된다(규칙 12) */}
-            <div
-              className={cn(
-                "mt-5 grid gap-2",
-                summary.stickers > 0 ? "grid-cols-3" : "grid-cols-2",
-              )}
-            >
+            {/* 칭찬은 받은 날에만 칸으로 — 0장을 적어 두면 못 받은 날이 된다(규칙 12).
+                둥근 회색 면 없이 선으로 나눈다 */}
+            <div className="divide-line mt-5 grid auto-cols-fr grid-flow-col divide-x">
               <Tile
                 dot="bg-signal"
                 label="움직인 시간"
@@ -400,7 +396,7 @@ function Tile({
   goal?: string | null;
 }) {
   return (
-    <div className="bg-sub rounded-2xl px-2 py-3 text-center">
+    <div className="px-2 text-center">
       <p className="text-micro text-ink-soft flex items-center justify-center gap-1 font-bold">
         {dot && <span aria-hidden className={cn("size-2 rounded-full", dot)} />}
         {label}
