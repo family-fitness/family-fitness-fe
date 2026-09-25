@@ -188,17 +188,14 @@ export function ClipPlayer({
     };
   }, [ready, playing, startSec, endSec]);
 
+  // 못 불러오면 한 줄로 — 동작 이름은 위(칸 · 시트 제목)에 있다. 영상 크기의 빈 상자를 세워 두지 않는다
   if (failed) {
-    return (
-      <div className="bg-sub grid aspect-video w-full place-content-center gap-1 rounded-2xl px-6 text-center">
-        <p className="text-sm font-extrabold">{title}</p>
-        <p className="text-caption text-ink-soft">영상을 못 불러왔어요</p>
-      </div>
-    );
+    return <p className="text-caption text-ink-soft py-2 text-center">영상을 못 불러왔어요</p>;
   }
 
+  // 틀은 남색 — 검정으로 면을 채우지 않는다. 스크립트를 받는 동안 썸네일이 그 위에 흐리게 선다
   return (
-    <div className="bg-ink relative overflow-hidden rounded-2xl">
+    <div className="bg-signal-deep relative overflow-hidden rounded-2xl">
       <div className="aspect-video w-full">
         <iframe
           ref={frame}
