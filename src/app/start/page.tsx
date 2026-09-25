@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { Stage } from "@/components/app-shell/stage";
 
 import { LevelBuddy } from "@/components/domain/level-buddy";
+import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFamilyProfiles } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
@@ -15,7 +16,7 @@ import { ArtIcon } from "@/components/ui/art-icon";
 /** 부모인가 아이인가. */
 export default function StartPage() {
   const router = useRouter();
-  const { profile, familyId, nextStep, isPending } = useSession();
+  const { profile, familyId, nextStep, isPending, error, refetch } = useSession();
   // 아이가 몇인지 알아야 「아이」 가 갈 곳을 안다 — 오기 전에 누르면 있는 아이를 두고 아이 등록으로 갔다
   const { data: family, isLoading: familyLoading } = useFamilyProfiles(familyId);
 
@@ -56,6 +57,15 @@ export default function StartPage() {
     // 아이가 없으면 등록부터, 여럿이면 고르기
     router.push(children.length === 0 ? "/start/child" : "/start/who");
   };
+
+  // 누구인지 못 받으면 고를 수 없다 — 모르는 채 「부모」 를 누르면 가족 만들기로 갔다
+  if (error) {
+    return (
+      <Stage className="flex min-h-dvh flex-col justify-center">
+        <ErrorState error={error} onRetry={() => void refetch()} />
+      </Stage>
+    );
+  }
 
   if (isPending || familyLoading) {
     return (

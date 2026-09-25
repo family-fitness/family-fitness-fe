@@ -8,6 +8,7 @@ import { Stage } from "@/components/app-shell/stage";
 import { PhotoSheet } from "@/components/domain/photo-sheet";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { ListRow } from "@/components/ui/list-row";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useFamilyProfiles } from "@/lib/api/queries";
 import { useSession, useSignOut } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
@@ -22,7 +23,7 @@ import { useRoleStore } from "@/stores/role-store";
  */
 export default function SettingsPage() {
   const router = useRouter();
-  const { profile, familyId } = useSession();
+  const { profile, familyId, isPending } = useSession();
   const { data: family } = useFamilyProfiles(familyId);
   const signOut = useSignOut();
   const mode = useRoleStore((s) => s.mode);
@@ -34,6 +35,19 @@ export default function SettingsPage() {
     ? family?.profiles?.find((p) => p.profileId === childProfileId)
     : profile;
   const [photoOpen, setPhotoOpen] = useState(false);
+
+  // 누구인지 받기 전에 「나 · 우리집 · 아이 화면」 을 그리면 로그아웃도 없이 아이 화면처럼 보였다
+  if (isPending) {
+    return (
+      <>
+        <AppBar back title="설정" />
+        <Stage wide className="space-y-3">
+          <Skeleton className="h-20 w-full rounded-3xl" />
+          <Skeleton className="h-28 w-full rounded-3xl" />
+        </Stage>
+      </>
+    );
+  }
 
   return (
     <>

@@ -372,7 +372,8 @@ function MonthTile({
 function CalendarSkeleton() {
   return (
     <>
-      <AppBar title="캘린더" />
+      {/* 기다리는 동안에도 나갈 길 — 뒤로(기록이 없으면 첫 화면) */}
+      <AppBar back title="캘린더" />
       <Stage wide className="space-y-3">
         <Skeleton className="h-[30rem] w-full rounded-3xl" />
       </Stage>
