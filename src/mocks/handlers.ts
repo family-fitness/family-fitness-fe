@@ -756,6 +756,8 @@ const missions = [
       for (const p of (mission.participants ?? []) as ParticipantRow[]) {
         if (p !== me && !(withGuardians && roleOf(p.profileId) === "PARENT")) continue;
         p.doneSessions = [...new Set([...(p.doneSessions ?? []), session.position])];
+        // 처음 끝낸 날 — 같은 칸을 다음 날 또 끝내도 옮기지 않는다
+        p.doneOn = { [session.position]: toDateString(new Date()), ...(p.doneOn ?? {}) };
         const done = sessions.filter((s) => p.doneSessions.includes(s.position));
         p.progress = done.reduce((sum, s) => sum + (s.minutes ?? 0), 0) / total;
         p.verifiedBy = "TIMER";

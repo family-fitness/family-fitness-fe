@@ -283,6 +283,37 @@ check(
   `아이 ${JSON.stringify(who(parts, DEMO.kid)?.doneSessions)} · 아빠 ${JSON.stringify(who(parts, DEMO.dad)?.doneSessions)}`,
 );
 
+// 여러 날짜리 운동 — 오늘 한 칸이 기간 안의 지난날에도 한 것으로 되풀이되지 않는다
+const span = (await (
+  await post(`/families/${DEMO.familyId}/missions`, {
+    title: "사흘짜리",
+    startDate: daysBefore(2),
+    endDate: today,
+    targetMetric: "TIMER_MINUTES",
+    targetValue: 1,
+    participantProfileIds: [sibling.profileId],
+    sessions: [{ position: 1, phase: "MAIN", title: "하나", minutes: 1 }],
+  })
+).json()) as MissionBody;
+await post(`/missions/${span.missionId}/sessions/1/done`, {
+  ...done,
+  profileId: sibling.profileId,
+});
+const spanDays = (await (
+  await get(
+    `/families/${DEMO.familyId}/calendar?profileId=${sibling.profileId}&from=${daysBefore(2)}&to=${today}`,
+  )
+).json()) as { days: { date: string; entries: { missionId: string }[] }[] };
+const spanOn = (date: string) =>
+  (spanDays.days.find((d) => d.date === date)?.entries ?? []).some(
+    (e) => e.missionId === span.missionId,
+  );
+check(
+  "여러 날짜리 운동은 끝낸 날에만 한 것이다",
+  spanOn(today) && !spanOn(daysBefore(1)) && !spanOn(daysBefore(2)),
+  spanDays.days.map((d) => d.date).join(" · "),
+);
+
 /* ─── 4. 사람이 적은 것은 보호자가 확인한다(규칙 2) ─────────── */
 
 const reported = (await (

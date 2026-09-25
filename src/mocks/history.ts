@@ -20,7 +20,16 @@ import type {
 } from "@/lib/api/types";
 import { dayOf, daysBefore, today, weekdayCode } from "@/lib/today";
 
-import { BASE, DEMO, DEMO_SCHEDULE, db, fail, participantOf, type MissionRow } from "./db";
+import {
+  BASE,
+  DEMO,
+  DEMO_SCHEDULE,
+  db,
+  fail,
+  participantOf,
+  sessionsOfRow,
+  type MissionRow,
+} from "./db";
 
 /**
  * 같은 글자에는 늘 같은 0~1. FNV-1a 에 마무리 섞기(MurmurHash3 fmix32)를 더했다.
@@ -103,24 +112,27 @@ function pastDay(profileId: string, date: string): DayLog | null {
   };
 }
 
-/** 그날 등록된 운동에서 한 것 — 오늘이든 지난날이든 */
+/** 여러 날에 걸친 운동인가 — 끝나는 날이 없으면 하루짜리다 */
+const spans = (m: MissionRow) => (m.endDate ?? m.startDate) !== m.startDate;
+
+/**
+ * 그날 등록된 운동에서 한 것 — 오늘이든 지난날이든.
+ * 여러 날짜리는 오늘(하는 중)과, 지난날이면 그날 끝낸 칸이 있는 날에만 선다 — 전에는 기간 안의 날마다
+ * 같은 끝냄이 되풀이되어, 한 번 한 운동이 날마다 한 것이 되고 연속 · 나무 · 리그까지 부풀었다
+ */
 function liveDay(profileId: string, date: string): DayLog | null {
-  const live = db.missions.filter(
-    (m) =>
-      (m.startDate ?? "") <= date &&
-      date <= (m.endDate ?? "") &&
-      (m.participants ?? []).some((p) => p.profileId === profileId),
-  );
+  const live = db.missions.filter((m) => {
+    const me = participantOf(m, profileId);
+    if (!me || date < (m.startDate ?? "") || date > (m.endDate ?? m.startDate ?? "")) return false;
+    if (!spans(m) || date === today()) return true;
+    return Object.values(me.doneOn ?? {}).includes(date);
+  });
   if (live.length === 0) return null;
 
-  const entries: DayEntry[] = live.map((m) => entryOf(m, profileId));
+  const entries: DayEntry[] = live.map((m) => entryOf(m, profileId, date));
   const minutes = entries.reduce((sum, e) => sum + e.minutes, 0);
   const planned = live.reduce((sum, m) => sum + plannedOf(m), 0);
   return { date, minutes, plannedMinutes: planned || null, entries, stickers: [] };
-}
-
-function sessionsOfRow(m: MissionRow): MissionSession[] {
-  return ((m as unknown as { sessions?: MissionSession[] }).sessions ?? []).slice();
 }
 
 function plannedOf(m: MissionRow): number {
@@ -129,13 +141,17 @@ function plannedOf(m: MissionRow): number {
   return m.targetMetric === "TIMER_MINUTES" ? (m.targetValue ?? 0) : 0;
 }
 
-function entryOf(m: MissionRow, profileId: string): DayEntry {
+function entryOf(m: MissionRow, profileId: string, date: string): DayEntry {
   const me = participantOf(m, profileId);
   const sessions = sessionsOfRow(m);
   const planned = plannedOf(m);
-  // 끝낸 칸은 사람마다다 — 형제가 같은 운동을 받아도 이 사람이 끝낸 칸만 센다
+  // 끝낸 칸은 사람마다다 — 형제가 같은 운동을 받아도 이 사람이 끝낸 칸만 센다.
+  // 여러 날짜리는 그날 끝낸 칸만(끝낸 날을 모르는 옛 기록은 끝낸 칸 전부)
   const done = new Set(me?.doneSessions ?? []);
-  const isDone = (s: MissionSession) => Boolean(me?.completed) || done.has(s.position);
+  const onDay = (s: MissionSession) =>
+    !spans(m) || !me?.doneOn?.[s.position] || me.doneOn[s.position] === date;
+  const isDone = (s: MissionSession) =>
+    (Boolean(me?.completed) && !spans(m)) || (done.has(s.position) && onDay(s));
   // 칸이 있으면 끝낸 칸의 시간을 더하고, 없으면 진행률로 셈한다
   const minutes =
     sessions.length > 0

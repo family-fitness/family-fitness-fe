@@ -19,6 +19,7 @@ import type {
   LatestFitnessTest,
   MeResponse,
   Mission,
+  MissionSession,
   PredictionResult,
   ProfileSummary,
 } from "@/lib/api/types";
@@ -254,10 +255,16 @@ export type Profile = Concrete<ProfileSummary> & {
 };
 export type MapMember = Concrete<FitnessMap>["members"][number];
 export type MissionRow = Concrete<Mission>;
-/** 참여자 한 사람 — 끝낸 칸을 사람마다 든다(`MissionParticipant.doneSessions`) */
-export type ParticipantRow = MissionRow["participants"][number] & { doneSessions: number[] };
+/**
+ * 참여자 한 사람 — 끝낸 칸을 사람마다 든다(`MissionParticipant.doneSessions`).
+ * `doneOn` 은 목만 든다(칸 → 처음 끝낸 날) — 여러 날짜리 운동이 기간 안의 날마다 한 것으로 되풀이되지 않게
+ */
+export type ParticipantRow = MissionRow["participants"][number] & {
+  doneSessions: number[];
+  doneOn?: Record<number, string>;
+};
 /** 미션의 칸. ▲ 서버에 아직 없다 */
-export type SessionRow = { position: number; minutes?: number | null };
+export type SessionRow = MissionSession;
 
 /** 미션에 든 칸 */
 export function sessionsOfRow(m: MissionRow): SessionRow[] {
