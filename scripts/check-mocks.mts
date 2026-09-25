@@ -354,6 +354,32 @@ check(
   `${rateBefore}% → ${await rateOf()}%`,
 );
 
+// 끝내 안 한 여러 날짜리는 지난 마지막 날 하루로 선다 — 어느 날에도 안 서면 잡아 두기만 해도 달성률이 지켜진다
+const missed = (await (
+  await post(`/families/${DEMO.familyId}/missions`, {
+    title: "안 한 사흘짜리",
+    startDate: daysBefore(5),
+    endDate: daysBefore(3),
+    targetMetric: "TIMER_MINUTES",
+    targetValue: 1,
+    participantProfileIds: [sibling.profileId],
+    sessions: [{ position: 1, phase: "MAIN", title: "하나", minutes: 1 }],
+  })
+).json()) as MissionBody;
+const missedDays = (await (
+  await get(
+    `/families/${DEMO.familyId}/calendar?profileId=${sibling.profileId}&from=${daysBefore(5)}&to=${daysBefore(3)}`,
+  )
+).json()) as { days: { date: string; entries: { missionId: string }[] }[] };
+const missedOn = missedDays.days
+  .filter((d) => d.entries.some((e) => e.missionId === missed.missionId))
+  .map((d) => d.date);
+check(
+  "끝내 안 한 여러 날짜리는 마지막 날 하루로 선다",
+  missedOn.length === 1 && missedOn[0] === daysBefore(3),
+  missedOn.join(" · ") || "없음",
+);
+
 // 다 한 뒤에 운동이 하나 더 잡혀도 경험치는 줄지 않는다(규칙 10) — 끝까지 한 몫은 운동마다 붙는다.
 // 오늘 잡힌 것을 다 한 아이가 있어야 본다 — 셋째를 새로 들인다
 const third = (await (

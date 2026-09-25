@@ -122,9 +122,13 @@ const spans = (m: MissionRow) => (m.endDate ?? m.startDate) !== m.startDate;
  */
 export function standsOn(m: MissionRow, profileId: string, date: string): boolean {
   const me = participantOf(m, profileId);
-  if (!me || date < (m.startDate ?? "") || date > (m.endDate ?? m.startDate ?? "")) return false;
+  const end = m.endDate ?? m.startDate ?? "";
+  if (!me || date < (m.startDate ?? "") || date > end) return false;
   if (!spans(m) || date === today()) return true;
-  return Object.values(me.doneOn ?? {}).includes(date);
+  const doneDays = Object.values(me.doneOn ?? {});
+  if (doneDays.includes(date)) return true;
+  // 끝내 한 칸도 안 했으면 지난 마지막 날 하루로 센다 — 어느 날에도 안 세면 긴 운동을 잡아 두기만 해도 달성률이 지켜졌다
+  return date === end && end < today() && doneDays.length === 0;
 }
 
 /** 그날 등록된 운동에서 한 것 — 오늘이든 지난날이든 */
