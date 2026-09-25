@@ -49,12 +49,13 @@ export function ClipShelf({ factor }: { factor: Factor | null }) {
                   >
                     <span className="relative block overflow-hidden rounded-2xl">
                       <VideoThumb videoId={c.videoId} className="aspect-video w-full" />
-                      <span className="text-micro bg-ink/70 absolute right-1.5 bottom-1.5 rounded-md px-1.5 py-0.5 font-bold text-white">
-                        {clock(c.endSec - c.startSec)}
-                      </span>
                     </span>
                     <span className="mt-1.5 line-clamp-2 block text-sm leading-snug font-bold">
                       {c.title}
+                    </span>
+                    {/* 길이는 썸네일 위 검은 딱지가 아니라 이름 아래 글자로 */}
+                    <span className="text-caption text-ink-soft block tabular-nums">
+                      {clock(c.endSec - c.startSec)}
                     </span>
                   </Link>
                 </li>

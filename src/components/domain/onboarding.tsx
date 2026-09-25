@@ -368,10 +368,24 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
   };
 
   const skipPhoto = (step === "me-photo" && !mePhoto) || (step === "kid-photo" && !kidPhoto);
+  // 못 한 까닭은 단추 바로 위에 글자로 — 떠 있는 둥근 면에 넣지 않는다
   const action = (
-    <Button type="submit" size="block" disabled={!ok[step]} loading={busy}>
-      {step === "hello" ? "좋아요" : step === "done" ? "시작하기" : skipPhoto ? "건너뛰기" : "다음"}
-    </Button>
+    <>
+      {problem && (
+        <p role="alert" className="text-signal-deep mb-2 text-center text-sm font-semibold">
+          {problem}
+        </p>
+      )}
+      <Button type="submit" size="block" disabled={!ok[step]} loading={busy}>
+        {step === "hello"
+          ? "좋아요"
+          : step === "done"
+            ? "시작하기"
+            : skipPhoto
+              ? "건너뛰기"
+              : "다음"}
+      </Button>
+    </>
   );
   const submit = () => {
     if (ok[step] && !busy) void next();
@@ -634,19 +648,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
     }
   })();
 
-  return (
-    <>
-      {body}
-      {problem && (
-        <p
-          role="alert"
-          className="bg-signal-soft text-signal-deep fixed inset-x-4 bottom-28 z-30 mx-auto max-w-(--width-phone) rounded-2xl px-4 py-3 text-sm font-semibold"
-        >
-          {problem}
-        </p>
-      )}
-    </>
-  );
+  return body;
 }
 
 /** 큰 글자 입력 한 칸 */

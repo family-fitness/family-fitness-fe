@@ -223,7 +223,7 @@ function CustomPlan() {
               <li key={m.clip.clipId} className="py-3">
                 {/* 첫 줄 — 차례 · 이름 · 빼기. 이름이 잘리지 않게 한 줄을 다 준다 */}
                 <div className="flex items-start gap-2">
-                  <span className="bg-signal-soft text-signal-deep mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs font-extrabold tabular-nums">
+                  <span className="text-signal-deep w-6 shrink-0 text-center text-sm leading-snug font-extrabold tabular-nums">
                     {i + 1}
                   </span>
                   <div className="min-w-0 flex-1">

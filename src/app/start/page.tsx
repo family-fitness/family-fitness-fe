@@ -81,14 +81,7 @@ export default function StartPage() {
           title="부모"
           tone="parent"
           onClick={goParent}
-          art={
-            <span
-              aria-hidden
-              className="bg-mark-soft text-ink grid size-20 shrink-0 place-items-center rounded-full"
-            >
-              <ArtIcon name="icon/role-parent" className="size-11" />
-            </span>
-          }
+          art={<ArtIcon name="icon/role-parent" className="size-16 shrink-0" />}
         />
       )}
     </Stage>

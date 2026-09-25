@@ -223,11 +223,11 @@ function Row({ item }: { item: NotificationView }) {
   const href = notificationHref(item);
   const inner = (
     <>
-      <span className="bg-sub relative grid size-12 shrink-0 place-items-center rounded-2xl">
+      <span className="relative grid size-12 shrink-0 place-items-center">
         {item.kind === "PRAISE" || item.kind === "KID_THANKS" ? (
-          <StickerArt id={item.stickerId} className="size-8" />
+          <StickerArt id={item.stickerId} className="size-10" />
         ) : (
-          <ArtIcon name={notificationArt(item)} className="size-8" />
+          <ArtIcon name={notificationArt(item)} className="size-10" />
         )}
         {!item.read && (
           <span className="bg-signal ring-paper absolute -top-0.5 -right-0.5 size-3 rounded-full ring-2" />

@@ -20,7 +20,8 @@ export function SessionList({ sessions }: { sessions: MissionSession[] }) {
           <p className="text-caption text-ink-soft font-extrabold">
             {PHASE_LABEL[g.phase]}
             <span className="text-faint ml-1 font-bold">
-              {g.rows.reduce((sum, s) => sum + (s.minutes ?? 0), 0)}분
+              {/* 칸 줄과 같은 셈 — 시간이 없는 칸은 1분(운동하기도 1분으로 돈다) */}
+              {g.rows.reduce((sum, s) => sum + (s.minutes ?? 1), 0)}분
             </span>
           </p>
           <ul className="mt-1.5 space-y-2">
@@ -32,9 +33,7 @@ export function SessionList({ sessions }: { sessions: MissionSession[] }) {
                     className="aspect-video w-24 shrink-0 rounded-xl"
                   />
                 ) : (
-                  <span className="bg-sub text-caption text-ink-soft grid aspect-video w-24 shrink-0 place-items-center rounded-xl">
-                    영상 없음
-                  </span>
+                  <span aria-hidden className="bg-sub aspect-video w-24 shrink-0 rounded-xl" />
                 )}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-bold">{s.title}</span>
