@@ -463,8 +463,8 @@ res = await post(`/profiles/${DEMO.kid}/fitness-tests`, {
   items: [{ itemCode: "012", value: 8 }],
 });
 check(
-  "동의 철회 후 측정 차단 — 403(규칙 4)",
-  res.status === 403 && (await codeOf(res)) === "CONSENT_REQUIRED",
+  "동의 철회 후 측정 차단 — 422(백엔드 공통 규칙: 도메인 규칙 위반)",
+  res.status === 422 && (await codeOf(res)) === "CONSENT_REQUIRED",
 );
 
 res = await post(`/missions/${shared.missionId}/sessions/1/done`, done);
