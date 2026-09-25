@@ -94,7 +94,7 @@ function PlanForm() {
   /** 막힌 까닭이 「이미 있는 제안」 이면 그리로 가는 길 */
   const [existing, setExisting] = useState(false);
 
-  const failure = sessionError ?? mapError;
+  const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
     return (
       <>

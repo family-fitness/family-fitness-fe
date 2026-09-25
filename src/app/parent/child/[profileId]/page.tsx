@@ -87,7 +87,8 @@ export default function ChildDetailPage() {
 
   // 불러오지 못한 것과 없는 것은 다르다. 섞으면 서버가 죽었을 때
   // 부모에게 "그런 아이는 없습니다" 라고 말하게 된다
-  const failure = sessionError ?? familyError ?? latestError;
+  const failure =
+    sessionError ?? (family ? null : familyError) ?? (latest === undefined ? latestError : null);
   if (failure) {
     return (
       <>

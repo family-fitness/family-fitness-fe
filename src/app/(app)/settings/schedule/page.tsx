@@ -153,7 +153,7 @@ function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
 
   if (isPending) return <Skeleton className="h-96 w-full rounded-3xl" />;
   // 못 받은 것을 빈 한 주로 그리지 않는다 — 그대로 저장하면 적어 둔 시간이 지워진다
-  if (error) {
+  if (error && !data) {
     return (
       <section className="card">
         <ErrorState error={error} onRetry={() => void refetch()} retrying={isRefetching} />

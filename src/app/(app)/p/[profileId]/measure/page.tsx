@@ -105,7 +105,7 @@ export default function MeasurePage() {
   if (sessionPending || familyLoading || itemsLoading) return <MeasureSkeleton />;
 
   // 못 불러온 것을 "그런 프로필 없음" 으로 그리지 않는다. 다시 부를 때는 못 받은 것을 다시 부른다
-  const failure = sessionError ?? familyError ?? itemsError;
+  const failure = sessionError ?? (family ? null : familyError) ?? (itemsData ? null : itemsError);
   if (failure) {
     return (
       <>

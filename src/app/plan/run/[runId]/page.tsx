@@ -64,7 +64,8 @@ function PlanRun() {
     return () => clearTimeout(id);
   }, [status, runId, router]);
 
-  if (error) {
+  // 한 번 못 받았다고 짜던 과정을 걷어 내지 않는다 — 다음 번에 다시 묻는다
+  if (error && !run) {
     return (
       <>
         <AppBar backHref="/plan" title="짜는 중" />

@@ -84,7 +84,7 @@ export default function KidHomePage() {
   const me = map?.members?.find((m) => m.profileId === childProfileId);
 
   // /me 가 실패하면 가족 지도는 시작도 못 한다. 실패를 기다림보다 먼저 본다
-  const failure = sessionError ?? mapError;
+  const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
     return (
       <>

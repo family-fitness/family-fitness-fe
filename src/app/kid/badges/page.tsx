@@ -54,7 +54,7 @@ export default function BadgesPage() {
       </>
     );
   }
-  if (error || !progress) {
+  if (!progress) {
     return (
       <>
         <AppBar backHref="/kid" title="레벨과 업적" />

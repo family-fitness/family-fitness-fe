@@ -67,7 +67,7 @@ export default function FamilyDashboardPage() {
     to: week.to > grid.to ? week.to : grid.to,
   });
 
-  const failure = sessionError ?? mapError;
+  const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
     return (
       <>

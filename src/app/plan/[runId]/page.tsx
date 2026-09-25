@@ -78,7 +78,7 @@ function Proposal() {
       </>
     );
   }
-  if (error || !run) {
+  if (!run) {
     return (
       <>
         <AppBar backHref="/parent" title="오늘 운동 제안" />

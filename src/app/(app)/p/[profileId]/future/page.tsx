@@ -60,7 +60,7 @@ export default function FuturePage() {
 
   // 불러오지 못한 것과 아직 안 잰 것은 다르다. 섞으면 서버가 죽었을 때
   // 이미 잰 사람에게 "측정을 먼저 해 주세요" 라고 말하게 된다
-  if (latestError) {
+  if (latestError && latest === undefined) {
     return (
       <>
         <PageHeader title="10년 위 연령대" back />

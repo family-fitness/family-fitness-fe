@@ -37,7 +37,7 @@ export default function ResultPage() {
 
   if (isPending) return <ResultSkeleton />;
 
-  if (error) {
+  if (error && test === undefined) {
     return (
       <>
         <PageHeader title="측정 결과" {...nav} />

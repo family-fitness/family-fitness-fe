@@ -80,7 +80,7 @@ function Day() {
   const { data: all } = useMissions(familyId, { scope: "ALL" });
 
   const back = kidView ? "/kid" : "/parent";
-  const failure = sessionError ?? mapError;
+  const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
     return (
       <>

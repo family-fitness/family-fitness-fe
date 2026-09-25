@@ -70,7 +70,7 @@ function League() {
   const movedToday = todays.some((q) => (q.data?.days ?? []).some((d) => d.minutes > 0));
 
   // 로그인(/me)이 깨져도 여기서 말한다 — 가족을 모르면 리그 요청이 꺼진 채 뼈대만 돈다
-  const failure = sessionError ?? error;
+  const failure = sessionError ?? (league ? null : error);
   if (failure) {
     return (
       <>

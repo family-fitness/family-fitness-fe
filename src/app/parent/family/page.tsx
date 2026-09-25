@@ -37,7 +37,7 @@ export default function MembersPage() {
   } = useSession();
   // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
   const { data: family, isLoading, error: familyError, refetch } = useFamilyProfiles(familyId);
-  const error = sessionError ?? familyError;
+  const error = sessionError ?? (family ? null : familyError);
   const childProfileId = useRoleStore((s) => s.childProfileId);
 
   const [adding, setAdding] = useState(false);

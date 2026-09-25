@@ -115,7 +115,7 @@ export default function ParentHomePage() {
   );
 
   /** 실패를 기다림보다 먼저 본다 */
-  const failure = sessionError ?? mapError;
+  const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
     return (
       <>

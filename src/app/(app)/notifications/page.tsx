@@ -52,7 +52,8 @@ export default function NotificationsPage() {
   // 꺼진 조회(누구 것인지 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
   const { data, isLoading, error: listError, refetch } = useNotifications(me);
   const markRead = useMarkNotificationsRead(me);
-  const error = sessionError ?? listError;
+  // 60초마다 다시 받는다 — 한 번 못 받았다고 읽던 목록을 오류 화면으로 바꾸지 않는다
+  const error = sessionError ?? (data ? null : listError);
 
   /*
     이 화면에 있는 동안 새로 온 것 — 읽은 것으로 친 뒤에도 점을 그대로 둔다. 서버의 read 만 보면 60초마다
