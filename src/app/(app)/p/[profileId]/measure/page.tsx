@@ -139,7 +139,7 @@ export default function MeasurePage() {
   }
 
   // 만 4세 미만은 국민체력100 규준 자체가 없다. 비활성화가 아니라 폼을 띄우지 않는다
-  if (!profile.measurable) {
+  if (profile.measurable === false) {
     return (
       <>
         <PageHeader title="체력 측정" {...nav} />

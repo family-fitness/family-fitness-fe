@@ -49,7 +49,9 @@ export default function ResultPage() {
   }
 
   // 만 4세 미만은 잴 수 없다 — 측정 단추를 끄지 않고 없앤다(규칙 4)
-  const measurable = (profile ?? member)?.measurable !== false;
+  // 누구인지 받기 전에는 세우지 않는다 — 만 4세 미만에게 측정 단추가 번쩍 떴다
+  const who = profile ?? member;
+  const measurable = who != null && who.measurable !== false;
 
   // 이력이 없어도 404 가 아니다. fitnessTestId 가 null 로 온다
   if (!test || test.fitnessTestId == null) {

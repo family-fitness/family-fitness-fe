@@ -44,7 +44,8 @@ export default function FuturePage() {
   const error = create.error ? predictMessage(create.error) : null;
 
   const hasTest = Boolean(latest?.fitnessTestId);
-  const measurable = profile?.measurable !== false;
+  // 누구인지 받기 전에는 모른다 — 모르는 채 「첫 측정 하기」 를 먼저 세우면 만 4세 미만에게 번쩍 뜬다(규칙 4)
+  const measurable = profile != null && profile.measurable !== false;
 
   /** 조회 엔드포인트가 없어서 들어오면 만든다(POST). **한 번만 만들어야 한다.** */
   const requested = useRef(false);
