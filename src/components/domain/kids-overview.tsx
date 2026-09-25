@@ -9,9 +9,9 @@ import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { StreakChip } from "@/components/domain/streak-chip";
 import { WeekDots } from "@/components/domain/week-dots";
 import type { DayLog, FitnessMapMember, Mission } from "@/lib/api/types";
-import { useFamilyCalendars, useProgress } from "@/lib/api/queries";
+import { useFamilyCalendars, useProgress, useRestDays } from "@/lib/api/queries";
 import { dayWork, todayLine } from "@/lib/day";
-import { today, weekOf } from "@/lib/today";
+import { monthOf, today, weekOf } from "@/lib/today";
 import { cn } from "@/lib/utils";
 
 /**
@@ -44,9 +44,14 @@ export function KidsOverview({
   const ids = kids.map((k) => k.profileId ?? "").filter(Boolean);
   // 부모 홈 「이번 주」 와 같은 범위 · 같은 키 — 고른 아이 것은 캐시를 나눠 쓴다
   const calendars = useFamilyCalendars(familyId, ids, { from: week.from, to: week.to });
-  // 못 받았으면 undefined — 빈 한 주로 그리지 않는다
-  const logsOf = (profileId: string | undefined) =>
-    profileId ? calendars[ids.indexOf(profileId)]?.data?.days : undefined;
+  // 받는 중이면 undefined · 못 받았으면 null — 빈 한 주로 그리지 않는다
+  const logsOf = (profileId: string | undefined) => {
+    const q = profileId ? calendars[ids.indexOf(profileId)] : undefined;
+    return q?.data?.days ?? (q?.error ? null : undefined);
+  };
+  // 쉬는 날 카드는 가족 단위 — 달력 기록을 못 받아도 오늘이 쉬는 날인지 안다(규칙 15)
+  const { data: restDays } = useRestDays(familyId, monthOf(today()));
+  const restToday = Boolean(restDays?.days.includes(today()));
 
   return (
     <section className="card" aria-label="우리 아이">
@@ -59,6 +64,7 @@ export function KidsOverview({
             selected={kid.profileId === selectedId}
             onSelect={() => kid.profileId && onSelect(kid.profileId)}
             logs={logsOf(kid.profileId)}
+            rest={restToday}
             missions={missions}
             missionsFailed={missionsFailed}
             days={week.days}
@@ -92,6 +98,7 @@ function KidLine({
   selected,
   onSelect,
   logs,
+  rest,
   missions,
   missionsFailed,
   days,
@@ -99,8 +106,10 @@ function KidLine({
   kid: FitnessMapMember;
   selected: boolean;
   onSelect: () => void;
-  /** 이번 주 기록. 받는 중 · 못 받음이면 undefined */
-  logs: DayLog[] | undefined;
+  /** 이번 주 기록. 받는 중이면 undefined · 못 받았으면 null */
+  logs: DayLog[] | null | undefined;
+  /** 오늘이 쉬는 날인가(가족 단위) */
+  rest: boolean;
   missions: Mission[] | undefined;
   missionsFailed: boolean;
   /** 이번 주 월~일 */
@@ -108,7 +117,6 @@ function KidLine({
 }) {
   const { data: progress } = useProgress(kid.profileId);
   const now = today();
-  const rest = Boolean(logs?.find((l) => l.date === now)?.rest);
   // 운동 목록을 못 받았으면 오늘을 말하지 않는다 — 「오늘 운동 없어요」 로 그리면 부모가 같은 운동을 또 받는다
   const status = missions ? todayLine(dayWork(missions, kid.profileId, now), rest) : null;
   const score = kid.latest?.overallPercentile ?? null;

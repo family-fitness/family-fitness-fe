@@ -24,6 +24,7 @@ import {
   useFitnessMap,
   useCurrentMissions,
   useProgress,
+  useRestDays,
 } from "@/lib/api/queries";
 import { daySummary, dayWork, todayLine } from "@/lib/day";
 import { useSession } from "@/lib/session";
@@ -66,6 +67,8 @@ export default function FamilyDashboardPage() {
     from: week.from < grid.from ? week.from : grid.from,
     to: week.to > grid.to ? week.to : grid.to,
   });
+  // 쉬는 날 카드는 가족 단위 — 달력 기록을 못 받아도 오늘이 쉬는 날인지 안다
+  const { data: restDays } = useRestDays(familyId, month);
 
   const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
@@ -85,9 +88,11 @@ export default function FamilyDashboardPage() {
   if (isPending || mapLoading) return <DashboardSkeleton />;
 
   // 받은 순서가 아니라 아이디로 잇는다 — 아이디 없는 사람이 끼면 기록이 옆 사람에게 붙었다.
-  // 못 받았으면 undefined(사람 줄의 점이 빈 한 주로 서지 않게), 합계에는 빈 목록으로
-  const daysOf = (profileId: string | undefined) =>
-    profileId ? calendars[ids.indexOf(profileId)]?.data?.days : undefined;
+  // 받는 중이면 undefined · 못 받았으면 null(사람 줄의 점이 빈 한 주로 서지 않게), 합계에는 빈 목록으로
+  const daysOf = (profileId: string | undefined) => {
+    const q = profileId ? calendars[ids.indexOf(profileId)] : undefined;
+    return q?.data?.days ?? (q?.error ? null : undefined);
+  };
   const logsOf = (profileId: string | undefined) => daysOf(profileId) ?? [];
   const monthLogs = members.flatMap((m) =>
     logsOf(m.profileId).filter((d) => monthOf(d.date) === month),
@@ -107,7 +112,9 @@ export default function FamilyDashboardPage() {
     .reduce((sum, d) => sum + d.stickers.length, 0);
   const profiles = family?.profiles ?? [];
   // 쉬는 날 카드는 가족 단위 — 오늘 쓴 날이면 운동을 권하지 않는다(규칙 15)
-  const restToday = members.some((m) => logsOf(m.profileId).find((d) => d.date === now)?.rest);
+  const restToday = restDays
+    ? restDays.days.includes(now)
+    : members.some((m) => logsOf(m.profileId).find((d) => d.date === now)?.rest);
 
   return (
     <>
@@ -188,6 +195,7 @@ export default function FamilyDashboardPage() {
                   profiles.find((p) => p.profileId === m.profileId)?.hasAccount ?? m.hasAccount
                 }
                 logs={daysOf(m.profileId)}
+                rest={restToday}
                 missions={missions?.missions}
                 missionsFailed={Boolean(missionsError)}
                 onInvite={() => setInviting(m.profileId ?? null)}
@@ -276,6 +284,7 @@ function MemberLine({
   me,
   hasAccount,
   logs,
+  rest,
   missions,
   missionsFailed,
   onInvite,
@@ -283,8 +292,10 @@ function MemberLine({
   member: FitnessMapMember;
   me: boolean;
   hasAccount: boolean | undefined;
-  /** 이번 주 기록. 받는 중 · 못 받음이면 undefined */
-  logs: DayLog[] | undefined;
+  /** 이번 주 기록. 받는 중이면 undefined · 못 받았으면 null */
+  logs: DayLog[] | null | undefined;
+  /** 오늘이 쉬는 날인가(가족 단위) */
+  rest: boolean;
   /** 아직 못 받았으면 undefined — 오늘 한마디를 말하지 않는다 */
   missions: Mission[] | undefined;
   missionsFailed: boolean;
@@ -294,7 +305,6 @@ function MemberLine({
   const child = member.role === "CHILD";
   const week = weekOf();
   const now = today();
-  const rest = Boolean(logs?.find((l) => l.date === now)?.rest);
   // 부모 홈의 아이 줄과 같은 한마디 — 같은 아이의 오늘을 두 화면이 다르게 말하지 않게
   const today_ = missions
     ? todayLine(dayWork(missions, member.profileId, now), rest)
