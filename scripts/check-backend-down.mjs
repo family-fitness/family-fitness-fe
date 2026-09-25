@@ -79,6 +79,33 @@ await ctx.addInitScript(
       "ff-auth",
       JSON.stringify({ state: { accessToken: "t", refreshToken: "r" }, version: 0 }),
     );
+    // 직접 짜기에 동작 하나를 담아 둔다 — 비어 있으면 이 기기의 쟁반만 그려 서버를 부를 일이 없다.
+    // 담은 뒤에야 「누가 할까요」 가 가족을 부른다
+    sessionStorage.setItem(
+      "ff-routine",
+      JSON.stringify({
+        state: {
+          moves: [
+            {
+              clip: {
+                clipId: "down-1",
+                videoId: "A1CDVFUc_oU",
+                startSec: 0,
+                endSec: 60,
+                title: "스쿼트",
+                factor: "근력",
+                phase: "MAIN",
+                homeOk: true,
+                quiet: true,
+                props: false,
+              },
+              minutes: 2,
+            },
+          ],
+        },
+        version: 0,
+      }),
+    );
   },
   [KID],
 );
