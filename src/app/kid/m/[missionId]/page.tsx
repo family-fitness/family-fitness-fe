@@ -29,7 +29,7 @@ import { stageOf } from "@/lib/levels";
 import { newlyUnlocked } from "@/lib/unlocks";
 import { PHASE_LABEL, clock, sessionsOf } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
-import { cn, withJosa } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useVoice } from "@/lib/voice";
 import { usePrefsStore } from "@/stores/prefs-store";
 import { useRoleStore } from "@/stores/role-store";
@@ -39,8 +39,8 @@ import { useRoleStore } from "@/stores/role-store";
  *
  * 받은 순서대로 칸이 세로로 이어지고, 왼쪽 선이 길이다(「아래로 향하는 길라잡이」).
  * **지금 칸만 펼친다.** 시범 영상과 타이머가 있고, 시작을 누르면 둘이 같이 돈다.
- * 잡힌 시간이 다 되면 조각이 한 번 터지고, 10초 쉰 뒤 화면이 다음 칸으로 스스로 내려가
- * 다음 칸이 시작된다(쉬는 시간은 「+10초」 · 「바로 시작」). 영상은 지금 칸 하나만 띄운다 —
+ * 잡힌 시간이 다 되면 조각이 한 번 터지고, 화면이 다음 칸으로 내려가 10초 쉰 뒤
+ * 다음 칸이 시작된다(쉬는 시간은 「+10초」 · 「바로 시작」). 화면을 떠나면(잠금 · 다른 앱) 멈춘다. 영상은 지금 칸 하나만 띄운다 —
  * 여섯 개를 한꺼번에 띄우면 폰이 버벅인다.
  *
  * 소리 안내가 켜져 있으면 말로도 알려 준다 — 「스쿼트 시작!」 「10초 남았어요」 「셋 · 둘 · 하나」
@@ -59,6 +59,18 @@ const COUNT_WORDS: Record<number, string> = { 3: "셋", 2: "둘", 1: "하나" };
 
 type Status = "idle" | "running" | "paused" | "rest" | "blocked" | "ended";
 
+/** 한 칸을 끝냈다고 서버에 보내는 것 — 못 보냈으면 들고 있다가 다시 보낸다 */
+interface StepDone {
+  position: number;
+  profileId: string;
+  activeSeconds: number;
+  startedAt: string;
+  endedAt: string;
+}
+
+/** 칸마다 잡힌 초. 0분으로 온 칸이 첫 틱에 끝나지 않게 1분부터 */
+const plannedSecOf = (s: MissionSession | undefined) => Math.max(1, s?.minutes ?? 1) * 60;
+
 export default function PlayPage() {
   const { missionId } = useParams<{ missionId: string }>();
   const { familyId } = useSession();
@@ -71,6 +83,10 @@ export default function PlayPage() {
 
   /** 이 화면에서 방금 끝낸 칸. 서버 응답을 기다리지 않고 바로 체크한다 */
   const [doneHere, setDoneHere] = useState<number[]>([]);
+  /** 보내는 중인 칸 수 · 못 보낸 칸. 다 보내기 전에는 「다 했어요」 를 띄우지 않는다 — 저장이 안 됐는데 알리면 부모는 빈 기록을 본다 */
+  const [saving, setSaving] = useState(0);
+  const [unsaved, setUnsaved] = useState<StepDone[]>([]);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [current, setCurrent] = useState<number | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [elapsed, setElapsed] = useState(0);
@@ -107,7 +123,7 @@ export default function PlayPage() {
   const active = status === "ended" ? null : (current ?? firstOpen);
   const activeSession = sessions.find((s) => s.position === active);
   const activeIndex = sessions.findIndex((s) => s.position === active);
-  const plannedSec = (activeSession?.minutes ?? 1) * 60;
+  const plannedSec = plannedSecOf(activeSession);
   const doneCount = sessions.filter((s) => s.completed).length;
   const allDone = sessions.length > 0 && doneCount === sessions.length;
   const finished = allDone || status === "ended";
@@ -122,21 +138,46 @@ export default function PlayPage() {
     );
   };
 
-  /** 한 칸 끝. 조각을 터뜨리고 서버에 알리고, 다음 칸이 있으면 3초 쉰다 */
+  /** 서버에 보낸다. 못 보내면 들고 있다가 「다시 보내기」 로 */
+  const save = (step: StepDone) => {
+    setSaving((n) => n + 1);
+    complete.mutate(step, {
+      onSuccess: (res) => setXp((x) => x + (res.xpGained ?? 0)),
+      onError: (e) => {
+        setUnsaved((list) => [...list, step]);
+        setSaveError(
+          errorMessage(
+            e,
+            {
+              CONSENT_REQUIRED: "지금은 기록을 남길 수 없어요.",
+              CONSENT_WITHDRAWN: "지금은 기록을 남길 수 없어요.",
+            },
+            "기록을 남기지 못했어요.",
+          ),
+        );
+      },
+      onSettled: () => setSaving((n) => n - 1),
+    });
+  };
+  const retry = () => {
+    const list = unsaved;
+    setUnsaved([]);
+    setSaveError(null);
+    list.forEach(save);
+  };
+
+  /** 한 칸 끝. 조각을 터뜨리고 서버에 알리고, 다음 칸이 있으면 10초 쉰다 */
   const finishStep = useEffectEvent((position: number, seconds: number) => {
     const done = [...doneHere, position];
     setDoneHere(done);
     setBurst((b) => b + 1);
-    complete.mutate(
-      {
-        position,
-        profileId: kidId,
-        activeSeconds: Math.round(seconds),
-        startedAt: startedAt.current ?? new Date().toISOString(),
-        endedAt: new Date().toISOString(),
-      },
-      { onSuccess: (res) => setXp((x) => x + (res.xpGained ?? 0)) },
-    );
+    save({
+      position,
+      profileId: kidId,
+      activeSeconds: Math.round(seconds),
+      startedAt: startedAt.current ?? new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+    });
     const next = nextOpen(position, done);
     if (next == null) {
       say("다 했어요! 최고예요");
@@ -168,7 +209,7 @@ export default function PlayPage() {
     if (next >= plannedSec) finishStep(active, next);
   });
 
-  /** 쉬는 3초 중 한 번 — 다 세면 펼쳐 둔 다음 칸을 시작한다 */
+  /** 쉬는 동안 한 번(1초) — 다 세면 펼쳐 둔 다음 칸을 시작한다 */
   const restTick = useEffectEvent(() => {
     if (restLeft > 1) {
       const word = COUNT_WORDS[restLeft - 1];
@@ -182,19 +223,30 @@ export default function PlayPage() {
     setStatus("running");
   });
 
-  // 타이머. 도는 동안만
+  // 타이머. 도는 동안만. 한 번에 1초 넘게 세지 않는다 — 폰이 잠겨 타이머가 늦게 깨도
+  // 그동안을 한 것으로 치지 않는다(타이머로 확인됨 · 규칙 2)
   useEffect(() => {
     if (status !== "running") return;
     let last = performance.now();
     const id = setInterval(() => {
       const now = performance.now();
-      tick((now - last) / 1000);
+      tick(Math.min(1, (now - last) / 1000));
       last = now;
     }, 250);
     return () => clearInterval(id);
   }, [status]);
 
-  // 쉬는 3초
+  // 화면을 떠나면(잠금 · 다른 앱) 멈춘다 — 아무도 안 보는 사이에 칸이 끝나고 다음 칸이 저절로 시작되지 않게
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState !== "hidden") return;
+      setStatus((s) => (s === "running" || s === "rest" ? "paused" : s));
+    };
+    document.addEventListener("visibilitychange", onHide);
+    return () => document.removeEventListener("visibilitychange", onHide);
+  }, []);
+
+  // 쉬는 동안
   useEffect(() => {
     if (status !== "rest") return;
     const id = setInterval(() => restTick(), 1000);
@@ -225,11 +277,7 @@ export default function PlayPage() {
       <>
         <AppBar backHref="/kid" title="오늘 운동" />
         <Stage wide>
-          <EmptyState
-            scene="no-mission"
-            title="운동을 찾지 못했어요"
-            description="홈으로 돌아가서 다시 골라 주세요."
-          />
+          <EmptyState scene="no-mission" title="운동을 찾지 못했어요" />
         </Stage>
       </>
     );
@@ -245,7 +293,8 @@ export default function PlayPage() {
       if (activeSession) say(`${activeSession.title} 시작!`);
     }
     if (current == null) setCurrent(active);
-    if (status === "idle" || status === "rest") {
+    // 쉬다가 멈춘 칸(화면을 떠났다 온 것)도 처음부터 — 시작 시각을 새로 적는다
+    if (status === "idle" || status === "rest" || (status === "paused" && elapsed === 0)) {
       setElapsed(0);
       setRestLeft(0);
       startedAt.current = new Date().toISOString();
@@ -331,25 +380,44 @@ export default function PlayPage() {
           ))}
 
           <li id="step-end" className="scroll-mt-40 pt-2 pb-6">
-            {finished ? (
+            {unsaved.length > 0 ? (
+              // 못 보낸 칸이 있으면 「다 했어요」 · 「알리기」 를 띄우지 않는다 — 부모가 빈 기록을 보게 된다
+              <section className="card-hero text-center" role="alert">
+                <p className="text-lead font-extrabold">{saveError ?? "기록을 남기지 못했어요."}</p>
+                <button
+                  type="button"
+                  onClick={retry}
+                  disabled={saving > 0}
+                  className="press bg-signal-strong mt-3 flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white"
+                >
+                  다시 보내기
+                </button>
+              </section>
+            ) : finished && saving > 0 ? (
+              <Skeleton className="h-80 w-full rounded-3xl" />
+            ) : finished ? (
               <Finish
                 allDone={allDone}
                 doneCount={doneCount}
                 minutes={doneMin}
                 xp={xp}
                 levelBefore={levelBefore}
+                fresh={doneHere.length > 0}
                 familyId={familyId ?? ""}
                 kidId={kidId}
                 missionId={missionId}
               />
             ) : (
-              <button
-                type="button"
-                onClick={() => setStatus("ended")}
-                className="press text-ink-soft mx-auto flex min-h-11 items-center px-4 text-sm font-bold"
-              >
-                여기까지 할래요
-              </button>
+              // 한 칸이라도 끝낸 뒤에만 — 시작도 안 하고 누르면 「0개 했어요」 를 알리게 된다
+              doneCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setStatus("ended")}
+                  className="press text-ink-soft mx-auto flex min-h-11 items-center px-4 text-sm font-bold"
+                >
+                  여기까지 할래요
+                </button>
+              )
             )}
           </li>
         </ol>
@@ -390,7 +458,7 @@ function Step({
   onBlocked: () => void;
   onPick: () => void;
 }) {
-  const planned = (s.minutes ?? 1) * 60;
+  const planned = plannedSecOf(s);
   const left = Math.max(0, planned - elapsed);
   const clip = s.clip;
 
@@ -455,7 +523,7 @@ function Step({
                 </span>
               ) : (
                 <span className="text-center leading-none">
-                  <span role="timer" className="text-metric block font-extrabold tabular-nums">
+                  <span className="text-metric block font-extrabold tabular-nums">
                     {clock(left)}
                   </span>
                   <span className="text-micro text-ink-soft font-bold">남았어요</span>
@@ -562,6 +630,7 @@ function Finish({
   minutes,
   xp,
   levelBefore,
+  fresh,
   familyId,
   kidId,
   missionId,
@@ -571,6 +640,8 @@ function Finish({
   minutes: number;
   xp: number;
   levelBefore: number | null;
+  /** 이 화면에서 방금 끝냈나. 이미 다 한 운동을 다시 열었으면 나무가 또 자라지 않는다 */
+  fresh: boolean;
   familyId: string;
   kidId: string;
   missionId: string;
@@ -622,9 +693,9 @@ function Finish({
         plants={progress && !isFetching ? (progress.activeDays ?? 0) : null}
         seed={kidId || "kid"}
         cheer
-        grow
+        grow={fresh}
         height={230}
-        label={`${stage.name}의 섬. 오늘 나무가 하나 자랐어요`}
+        label={`${stage.name}의 섬`}
         className="-mt-3 -mb-1"
       />
       <h2 className="page-title mt-1">
@@ -643,17 +714,14 @@ function Finish({
           <XpGauge progress={progress} track="bg-paper" className="mt-2" />
           {/* 레벨이 올라 새로 열린 것 — 위 섬에 방금 섰다 */}
           {opened.map((u) => (
-            <p key={u.id} className="border-line mt-3 border-t pt-3 text-sm">
-              <b className="font-extrabold">새로 열렸어요 · {u.name}</b>
-              <span className="text-ink-soft mt-0.5 block text-xs">
-                섬에 {withJosa(u.name, "이가")} 섰어요
-              </span>
+            <p key={u.id} className="border-line mt-3 border-t pt-3 text-sm font-extrabold">
+              새로 열렸어요 · {u.name}
             </p>
           ))}
         </div>
       )}
 
-      {/* 어땠어요 — 한 번 누르면 끝. 애플 피트니스의 「운동 강도」 처럼, 다음에 짤 때 참고가 된다 */}
+      {/* 어땠어요 — 한 번 누르면 끝. 고르면 엄마 · 아빠한테 가는 말에 붙는다 */}
       {!told && (
         <div className="mt-4" role="group" aria-label="오늘 운동 어땠어요">
           <p className="text-sm font-extrabold">어땠어요?</p>
