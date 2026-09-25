@@ -138,7 +138,7 @@ function CustomPlan() {
       const reason = errorMessage(
         e,
         { NOT_A_PARENT: "보호자만 운동을 만들 수 있어요." },
-        "등록하지 못했어요. 잠시 후 다시 해 주세요.",
+        "등록하지 못했어요.",
       );
       setProblem(
         made.length > 0

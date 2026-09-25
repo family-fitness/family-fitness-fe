@@ -93,7 +93,7 @@ function SupportModePageContent() {
                         errorMessage(
                           e,
                           { NOT_APPLICABLE: "자녀 프로필에는 없는 설정이에요." },
-                          "바꾸지 못했어요. 잠시 후 다시 시도해 주세요.",
+                          "바꾸지 못했어요.",
                         ),
                       );
                     }

@@ -265,7 +265,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
         router.replace("/parent");
         return false;
       }
-      setProblem(errorMessage(e, "가족을 만들지 못했어요. 잠시 후 다시 해 주세요."));
+      setProblem(errorMessage(e, "가족을 만들지 못했어요."));
       return false;
     }
   };
@@ -315,7 +315,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
             CONSENT_REQUIRED: "만 14세 미만은 보호자 동의가 있어야 해요.",
             NOT_A_PARENT: "아이 등록은 보호자 계정에서 할 수 있어요.",
           },
-          "아이를 등록하지 못했어요. 잠시 후 다시 해 주세요.",
+          "아이를 등록하지 못했어요.",
         ),
       );
       return false;
@@ -332,7 +332,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       try {
         await updateSupport.mutateAsync(support);
       } catch (e) {
-        setProblem(errorMessage(e, "참여 방식을 저장하지 못했어요. 잠시 후 다시 해 주세요."));
+        setProblem(errorMessage(e, "참여 방식을 저장하지 못했어요."));
         return;
       }
     }

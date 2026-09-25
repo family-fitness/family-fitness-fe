@@ -186,7 +186,7 @@ function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
         errorMessage(
           e,
           { INVALID_SLOT: "시각이나 시간이 맞지 않는 칸이 있어요." },
-          "저장하지 못했어요. 잠시 후 다시 해 주세요.",
+          "저장하지 못했어요.",
         ),
       );
     }

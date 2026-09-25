@@ -28,7 +28,7 @@ const COMMON_MESSAGE: Record<string, string> = {
   NOT_SAME_FAMILY: "우리 가족이 아니에요.",
   CONSENT_REQUIRED: "보호자 동의가 필요해요.",
   NOT_MEASURABLE: "만 4세부터 측정할 수 있어요.",
-  TEMPORARILY_UNAVAILABLE: "지금은 연결이 어려워요. 잠시 후 다시 시도해 주세요.",
+  TEMPORARILY_UNAVAILABLE: "지금은 연결이 어려워요.",
 };
 
 /** 토큰을 담아 두는 저장소 이름. auth-store 가 이 이름으로 persist 한다 */

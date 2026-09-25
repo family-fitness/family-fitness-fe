@@ -745,7 +745,7 @@ function Finish({
       );
       setToldNow(true);
     } catch (e) {
-      setError(errorMessage(e, "알리지 못했어요. 다시 해 볼까요?"));
+      setError(errorMessage(e, "알리지 못했어요."));
     }
   };
 

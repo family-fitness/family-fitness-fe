@@ -204,7 +204,7 @@ function Thanks({ item, to, until }: { item: NotificationView; to: string; until
       setJustSent(true);
       setOpen(false);
     } catch (e) {
-      setProblem(errorMessage(e, "보내지 못했어요. 다시 해 볼까요?"));
+      setProblem(errorMessage(e, "보내지 못했어요."));
     }
   };
 

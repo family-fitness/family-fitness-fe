@@ -130,7 +130,7 @@ function RestCardSheet({
             ALREADY_REST_DAY: "이미 쉬는 날이에요.",
             INVALID_DATE: "오늘부터 이번 달 안의 날만 고를 수 있어요.",
           },
-          "쉬는 날로 두지 못했어요. 잠시 후 다시 해 주세요.",
+          "쉬는 날로 두지 못했어요.",
         ),
       );
     }

@@ -269,7 +269,7 @@ function Proposal() {
                     await reject.mutateAsync(reason);
                     setAsking(false);
                   } catch (e) {
-                    setProblem(errorMessage(e, "처리하지 못했어요. 잠시 후 다시 해 주세요."));
+                    setProblem(errorMessage(e, "처리하지 못했어요."));
                     setAsking(false);
                   }
                 }}

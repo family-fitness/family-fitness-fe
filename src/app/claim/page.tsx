@@ -155,10 +155,10 @@ const claimMessage = (error: unknown) =>
   errorMessage(
     error,
     {
-      CODE_NOT_FOUND: "없는 코드예요. 다시 확인해 주세요.",
+      CODE_NOT_FOUND: "없는 코드예요.",
       CODE_EXPIRED: "기한이 지난 코드예요.",
       ALREADY_CLAIMED: "다른 계정이 먼저 연결한 코드예요.",
       ALREADY_MEMBER: "이미 이 가족의 구성원이에요.",
     },
-    "들어가지 못했어요. 잠시 후 다시 시도해 주세요.",
+    "들어가지 못했어요.",
   );

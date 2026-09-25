@@ -93,11 +93,7 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
       setConfirming(false);
     } catch (e) {
       setError(
-        errorMessage(
-          e,
-          { NOT_A_PARENT: "보호자 계정에서만 바꿀 수 있어요." },
-          "바꾸지 못했어요. 잠시 후 다시 시도해 주세요.",
-        ),
+        errorMessage(e, { NOT_A_PARENT: "보호자 계정에서만 바꿀 수 있어요." }, "바꾸지 못했어요."),
       );
     }
   };

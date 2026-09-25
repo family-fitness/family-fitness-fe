@@ -108,7 +108,7 @@ function StickerForm() {
         errorMessage(
           e,
           { NOT_A_PARENT: "스티커는 보호자 계정에서 붙일 수 있어요." },
-          "붙이지 못했어요. 잠시 후 다시 해 주세요.",
+          "붙이지 못했어요.",
         ),
       );
     }
