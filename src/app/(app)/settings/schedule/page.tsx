@@ -9,6 +9,7 @@ import { Stage } from "@/components/app-shell/stage";
 import { Dock } from "@/components/ui/dock";
 import { CardHead } from "@/components/ui/card";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
+import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AvailabilitySlot, Weekday } from "@/lib/api/types";
 import { useAvailability, useFamilyProfiles, useSaveAvailability } from "@/lib/api/queries";
@@ -71,7 +72,8 @@ export default function SchedulePage() {
 
 function Schedule() {
   const { familyId } = useSession();
-  const { data: family, isPending: familyPending } = useFamilyProfiles(familyId);
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
+  const { data: family, isLoading: familyPending } = useFamilyProfiles(familyId);
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const people = family?.profiles ?? [];
   const [picked, setPicked] = useState<string | null>(null);
@@ -84,7 +86,8 @@ function Schedule() {
 
   return (
     <>
-      <AppBar backHref="/settings" title="운동할 수 있는 시간" />
+      {/* 들어온 곳(짜기 · 직접 짜기 · 가족)으로 돌아간다 — 설정으로 박아 두면 설정의 뒤로와 서로 오갔다 */}
+      <AppBar back title="운동할 수 있는 시간" />
       <Stage wide className="space-y-3 pb-28">
         {familyPending ? (
           <Skeleton className="h-11 w-56 rounded-full" />
@@ -129,13 +132,21 @@ function Schedule() {
 
 /** 한 사람의 한 주. 사람을 바꾸면 새로 그린다(key) — 고치던 것이 다른 사람에게 새지 않게 */
 function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
-  const { data, isPending } = useAvailability(profileId);
+  const { data, isPending, error, refetch, isRefetching } = useAvailability(profileId);
   const save = useSaveAvailability(profileId);
   const [draft, setDraft] = useState<AvailabilitySlot[] | null>(null);
   const [saved, setSaved] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
   if (isPending) return <Skeleton className="h-96 w-full rounded-3xl" />;
+  // 못 받은 것을 빈 한 주로 그리지 않는다 — 그대로 저장하면 적어 둔 시간이 지워진다
+  if (error) {
+    return (
+      <section className="card">
+        <ErrorState error={error} onRetry={() => void refetch()} retrying={isRefetching} />
+      </section>
+    );
+  }
 
   const slots = draft ?? data?.slots ?? [];
   const byDay = new Map(slots.map((s) => [s.day, s]));
