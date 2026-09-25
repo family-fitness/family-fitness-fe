@@ -8,11 +8,12 @@
  * | 무엇                     | 경험치 |
  * | ------------------------ | ------ |
  * | 운동 한 칸 끝내기        | +5     |
- * | 그날 잡힌 것 다 하기     | +20    |
+ * | 운동 하나를 끝까지 하기  | +20    |
  * | 칭찬 스티커 받기         | +10    |
  * | 키 · 몸무게 새로 재기    | +20    |
  *
- * 경험치는 **줄지 않는다.** 쉰 날에 깎는 규칙은 없다.
+ * 경험치는 **줄지 않는다.** 쉰 날에 깎는 규칙은 없다. 끝까지 한 몫은 운동마다 붙는다 — 「그날 잡힌 것 다 하기」 로
+ * 세면, 아이가 다 한 뒤에 부모가 운동을 하나 더 등록하는 순간 그 몫이 빠져 레벨이 내려갔다.
  */
 import { HttpResponse, http, type PathParams } from "msw";
 
@@ -21,15 +22,15 @@ import { callName } from "@/lib/family";
 import { dayOf, daysBefore, today } from "@/lib/today";
 import { josa } from "@/lib/utils";
 
-import { BASE, DEMO, db, type Profile } from "./db";
+import { BASE, DEMO, db, participantOf, type Profile } from "./db";
 import { dayLogFor } from "./history";
 
-const XP = { SESSION: 5, DAY_DONE: 20, STICKER: 10, MEASURE: 20 } as const;
+const XP = { SESSION: 5, MISSION_DONE: 20, STICKER: 10, MEASURE: 20 } as const;
 
 /** 레벨 n 이 시작되는 경험치. 뒤로 갈수록 한 레벨이 길어진다 */
 const LEVEL_FLOOR = [0, 80, 200, 360, 560, 800, 1080, 1400, 1760, 2160] as const;
 
-/** 경험치를 셀 날들. 목의 기록은 지난 3주까지다 */
+/** 심어 둔 지난 기록을 셀 날들 — 끝없이 거슬러 올라가지 않게 3주까지 */
 const WINDOW = 21;
 
 /**
@@ -49,17 +50,33 @@ function counted(log: DayLog) {
   return log.entries.filter((e) => e.verifiedBy !== "SELF_REPORT");
 }
 
-/** 그날 잡힌 것을 다 했나 */
-function dayDone(log: DayLog) {
-  const entries = counted(log);
-  return entries.length > 0 && entries.every((e) => e.completed);
+/** 그날 끝까지 한 운동 수 */
+function finished(log: DayLog) {
+  return counted(log).filter((e) => e.completed).length;
 }
 
 function dayXp(log: DayLog): number {
   const done = counted(log)
     .flatMap((e) => e.sessions ?? [])
     .filter((s) => s.done).length;
-  return done * XP.SESSION + (dayDone(log) ? XP.DAY_DONE : 0);
+  return done * XP.SESSION + finished(log) * XP.MISSION_DONE;
+}
+
+/**
+ * 셀 날 — 심어 둔 지난 기록은 3주 창 안에서만, 등록된 운동으로 한 날은 창 밖이어도 전부.
+ * 경험치 · 레벨 · 나무 · 업적은 줄지 않는 값이라, 창으로만 세면 날이 갈수록 한 날이 빠져 줄었다
+ */
+function countedDates(profileId: string): string[] {
+  const now = today();
+  const dates = new Set(Array.from({ length: WINDOW }, (_, i) => daysBefore(WINDOW - 1 - i)));
+  for (const m of db.missions) {
+    const me = participantOf(m, profileId);
+    if (!me) continue;
+    for (const d of Object.values(me.doneOn ?? {})) if (d <= now) dates.add(d);
+    const start = m.startDate ?? "";
+    if (start && start === (m.endDate ?? start) && start <= now) dates.add(start);
+  }
+  return [...dates].sort();
 }
 
 /** 그날 일의 시각 — 오늘이면 지금. 저녁 7시로 적으면 낮에 열었을 때 아직 오지 않은 시각이 되어 알림에서 빠진다 */
@@ -83,8 +100,7 @@ export function streakOf(active: Set<string>, rest: Set<string>): number {
 }
 
 export function progressOf(profileId: string): ProgressView {
-  const dates = Array.from({ length: WINDOW }, (_, i) => daysBefore(WINDOW - 1 - i));
-  const logs = dates
+  const logs = countedDates(profileId)
     .map((d) => dayLogFor(profileId, d))
     .filter((l): l is DayLog => l !== null && l.minutes > 0);
   const active = new Set(logs.map((l) => l.date));
@@ -98,7 +114,7 @@ export function progressOf(profileId: string): ProgressView {
 
   const events: XpEvent[] = [
     ...logs.map((l) => ({
-      reason: dayDone(l) ? "운동을 다 했어요" : "운동을 했어요",
+      reason: finished(l) > 0 ? "운동을 다 했어요" : "운동을 했어요",
       amount: dayXp(l),
       at: timeOn(l.date),
     })),

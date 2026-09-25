@@ -346,6 +346,39 @@ check(
   `${rateBefore}% → ${await rateOf()}%`,
 );
 
+// 다 한 뒤에 운동이 하나 더 잡혀도 경험치는 줄지 않는다(규칙 10) — 끝까지 한 몫은 운동마다 붙는다.
+// 오늘 잡힌 것을 다 한 아이가 있어야 본다 — 셋째를 새로 들인다
+const third = (await (
+  await post(`/families/${DEMO.familyId}/profiles`, {
+    name: "셋째",
+    birthDate: `${new Date().getFullYear() - 9}-02-01`,
+    sex: "M",
+    role: "CHILD",
+    guardianConsent: { personalData: true, healthData: true },
+  })
+).json()) as { profileId: string };
+const oneFor = async (profileId: string, title: string) =>
+  (await (
+    await post(`/families/${DEMO.familyId}/missions`, {
+      title,
+      startDate: today,
+      endDate: today,
+      targetMetric: "TIMER_MINUTES",
+      targetValue: 1,
+      participantProfileIds: [profileId],
+      sessions: [{ position: 1, phase: "MAIN", title: "하나", minutes: 1 }],
+    })
+  ).json()) as MissionBody;
+const solo = await oneFor(third.profileId, "혼자 하나");
+await post(`/missions/${solo.missionId}/sessions/1/done`, { ...done, profileId: third.profileId });
+const xpDone = await xpOf(third.profileId);
+await oneFor(third.profileId, "하나 더");
+check(
+  "다 한 뒤에 운동이 더 잡혀도 경험치가 줄지 않는다",
+  (await xpOf(third.profileId)) >= xpDone,
+  `${xpDone} → ${await xpOf(third.profileId)}`,
+);
+
 /* ─── 4. 사람이 적은 것은 보호자가 확인한다(규칙 2) ─────────── */
 
 const reported = (await (
