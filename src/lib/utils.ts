@@ -41,7 +41,11 @@ const JOSA = {
 } as const;
 
 export function josa(word: string, kind: keyof typeof JOSA): string {
-  const last = word.trimEnd().at(-1);
+  // 뒤에 붙은 괄호는 읽지 않는다 — 「왕복오래달리기(15m)」 는 「달리기」 에 조사가 붙는다
+  const last = word
+    .trimEnd()
+    .replace(/\s*\([^()]*\)$/, "")
+    .at(-1);
   if (!last) return JOSA[kind][1];
 
   // 숫자는 읽는 소리로 — 영 · 일 · 삼 · 육 · 칠 · 팔(십)은 받침이 있고 이 · 사 · 오 · 구는 없다

@@ -22,7 +22,7 @@ import { REMEASURE_DAYS } from "@/lib/remeasure";
 import { daysSince, today } from "@/lib/today";
 import { bodyError, bodyValue, rangeHint } from "@/lib/body";
 import { useBodyStore } from "@/stores/body-store";
-import { cn } from "@/lib/utils";
+import { cn, withJosa } from "@/lib/utils";
 import { ArtIcon } from "@/components/ui/art-icon";
 
 /** RHF 필드 이름. 항목 코드가 "012" 라 그대로 쓰면 경로 파서가 숫자로 본다 */
@@ -205,7 +205,9 @@ export default function MeasurePage() {
     });
     if (hidden && !showEquipment) {
       setShowEquipment(true);
-      setServerError(`${hidden.itemLabel ?? hidden.itemName}을 다시 봐 주세요.`);
+      setServerError(
+        `${withJosa(hidden.itemLabel ?? hidden.itemName ?? "", "을를")} 다시 봐 주세요.`,
+      );
       return;
     }
 
