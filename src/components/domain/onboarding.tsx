@@ -222,14 +222,9 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       return;
     }
     if (!family) return;
-    // 참여 방식을 고르기 전에 닫았으면 그것부터 — 가족을 만든 뒤 새로고침하면 참여 방식 없이 홈으로 갔다.
-    // 그다음 아이가 있으면 홈, 없으면 아이 등록
-    if (profile?.role === "PARENT" && profile.supportMode == null) {
-      router.replace("/settings/support-mode?from=claim");
-      return;
-    }
+    // 아이가 있으면 홈, 없으면 아이 등록부터 — 참여 방식은 아이 다음 차례라 여기서 가로채지 않는다
     router.replace(family.profiles?.some((p) => p.role === "CHILD") ? "/parent" : "/start/child");
-  }, [hadFamily, family, familyError, profile, router]);
+  }, [hadFamily, family, familyError, router]);
 
   const busy =
     createFamily.isPending ||
