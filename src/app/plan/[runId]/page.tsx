@@ -9,6 +9,7 @@ import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Stage } from "@/components/app-shell/stage";
 import { Dock } from "@/components/ui/dock";
 import { CardHead } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -103,11 +104,11 @@ function Proposal() {
 
   const approved = run.status === "APPROVED";
   const rejected = run.status === "REJECTED";
-  // 짜다가 실패했으면 제안이 없다 — 「제안 · 아직 등록 전」 과 0개 · 0분 대신 실패를 말하고 다시 짜게
+  // 짜다가 실패했으면 제안이 없다 — 실패를 말하고 다시 짜게
   const failed = run.status === "FAILED";
   // 등록은 서버가 된다고 할 때만(canApprove)
   const open = run.status === "AWAITING_APPROVAL" && run.canApprove !== false;
-  const settled = approved || rejected || failed;
+  const settled = approved || rejected;
 
   const register = async () => {
     setProblem(null);
@@ -133,66 +134,82 @@ function Proposal() {
     <>
       <AppBar backHref="/parent" title="오늘 운동 제안" />
       <Stage wide className={cn("space-y-3", open && "pb-40")}>
-        <section className="card-hero">
-          {/* 제안인지 등록한 운동인지(규칙 1) — 둥근 딱지가 아니라 제목 위 한 줄 글자로 */}
-          <p
-            className={cn(
-              "text-caption font-extrabold",
-              approved ? "text-done" : "text-signal-deep",
-            )}
-          >
-            {approved
-              ? "오늘 운동으로 등록했어요"
-              : rejected
-                ? "이번엔 안 하기로 했어요"
-                : failed
-                  ? "제안을 짜지 못했어요"
-                  : "제안 · 아직 등록 전"}
-          </p>
-          {/* 서버가 지은 이름을 그대로 */}
-          <h2 className="page-title mt-2">{proposal?.title ?? "오늘 운동"}</h2>
-          <p className="text-caption text-ink-soft mt-1 font-semibold">
-            {sessions.length}개 · {minutes}분{phases && ` · ${phases}`}
-            {people.length > 0 && ` · ${people.join(" · ")}`}
-          </p>
-          {proposal?.rationale && (
-            <p className="mt-3 text-sm leading-relaxed">{proposal.rationale}</p>
-          )}
-        </section>
-
-        <section className="card">
-          <CardHead title="근거" meta="국민체력100" />
-          <Citations items={proposal?.citations} className="mt-1" />
-        </section>
-
-        <section className="card">
-          <CardHead title="순서" meta={`${minutes}분`} />
-          <div className="mt-2">
-            <SessionList sessions={sessions} />
-          </div>
-        </section>
-
-        {/* 등록하면 제안 전부가 운동이 된다(서버가 한꺼번에 등록한다). 둘째부터도 근거 · 순서까지 다 보인다(규칙 6) */}
-        {(run.proposals ?? []).slice(1).map((p, i) => {
-          const list = orderSessions((p as ProposalWithSessions).sessions);
-          return (
-            <section key={`${p.title}-${i}`} className="card">
-              <CardHead
-                title={p.title ?? "같이 등록되는 운동"}
-                meta={[p.startDate, p.endDate && p.endDate !== p.startDate ? p.endDate : null]
-                  .filter(Boolean)
-                  .join(" ~ ")}
-              />
-              {p.rationale && <p className="mt-2 text-sm leading-relaxed">{p.rationale}</p>}
-              <Citations items={p.citations} className="mt-2" />
-              {list.length > 0 && (
-                <div className="mt-2">
-                  <SessionList sessions={list} />
-                </div>
+        {failed ? (
+          // 짜다가 실패했으면 제안이 없다 — 「0개 · 0분」 · 빈 근거 · 빈 순서를 세우지 않고 실패만 말한다
+          <EmptyState
+            scene="rest"
+            title="제안을 짜지 못했어요"
+            action={
+              <Link
+                href="/plan"
+                className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"
+              >
+                다시 짜기
+              </Link>
+            }
+          />
+        ) : (
+          <>
+            <section className="card-hero">
+              {/* 제안인지 등록한 운동인지(규칙 1) — 둥근 딱지가 아니라 제목 위 한 줄 글자로 */}
+              <p
+                className={cn(
+                  "text-caption font-extrabold",
+                  approved ? "text-done" : "text-signal-deep",
+                )}
+              >
+                {approved
+                  ? "오늘 운동으로 등록했어요"
+                  : rejected
+                    ? "이번엔 안 하기로 했어요"
+                    : "제안 · 아직 등록 전"}
+              </p>
+              {/* 서버가 지은 이름을 그대로 */}
+              <h2 className="page-title mt-2">{proposal?.title ?? "오늘 운동"}</h2>
+              <p className="text-caption text-ink-soft mt-1 font-semibold">
+                {sessions.length}개 · {minutes}분{phases && ` · ${phases}`}
+                {people.length > 0 && ` · ${people.join(" · ")}`}
+              </p>
+              {proposal?.rationale && (
+                <p className="mt-3 text-sm leading-relaxed">{proposal.rationale}</p>
               )}
             </section>
-          );
-        })}
+
+            <section className="card">
+              <CardHead title="근거" meta="국민체력100" />
+              <Citations items={proposal?.citations} className="mt-1" />
+            </section>
+
+            <section className="card">
+              <CardHead title="순서" meta={`${minutes}분`} />
+              <div className="mt-2">
+                <SessionList sessions={sessions} />
+              </div>
+            </section>
+
+            {/* 등록하면 제안 전부가 운동이 된다(서버가 한꺼번에 등록한다). 둘째부터도 근거 · 순서까지 다 보인다(규칙 6) */}
+            {(run.proposals ?? []).slice(1).map((p, i) => {
+              const list = orderSessions((p as ProposalWithSessions).sessions);
+              return (
+                <section key={`${p.title}-${i}`} className="card">
+                  <CardHead
+                    title={p.title ?? "같이 등록되는 운동"}
+                    meta={[p.startDate, p.endDate && p.endDate !== p.startDate ? p.endDate : null]
+                      .filter(Boolean)
+                      .join(" ~ ")}
+                  />
+                  {p.rationale && <p className="mt-2 text-sm leading-relaxed">{p.rationale}</p>}
+                  <Citations items={p.citations} className="mt-2" />
+                  {list.length > 0 && (
+                    <div className="mt-2">
+                      <SessionList sessions={list} />
+                    </div>
+                  )}
+                </section>
+              );
+            })}
+          </>
+        )}
 
         {settled && (
           <div className="grid gap-2">
