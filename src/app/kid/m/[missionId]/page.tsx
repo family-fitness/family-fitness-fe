@@ -32,7 +32,6 @@ import { stageOf } from "@/lib/levels";
 import { newlyUnlocked } from "@/lib/unlocks";
 import { PHASE_LABEL, clock, sessionsOf, stepMinutes, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
-import { dayOf, today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useVoice } from "@/lib/voice";
 import { usePrefsStore } from "@/stores/prefs-store";
@@ -710,14 +709,15 @@ function Finish({
   const { data: progress, isFetching } = useProgress(kidId || undefined);
   const { data: family } = useFamilyProfiles(familyId);
   const send = useSendCheer(familyId);
-  // 다 한 운동을 다시 열었으면 오늘 벌써 알렸는지 본다 — 또 알리면 부모에게 같은 말이 두 번 간다
-  const { data: sent } = useCheers(fresh ? undefined : familyId);
-  const toldBefore =
-    !fresh &&
-    (sent?.cheers ?? []).some(
-      (c) =>
-        c.fromProfileId === kidId && c.missionId === missionId && dayOf(c.createdAt) === today(),
-    );
+  /*
+    다 한 운동을 다시 열었으면 벌써 알렸는지 본다 — 또 알리면 부모에게 같은 말이 두 번 간다.
+    알렸는지 받는 동안은 알리기를 내지 않는다(누르는 틈에 두 번 갔다). 못 받으면 알리기를 둔다 — 막히지 않게.
+    부모가 벌써 스티커를 붙였으면 「기다리는 중」 이 아니다(규칙 12)
+  */
+  const { data: sent, isLoading: checking } = useCheers(fresh ? undefined : familyId);
+  const aboutThis = (sent?.cheers ?? []).filter((c) => c.missionId === missionId);
+  const toldBefore = !fresh && aboutThis.some((c) => c.fromProfileId === kidId);
+  const answered = !fresh && aboutThis.some((c) => c.toProfileId === kidId && c.stickerId);
   const [toldNow, setToldNow] = useState(false);
   const told = toldNow || toldBefore;
   const [error, setError] = useState<string | null>(null);
@@ -790,7 +790,7 @@ function Finish({
       )}
 
       {/* 어땠어요 — 한 번 누르면 끝. 고르면 엄마 · 아빠한테 가는 말에 붙는다 */}
-      {!told && (
+      {!told && !checking && (
         <div className="mt-4" role="group" aria-label="오늘 운동 어땠어요">
           <p className="text-sm font-extrabold">어땠어요?</p>
           <div className="mt-2 grid grid-cols-3 gap-2">
@@ -816,8 +816,10 @@ function Finish({
       {told ? (
         <p className="text-done mt-4 flex min-h-12 items-center justify-center gap-1.5 text-sm font-extrabold">
           <Check aria-hidden className="size-4" strokeWidth={3} />
-          알렸어요 · 기다리는 중
+          {answered ? "알렸어요" : "알렸어요 · 기다리는 중"}
         </p>
+      ) : checking ? (
+        <Skeleton className="mt-4 h-14 w-full rounded-2xl" />
       ) : (
         parents.length > 0 && (
           <button
