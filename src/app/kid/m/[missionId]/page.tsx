@@ -17,6 +17,7 @@ import { Confetti } from "@/components/scene/confetti";
 import { KiumIsland } from "@/components/scene/kium-island";
 import { StoneTrail } from "@/components/scene/stone-trail";
 import { XpGauge } from "@/components/domain/xp-gauge";
+import { ApiError } from "@/lib/api/client";
 import type { MissionSession } from "@/lib/api/types";
 import {
   useCompleteSession,
@@ -99,6 +100,8 @@ export default function PlayPage() {
   const [saving, setSaving] = useState(0);
   const [unsaved, setUnsaved] = useState<StepDone[]>([]);
   const [saveError, setSaveError] = useState<string | null>(null);
+  /** 다시 보내도 같은 답이 오는 실패(동의 · 참여자 아님 · 없는 운동) — 다시 보내기를 주지 않는다 */
+  const [saveStuck, setSaveStuck] = useState(false);
   const [current, setCurrent] = useState<number | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [elapsed, setElapsed] = useState(0);
@@ -150,13 +153,22 @@ export default function PlayPage() {
     );
   };
 
-  /** 서버에 보낸다. 못 보내면 들고 있다가 「다시 보내기」 로 */
+  /**
+   * 서버에 보낸다. 못 보내면 들고 있다가 「다시 보내기」 로.
+   * 부를 때마다 따로 기다린다 — mutate 에 준 콜백은 마지막 호출 것만 불려서, 못 보낸 칸 여럿을 한꺼번에
+   * 다시 보내면 앞 칸의 실패가 사라지고 보내는 중 수가 줄지 않아 끝 칸이 뼈대에 멈췄다
+   */
   const save = (step: StepDone) => {
     setSaving((n) => n + 1);
-    complete.mutate(step, {
-      onSuccess: (res) => setXp((x) => x + (res.xpGained ?? 0)),
-      onError: (e) => {
+    complete
+      .mutateAsync(step)
+      .then((res) => setXp((x) => x + (res.xpGained ?? 0)))
+      .catch((e: unknown) => {
         setUnsaved((list) => [...list, step]);
+        // 망 · 서버 탓이 아니면(4xx) 다시 보내도 같다
+        if (e instanceof ApiError && e.status < 500 && e.status !== 408 && e.status !== 429) {
+          setSaveStuck(true);
+        }
         setSaveError(
           errorMessage(
             e,
@@ -167,9 +179,8 @@ export default function PlayPage() {
             "기록을 남기지 못했어요.",
           ),
         );
-      },
-      onSettled: () => setSaving((n) => n - 1),
-    });
+      })
+      .finally(() => setSaving((n) => n - 1));
   };
   const retry = () => {
     const list = unsaved;
@@ -415,14 +426,24 @@ export default function PlayPage() {
               // 못 보낸 칸이 있으면 「다 했어요」 · 「알리기」 를 띄우지 않는다 — 부모가 빈 기록을 보게 된다
               <section className="card-hero text-center" role="alert">
                 <p className="text-lead font-extrabold">{saveError ?? "기록을 남기지 못했어요."}</p>
-                <button
-                  type="button"
-                  onClick={retry}
-                  disabled={saving > 0}
-                  className="press bg-signal-strong mt-3 flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white"
-                >
-                  다시 보내기
-                </button>
+                {saveStuck ? (
+                  <NavLink
+                    href="/kid"
+                    transitionTypes={["nav-back"]}
+                    className="press text-ink-soft mt-2 inline-flex min-h-11 items-center px-4 text-sm font-bold"
+                  >
+                    홈으로
+                  </NavLink>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={retry}
+                    disabled={saving > 0}
+                    className="press bg-signal-strong mt-3 flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white"
+                  >
+                    다시 보내기
+                  </button>
+                )}
               </section>
             ) : finished && saving > 0 ? (
               <Skeleton className="h-80 w-full rounded-3xl" />
