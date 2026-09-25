@@ -211,15 +211,12 @@ function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
           {DAYS.map((d) => {
             const s = byDay.get(d.code);
             return (
+              // 분은 글자로, 적어 둔 날은 아래 막대로 — 둥근 칸 안에 숫자를 넣지 않는다
               <li key={d.code} className="flex flex-col items-center gap-1">
-                <span
-                  className={cn(
-                    "grid h-10 w-full place-items-center rounded-xl text-xs font-extrabold",
-                    s ? "bg-signal-strong text-white" : "bg-sub text-faint",
-                  )}
-                >
+                <span className="text-signal-deep h-5 text-sm font-extrabold tabular-nums">
                   {s ? s.minutes : ""}
                 </span>
+                <span className={cn("h-1.5 w-full rounded-full", s ? "bg-signal" : "bg-sub")} />
                 <span className="text-micro text-ink-soft font-bold">{d.label}</span>
               </li>
             );
