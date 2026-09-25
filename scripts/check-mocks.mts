@@ -152,70 +152,131 @@ check(
   res.status === 422 && (await codeOf(res)) === "CONSENT_REQUIRED",
 );
 
-/* ─── 3. 서버가 아는 것과 사람이 적은 것 ───────────────────── */
+/* ─── 3. 한 칸 끝 — 끝낸 칸은 사람마다 ─────────────────────── */
 
-const missions = (await (await get(`/families/${DEMO.familyId}/missions`)).json()) as {
-  missions: { missionId: string }[];
+type Participant = {
+  profileId: string;
+  completed?: boolean;
+  needsGuardianCheck?: boolean;
+  verifiedBy?: string | null;
+  doneSessions?: number[];
 };
-const missionId = missions.missions[0].missionId;
+type MissionBody = { missionId: string; participants: Participant[] };
 
-const timer = (await (
-  await post(`/missions/${missionId}/activity/timer`, {
-    profileId: DEMO.kid,
-    startedAt: `${today}T10:00:00Z`,
-    endedAt: `${today}T10:50:00Z`,
-    activeMinutes: 50,
+const sibling = (await (
+  await post(`/families/${DEMO.familyId}/profiles`, {
+    name: "둘째",
+    birthDate: `${new Date().getFullYear() - 8}-03-01`,
+    sex: "F",
+    role: "CHILD",
+    guardianConsent: { personalData: true, healthData: true },
   })
-).json()) as { serverVerified?: boolean; missionCompleted?: boolean };
-check("타이머는 서버가 확인한다", timer.serverVerified === true);
-check("타이머로 목표 도달 시 완료", timer.missionCompleted === true);
+).json()) as { profileId: string };
 
-const steps = (await (
-  await post(`/missions/${missionId}/activity/steps`, {
-    profileId: DEMO.kid,
-    activityDate: today,
-    steps: 12000,
+// 형제 둘이 같은 운동을 받는다(직접 짜기에서 여럿을 고를 수 있다)
+const shared = (await (
+  await post(`/families/${DEMO.familyId}/missions`, {
+    title: "둘이 같이",
+    startDate: today,
+    endDate: today,
+    targetMetric: "TIMER_MINUTES",
+    targetValue: 2,
+    participantProfileIds: [DEMO.kid, sibling.profileId],
+    sessions: [
+      { position: 1, phase: "WARMUP", title: "준비", minutes: 1, completed: true },
+      { position: 2, phase: "MAIN", title: "본", minutes: 1 },
+    ],
   })
-).json()) as { serverVerified?: boolean; missionCompleted?: boolean; needsGuardianCheck?: boolean };
-check("걸음수는 서버가 확인하지 못한다", steps.serverVerified === false);
-check("걸음수는 목표를 넘겨도 미완료", steps.missionCompleted === false);
-check("걸음수는 보호자 확인이 남는다", steps.needsGuardianCheck === true);
+).json()) as MissionBody;
+const partsOf = async (id: string) =>
+  (
+    (await (await get(`/families/${DEMO.familyId}/missions`)).json()) as {
+      missions: MissionBody[];
+    }
+  ).missions.find((m) => m.missionId === id)?.participants ?? [];
+const who = (list: Participant[], id: string) => list.find((p) => p.profileId === id);
 
-/* ─── 4. 영상 ──────────────────────────────────────────────── */
+check(
+  "보낸 쪽이 칸에 적어 온 끝냄은 믿지 않는다",
+  (who(await partsOf(shared.missionId), DEMO.kid)?.doneSessions ?? []).length === 0,
+);
 
-const VIDEO = "IdpXx2gm90o";
-let progress = (await (
-  await post(`/videos/${VIDEO}/progress`, { profileId: DEMO.kid, progress: 0.5, watchedSec: 300 })
-).json()) as { creditedMinutes?: number; verifiedBy?: string | null };
-check("50퍼센트는 적립하지 않는다", progress.creditedMinutes === 0);
-check("50퍼센트는 확인으로 치지 않는다", progress.verifiedBy === null);
+const xpOf = async (id: string) =>
+  ((await (await get(`/profiles/${id}/progress`)).json()) as { xp: number }).xp;
+const before = await xpOf(DEMO.kid);
+const done = { profileId: DEMO.kid, activeSeconds: 60, startedAt: today, endedAt: today };
+const first = (await (
+  await post(`/missions/${shared.missionId}/sessions/1/done`, done)
+).json()) as { xpGained?: number; missionCompleted?: boolean; verifiedBy?: string };
+check("한 칸 끝은 타이머로 확인된다", first.verifiedBy === "TIMER");
+check("한 칸만 끝내면 아직 다 한 것이 아니다", first.missionCompleted === false);
+check(
+  "받은 경험치는 레벨이 센 만큼과 같다",
+  (first.xpGained ?? 0) > 0 && (await xpOf(DEMO.kid)) - before === first.xpGained,
+  `+${first.xpGained} / ${(await xpOf(DEMO.kid)) - before}`,
+);
 
-progress = (await (
-  await post(`/videos/${VIDEO}/progress`, { profileId: DEMO.kid, progress: 0.95, watchedSec: 570 })
-).json()) as { creditedMinutes?: number; verifiedBy?: string | null };
-check("처음 90퍼센트를 넘으면 적립", (progress.creditedMinutes ?? 0) > 0);
-check("완주는 영상으로 확인된다", progress.verifiedBy === "VIDEO_PROGRESS");
+let parts = await partsOf(shared.missionId);
+check("끝낸 아이에게 그 칸이 남는다", (who(parts, DEMO.kid)?.doneSessions ?? []).includes(1));
+check(
+  "형제에게는 끝난 칸이 아니다",
+  (who(parts, sibling.profileId)?.doneSessions ?? []).length === 0 &&
+    !who(parts, sibling.profileId)?.completed,
+);
+const siblingDay = (await (
+  await get(
+    `/families/${DEMO.familyId}/calendar?profileId=${sibling.profileId}&from=${today}&to=${today}`,
+  )
+).json()) as { days: { minutes: number }[] };
+check("형제의 오늘은 0분이다", (siblingDay.days[0]?.minutes ?? 0) === 0);
 
-progress = (await (
-  await post(`/videos/${VIDEO}/progress`, { profileId: DEMO.kid, progress: 1, watchedSec: 600 })
-).json()) as { creditedMinutes?: number };
-check("두 번 적립되지 않는다", progress.creditedMinutes === 0);
+const again = (await (
+  await post(`/missions/${shared.missionId}/sessions/1/done`, done)
+).json()) as { xpGained?: number };
+check("같은 칸을 두 번 끝내도 두 번 쌓이지 않는다", again.xpGained === 0, `+${again.xpGained}`);
 
-// 라벨 연령과 겹치지 않는 영상은 내려오지 않는다
-const kidVideos = (await (
-  await get(`/videos?ageGroup=${encodeURIComponent("유아기")}`)
+res = await post(`/missions/${shared.missionId}/sessions/2/done`, { ...done, activeSeconds: 10 });
+check("잡힌 시간의 절반도 안 했으면 끝이 아니다", (await codeOf(res)) === "TOO_SHORT");
+
+res = await post(`/missions/${shared.missionId}/sessions/2/done`, { ...done, profileId: DEMO.dad });
+check("참여자가 아니면 끝낼 수 없다", (await codeOf(res)) === "NOT_A_PARTICIPANT");
+
+const last = (await (await post(`/missions/${shared.missionId}/sessions/2/done`, done)).json()) as {
+  missionCompleted?: boolean;
+};
+parts = await partsOf(shared.missionId);
+check(
+  "다 끝낸 아이만 다 한 것이다",
+  last.missionCompleted === true &&
+    who(parts, DEMO.kid)?.completed === true &&
+    !who(parts, sibling.profileId)?.completed,
+);
+
+/* ─── 4. 사람이 적은 것은 보호자가 확인한다(규칙 2) ─────────── */
+
+const reported = (await (
+  await get(`/families/${DEMO.familyId}/calendar?profileId=${DEMO.kid}&from=${today}&to=${today}`)
 ).json()) as {
-  videos: { label?: { ageFrom?: number | null; ageTo?: number | null } }[];
+  days: { entries: { missionId: string; verifiedBy: string | null; minutes: number }[] }[];
 };
+const steps = reported.days[0]?.entries.find((e) => e.missionId === "seed-steps");
 check(
-  "영상 연령 안전 필터",
-  kidVideos.videos.every((v) => (v.label?.ageFrom ?? 99) <= 6),
-  `${kidVideos.videos.length}건`,
+  "직접 적은 걸음수는 자기 신고이고 분으로 세지 않는다",
+  steps?.verifiedBy === "SELF_REPORT" && steps.minutes === 0,
 );
+
+setActingProfile(DEMO.kid);
+res = await post(`/missions/seed-steps/participants/${DEMO.kid}/confirm`);
+check("아이는 스스로 확인할 수 없다", res.status === 403);
+setActingProfile(DEMO.mom);
+res = await post(`/missions/seed-steps/participants/${DEMO.kid}/confirm`);
+parts = await partsOf("seed-steps");
 check(
-  "라벨 없는 영상은 아이에게 안 나간다",
-  kidVideos.videos.every((v) => v.label?.ageFrom != null || v.label?.ageTo != null),
+  "보호자가 확인하면 완료가 된다",
+  res.ok && who(parts, DEMO.kid)?.completed === true && !who(parts, DEMO.kid)?.needsGuardianCheck,
 );
+res = await post(`/missions/없는-미션/participants/${DEMO.kid}/confirm`);
+check("없는 운동은 확인할 수 없다", res.status === 404);
 
 /* ─── 5. 동의 철회 ─────────────────────────────────────────── */
 

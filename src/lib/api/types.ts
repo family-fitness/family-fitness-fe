@@ -83,8 +83,6 @@ export type CoachApproveResult = S["ApproveCoachRunView"];
 export type MissionList = S["MissionListView"];
 export type Mission = S["MissionView"];
 
-export type VideoList = S["VideoListView"];
-
 /* ─── 아직 서버에 없는 것 ──────────────────────────────────── */
 
 /**

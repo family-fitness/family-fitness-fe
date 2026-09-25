@@ -12,7 +12,6 @@ import type {
   LeagueTier,
   ApiErrorBody,
   Band,
-  CoachApproveResult,
   CoachRun,
   FamilyProfiles,
   FitnessItems,
@@ -20,13 +19,11 @@ import type {
   LatestFitnessTest,
   MeResponse,
   Mission,
-  MissionList,
   PredictionResult,
   ProfileSummary,
-  VideoList,
 } from "@/lib/api/types";
 
-import { dayOf, toDateString } from "@/lib/today";
+import { dayOf } from "@/lib/today";
 
 import clipsJson from "./clips.json";
 import fixturesJson from "./fixtures.json";
@@ -46,9 +43,6 @@ interface Fixtures {
   itemsByAgeGroup: Record<string, FitnessItems>;
   latestByProfile: Record<string, LatestFitnessTest>;
   coachRun: CoachRun;
-  coachApprove: CoachApproveResult;
-  missionsAfterApproval: MissionList;
-  videos: VideoList;
   prediction: PredictionResult;
 }
 
@@ -316,7 +310,6 @@ export const db = {
   coachRun: loadCoachRun(),
   /** 이번 주 제안은 아직 0건이다. 심어 둔 것은 지난 회차에서 승인한 미션들이다 */
   missions: loadMissions(),
-  videos: structuredClone(fixtures.videos.videos),
   /** 주고받은 칭찬 · 알림. */
   cheers: loadCheers(),
   /**
@@ -389,7 +382,7 @@ export function resetToDemo() {
   db.latest = demoLatest();
   db.tests = seedTests();
   db.availability = seedAvailability();
-  db.coachRun = freshCoachRun();
+  db.coachRun = structuredClone(fixtures.coachRun);
   db.missions = seedMissions();
   db.cheers = seedCheers();
   db.body = demoBody();
@@ -691,25 +684,6 @@ function seedMissions(): MissionRow[] {
 }
 
 /**
- * 이번 주 코치 회차.
- *
- * 픽스처에 날짜를 박아 두면 며칠만 지나도 "9월 14일 주간" 처럼 지난주 제안을
- * 승인하라고 내민다. 제안 기간도 이번 주로 맞춘다 — 기간이 지난 제안을
- * 승인하면 태어나자마자 끝난 미션이 된다.
- */
-function freshCoachRun() {
-  const run = structuredClone(fixtures.coachRun);
-  const week = thisWeek();
-  run.weekStart = week.weekStart;
-  run.proposals = (run.proposals ?? []).map((proposal) => ({
-    ...proposal,
-    startDate: week.weekStart,
-    endDate: week.weekEnd,
-  }));
-  return run;
-}
-
-/**
  * 승인·거절·미션 만들기는 **탭이 살아 있는 동안 남는다.**
  *
  * 전에는 모듈 상태로만 들고 있어서 새로고침 한 번에 방금 승인한 제안이
@@ -753,11 +727,12 @@ export function saveMissions() {
 function loadCoachRun() {
   try {
     const saved = sessionStorage.getItem(RUN_KEY);
-    if (saved) return JSON.parse(saved) as ReturnType<typeof freshCoachRun>;
+    if (saved) return JSON.parse(saved) as CoachRun;
   } catch {
-    return freshCoachRun();
+    return structuredClone(fixtures.coachRun);
   }
-  return freshCoachRun();
+  // 픽스처(실제 서버 응답)는 한 주 단위라 날짜가 박혀 있다. 코치가 처음 부를 때 오늘 제안으로 다시 단다(coach.ts)
+  return structuredClone(fixtures.coachRun);
 }
 
 export function saveCoachRun() {
@@ -817,21 +792,6 @@ export function acting(): Profile | undefined {
 /** 서버와 같은 봉투 모양으로 실패를 돌려준다 */
 export function fail(status: number, code: string, message: string) {
   return HttpResponse.json<ApiErrorBody>({ error: { code, message } }, { status });
-}
-
-/**
- * 이번 주 일요일~토요일.
- *
- * 픽스처에 날짜를 박아 두면 며칠만 지나도 "이번 주 기록" 화면에 지난주가 뜬다.
- * 데모를 언제 열어도 말이 되게 오늘을 기준으로 계산한다.
- */
-function thisWeek(): { weekStart: string; weekEnd: string } {
-  const now = new Date();
-  const sunday = new Date(now);
-  sunday.setDate(now.getDate() - now.getDay());
-  const saturday = new Date(sunday);
-  saturday.setDate(sunday.getDate() + 6);
-  return { weekStart: toDateString(sunday), weekEnd: toDateString(saturday) };
 }
 
 export function uuid() {

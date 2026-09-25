@@ -3,7 +3,6 @@ import { HttpResponse, http, type PathParams } from "msw";
 
 import type { AgeGroup, FitnessTestResult, ItemResult, LatestFitnessTest } from "@/lib/api/types";
 
-import { isVideoDone } from "@/lib/mission";
 import { ageOf, toDateString } from "@/lib/today";
 
 import {
@@ -449,15 +448,6 @@ function syncMapMember(profile: Profile) {
   member.consentGiven = profile.consentGiven;
 }
 
-/** 연령대 → 만 나이 범위. 영상 연령 필터가 이 범위와 겹치는지 본다 */
-const AGE_RANGE: Record<string, [number, number]> = {
-  유아기: [0, 6],
-  유소년: [7, 12],
-  청소년: [13, 18],
-  성인: [19, 64],
-  어르신: [65, 99],
-};
-
 /* ─── 측정 ─────────────────────────────────────────────────── */
 
 const fitness = [
@@ -642,7 +632,7 @@ const fitness = [
 
 /* ─── 코치 — 승인 게이트 ───────────────────────────────────── */
 
-/* ─── 미션 · 활동 · 영상 · 리포트 ──────────────────────────── */
+/* ─── 미션 · 한 칸 끝 · 보호자 확인 ────────────────────────── */
 
 const missions = [
   /**
@@ -726,19 +716,6 @@ const missions = [
     return HttpResponse.json(mission, { status: 201 });
   }),
 
-  http.post(`${BASE}/missions/:missionId/activity/timer`, async ({ request }) => {
-    const body = (await request.json()) as { activeMinutes: number };
-    // 서버가 진짜로 아는 값이다
-    return HttpResponse.json({
-      activityDate: toDateString(new Date()),
-      source: "TIMER",
-      serverVerified: true,
-      totalActiveMinutes: body.activeMinutes,
-      missionProgress: Math.min(1, body.activeMinutes / 45),
-      missionCompleted: body.activeMinutes >= 45,
-    });
-  }),
-
   /**
    * 한 칸 끝냈다. ▲ 서버에 아직 없다 — `POST /missions/{id}/sessions/{position}/done`.
    *
@@ -789,19 +766,6 @@ const missions = [
     },
   ),
 
-  http.post(`${BASE}/missions/:missionId/activity/steps`, async ({ request }) => {
-    const body = (await request.json()) as { steps: number };
-    // 자기 신고다. 목표를 넘겨도 보호자 확인 전에는 완료가 아니다
-    return HttpResponse.json({
-      source: "MANUAL",
-      serverVerified: false,
-      verifiedBy: "SELF_REPORT",
-      missionProgress: Math.min(1, body.steps / 8000),
-      missionCompleted: false,
-      needsGuardianCheck: body.steps >= 8000,
-    });
-  }),
-
   /** 직접 적은 기록을 보호자가 확인한다 — 확인해야 완료가 된다(규칙 2) */
   http.post<PathParams>(
     `${BASE}/missions/:missionId/participants/:profileId/confirm`,
@@ -831,67 +795,12 @@ const missions = [
   ),
 ];
 
-const videos = [
-  http.get(`${BASE}/videos`, ({ request }) => {
-    const params = new URL(request.url).searchParams;
-    const list = params.get("list") ?? "ALL";
-    const ageGroup = params.get("ageGroup");
-
-    let result = db.videos;
-    if (list === "FAVORITES") result = result.filter((v) => v.favorited);
-    if (list === "RECENT") result = result.filter((v) => v.maxProgress !== null);
-    // 연령 안전 필터. 라벨 연령 범위와 겹치는 영상만 나간다.
-    // 라벨이 없는 영상은 아이 연령대에 아예 나가지 않는다 — 무엇이 나올지 모르기 때문이다
-    if (ageGroup) {
-      const [from, to] = AGE_RANGE[ageGroup] ?? [0, 99];
-      result = result.filter((v) => {
-        const label = v.label;
-        if (label?.ageFrom == null && label?.ageTo == null) return false;
-        return (label.ageFrom ?? 0) <= to && (label.ageTo ?? 99) >= from;
-      });
-    }
-    return HttpResponse.json({ videos: result, nextCursor: null });
-  }),
-
-  http.post<PathParams>(`${BASE}/videos/:videoId/favorite`, async ({ params, request }) => {
-    const { favorited } = (await request.json()) as { favorited: boolean };
-    const video = db.videos.find((v) => v.videoId === params.videoId);
-    if (!video) return fail(404, "VIDEO_NOT_FOUND", "영상이 없습니다");
-    video.favorited = favorited;
-    return HttpResponse.json({
-      videoId: video.videoId,
-      profileId: db.actingProfileId,
-      favorited,
-      favoritedAt: favorited ? new Date().toISOString() : null,
-    });
-  }),
-
-  http.post<PathParams>(`${BASE}/videos/:videoId/progress`, async ({ params, request }) => {
-    const body = (await request.json()) as { progress: number };
-    const video = db.videos.find((v) => v.videoId === params.videoId);
-    const previous = video?.maxProgress ?? 0;
-    const maxProgress = Math.max(previous, body.progress);
-    if (video) video.maxProgress = maxProgress;
-
-    // 처음 기준을 넘을 때만 적립한다. 두 번 적립되지 않는다
-    const justCompleted = !isVideoDone(previous) && isVideoDone(maxProgress);
-    return HttpResponse.json({
-      maxProgress,
-      completed: isVideoDone(maxProgress),
-      creditedMinutes: justCompleted ? Math.ceil((video?.durationSec ?? 0) / 60) : 0,
-      verifiedBy: isVideoDone(maxProgress) ? "VIDEO_PROGRESS" : null,
-      missionProgress: null,
-    });
-  }),
-];
-
 export const handlers = [
   ...authGate,
   ...identity,
   ...fitness,
   ...coaching,
   ...missions,
-  ...videos,
   ...history,
   ...league,
   ...progress,
