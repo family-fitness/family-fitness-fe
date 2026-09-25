@@ -15,9 +15,9 @@ export class ApiError extends Error {
     this.name = "ApiError";
   }
 
-  /** 화면에 띄울 문구. 코드별 문구가 없으면 뭉뚱그리지 말고 일반 문구를 준다 */
-  get userMessage(): string {
-    return COMMON_MESSAGE[this.code] ?? "잠시 후 다시 시도해 주세요.";
+  /** 여러 화면에서 같은 뜻인 코드면 그 문구. 모르는 코드면 없다 — 화면이 자기 말로 물러선다 */
+  get commonMessage(): string | undefined {
+    return COMMON_MESSAGE[this.code];
   }
 }
 
@@ -182,8 +182,6 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
     }
   }
 
-  if (res.status === 204) return undefined as T;
-
   if (!res.ok) {
     // 서버가 죽었거나 프록시가 HTML 을 돌려줄 수 있다
     const parsed = (await res.json().catch(() => null)) as ApiErrorBody | null;
@@ -194,7 +192,9 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
     );
   }
 
-  return res.json() as Promise<T>;
+  // 본문 없이 끝나는 응답(204 · 본문 없는 200)도 성공이다 — 읽을 게 없다고 실패로 치지 않는다
+  const text = await res.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 /**
@@ -202,27 +202,36 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
  *
  * 주소창에서 온 값이 경로 조각이 되는 화면이 있다(`/parent/sticker/[id]?missionId=`).
  * 그 값이 `../` 나 `?` 를 품고 있으면 부모 권한으로 다른 엔드포인트를 부르게 된다.
- * `?` 로 시작하는 값은 `query()` 가 만든 조회 문자열이라 그대로 둔다.
+ * 그대로 두는 것은 `query()` 가 만든 조회 문자열뿐이다 — 글자가 `?` 로 시작한다고 믿지 않는다.
+ * 빈 값은 받지 않는다 — `/families//missions` 는 남의 엔드포인트다.
  *
  *   api.post(path`/missions/${missionId}/participants/${profileId}/confirm`)
  */
 export function path(
   strings: TemplateStringsArray,
-  ...values: (string | number | null | undefined)[]
+  ...values: (string | number | QueryString | null | undefined)[]
 ): string {
   // 첫 조각이 처음 값이 되고, i 는 1 부터 돈다
   return strings.reduce((out, piece, i) => {
-    const value = String(values[i - 1] ?? "");
-    const safe = value === "" || value.startsWith("?") ? value : encodeURIComponent(value);
-    return out + safe + piece;
+    const value = values[i - 1];
+    if (value instanceof QueryString) return out + value.text + piece;
+    if (value == null || value === "") {
+      throw new ApiError(400, "BAD_PATH", `경로에 빈 값이 있습니다: ${strings.join("·")}`);
+    }
+    return out + encodeURIComponent(String(value)) + piece;
   });
 }
 
+/** `query()` 가 만든 조회 문자열. `path` 는 이것만 인코딩 없이 붙인다 */
+class QueryString {
+  constructor(readonly text: string) {}
+}
+
 /** 쿼리스트링을 만든다. undefined 인 값은 빼서 빈 파라미터가 안 붙게 한다 */
-export function query(params: Record<string, string | number | boolean | undefined>): string {
+export function query(params: Record<string, string | number | boolean | undefined>): QueryString {
   const entries = Object.entries(params).filter(([, v]) => v !== undefined && v !== "");
-  if (entries.length === 0) return "";
-  return `?${new URLSearchParams(entries.map(([k, v]) => [k, String(v)]))}`;
+  if (entries.length === 0) return new QueryString("");
+  return new QueryString(`?${new URLSearchParams(entries.map(([k, v]) => [k, String(v)]))}`);
 }
 
 export const api = {

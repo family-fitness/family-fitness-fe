@@ -17,5 +17,7 @@ export function errorMessage(
   const table = typeof byCodeOrFallback === "string" ? {} : byCodeOrFallback;
   const fallback = typeof byCodeOrFallback === "string" ? byCodeOrFallback : fallbackArg;
   if (!(error instanceof ApiError)) return fallback;
-  return table[error.code] ?? error.userMessage;
+  // 이 화면의 말 → 여러 화면이 같은 뜻으로 쓰는 말 → 이 화면이 물러설 말.
+  // 전에는 모르는 코드면 일반 문구로 떨어져, 아이 화면에서도 어른 말(「잠시 후 다시 시도해 주세요.」)이 떴다
+  return table[error.code] ?? error.commonMessage ?? fallback;
 }

@@ -394,6 +394,26 @@ check(
   );
   const c = await api.get<{ ok: boolean }>("/z");
   check("다음 요청은 새 토큰으로 바로 간다", c.ok === true && refreshCalls === 1);
+
+  g.fetch = (async () => new Response(null, { status: 200 })) as typeof fetch;
+  check("본문 없는 200 도 성공이다", (await api.post("/n")) === undefined);
+
+  const { path, query } = await import("@/lib/api/client");
+  check(
+    "경로 값은 인코딩한다 — 「?」 로 시작해도",
+    path`/missions/${"?x"}/confirm` === "/missions/%3Fx/confirm",
+  );
+  check(
+    "query() 가 만든 조회 문자열만 그대로 붙는다",
+    path`/clips${query({ q: "a b" })}` === "/clips?q=a+b" && path`/clips${query({})}` === "/clips",
+  );
+  let threw = false;
+  try {
+    void path`/families/${undefined}/missions`;
+  } catch {
+    threw = true;
+  }
+  check("빈 값이 든 경로는 부르지 않는다", threw);
 }
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
