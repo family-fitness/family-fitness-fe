@@ -359,12 +359,13 @@ export function useCoachRun(runId: Uuid | undefined) {
     queryFn: () => api.get<CoachRun>(path`/coach/runs/${runId}`),
     enabled: Boolean(runId),
     // 짜는 동안은 촘촘히 — 단계가 하나씩 차오르는 것이 이 화면의 전부다.
-    // 막혔거나 없어진 회차(4xx)면 멈춘다 — 다시 물어도 같은 답을 0.7초마다 받았다
-    refetchInterval: (q) =>
-      q.state.data?.status === "RUNNING" &&
-      !(q.state.error instanceof ApiError && q.state.error.status < 500)
-        ? 700
-        : false,
+    // 막혔거나 없어진 회차(4xx)면 멈춘다 — 다시 물어도 같은 답을 0.7초마다 받았다. 늦음 · 너무 잦음(408 · 429)은 다시 묻는다
+    refetchInterval: (q) => {
+      const e = q.state.error;
+      const settled =
+        e instanceof ApiError && e.status < 500 && e.status !== 408 && e.status !== 429;
+      return q.state.data?.status === "RUNNING" && !settled ? 700 : false;
+    },
   });
 }
 

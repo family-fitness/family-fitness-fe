@@ -136,8 +136,9 @@ function PlanRun() {
             const step = byName.get(name);
             const state = step ? stateOf(step.status) : null;
             const ok = state === "passed";
-            // 다 짠 뒤에 남은 단계는 돌지 않는다 — 서버가 단계를 끝에 한꺼번에 줄 때도 있다
-            const running = state === "running" && !finished;
+            // 다 짠 뒤에 남은 단계는 돌지 않는다 — 서버가 단계를 끝에 한꺼번에 줄 때도 있다.
+            // 못 받은 동안도 돌지 않는다 — 「불러오지 못했어요」 곁에서 「보는 중」 이 돌았다
+            const running = state === "running" && !finished && !error;
             return (
               <li key={name} className="flex items-start gap-3 py-3.5">
                 {/* 마친 단계는 체크만, 못 한 단계는 「–」 만 — 둥근 면 안에 넣지 않는다. 아직인 단계는 빈 점 */}
