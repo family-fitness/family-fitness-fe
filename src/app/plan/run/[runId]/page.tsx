@@ -140,16 +140,16 @@ function PlanRun() {
             const running = state === "running" && !finished;
             return (
               <li key={name} className="flex items-start gap-3 py-3.5">
+                {/* 마친 단계는 체크만, 못 한 단계는 「–」 만 — 둥근 면 안에 넣지 않는다. 아직인 단계는 빈 점 */}
                 <span
                   aria-hidden
                   className={cn(
                     "mt-0.5 grid size-7 shrink-0 place-items-center rounded-full",
-                    ok && "bg-signal text-white",
                     running && "border-signal-soft border-t-signal animate-spin border-[3px]",
-                    (!step || state === "failed") && "bg-sub",
+                    !step && "bg-sub",
                   )}
                 >
-                  {ok && <Check className="size-4" strokeWidth={3.2} />}
+                  {ok && <Check className="text-signal size-5" strokeWidth={3.2} />}
                   {state === "failed" && (
                     <span className="text-ink-soft text-sm leading-none font-extrabold">–</span>
                   )}
