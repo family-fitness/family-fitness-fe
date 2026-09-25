@@ -16,6 +16,7 @@ import { StreakChip } from "@/components/domain/streak-chip";
 import { PanelCell, PanelCells, WeekPanel } from "@/components/domain/week-panel";
 import { KiumIsland } from "@/components/scene/kium-island";
 import { NotificationBell } from "@/components/domain/notification-bell";
+import { XpGauge } from "@/components/domain/xp-gauge";
 import type { Mission } from "@/lib/api/types";
 import type { ProfileWithSex } from "@/lib/api/types";
 import {
@@ -27,7 +28,7 @@ import {
   useProgress,
 } from "@/lib/api/queries";
 import { callName } from "@/lib/family";
-import { badgeArt, levelProgress, stageOf } from "@/lib/levels";
+import { badgeArt, stageOf } from "@/lib/levels";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { dayOf, longDate, today, weekOf } from "@/lib/today";
@@ -123,7 +124,6 @@ export default function KidHomePage() {
   const stage = stageOf(progress?.level);
   // 운동한 날만큼 섬에 나무가 선다. 줄지 않는다
   const trees = progress?.activeDays ?? 0;
-  const bar = progress ? levelProgress(progress) : null;
   const score = me.latest?.overallPercentile ?? null;
   // 쉬는 날 카드(부모가 쓴다) — 이번 주 기록에 같이 온다. 쓴 날이면 오늘 운동 대신 「쉬는 날」
   const restToday = Boolean(calendar?.days.find((d) => d.date === now)?.rest);
@@ -167,24 +167,8 @@ export default function KidHomePage() {
                 Lv.{progress.level} · {stage.name}
                 {trees > 0 ? ` · 나무 ${trees}그루` : ""}
               </p>
-              <div className="mt-2.5 w-full max-w-60">
-                <div
-                  className="bg-signal-soft h-2.5 overflow-hidden rounded-full"
-                  role="progressbar"
-                  aria-label="다음 레벨까지"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={Math.round((bar?.ratio ?? 0) * 100)}
-                >
-                  <span
-                    className="bg-signal block h-full rounded-full"
-                    style={{ width: `${Math.round((bar?.ratio ?? 0) * 100)}%` }}
-                  />
-                </div>
-                <p className="text-micro text-ink-soft mt-1.5 font-bold">
-                  {bar?.left == null ? "가장 높은 레벨이에요" : `다음 레벨까지 ${bar.left}`}
-                </p>
-              </div>
+              {/* 다음 레벨까지 · 경험치 — 아래에 두꺼운 게이지(9/25) */}
+              <XpGauge progress={progress} className="mt-3 max-w-64 text-left" />
             </>
           ) : (
             <Skeleton className="mt-2 h-4 w-40" />
