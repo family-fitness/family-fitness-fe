@@ -2,8 +2,10 @@
 
 import { useEffect } from "react";
 
-/** 목 서버를 켠 빌드에서는 붙이지 않는다 */
+/** 목 서버를 켠 빌드 · 개발 서버에서는 붙이지 않는다 */
 const MOCKING = process.env.NEXT_PUBLIC_API_MOCKING === "enabled";
+/** 개발 서버에 붙이면 먼저 받아 둔 옛 조각(/_next/static)을 내어 고친 코드가 안 보인다 */
+const DEV = process.env.NODE_ENV === "development";
 
 /**
  * 서비스워커를 붙인다.
@@ -19,7 +21,7 @@ export function PwaProvider() {
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
 
-    if (MOCKING) {
+    if (MOCKING || DEV) {
       void navigator.serviceWorker.getRegistrations().then((list) => {
         for (const reg of list) {
           if (reg.active?.scriptURL.endsWith("/sw.js")) void reg.unregister();

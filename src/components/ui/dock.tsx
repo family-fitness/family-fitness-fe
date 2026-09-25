@@ -13,7 +13,7 @@ export function Dock({ children, className }: { children: ReactNode; className?:
   return (
     <div
       className={cn(
-        "dock bg-ground/95 fixed inset-x-0 bottom-0 z-20 mx-auto max-w-(--width-phone) px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)] backdrop-blur-sm",
+        "dock bg-ground fixed inset-x-0 bottom-0 z-20 mx-auto max-w-(--width-phone) px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+1rem)]",
         className,
       )}
     >

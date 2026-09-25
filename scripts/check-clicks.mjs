@@ -3,7 +3,7 @@
  *
  *   npm run check:clicks
  *
- * 화면이 열리는 것과 그 화면이 쓸 수 있는 것은 다르다. 24개 화면의 버튼과
+ * 화면이 열리는 것과 그 화면이 쓸 수 있는 것은 다르다. 아래 화면들의 버튼과
  * 링크를 하나씩 눌러 보고 터지는지 · 콘솔이 우는지 · 눌렀더니 빈 화면이
  * 되는지 본다. 매번 돌리기엔 오래 걸려서 verify 에는 넣지 않았다. 화면 넷을 한꺼번에 돈다(WORKERS).
  */
@@ -31,7 +31,6 @@ const ROUTES = {
     "/plan/custom",
     "/videos",
     "/videos?list=favorites",
-    "/videos?list=recent",
     "/settings",
     "/settings/support-mode",
     "/settings/consent",
@@ -142,3 +141,5 @@ await Promise.all(
 found.sort();
 await browser.close();
 console.log("\n" + (found.length ? "문제:\n  " + found.join("\n  ") : "누르는 것 전부 이상 없음"));
+// 문제가 있으면 실패로 끝낸다 — 여태 0 으로 끝나 돌려 놓고 넘어가면 몰랐다
+if (found.length) process.exitCode = 1;

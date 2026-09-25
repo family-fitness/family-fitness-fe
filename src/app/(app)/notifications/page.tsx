@@ -41,11 +41,28 @@ import { useRoleStore } from "@/stores/role-store";
  */
 export default function NotificationsPage() {
   const kidView = useIsKidView();
-  const { profile, isPending: sessionPending } = useSession();
+  const {
+    profile,
+    isPending: sessionPending,
+    error: sessionError,
+    refetch: refetchMe,
+  } = useSession();
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const me = kidView ? (childProfileId ?? undefined) : (profile?.profileId ?? undefined);
-  const { data, isPending, error, refetch } = useNotifications(me);
+  // 꺼진 조회(누구 것인지 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
+  const { data, isLoading, error: listError, refetch } = useNotifications(me);
   const markRead = useMarkNotificationsRead(me);
+  // 60초마다 다시 받는다 — 한 번 못 받았다고 읽던 목록을 오류 화면으로 바꾸지 않는다
+  const error = sessionError ?? (data ? null : listError);
+
+  /*
+    이 화면에 있는 동안 새로 온 것 — 읽은 것으로 친 뒤에도 점을 그대로 둔다. 서버의 read 만 보면 60초마다
+    다시 받는 순간 「지난 것」 으로 내려가, 읽는 도중에 무엇이 새로 왔는지 사라졌다
+  */
+  const [seenFresh, setSeenFresh] = useState<ReadonlySet<string>>(() => new Set());
+  const unreadIds = (data?.items ?? []).filter((n) => !n.read).map((n) => n.notificationId);
+  if (unreadIds.some((id) => !seenFresh.has(id)))
+    setSeenFresh(new Set([...seenFresh, ...unreadIds]));
 
   const unread = data?.unread ?? 0;
   const mark = markRead.mutate;
@@ -54,21 +71,33 @@ export default function NotificationsPage() {
   }, [unread, mark]);
 
   const back = kidView ? "/kid" : "/parent";
-  if (sessionPending || isPending) return <NotificationsSkeleton back={back} />;
+  if (sessionPending || isLoading) return <NotificationsSkeleton back={back} />;
   if (error) {
     return (
       <>
         <AppBar backHref={back} title="알림" />
         <Stage wide>
-          <ErrorState error={error} onRetry={() => void refetch()} />
+          <ErrorState error={error} onRetry={() => void (sessionError ? refetchMe() : refetch())} />
+        </Stage>
+      </>
+    );
+  }
+  // 아이 화면인데 아직 누구인지 안 골랐다
+  if (!me) {
+    return (
+      <>
+        <AppBar backHref={back} title="알림" />
+        <Stage wide>
+          <EmptyState scene="waiting" title="누구인지 골라 주세요" />
         </Stage>
       </>
     );
   }
 
   const items = data?.items ?? [];
-  const fresh = items.filter((n) => !n.read);
-  const old = items.filter((n) => n.read);
+  const isFresh = (n: NotificationView) => !n.read || seenFresh.has(n.notificationId);
+  const fresh = items.filter(isFresh);
+  const old = items.filter((n) => !isFresh(n));
   // 받은 스티커마다 「그 사람이 다음 스티커를 붙인 때」 — 고마워요는 그 사이에 보낸 것만 이 스티커 몫이다
   const until = nextStickerAt(items);
 
@@ -78,7 +107,7 @@ export default function NotificationsPage() {
       <Stage wide className="space-y-4">
         {items.length === 0 && <EmptyState scene="no-alarm" title="아직 알림이 없어요" />}
         {fresh.length > 0 && (
-          <Group title="새로 온 것" items={fresh} kidView={kidView} until={until} />
+          <Group title="새로 온 것" items={fresh} kidView={kidView} until={until} fresh />
         )}
         {old.length > 0 && <Group title="지난 것" items={old} kidView={kidView} until={until} />}
       </Stage>
@@ -109,11 +138,14 @@ function Group({
   items,
   kidView,
   until,
+  fresh = false,
 }: {
   title: string;
   items: NotificationView[];
   kidView: boolean;
   until: Map<string, number>;
+  /** 이 화면에서 새로 온 것 — 읽은 것으로 친 뒤에도 점을 둔다 */
+  fresh?: boolean;
 }) {
   return (
     <section>
@@ -121,7 +153,7 @@ function Group({
       <ul className="card divide-rows py-1">
         {items.map((n) => (
           <li key={n.notificationId}>
-            <Row item={n} />
+            <Row item={n} fresh={fresh} />
             {kidView && n.kind === "PRAISE" && n.stickerId && n.fromProfileId && (
               <Thanks
                 item={n}
@@ -172,7 +204,7 @@ function Thanks({ item, to, until }: { item: NotificationView; to: string; until
       setJustSent(true);
       setOpen(false);
     } catch (e) {
-      setProblem(errorMessage(e, "보내지 못했어요. 다시 해 볼까요?"));
+      setProblem(errorMessage(e, "보내지 못했어요."));
     }
   };
 
@@ -219,22 +251,22 @@ function Thanks({ item, to, until }: { item: NotificationView; to: string; until
   );
 }
 
-function Row({ item }: { item: NotificationView }) {
+function Row({ item, fresh }: { item: NotificationView; fresh: boolean }) {
   const href = notificationHref(item);
   const inner = (
     <>
-      <span className="bg-sub relative grid size-12 shrink-0 place-items-center rounded-2xl">
+      <span className="relative grid size-12 shrink-0 place-items-center">
         {item.kind === "PRAISE" || item.kind === "KID_THANKS" ? (
-          <StickerArt id={item.stickerId} className="size-8" />
+          <StickerArt id={item.stickerId} className="size-10" />
         ) : (
-          <ArtIcon name={notificationArt(item)} className="size-8" />
+          <ArtIcon name={notificationArt(item)} className="size-10" />
         )}
-        {!item.read && (
+        {fresh && (
           <span className="bg-signal ring-paper absolute -top-0.5 -right-0.5 size-3 rounded-full ring-2" />
         )}
       </span>
       <div className="min-w-0 flex-1">
-        <p className={cn("text-sm leading-snug", item.read ? "font-bold" : "font-extrabold")}>
+        <p className={cn("text-sm leading-snug", fresh ? "font-extrabold" : "font-bold")}>
           {item.title}
         </p>
         {item.body && <p className="text-caption text-ink-soft mt-0.5 line-clamp-2">{item.body}</p>}

@@ -1,4 +1,5 @@
-import type { DayLog, Mission, SessionPhase, VerifiedBy } from "./api/types";
+import type { DayLog, Mission, MissionSession, SessionPhase, VerifiedBy } from "./api/types";
+import { sessionsOf, stepMinutes } from "./session-plan";
 
 /**
  * 하루 기록 한 장의 셈 — 큰 링 · 칸 · 요약 줄 · 요일 줄의 작은 링이 같은 값을 쓴다.
@@ -34,7 +35,7 @@ export function daySummary(log: DayLog | null | undefined): DaySummary {
         total += 1;
         if (!s.done) continue;
         done += 1;
-        phases[s.phase] += s.minutes ?? 0;
+        phases[s.phase] += stepMinutes(s);
       }
     } else if (entry.verifiedBy !== "SELF_REPORT") {
       total += 1;
@@ -113,4 +114,54 @@ export function plannedOn(
   return missions.filter(
     (m) => m.participants?.some((p) => p.profileId === profileId) && plannedDay(m, now) === date,
   );
+}
+
+/**
+ * 그날 이 사람이 하는 운동 — 기간 안에 그날이 드는 것. 끝나는 날이 없으면 하루짜리다(`plannedDay` 와 같다).
+ */
+export function missionsOn(
+  missions: Mission[] | undefined,
+  profileId: string | null | undefined,
+  date: string,
+): Mission[] {
+  return (missions ?? []).filter((m) => {
+    const start = m.startDate ?? "";
+    const end = m.endDate ?? start;
+    return start <= date && date <= end && m.participants?.some((p) => p.profileId === profileId);
+  });
+}
+
+/**
+ * 한 사람의 그날 운동 — 걸음수(직접 적는 값)는 뺀다(규칙 2). 부모 홈 줄 · 아이 기록 · 가족 대시보드 ·
+ * 아이 홈이 이 하나로 센다 — 같은 아이의 오늘을 화면마다 다르게 말하면 안 된다.
+ */
+interface DayWork {
+  missions: Mission[];
+  /** 그 사람의 칸. 끝냈는지는 그 사람 것으로(`sessionsOf`) */
+  sessions: MissionSession[];
+  done: number;
+  total: number;
+}
+
+export function dayWork(
+  missions: Mission[] | undefined,
+  profileId: string | null | undefined,
+  date: string,
+): DayWork {
+  const mine = missionsOn(missions, profileId, date).filter((m) => m.targetMetric !== "STEPS");
+  const sessions = mine.flatMap((m) => sessionsOf(m, profileId));
+  return {
+    missions: mine,
+    sessions,
+    done: sessions.filter((s) => s.completed).length,
+    total: sessions.length,
+  };
+}
+
+/** 오늘 한마디 — 한 만큼이 먼저다. 쉬는 날에 「그래도 할래요」 로 한 것을 「쉬는 날」 로 덮지 않는다 */
+export function todayLine(work: DayWork, rest: boolean): string {
+  if (work.total > 0 && work.done === work.total) return "오늘 다 했어요";
+  if (work.done > 0) return `오늘 ${work.done} / ${work.total}개`;
+  if (rest) return "오늘 쉬는 날";
+  return work.missions.length > 0 ? "오늘 운동 있어요" : "오늘 운동 없어요";
 }

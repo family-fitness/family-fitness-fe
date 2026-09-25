@@ -12,7 +12,6 @@ import type {
   LeagueTier,
   ApiErrorBody,
   Band,
-  CoachApproveResult,
   CoachRun,
   FamilyProfiles,
   FitnessItems,
@@ -20,18 +19,16 @@ import type {
   LatestFitnessTest,
   MeResponse,
   Mission,
-  MissionList,
+  MissionSession,
   PredictionResult,
   ProfileSummary,
-  VideoList,
 } from "@/lib/api/types";
 
-import { dayOf, toDateString } from "@/lib/today";
+import { dayOf } from "@/lib/today";
 
 import clipsJson from "./clips.json";
 import fixturesJson from "./fixtures.json";
 
-/** 픽스처의 모양. */
 /** 선택 표시(`?`)만 걷어낸다. */
 export type Concrete<T> = T extends (infer U)[]
   ? Concrete<U>[]
@@ -39,16 +36,14 @@ export type Concrete<T> = T extends (infer U)[]
     ? { [K in keyof T]-?: Concrete<T[K]> }
     : T;
 
-export interface Fixtures {
+/** 픽스처의 모양. */
+interface Fixtures {
   me: MeResponse;
   profiles: FamilyProfiles;
   fitnessMap: FitnessMap;
   itemsByAgeGroup: Record<string, FitnessItems>;
   latestByProfile: Record<string, LatestFitnessTest>;
   coachRun: CoachRun;
-  coachApprove: CoachApproveResult;
-  missionsAfterApproval: MissionList;
-  videos: VideoList;
   prediction: PredictionResult;
 }
 
@@ -90,8 +85,77 @@ const KID_EXTRA = [
   },
 ];
 
+/**
+ * 시연 가족 부모의 측정. 체력 지도는 엄마 62 · 아빠 29 로 잰 사람인데 픽스처의 `latest` 는 빈 회차라,
+ * 대시보드는 점수를 말하고 측정 결과 화면은 「아직 재지 않았어요」 를 말했다. 지도와 같은 날 · 같은 점수로 채운다
+ */
+const PARENT_TESTS: Record<string, { testedOn: string; items: [string, number, number][] }> = {
+  "00000000-0000-4000-8000-000000000011": {
+    testedOn: "2026-09-10",
+    // [항목, 값, 백분위] — 평균 62
+    items: [
+      ["012", 14, 70],
+      ["019", 32, 58],
+      ["041", 0.52, 55],
+      ["028", 58, 65],
+    ],
+  },
+  "00000000-0000-4000-8000-000000000013": {
+    testedOn: "2026-08-30",
+    // 평균 29 — 건강검진에서 경고를 받은 아빠(도현)
+    items: [
+      ["012", 2, 18],
+      ["019", 20, 30],
+      ["041", 0.44, 28],
+      ["028", 48, 40],
+    ],
+  },
+};
+
+function parentLatest(
+  profileId: string,
+  test: (typeof PARENT_TESTS)[string],
+): Concrete<LatestFitnessTest> {
+  const catalogue = fixtures.itemsByAgeGroup["성인"]?.items ?? [];
+  const items = test.items.map(([itemCode, value, percentile]) => {
+    const meta = catalogue.find((i) => i.itemCode === itemCode);
+    return {
+      itemCode,
+      itemLabel: meta?.itemLabel ?? itemCode,
+      unit: meta?.unit ?? "",
+      value,
+      percentile,
+      grade: gradeOf(percentile),
+      band: bandOf(percentile),
+      topPercentText: `상위 ${100 - percentile}%`,
+    };
+  });
+  const factorOf = (code: string) => catalogue.find((i) => i.itemCode === code)?.factor ?? "유연성";
+  const sorted = [...items].sort((a, b) => a.percentile - b.percentile);
+  const edge = (i: (typeof items)[number]) => ({
+    factor: factorOf(i.itemCode),
+    itemCode: i.itemCode,
+    percentile: i.percentile,
+  });
+  const factors = ["심폐지구력", "근력", "근지구력", "유연성", "민첩성", "순발력"];
+  return {
+    fitnessTestId: `00000000-0000-4000-8000-0000000000${profileId.slice(-2)}`,
+    testedOn: test.testedOn,
+    radar: factors.map((factor) => ({
+      factor,
+      percentile: items.find((i) => factorOf(i.itemCode) === factor)?.percentile ?? null,
+    })),
+    items,
+    weakest: edge(sorted[0]),
+    strongest: edge(sorted[sorted.length - 1]),
+    coachDirection: "GROWTH",
+    disclaimer: fixtures.fitnessMap.disclaimer,
+  } as unknown as Concrete<LatestFitnessTest>;
+}
+
 function demoLatest() {
   const all = structuredClone(fixtures.latestByProfile);
+  for (const [id, test] of Object.entries(PARENT_TESTS)) all[id] = parentLatest(id, test);
   const kid = all[KID_ID];
   if (!kid) return all;
   kid.items = [...kid.items, ...(KID_EXTRA as typeof kid.items)];
@@ -116,7 +180,7 @@ function demoLatest() {
  * 마지막 회차는 `latest` 와 같은 날 · 같은 점수여야 한다 — 두 화면이 다른 숫자를
  * 말하면 어느 쪽도 믿을 수 없다.
  */
-export function seedTests(): Record<string, FitnessTestSummary[]> {
+function seedTests(): Record<string, FitnessTestSummary[]> {
   const row = (id: string, testedOn: string, p: number, h: number, w: number) => ({
     fitnessTestId: id,
     testedOn,
@@ -134,14 +198,19 @@ export function seedTests(): Record<string, FitnessTestSummary[]> {
       row("00000000-0000-4000-8000-0000000000u2", "2026-09-10", 62, 163, 56),
       row("00000000-0000-4000-8000-0000000000u1", "2026-04-20", 57, 163, 57.4),
     ],
+    "00000000-0000-4000-8000-000000000013": [
+      row("00000000-0000-4000-8000-0000000000v1", "2026-08-30", 29, 176, 81),
+    ],
   };
 }
 
+/** 시연 가족이 처음 적어 둔 운동 시간. 지난 기록은 이 요일로 심는다 — 지금 시간표를 고쳐도 지난날은 그대로 */
+export const DEMO_SCHEDULE: Readonly<
+  Record<string, readonly { day: string; start: string; minutes: number }[]>
+> = seedAvailability();
+
 /** 아이는 월 · 수 · 금 저녁과 토요일 오전, 엄마는 토요일 오전에 같이 */
-export function seedAvailability(): Record<
-  string,
-  { day: string; start: string; minutes: number }[]
-> {
+function seedAvailability(): Record<string, { day: string; start: string; minutes: number }[]> {
   return {
     [KID_ID]: [
       { day: "MON", start: "19:00", minutes: 20 },
@@ -161,31 +230,62 @@ function demoMap() {
       m.latest.overallPercentile = 55;
       m.headline = "유소년 상위 45%";
     }
+    // 부모는 심어 둔 측정과 같은 가장 낮은 · 높은 요인으로 — 대시보드와 측정 결과가 다른 요인을 말했다
+    const test = PARENT_TESTS[m.profileId ?? ""];
+    if (test && m.latest) {
+      const latest = parentLatest(m.profileId ?? "", test);
+      m.latest.weakest = latest.weakest;
+      m.latest.strongest = latest.strongest;
+    }
   }
   return map;
 }
 
-/** 목 서버가 만들고 고치는 값들. 응답과 같은 모양이어야 화면이 진짜처럼 돈다 */
 /**
  * 목이 돌려주는 프로필.
  *
  * `sex` 는 생성된 스키마에 아직 없다 — 가족을 만들 때는 받으면서 조회 응답에는
  * 안 돌려준다(`BACKEND_ASKS.md`). 목은 요청한 모양대로 돌려준다.
  */
-export type Profile = Concrete<ProfileSummary> & { sex?: "M" | "F" };
+export type Profile = Concrete<ProfileSummary> & {
+  sex?: "M" | "F";
+  /** 목만 든다 — 동의를 다시 줬을 때 만 4세가 넘었는지 다시 보려고 */
+  birthDate?: string;
+};
 export type MapMember = Concrete<FitnessMap>["members"][number];
 export type MissionRow = Concrete<Mission>;
+/**
+ * 참여자 한 사람 — 끝낸 칸을 사람마다 든다(`MissionParticipant.doneSessions`).
+ * `doneOn` 은 목만 든다(칸 → 처음 끝낸 날) — 여러 날짜리 운동이 기간 안의 날마다 한 것으로 되풀이되지 않게
+ */
+export type ParticipantRow = MissionRow["participants"][number] & {
+  doneSessions: number[];
+  doneOn?: Record<number, string>;
+};
+/** 미션의 칸. ▲ 서버에 아직 없다 */
+type SessionRow = MissionSession;
+
+/** 미션에 든 칸 */
+export function sessionsOfRow(m: MissionRow): SessionRow[] {
+  return (m as unknown as { sessions?: SessionRow[] }).sessions ?? [];
+}
+
+/** 참여자 한 사람 */
+export function participantOf(m: MissionRow, profileId: string): ParticipantRow | undefined {
+  return (m.participants ?? []).find((p) => p.profileId === profileId) as
+    ParticipantRow | undefined;
+}
 
 export const BASE = "/api/v1";
-export const CHEER_KEY = "ff-mock-cheers";
-export const MISSION_KEY = "ff-mock-missions";
-export const RUN_KEY = "ff-mock-run";
-export const ACTING_KEY = "ff-mock-acting";
-export const STAGE_KEY = "ff-mock-stage";
-export const FAMILY_KEY = "ff-mock-family";
-export const REST_KEY = "ff-mock-rest";
+const CHEER_KEY = "ff-mock-cheers";
+const MISSION_KEY = "ff-mock-missions";
+const RUN_KEY = "ff-mock-run";
+const ACTING_KEY = "ff-mock-acting";
+const STAGE_KEY = "ff-mock-stage";
+const FAMILY_KEY = "ff-mock-family";
+const REST_KEY = "ff-mock-rest";
 /** 측정 · 측정 이력 · 키 몸무게 · 운동 시간 · 코치를 돌렸는지 · 리그 티어 */
-export const EXTRA_KEY = "ff-mock-extra";
+const EXTRA_KEY = "ff-mock-extra";
 
 export const DEMO = {
   familyId: "00000000-0000-4000-8000-000000000010",
@@ -195,7 +295,7 @@ export const DEMO = {
 } as const;
 
 /** 지난 코치 회차. 이미 승인해서 돌아가고 있는 미션들이 여기서 나왔다 */
-export const PAST_RUN_ID = "00000000-0000-4000-8000-0000000000a0";
+const PAST_RUN_ID = "00000000-0000-4000-8000-0000000000a0";
 
 /* ─── 서버 상태 ────────────────────────────────────────────── */
 
@@ -216,7 +316,6 @@ export const db = {
   coachRun: loadCoachRun(),
   /** 이번 주 제안은 아직 0건이다. 심어 둔 것은 지난 회차에서 승인한 미션들이다 */
   missions: loadMissions(),
-  videos: structuredClone(fixtures.videos.videos),
   /** 주고받은 칭찬 · 알림. */
   cheers: loadCheers(),
   /**
@@ -247,6 +346,7 @@ function demoBody(): Record<string, { heightCm: number; weightKg: number }> {
   return {
     [DEMO.kid]: { heightCm: 139, weightKg: 34 },
     [DEMO.mom]: { heightCm: 163, weightKg: 56 },
+    [DEMO.dad]: { heightCm: 176, weightKg: 81 },
   };
 }
 
@@ -288,7 +388,7 @@ export function resetToDemo() {
   db.latest = demoLatest();
   db.tests = seedTests();
   db.availability = seedAvailability();
-  db.coachRun = freshCoachRun();
+  db.coachRun = structuredClone(fixtures.coachRun);
   db.missions = seedMissions();
   db.cheers = seedCheers();
   db.body = demoBody();
@@ -310,9 +410,9 @@ export function resetToDemo() {
  * | `claim` | `CLAIM`                | 초대코드를 넣어야 가족에 붙는다 |
  * | `home`  | `HOME`                 | 가족이 있다                    |
  */
-export type Stage = "fresh" | "claim" | "home";
+type Stage = "fresh" | "claim" | "home";
 
-export function loadStage(): Stage {
+function loadStage(): Stage {
   try {
     const saved = sessionStorage.getItem(STAGE_KEY);
     if (saved === "fresh" || saved === "claim" || saved === "home") return saved;
@@ -331,7 +431,7 @@ export function setStage(value: Stage) {
   }
 }
 
-export function loadActing(): string {
+function loadActing(): string {
   try {
     return sessionStorage.getItem(ACTING_KEY) ?? DEMO.mom;
   } catch {
@@ -346,7 +446,7 @@ export function loadActing(): string {
  * 시연에서 처음 보는 화면이 전부 "아직 없어요" 면 이 앱이 무엇을 하는지 보여 줄
  * 기회가 없다. 첫 화면부터 며칠치 기록이 쌓여 있어야 순환이 보인다.
  */
-export function loadCheers(): CheerLog[] {
+function loadCheers(): CheerLog[] {
   try {
     const saved = sessionStorage.getItem(CHEER_KEY);
     if (saved) return JSON.parse(saved) as CheerLog[];
@@ -362,7 +462,7 @@ export function loadCheers(): CheerLog[] {
  * 오늘 것은 **지금보다 앞선 시각이 되면 안 된다** — 새벽에 열면 저녁 7시가
  * 미래가 되고, 화면이 아직 오지 않은 일을 이미 일어난 일처럼 보여 준다.
  */
-export function daysAgo(days: number, hour: number): string {
+function daysAgo(days: number, hour: number): string {
   const d = new Date();
   d.setDate(d.getDate() - days);
   d.setHours(days === 0 ? Math.min(hour, d.getHours()) : hour, 12, 0, 0);
@@ -378,7 +478,7 @@ export function daysAgo(days: number, hour: number): string {
  * **오늘 것 하나는 답이 없는 채로 둔다.** 부모가 앱을 열었을 때 할 일이
  * 하나 있어야 이 서비스가 무엇을 하는지 한 화면에서 보인다.
  */
-export function seedCheers(): CheerLog[] {
+function seedCheers(): CheerLog[] {
   type Row = {
     from: string;
     to: string;
@@ -438,7 +538,7 @@ export interface CatalogClip {
 }
 
 /** 영상 속 한 토막. ▲ `endSec` 는 계약에 없다 — 목에서는 준다 */
-export function clip(c: Pick<CatalogClip, "videoId" | "startSec" | "endSec" | "title">) {
+function clip(c: Pick<CatalogClip, "videoId" | "startSec" | "endSec" | "title">) {
   return {
     videoId: c.videoId,
     startSec: c.startSec,
@@ -454,7 +554,7 @@ export function clip(c: Pick<CatalogClip, "videoId" | "startSec" | "endSec" | "t
  * 되풀이되는데, 한 번에 두 번 시키면 짜 놓은 운동이 아니라 반복이다.
  * `skip` 만큼 건너뛰어 같은 조건이라도 날마다 다른 것을 고를 수 있게 한다.
  */
-export function pickClips(where: (c: CatalogClip) => boolean, n: number, skip = 0): CatalogClip[] {
+function pickClips(where: (c: CatalogClip) => boolean, n: number, skip = 0): CatalogClip[] {
   const seen = new Set<string>();
   const out: CatalogClip[] = [];
   const pool = catalog.filter(where);
@@ -487,6 +587,21 @@ export function sessionsFor(
   const warm = pickClips((c) => ok(c) && c.phase === "WARMUP" && c.factor === "유연성", 2, skip);
   const main = pickClips((c) => ok(c) && c.phase === "MAIN" && c.factor === focus, mainCount, skip);
   const cool = pickClips((c) => ok(c) && c.phase === "COOLDOWN", 2, skip);
+  // 조용한 본운동이 모자라면(순발력은 거의 다 뛰는 동작이다) 그 힘을 기르는 다른 동작으로 채운다 —
+  // 본운동이 비어 4분짜리가 되거나, 한 동작을 20분 되풀이하지 않게
+  if (main.length < 2) {
+    const more = pickClips(
+      (c) =>
+        c.homeOk &&
+        !c.props &&
+        c.phase === "MAIN" &&
+        c.factor === focus &&
+        !main.some((m) => m.title === c.title),
+      mainCount - main.length,
+      skip,
+    );
+    main.push(...more);
+  }
   // 준비 · 정리는 1분씩, 남는 시간을 본운동이 나눈다. 나머지는 앞 칸부터 1분씩 더한다
   const mainTotal = Math.max(main.length, minutes - warm.length - cool.length);
   const base = Math.floor(mainTotal / Math.max(1, main.length));
@@ -503,8 +618,6 @@ export function sessionsFor(
     factor: c.factor,
     minutes: m,
     clip: clip(c),
-    completed: false,
-    verifiedBy: null,
   }));
 }
 
@@ -515,11 +628,9 @@ export function sessionsFor(
  * 부모 홈에는 링이 조금 찬 모습이 뜬다. 직접 적은 걸음수 기록 하나는 보호자 확인을
  * 기다린다(규칙 2). 지난날의 기록은 `history.ts` 가 날짜별로 따로 답한다.
  */
-export function seedMissions(): MissionRow[] {
+function seedMissions(): MissionRow[] {
   const today = dayOf(daysAgo(0, 12));
-  const sessions = sessionsFor("유연성", 12).map((s, i) =>
-    i < 2 ? { ...s, completed: true, verifiedBy: "TIMER" } : s,
-  );
+  const sessions = sessionsFor("유연성", 12);
   return [
     {
       missionId: "seed-today",
@@ -542,6 +653,7 @@ export function seedMissions(): MissionRow[] {
           completed: false,
           verifiedBy: "TIMER",
           needsGuardianCheck: false,
+          doneSessions: [1, 2],
         },
       ],
     },
@@ -570,29 +682,11 @@ export function seedMissions(): MissionRow[] {
           completed: false,
           verifiedBy: "SELF_REPORT",
           needsGuardianCheck: true,
+          doneSessions: [],
         },
       ],
     },
   ] as unknown as MissionRow[];
-}
-
-/**
- * 이번 주 코치 회차.
- *
- * 픽스처에 날짜를 박아 두면 며칠만 지나도 "9월 14일 주간" 처럼 지난주 제안을
- * 승인하라고 내민다. 제안 기간도 이번 주로 맞춘다 — 기간이 지난 제안을
- * 승인하면 태어나자마자 끝난 미션이 된다.
- */
-export function freshCoachRun() {
-  const run = structuredClone(fixtures.coachRun);
-  const week = thisWeek();
-  run.weekStart = week.weekStart;
-  run.proposals = (run.proposals ?? []).map((proposal) => ({
-    ...proposal,
-    startDate: week.weekStart,
-    endDate: week.weekEnd,
-  }));
-  return run;
 }
 
 /**
@@ -602,14 +696,30 @@ export function freshCoachRun() {
  * 승인 전으로 돌아갔다. 시연 중에 그러면 방금 한 일이 없던 일이 된다.
  * 칭찬과 같은 자리(탭 저장소)에 둔다 — 새 탭을 열면 처음부터다.
  */
-export function loadMissions(): MissionRow[] {
+function loadMissions(): MissionRow[] {
   try {
     const saved = sessionStorage.getItem(MISSION_KEY);
-    if (saved) return JSON.parse(saved) as MissionRow[];
+    if (saved) return perPerson(JSON.parse(saved) as MissionRow[]);
   } catch {
     return seedMissions();
   }
   return seedMissions();
+}
+
+/**
+ * 칸에 끝냄을 하나만 두던 옛 저장분을 사람마다로 옮긴다 — 열어 둔 탭에서 방금 한 칸이
+ * 안 한 칸으로 돌아가지 않게.
+ */
+function perPerson(missions: MissionRow[]): MissionRow[] {
+  for (const m of missions) {
+    const sessions = sessionsOfRow(m) as (SessionRow & { completed?: boolean })[];
+    const done = sessions.filter((s) => s.completed).map((s) => s.position);
+    for (const p of (m.participants ?? []) as ParticipantRow[]) {
+      if (!Array.isArray(p.doneSessions)) p.doneSessions = done;
+    }
+    for (const s of sessions) delete s.completed;
+  }
+  return missions;
 }
 
 export function saveMissions() {
@@ -620,14 +730,15 @@ export function saveMissions() {
   }
 }
 
-export function loadCoachRun() {
+function loadCoachRun() {
   try {
     const saved = sessionStorage.getItem(RUN_KEY);
-    if (saved) return JSON.parse(saved) as ReturnType<typeof freshCoachRun>;
+    if (saved) return JSON.parse(saved) as CoachRun;
   } catch {
-    return freshCoachRun();
+    return structuredClone(fixtures.coachRun);
   }
-  return freshCoachRun();
+  // 픽스처(실제 서버 응답)는 한 주 단위라 날짜가 박혀 있다. 코치가 처음 부를 때 오늘 제안으로 다시 단다(coach.ts)
+  return structuredClone(fixtures.coachRun);
 }
 
 export function saveCoachRun() {
@@ -644,7 +755,7 @@ export function saveCoachRun() {
  * 안 그러면 새로고침 한 번에 방금 만든 가족이 서준이네로 되돌아간다 —
  * 가입하자마자 남의 집이 뜬다.
  */
-export function loadFamily<T>(key: "profiles" | "fitnessMap", fallback: T): T {
+function loadFamily<T>(key: "profiles" | "fitnessMap", fallback: T): T {
   try {
     const saved = sessionStorage.getItem(`${FAMILY_KEY}-${key}`);
     if (saved) return JSON.parse(saved) as T;
@@ -689,23 +800,19 @@ export function fail(status: number, code: string, message: string) {
   return HttpResponse.json<ApiErrorBody>({ error: { code, message } }, { status });
 }
 
-/**
- * 이번 주 일요일~토요일.
- *
- * 픽스처에 날짜를 박아 두면 며칠만 지나도 "이번 주 기록" 화면에 지난주가 뜬다.
- * 데모를 언제 열어도 말이 되게 오늘을 기준으로 계산한다.
- */
-export function thisWeek(): { weekStart: string; weekEnd: string } {
-  const now = new Date();
-  const sunday = new Date(now);
-  sunday.setDate(now.getDate() - now.getDay());
-  const saturday = new Date(sunday);
-  saturday.setDate(sunday.getDate() + 6);
-  return { weekStart: toDateString(sunday), weekEnd: toDateString(saturday) };
-}
-
 export function uuid() {
   return crypto.randomUUID();
+}
+
+/**
+ * 백분위 → 등급. 서버가 주는 값은 1·2·3등급과 「참가」뿐이다.
+ * 기준은 백엔드 명세 v2 ⑪ — 1등급 ≥ 85 · 2등급 ≥ 65 · 3등급 ≥ 40 · 그 외 참가(90 · 75 · 50 이면 절반이 참가로 묶인다)
+ */
+export function gradeOf(percentile: number): "1등급" | "2등급" | "3등급" | "참가" {
+  if (percentile >= 85) return "1등급";
+  if (percentile >= 65) return "2등급";
+  if (percentile >= 40) return "3등급";
+  return "참가";
 }
 
 export function bandOf(percentile: number): Band {
@@ -715,7 +822,7 @@ export function bandOf(percentile: number): Band {
 }
 
 /** 쉬는 날 카드를 쓴 날 — 탭 저장소에서. 새로고침해도 방금 쓴 카드가 되돌아오지 않게 */
-export function loadRestDays(): string[] {
+function loadRestDays(): string[] {
   try {
     const saved = sessionStorage.getItem(REST_KEY);
     if (saved) return JSON.parse(saved) as string[];

@@ -28,12 +28,8 @@ export function ListRow({
   return (
     <li>
       <NavLink href={href} className="press flex min-h-14 items-center gap-3 py-3">
-        <span
-          aria-hidden
-          className="bg-signal-soft grid size-9 shrink-0 place-items-center rounded-xl"
-        >
-          <ArtIcon name={art} className="size-5.5" />
-        </span>
+        {/* 그림을 둥근 면에 넣지 않는다(9/25 「둥근 배경 안에 뭘 넣는 건 너무 AI 같다」) */}
+        <ArtIcon name={art} className="size-8 shrink-0" />
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-bold">{title}</span>
           {description && (

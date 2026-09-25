@@ -15,7 +15,7 @@ export function notificationHref(n: NotificationView): string | null {
         ? `/parent/sticker/${n.aboutProfileId}${n.missionId ? `?missionId=${n.missionId}` : ""}`
         : null;
     case "REMEASURE":
-      return n.aboutProfileId ? `/parent/update/${n.aboutProfileId}` : null;
+      return n.aboutProfileId ? `/p/${n.aboutProfileId}/measure` : null;
     case "PRAISE":
       return n.date ? `/calendar/${n.date}` : "/calendar";
     case "MISSION_READY":

@@ -22,10 +22,12 @@ export function LeagueRow({
   familyId: string | undefined;
   className?: string;
 }) {
-  const { data: league, isPending, error } = useFamilyLeague(familyId, monthOf(today()));
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
+  const { data: league, isLoading, error } = useFamilyLeague(familyId, monthOf(today()));
   // 리그는 덤이다 — 못 받으면 줄을 접는다. 다시 받기는 리그 화면에서
   if (error) return null;
-  if (isPending || !league) return <Skeleton className={cn("h-14 w-full", className)} />;
+  if (isLoading) return <Skeleton className={cn("h-14 w-full", className)} />;
+  if (!league) return null;
 
   const art = tierArt(league.tier);
   const place = league.rank != null ? ` · ${league.groupSize}가족 중 ${league.rank}등` : "";

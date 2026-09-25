@@ -7,6 +7,7 @@ import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FamilyProfile } from "@/components/domain/family-profile";
@@ -42,10 +43,21 @@ export default function LeaguePage() {
 function League() {
   // 부모 홈 칸에서 왔으면 홈으로, 대시보드 줄에서 왔으면 대시보드로
   const backHref = useSearchParams().get("from") === "home" ? "/parent" : "/parent/dashboard";
-  const { familyId, isPending: sessionPending, error: sessionError } = useSession();
+  const {
+    familyId,
+    isPending: sessionPending,
+    error: sessionError,
+    refetch: refetchMe,
+  } = useSession();
   const now = today();
   const month = monthOf(now);
-  const { data: league, error, refetch, isRefetching } = useFamilyLeague(familyId, month);
+  const {
+    data: league,
+    isLoading: leagueLoading,
+    error,
+    refetch,
+    isRefetching,
+  } = useFamilyLeague(familyId, month);
   // 오늘 이미 움직인 아이가 있으면 오늘은 쉬는 날로 못 고른다
   const { data: map } = useFitnessMap(familyId);
   const kidIds = (map?.members ?? [])
@@ -58,23 +70,41 @@ function League() {
   const movedToday = todays.some((q) => (q.data?.days ?? []).some((d) => d.minutes > 0));
 
   // 로그인(/me)이 깨져도 여기서 말한다 — 가족을 모르면 리그 요청이 꺼진 채 뼈대만 돈다
-  const failure = sessionError ?? error;
+  const failure = sessionError ?? (league ? null : error);
   if (failure) {
     return (
       <>
         <AppBar backHref={backHref} title="가족 리그" />
         <Stage wide>
-          <ErrorState error={failure} onRetry={() => void refetch()} retrying={isRefetching} />
+          <ErrorState
+            error={failure}
+            onRetry={() => void (sessionError ? refetchMe() : refetch())}
+            retrying={isRefetching}
+          />
         </Stage>
       </>
     );
   }
-  if (sessionPending || !league) return <LeagueSkeleton backHref={backHref} />;
+  if (sessionPending || leagueLoading) return <LeagueSkeleton backHref={backHref} />;
+  // 가족이 없으면 리그도 없다 — 꺼진 조회를 기다리며 뼈대만 돌지 않게
+  if (!league) {
+    return (
+      <>
+        <AppBar backHref={backHref} title="가족 리그" />
+        <Stage wide>
+          <EmptyState scene="waiting" title="아직 리그가 없어요" />
+        </Stage>
+      </>
+    );
+  }
 
   // 셀 날이 아직 없으면 달성률 · 순위가 비어 온다 — 0% · 꼴찌로 그리지 않는다
   const { rate, rank } = league;
-  const zone =
-    rank != null ? zoneOf(rank, league.groupSize, league.promote, league.demote) : "stay";
+  // 올라가는 · 내려가는 자리는 달성률이 있는 집끼리만 센다 — 아직 셀 날이 없는 집(맨 아래)을
+  // 「내려가는 자리」 에 넣으면 막 들어온 가족이 첫날부터 내려가는 것처럼 보인다.
+  // 위 한 줄과 아래 순위가 같은 수로 센다 — 위는 「내려가요」 인데 아래 줄은 그 자리가 아니었다
+  const ranked = league.standings.filter((x) => x.rate != null).length;
+  const zone = rank != null ? zoneOf(rank, ranked, league.promote, league.demote) : "stay";
   const up = nextTier(league.tier);
   const down = prevTier(league.tier);
   const outlook =
@@ -82,7 +112,7 @@ function League() {
       ? `지금 자리면 다음 달 ${withJosa(tierName(up), "으로로")} 올라가요`
       : zone === "down" && down
         ? `지금 자리면 다음 달 ${withJosa(tierName(down), "으로로")} 내려가요`
-        : `지금 자리면 다음 달도 ${tierName(league.tier)}예요`;
+        : `지금 자리면 다음 달도 ${withJosa(tierName(league.tier), "이에요")}`;
   const at = tierIndex(league.tier);
   const kids = (map?.members ?? []).filter((m) => m.role === "CHILD");
 
@@ -160,27 +190,27 @@ function League() {
           <ol className="mt-1">
             {league.standings.map((s, i) => {
               const place = i + 1;
-              const z = zoneOf(place, league.groupSize, league.promote, league.demote);
-              const zonePrev =
-                i === 0 ? null : zoneOf(place - 1, league.groupSize, league.promote, league.demote);
+              const zoneAt = (n: number) =>
+                (league.standings[n - 1]?.rate ?? null) == null
+                  ? null
+                  : zoneOf(n, ranked, league.promote, league.demote);
+              const z = zoneAt(place);
+              const zonePrev = i === 0 ? null : zoneAt(place - 1);
               return (
                 <Fragment key={`${s.familyName}-${place}`}>
-                  {z !== zonePrev && z !== "stay" && (
-                    <li
-                      aria-hidden
-                      className="text-micro text-ink-soft border-line mt-2 border-t pt-2 font-extrabold"
-                    >
+                  {z !== zonePrev && (z === "up" || z === "down") && (
+                    <li className="text-micro text-ink-soft border-line mt-2 border-t pt-2 font-extrabold">
                       {z === "up" ? "다음 달 올라가는 자리" : "다음 달 내려가는 자리"}
                     </li>
                   )}
-                  {z === "stay" && zonePrev === "up" && (
-                    <li aria-hidden className="border-line mt-2 border-t pt-1" />
-                  )}
-                  <li
-                    className={cn(
-                      "flex min-h-11 items-center gap-3 rounded-xl px-2",
-                      s.me && "bg-signal-soft",
+                  {/* 올라가는 자리가 끝난 곳 · 아직 순위가 없는 집이 시작하는 곳에는 선만 */}
+                  {z !== zonePrev &&
+                    ((zonePrev === "up" && z !== "down") || (z === null && i > 0)) && (
+                      <li aria-hidden className="border-line mt-2 border-t pt-1" />
                     )}
+                  {/* 우리 가족은 이름 · 막대 · 숫자를 파랑으로 — 줄에 옅은 면을 깔지 않는다 */}
+                  <li
+                    className="flex min-h-11 items-center gap-3 px-2"
                     aria-current={s.me ? "true" : undefined}
                   >
                     <span className="text-ink-soft w-5 shrink-0 text-right text-sm font-extrabold tabular-nums">

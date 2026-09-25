@@ -1,9 +1,8 @@
 /** MSW 목 서버 — 백엔드가 안 떠 있을 때 쓴다. */
 import { HttpResponse, http, type PathParams } from "msw";
 
-import type { AgeGroup, FitnessTestResult, ItemResult, LatestFitnessTest } from "@/lib/api/types";
+import type { AgeGroup, FitnessTestResult, LatestFitnessTest } from "@/lib/api/types";
 
-import { isVideoDone } from "@/lib/mission";
 import { ageOf, toDateString } from "@/lib/today";
 
 import {
@@ -11,6 +10,7 @@ import {
   DEMO,
   acting,
   bandOf,
+  gradeOf,
   db,
   fail,
   fixtures,
@@ -25,8 +25,11 @@ import {
   type Concrete,
   type MapMember,
   type MissionRow,
+  type ParticipantRow,
   type Profile,
+  participantOf,
   saveRestDays,
+  sessionsOfRow,
 } from "./db";
 
 import { clips } from "./clips";
@@ -34,7 +37,7 @@ import { coaching } from "./coach";
 import { history } from "./history";
 import { league } from "./league";
 import { notifications } from "./notifications";
-import { progress } from "./progress";
+import { progress, progressOf } from "./progress";
 
 export { DEMO, setActingProfile } from "./db";
 
@@ -158,10 +161,7 @@ const identity = [
     if (db.stage === "fresh") return HttpResponse.json(FRESH_ME);
     const me = acting();
     if (!me) return HttpResponse.json(fixtures.me);
-    // 새로 만든 가족이면 픽스처가 아니라 지금 가족을 돌려준다
-    if (me.profileId === DEMO.mom && db.profiles.familyId === DEMO.familyId) {
-      return HttpResponse.json(fixtures.me);
-    }
+    // 지금 가족에서 — 픽스처를 돌려주면 참여 방식을 바꿔도 `/me` 는 옛 값을 말한다
     return HttpResponse.json({
       userId: fixtures.me.userId,
       nextStep: "HOME",
@@ -246,8 +246,10 @@ const identity = [
 
   http.post(`${BASE}/families/:familyId/profiles`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
-    const birthDate = String(body.birthDate ?? "2020-01-01");
-    const age = ageOf(birthDate) ?? 0;
+    const name = String(body.name ?? "").trim();
+    const birthDate = String(body.birthDate ?? "");
+    const age = ageOf(birthDate);
+    if (!name || age == null) return fail(400, "INVALID_INPUT", "이름과 생일이 필요합니다");
     const consentRequired = age < 14;
 
     const consent = body.guardianConsent as
@@ -260,16 +262,19 @@ const identity = [
     const profile: Profile = {
       profileId: uuid(),
       familyId: db.profiles.familyId ?? DEMO.familyId,
-      name: String(body.name ?? ""),
+      name,
       role: body.role === "PARENT" ? "PARENT" : "CHILD",
       ageGroup: ageGroupOf(age),
+      ...(body.sex === "M" || body.sex === "F" ? { sex: body.sex } : {}),
+      birthDate,
       hasAccount: false,
       inviteStatus: "NONE",
       supportMode: body.role === "PARENT" ? "CHEER_ONLY" : null,
       // 만 4세 미만은 규준 자체가 없다
       measurable: age >= 4,
       consentRequired,
-      consentGiven: consentRequired ? true : true,
+      // 14세 미만은 위에서 동의를 받아야 여기까지 온다
+      consentGiven: true,
     };
     db.profiles.profiles.push(profile);
     const mapMember: MapMember = {
@@ -277,6 +282,7 @@ const identity = [
       name: profile.name,
       role: profile.role,
       ageGroup: profile.ageGroup,
+      ...(profile.sex ? { sex: profile.sex } : {}),
       hasAccount: false,
       supportMode: profile.supportMode,
       measurable: profile.measurable,
@@ -369,8 +375,10 @@ const identity = [
 
     const given = body.personalData && body.healthData;
     profile.consentGiven = given;
-    // 철회하면 그 순간부터 측정이 막힌다
-    profile.measurable = given && profile.ageGroup !== "유아기";
+    // 철회하면 그 순간부터 측정이 막힌다. 다시 주면 만 4세가 넘었는지로 — 연령대(유아기 0~6세)로 보면
+    // 동의를 한 번 거둔 5살은 영영 못 잰다. 생일을 모르면 유아기만 막아 둔다(만 4세 미만일 수 있다)
+    const age = ageOf((profile as Profile).birthDate);
+    profile.measurable = given && (age != null ? age >= 4 : profile.ageGroup !== "유아기");
     syncMapMember(profile);
     saveFamily();
 
@@ -426,14 +434,6 @@ function ageGroupOf(age: number): AgeGroup {
   return "어르신";
 }
 
-/** 백분위 → 등급. 서버가 주는 값은 1·2·3등급과 「참가」뿐이다 */
-function gradeOf(percentile: number): NonNullable<Concrete<ItemResult>["grade"]> {
-  if (percentile >= 90) return "1등급";
-  if (percentile >= 75) return "2등급";
-  if (percentile >= 50) return "3등급";
-  return "참가";
-}
-
 function syncMapMember(profile: Profile) {
   const member = db.fitnessMap.members.find((m) => m.profileId === profile.profileId);
   if (!member) return;
@@ -441,15 +441,6 @@ function syncMapMember(profile: Profile) {
   member.measurable = profile.measurable;
   member.consentGiven = profile.consentGiven;
 }
-
-/** 연령대 → 만 나이 범위. 영상 연령 필터가 이 범위와 겹치는지 본다 */
-const AGE_RANGE: Record<string, [number, number]> = {
-  유아기: [0, 6],
-  유소년: [7, 12],
-  청소년: [13, 18],
-  성인: [19, 64],
-  어르신: [65, 99],
-};
 
 /* ─── 측정 ─────────────────────────────────────────────────── */
 
@@ -528,15 +519,18 @@ const fitness = [
         weightKg?: number;
         items: { itemCode: string; value: number }[];
       };
-      // 같이 적어 온 키 · 몸무게는 들고 있다가 latest 로 돌려준다
-      if (body.heightCm && body.weightKg) {
-        db.body[profileId] = { heightCm: body.heightCm, weightKg: body.weightKg };
-      }
+      // 지난 날짜로 적은 회차는 이력에만 들어간다 — 가장 최근 회차가 「지금」 이다
+      const newest = !((db.latest[profileId]?.testedOn ?? "") > body.testedOn);
       const measured = (body.items ?? []).filter((i) => Number.isFinite(i.value));
       if (measured.length === 0) return fail(400, "NO_ITEMS", "항목이 없습니다");
       // 혈압은 입력으로 받지 않는다
       if (measured.some((i) => i.itemCode === "005" || i.itemCode === "006")) {
         return fail(400, "ITEM_NOT_ALLOWED", "허용되지 않는 항목입니다");
+      }
+      // 같이 적어 온 키 · 몸무게는 들고 있다가 latest 로 돌려준다 — 검사를 다 지난 뒤에.
+      // 전에는 거절한 회차의 키 · 몸무게가 먼저 남아 저장 안 된 값이 「지금 몸」 으로 떴다
+      if (newest && body.heightCm && body.weightKg) {
+        db.body[profileId] = { heightCm: body.heightCm, weightKg: body.weightKg };
       }
 
       const catalogue =
@@ -585,12 +579,14 @@ const fitness = [
         factor,
         percentile: items.find((i) => factorOf(i.itemCode) === factor)?.percentile ?? null,
       }));
-      db.latest[profileId] = {
-        ...result,
-        radar: radar as Concrete<LatestFitnessTest>["radar"],
-        coachDirection: sorted[0].percentile > 75 ? "STRENGTHEN" : "GROWTH",
-      };
-      // 다시 재기는 덮어쓰기가 아니라 추가다(규칙 11)
+      if (newest) {
+        db.latest[profileId] = {
+          ...result,
+          radar: radar as Concrete<LatestFitnessTest>["radar"],
+          coachDirection: sorted[0].percentile > 75 ? "STRENGTHEN" : "GROWTH",
+        };
+      }
+      // 다시 재기는 덮어쓰기가 아니라 추가다(규칙 11). 최근 회차가 먼저
       db.tests[profileId] = [
         {
           fitnessTestId: result.fitnessTestId,
@@ -600,10 +596,10 @@ const fitness = [
           weightKg: body.weightKg ?? null,
         },
         ...(db.tests[profileId] ?? []),
-      ];
+      ].sort((a, b) => b.testedOn.localeCompare(a.testedOn));
 
       const member = db.fitnessMap.members.find((m) => m.profileId === profileId);
-      if (member) {
+      if (member && newest) {
         member.headline = `${profile.ageGroup} 상위 ${100 - overall}%`;
         member.latest = {
           fitnessTestId: result.fitnessTestId,
@@ -631,7 +627,7 @@ const fitness = [
 
 /* ─── 코치 — 승인 게이트 ───────────────────────────────────── */
 
-/* ─── 미션 · 활동 · 영상 · 리포트 ──────────────────────────── */
+/* ─── 미션 · 한 칸 끝 · 보호자 확인 ────────────────────────── */
 
 const missions = [
   /**
@@ -698,25 +694,21 @@ const missions = [
         completed: false,
         verifiedBy: null,
         needsGuardianCheck: false,
+        doneSessions: [],
       })),
-      ...(body.sessions?.length ? { sessions: body.sessions } : {}),
+      // 칸의 끝냄은 사람마다 따로 든다 — 보낸 쪽이 칸에 적어 온 끝냄은 믿지 않는다
+      ...(body.sessions?.length
+        ? {
+            sessions: body.sessions.map((s) => {
+              const { completed: _c, verifiedBy: _v, ...rest } = s as Record<string, unknown>;
+              return rest;
+            }),
+          }
+        : {}),
     } as MissionRow;
     db.missions.push(mission);
     saveMissions();
     return HttpResponse.json(mission, { status: 201 });
-  }),
-
-  http.post(`${BASE}/missions/:missionId/activity/timer`, async ({ request }) => {
-    const body = (await request.json()) as { activeMinutes: number };
-    // 서버가 진짜로 아는 값이다
-    return HttpResponse.json({
-      activityDate: toDateString(new Date()),
-      source: "TIMER",
-      serverVerified: true,
-      totalActiveMinutes: body.activeMinutes,
-      missionProgress: Math.min(1, body.activeMinutes / 45),
-      missionCompleted: body.activeMinutes >= 45,
-    });
   }),
 
   /**
@@ -731,131 +723,90 @@ const missions = [
       const body = (await request.json()) as { profileId: string; activeSeconds: number };
       const mission = db.missions.find((m) => m.missionId === String(params.missionId));
       if (!mission) return fail(404, "MISSION_NOT_FOUND", "미션이 없습니다");
-      const sessions =
-        (
-          mission as unknown as {
-            sessions?: {
-              position: number;
-              minutes?: number | null;
-              completed?: boolean;
-              verifiedBy?: string | null;
-            }[];
-          }
-        ).sessions ?? [];
+      const sessions = sessionsOfRow(mission);
       const session = sessions.find((s) => s.position === Number(params.position));
       if (!session) return fail(404, "SESSION_NOT_FOUND", "그 칸이 없습니다");
+      const me = participantOf(mission, body.profileId);
+      if (!me) return fail(403, "NOT_A_PARTICIPANT", "이 운동을 하는 사람이 아닙니다");
       // 잡힌 시간의 절반도 안 했으면 끝낸 것으로 치지 않는다
       const planned = (session.minutes ?? 1) * 60;
+      // 동의를 거두면 측정뿐 아니라 활동 저장도 막힌다(규칙 4)
+      const person = db.profiles.profiles.find((p) => p.profileId === body.profileId);
+      if (person && !person.consentGiven) {
+        return fail(422, "CONSENT_REQUIRED", "보호자 동의가 필요합니다");
+      }
       if ((body.activeSeconds ?? 0) < planned * 0.5) {
         return fail(422, "TOO_SHORT", "잡힌 시간의 절반도 하지 않았습니다");
       }
 
-      const first = !session.completed;
-      session.completed = true;
-      session.verifiedBy = "TIMER";
+      // 경험치는 레벨이 세는 것과 같은 셈으로 — 끝내기 전과 뒤의 차이. 두 번 눌러도 두 번 쌓이지 않는다
+      const before = progressOf(body.profileId).xp;
+      // 끝낸 사람이 이 칸을 끝낸다. 아이가 끝냈으면 같이 하기로 한 보호자도 — 아이 폰 하나로 같이 한다.
+      // 보호자가 끝낸 칸은 그 보호자 것뿐이다(다른 보호자 · 아이에게 번지지 않는다).
+      // 형제는 저마다 한다: 한 아이가 끝낸 칸이 다른 아이 것이 되지 않는다
+      const roleOf = (id: string | undefined) =>
+        db.profiles.profiles.find((p) => p.profileId === id)?.role;
+      const withGuardians = roleOf(me.profileId) === "CHILD";
       const total = sessions.reduce((sum, s) => sum + (s.minutes ?? 0), 0) || 1;
-      const done = sessions
-        .filter((s) => s.completed)
-        .reduce((sum, s) => sum + (s.minutes ?? 0), 0);
-      const allDone = sessions.every((s) => s.completed);
-      const me = (mission.participants ?? []).find((p) => p.profileId === body.profileId);
-      if (me) {
-        me.progress = done / total;
-        me.verifiedBy = "TIMER";
-        if (allDone) me.completed = true;
+      for (const p of (mission.participants ?? []) as ParticipantRow[]) {
+        if (p !== me && !(withGuardians && roleOf(p.profileId) === "PARENT")) continue;
+        p.doneSessions = [...new Set([...(p.doneSessions ?? []), session.position])];
+        // 처음 끝낸 날 — 같은 칸을 다음 날 또 끝내도 옮기지 않는다
+        p.doneOn = { [session.position]: toDateString(new Date()), ...(p.doneOn ?? {}) };
+        const done = sessions.filter((s) => p.doneSessions.includes(s.position));
+        p.progress = done.reduce((sum, s) => sum + (s.minutes ?? 0), 0) / total;
+        p.verifiedBy = "TIMER";
+        p.completed = done.length === sessions.length;
       }
       saveMissions();
 
       return HttpResponse.json({
         position: session.position,
         verifiedBy: "TIMER",
-        missionProgress: done / total,
-        missionCompleted: allDone,
-        // 두 번 눌러도 두 번 쌓이지 않는다
-        xpGained: first ? 5 + (allDone ? 20 : 0) : 0,
+        missionProgress: me.progress,
+        missionCompleted: me.completed,
+        xpGained: progressOf(body.profileId).xp - before,
       });
     },
   ),
 
-  http.post(`${BASE}/missions/:missionId/activity/steps`, async ({ request }) => {
-    const body = (await request.json()) as { steps: number };
-    // 자기 신고다. 목표를 넘겨도 보호자 확인 전에는 완료가 아니다
-    return HttpResponse.json({
-      source: "MANUAL",
-      serverVerified: false,
-      verifiedBy: "SELF_REPORT",
-      missionProgress: Math.min(1, body.steps / 8000),
-      missionCompleted: false,
-      needsGuardianCheck: body.steps >= 8000,
-    });
-  }),
-
-  http.post(`${BASE}/missions/:missionId/participants/:profileId/confirm`, ({ params }) => {
-    const me = acting();
-    if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자가 아닙니다");
-    return HttpResponse.json({
-      missionId: String(params.missionId),
-      profileId: String(params.profileId),
-      completed: true,
-      verifiedBy: "SELF_REPORT",
-      confirmedBy: db.actingProfileId,
-      verifiedAt: new Date().toISOString(),
-    });
-  }),
-];
-
-const videos = [
-  http.get(`${BASE}/videos`, ({ request }) => {
-    const params = new URL(request.url).searchParams;
-    const list = params.get("list") ?? "ALL";
-    const ageGroup = params.get("ageGroup");
-
-    let result = db.videos;
-    if (list === "FAVORITES") result = result.filter((v) => v.favorited);
-    if (list === "RECENT") result = result.filter((v) => v.maxProgress !== null);
-    // 연령 안전 필터. 라벨 연령 범위와 겹치는 영상만 나간다.
-    // 라벨이 없는 영상은 아이 연령대에 아예 나가지 않는다 — 무엇이 나올지 모르기 때문이다
-    if (ageGroup) {
-      const [from, to] = AGE_RANGE[ageGroup] ?? [0, 99];
-      result = result.filter((v) => {
-        const label = v.label;
-        if (label?.ageFrom == null && label?.ageTo == null) return false;
-        return (label.ageFrom ?? 0) <= to && (label.ageTo ?? 99) >= from;
+  /** 직접 적은 기록을 보호자가 확인한다 — 확인해야 완료가 된다(규칙 2) */
+  http.post<PathParams>(
+    `${BASE}/missions/:missionId/participants/:profileId/confirm`,
+    ({ params }) => {
+      const me = acting();
+      if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자가 아닙니다");
+      const mission = db.missions.find((m) => m.missionId === String(params.missionId));
+      if (!mission) return fail(404, "MISSION_NOT_FOUND", "미션이 없습니다");
+      const who = participantOf(mission, String(params.profileId));
+      if (!who) return fail(404, "PARTICIPANT_NOT_FOUND", "참여자가 아닙니다");
+      // 확인할 것이 없으면(타이머 · 영상으로 이미 확인됐거나 벌써 확인했다) 바꾸지 않는다 —
+      // 타이머로 확인된 것을 「직접 입력함」 으로 고쳐 적으면 서버가 아는 값이 사람이 적은 값이 된다(규칙 2)
+      if (!who.needsGuardianCheck) {
+        return HttpResponse.json({
+          missionId: mission.missionId,
+          profileId: who.profileId,
+          completed: Boolean(who.completed),
+          verifiedBy: who.verifiedBy ?? null,
+        });
+      }
+      if ((who.progress ?? 0) < 1) {
+        return fail(422, "TARGET_NOT_REACHED", "목표에 닿지 않았습니다");
+      }
+      who.completed = true;
+      who.needsGuardianCheck = false;
+      who.verifiedBy = "SELF_REPORT";
+      saveMissions();
+      return HttpResponse.json({
+        missionId: mission.missionId,
+        profileId: who.profileId,
+        completed: true,
+        verifiedBy: "SELF_REPORT",
+        confirmedBy: db.actingProfileId,
+        verifiedAt: new Date().toISOString(),
       });
-    }
-    return HttpResponse.json({ videos: result, nextCursor: null });
-  }),
-
-  http.post<PathParams>(`${BASE}/videos/:videoId/favorite`, async ({ params, request }) => {
-    const { favorited } = (await request.json()) as { favorited: boolean };
-    const video = db.videos.find((v) => v.videoId === params.videoId);
-    if (!video) return fail(404, "VIDEO_NOT_FOUND", "영상이 없습니다");
-    video.favorited = favorited;
-    return HttpResponse.json({
-      videoId: video.videoId,
-      profileId: db.actingProfileId,
-      favorited,
-      favoritedAt: favorited ? new Date().toISOString() : null,
-    });
-  }),
-
-  http.post<PathParams>(`${BASE}/videos/:videoId/progress`, async ({ params, request }) => {
-    const body = (await request.json()) as { progress: number };
-    const video = db.videos.find((v) => v.videoId === params.videoId);
-    const previous = video?.maxProgress ?? 0;
-    const maxProgress = Math.max(previous, body.progress);
-    if (video) video.maxProgress = maxProgress;
-
-    // 처음 기준을 넘을 때만 적립한다. 두 번 적립되지 않는다
-    const justCompleted = !isVideoDone(previous) && isVideoDone(maxProgress);
-    return HttpResponse.json({
-      maxProgress,
-      completed: isVideoDone(maxProgress),
-      creditedMinutes: justCompleted ? Math.ceil((video?.durationSec ?? 0) / 60) : 0,
-      verifiedBy: isVideoDone(maxProgress) ? "VIDEO_PROGRESS" : null,
-      missionProgress: null,
-    });
-  }),
+    },
+  ),
 ];
 
 export const handlers = [
@@ -864,7 +815,6 @@ export const handlers = [
   ...fitness,
   ...coaching,
   ...missions,
-  ...videos,
   ...history,
   ...league,
   ...progress,

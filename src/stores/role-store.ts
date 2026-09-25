@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 /** 지금 이 기기를 누가 쓰고 있는가. */
-export type Mode = "parent" | "kid";
+type Mode = "parent" | "kid";
 
 interface RoleState {
   mode: Mode | null;

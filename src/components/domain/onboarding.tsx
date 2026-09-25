@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { SessionError } from "@/components/app-shell/session-error";
 import { ChoiceButton, WizardShell, WizardSkeleton } from "@/components/app-shell/wizard";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { Illustration } from "@/components/ui/illustration";
@@ -18,7 +19,6 @@ import {
   useSaveAvailability,
   useUpdateSupportMode,
 } from "@/lib/api/queries";
-import { artFor } from "@/lib/art";
 import { bodyError, bodyValue, rangeHint } from "@/lib/body";
 import { errorMessage } from "@/lib/errors";
 import { useSession } from "@/lib/session";
@@ -100,7 +100,14 @@ const SUPPORT: { value: SupportMode; title: string; art: string }[] = [
 
 export function Onboarding({ mode }: { mode: "family" | "child" }) {
   const router = useRouter();
-  const { familyId, profile, nextStep, isPending: sessionPending } = useSession();
+  const {
+    familyId,
+    profile,
+    nextStep,
+    isPending: sessionPending,
+    error: sessionError,
+    refetch: refetchMe,
+  } = useSession();
   const setBody = useBodyStore((s) => s.set);
   const setPhoto = usePhotoStore((s) => s.set);
   const roleMode = useRoleStore((s) => s.mode);
@@ -139,7 +146,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
   const [problem, setProblem] = useState<string | null>(null);
 
   const fid = newFamilyId ?? familyId ?? "";
-  const { data: family } = useFamilyProfiles(fid || undefined);
+  const { data: family, error: familyError } = useFamilyProfiles(fid || undefined);
   const childProfile = family?.profiles?.find((p) => p.profileId === childId);
   const createFamily = useCreateFamily();
   const createProfile = useCreateProfile(fid);
@@ -153,6 +160,16 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
     ? childProfile.measurable !== false
     : kidAge == null || kidAge >= 4;
   const kid = kidName.trim() || childProfile?.name || "아이";
+  /*
+    아이 더하기에서도 참여 방식을 묻는가 — 보호자가 아직 안 골랐으면(가족을 만든 뒤 아이 전에 새로고침했다).
+    참여 방식은 아이 다음 차례라 그 새로고침은 아이 등록으로 가고, 거기서 묻지 않으면 영영 비었다.
+    한 번 정하면 그대로 둔다 — 고른 뒤 /me 가 다시 오면 칸이 빠져 다음 칸(운동 시간)을 건너뛰었다
+  */
+  const [askSupport, setAskSupport] = useState<boolean | null>(null);
+  // 누구인지 받은 뒤에 정한다 — /me 가 먼저 실패하면 「안 묻기」 로 굳어 다시 불러온 뒤에도 묻지 않았다
+  if (askSupport === null && profile) {
+    setAskSupport(mode === "child" && profile.role === "PARENT" && profile.supportMode == null);
+  }
 
   const steps: StepId[] = (
     mode === "family"
@@ -181,15 +198,21 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
           "kid-body",
           "kid-photo",
           "consent",
+          ...(askSupport ? (["support"] as const) : []),
           "schedule",
           "measure",
           "done",
         ]
   ).filter((s) => (s !== "consent" || needsConsent) && (s !== "measure" || measurable)) as StepId[];
 
-  // 새로고침 전에 아이를 만들었으면 그다음 칸부터
+  // 새로고침 전에 아이를 만들었으면 그다음 칸부터 — 참여 방식을 물을 차례면 그것부터
   const [at, setAt] = useState(() =>
-    resume ? Math.max(0, steps.indexOf(mode === "family" ? "support" : "schedule")) : 0,
+    resume
+      ? Math.max(
+          0,
+          steps.indexOf(mode === "family" || steps.includes("support") ? "support" : "schedule"),
+        )
+      : 0,
   );
   const step = steps[Math.min(at, steps.length - 1)];
   const go = (d: number) => {
@@ -216,10 +239,16 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
     Boolean(familyId) &&
     nextStep !== "CREATE_FAMILY";
   useEffect(() => {
-    if (!hadFamily || !family) return;
-    // 아이가 있으면 홈, 없으면 아이 등록부터
+    if (!hadFamily) return;
+    // 가족을 못 받으면 홈으로 — 홈이 다시 불러오기를 준다(여기서 기다리면 뼈대만 남았다)
+    if (familyError) {
+      router.replace("/parent");
+      return;
+    }
+    if (!family) return;
+    // 아이가 있으면 홈, 없으면 아이 등록부터 — 참여 방식은 아이 다음 차례라 여기서 가로채지 않는다
     router.replace(family.profiles?.some((p) => p.role === "CHILD") ? "/parent" : "/start/child");
-  }, [hadFamily, family, router]);
+  }, [hadFamily, family, familyError, router]);
 
   const busy =
     createFamily.isPending ||
@@ -252,7 +281,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
         router.replace("/parent");
         return false;
       }
-      setProblem(errorMessage(e, "가족을 만들지 못했어요. 잠시 후 다시 해 주세요."));
+      setProblem(errorMessage(e, "가족을 만들지 못했어요."));
       return false;
     }
   };
@@ -302,7 +331,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
             CONSENT_REQUIRED: "만 14세 미만은 보호자 동의가 있어야 해요.",
             NOT_A_PARENT: "아이 등록은 보호자 계정에서 할 수 있어요.",
           },
-          "아이를 등록하지 못했어요. 잠시 후 다시 해 주세요.",
+          "아이를 등록하지 못했어요.",
         ),
       );
       return false;
@@ -319,7 +348,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       try {
         await updateSupport.mutateAsync(support);
       } catch (e) {
-        setProblem(errorMessage(e, "참여 방식을 저장하지 못했어요. 잠시 후 다시 해 주세요."));
+        setProblem(errorMessage(e, "참여 방식을 저장하지 못했어요."));
         return;
       }
     }
@@ -369,10 +398,24 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
   };
 
   const skipPhoto = (step === "me-photo" && !mePhoto) || (step === "kid-photo" && !kidPhoto);
+  // 못 한 까닭은 단추 바로 위에 글자로 — 떠 있는 둥근 면에 넣지 않는다
   const action = (
-    <Button type="submit" size="block" disabled={!ok[step]} loading={busy}>
-      {step === "hello" ? "좋아요" : step === "done" ? "시작하기" : skipPhoto ? "건너뛰기" : "다음"}
-    </Button>
+    <>
+      {problem && (
+        <p role="alert" className="text-signal-deep mb-2 text-center text-sm font-semibold">
+          {problem}
+        </p>
+      )}
+      <Button type="submit" size="block" disabled={!ok[step]} loading={busy}>
+        {step === "hello"
+          ? "좋아요"
+          : step === "done"
+            ? "시작하기"
+            : skipPhoto
+              ? "건너뛰기"
+              : "다음"}
+      </Button>
+    </>
   );
   const submit = () => {
     if (ok[step] && !busy) void next();
@@ -380,8 +423,13 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
 
   const common = { step: at, total: steps.length, onBack: back, action, onSubmit: submit };
 
-  // 세션을 기다리는 동안 · 이미 가족이 있어 다른 곳으로 보내는 동안
-  if (mode === "family" && (sessionPending || hadFamily)) return <WizardSkeleton />;
+  // 누구인지 못 받으면 가족이 있는지 모른다 — 모르는 채 만들기 시작하면 끝에서 막힌다
+  if (sessionError) {
+    return <SessionError error={sessionError} onRetry={() => void refetchMe()} />;
+  }
+  // 세션을 기다리는 동안 · 이미 가족이 있어 다른 곳으로 보내는 동안. 아이 더하기도 세션을 기다린다 —
+  // 참여 방식을 물을지는 나(/me)를 받아야 안다
+  if (sessionPending || (mode === "family" && hadFamily)) return <WizardSkeleton />;
 
   const body = (() => {
     switch (step) {
@@ -389,14 +437,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
         return (
           <WizardShell
             {...common}
-            art={
-              // 주문한 인사 그림이 오면 그것으로, 오기 전에는 레벨 캐릭터가 선다
-              artFor("scene/kiumi-hello") ? (
-                <Illustration name="scene/kiumi-hello" size={200} priority />
-              ) : (
-                <LevelBuddy stage={3} size={168} cheer />
-              )
-            }
+            art={<Illustration name="scene/kiumi-hello" size={200} priority />}
             title="안녕하세요! 저는 키움이에요"
           />
         );
@@ -642,19 +683,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
     }
   })();
 
-  return (
-    <>
-      {body}
-      {problem && (
-        <p
-          role="alert"
-          className="bg-signal-soft text-signal-deep fixed inset-x-4 bottom-28 z-30 mx-auto max-w-(--width-phone) rounded-2xl px-4 py-3 text-sm font-semibold"
-        >
-          {problem}
-        </p>
-      )}
-    </>
-  );
+  return body;
 }
 
 /** 큰 글자 입력 한 칸 */

@@ -1,5 +1,5 @@
 import type { Availability, DayLog, Mission } from "./api/types";
-import { sessionsOf } from "./session-plan";
+import { dayWork } from "./day";
 import { today, weekdayCode } from "./today";
 
 /**
@@ -8,7 +8,7 @@ import { today, weekdayCode } from "./today";
  * 시간은 서버가 아는 것(영상 · 타이머)만 센다. 직접 적은 걸음수는 넣지 않는다(규칙 2).
  * 부모 홈과 아이 홈이 이 함수 하나로 센다 — 같은 날을 두 화면이 다르게 세면 안 된다.
  */
-export interface TodayActivity {
+interface TodayActivity {
   /** 오늘 확인된 운동 시간(분) */
   moved: number;
   /** 오늘 목표(분). 잡힌 운동 → 그날 적어 둔 시간 → 20 */
@@ -44,24 +44,19 @@ export function todayActivity({
   availability: Availability | undefined;
   now?: string;
 }): TodayActivity {
-  const mine = (missions ?? []).filter(
-    (m) =>
-      (m.startDate ?? "") <= now &&
-      now <= (m.endDate ?? "") &&
-      m.targetMetric !== "STEPS" &&
-      m.participants?.some((p) => p.profileId === profileId),
-  );
-  const sessions = mine.flatMap((m) => sessionsOf(m));
+  const { sessions, done, total } = dayWork(missions, profileId, now);
   const log = weekLogs?.find((d) => d.date === now);
   const slots = availability?.slots ?? [];
+  // 목표는 잡힌 시간이 적힌 칸만 센다 — 시간 없이 온 칸(영상 완주 운동)을 1분으로 치면 목표가 1분이 됐다.
+  // 모르면 적어 둔 운동 시간 · 기본값으로 물러선다
   const planned = sessions.reduce((sum, s) => sum + (s.minutes ?? 0), 0);
   const written = slots.find((s) => s.day === weekdayCode(now))?.minutes;
 
   return {
     moved: log?.minutes ?? 0,
     goal: log?.plannedMinutes || planned || written || DEFAULT_GOAL,
-    done: sessions.filter((s) => s.completed).length,
-    total: sessions.length,
+    done,
+    total,
     days: (weekLogs ?? []).filter((d) => d.minutes > 0).length,
     target: slots.length || DEFAULT_DAYS,
     rest: Boolean(log?.rest),

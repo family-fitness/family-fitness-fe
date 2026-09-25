@@ -24,6 +24,8 @@ export function WeekPanel({
   days,
   logs,
   loading,
+  failed = false,
+  onRetry,
   meta,
   href,
   children,
@@ -35,6 +37,9 @@ export function WeekPanel({
   logs: DayLog[] | undefined;
   /** 기록을 받는 중 — 탑은 받은 뒤에 짓는다(0분으로 먼저 지었다 다시 짓지 않게) */
   loading: boolean;
+  /** 기록을 못 받았다 — 빈 탑과 0분으로 그리면 한 주를 쉰 것처럼 보인다 */
+  failed?: boolean;
+  onRetry?: () => void;
   /** 머리 오른쪽 — 이번 주 합계나 이어서 한 날 */
   meta?: ReactNode;
   /** 머리를 누르면 갈 곳 — 아이 홈은 오늘 하루 기록 */
@@ -42,20 +47,45 @@ export function WeekPanel({
   /** 맨 아랫줄 */
   children: ReactNode;
 }) {
+  // 받아 둔 기록이 있으면 다시 받다 실패해도 그대로 그린다
+  const broken = failed && !logs;
   return (
     <section className="card" aria-label="이번 주">
-      <CardHead title="이번 주" meta={meta} href={href} />
-      <TodayRings
-        profileId={profileId}
-        missions={missions}
-        weekLogs={logs}
-        size={104}
-        className="mt-2"
-      />
-      {loading ? (
-        <Skeleton className="mt-3 aspect-[320/140] w-full rounded-2xl" />
+      <CardHead title="이번 주" meta={broken ? undefined : meta} href={href} />
+      {broken ? (
+        <p className="text-ink-soft mt-1 flex items-center justify-between gap-3 text-sm">
+          이번 주 기록을 불러오지 못했어요
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="press text-signal-strong min-h-11 shrink-0 px-1 font-extrabold"
+            >
+              다시 불러오기
+            </button>
+          )}
+        </p>
       ) : (
-        <WeekTower days={days} logs={logs} today={today()} height={140} className="-mx-1 mt-2" />
+        <>
+          <TodayRings
+            profileId={profileId}
+            missions={missions}
+            weekLogs={logs}
+            size={104}
+            className="mt-2"
+          />
+          {loading ? (
+            <Skeleton className="mt-3 aspect-[320/140] w-full rounded-2xl" />
+          ) : (
+            <WeekTower
+              days={days}
+              logs={logs}
+              today={today()}
+              height={140}
+              className="-mx-1 mt-2"
+            />
+          )}
+        </>
       )}
       <div className="border-line mt-3 border-t pt-3">{children}</div>
     </section>

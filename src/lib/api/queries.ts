@@ -2,7 +2,7 @@
 
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api, path, query } from "./client";
+import { ApiError, api, path, query } from "./client";
 import type {
   AgeGroup,
   AuthResponse,
@@ -14,6 +14,7 @@ import type {
   Cheer,
   CheerLogList,
   CoachApproveResult,
+  CoachRejectResult,
   TargetMetric,
   CoachRun,
   FitnessItems,
@@ -36,13 +37,14 @@ import type {
   FamilyLeague,
   RestDays,
   FamilyCreated,
+  FamilyProfiles,
 } from "./types";
 
 /**
  * 쿼리 키를 한 곳에서 만든다.
  * 무효화할 때 문자열을 손으로 적으면 오타가 조용히 지나간다.
  */
-export const qk = {
+const qk = {
   me: () => ["me"] as const,
   family: {
     profiles: (familyId: Uuid) => ["family", familyId, "profiles"] as const,
@@ -89,7 +91,7 @@ function refreshProgress(qc: ReturnType<typeof useQueryClient>) {
 
 /**
  * 앱 진입 시 한 번. `nextStep` 으로 어디로 보낼지 정한다.
- * CREATE_FAMILY(프로필 0개) · CLAIM(초대코드 있음) · HOME.
+ * CREATE_FAMILY(프로필 0개) · CLAIM(초대코드 있음) · SUPPORT_MODE(초대받은 부모가 참여 방식 전) · HOME.
  */
 export function useMe() {
   return useQuery({
@@ -99,13 +101,28 @@ export function useMe() {
   });
 }
 
+/**
+ * 들어오자마자 받아 둔 값을 비우고, 로그인 응답에 얹혀 온 `/me` 로 채운다 — 스플래시가 한 번 더 묻지 않고,
+ * 앞 계정의 `/me` 로 길을 정하지 않는다(로그아웃하고 5분 안에 다른 계정으로 들어오면 앞 계정의 단계로 갔다).
+ */
+function seedAccount(qc: ReturnType<typeof useQueryClient>, auth: AuthResponse) {
+  qc.removeQueries();
+  if (auth.nextStep && Array.isArray(auth.profiles)) {
+    qc.setQueryData<MeResponse>(qk.me(), {
+      userId: auth.userId,
+      nextStep: auth.nextStep,
+      profiles: auth.profiles,
+    });
+  }
+}
+
 /** 로컬 전용. 구글 없이 시드 계정으로 들어간다 */
 export function useDevLogin() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (providerUserId: string) =>
       api.post<AuthResponse>("/auth/dev-login", { providerUserId }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.me() }),
+    onSuccess: (auth) => seedAccount(qc, auth),
   });
 }
 
@@ -114,7 +131,7 @@ export function useGoogleLogin() {
   return useMutation({
     mutationFn: (body: { authorizationCode: string; redirectUri: string; claimCode?: string }) =>
       api.post<AuthResponse>("/auth/google", body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.me() }),
+    onSuccess: (auth) => seedAccount(qc, auth),
   });
 }
 
@@ -129,10 +146,7 @@ export function useGoogleLogin() {
 export function useFamilyProfiles(familyId: Uuid | undefined) {
   return useQuery({
     queryKey: qk.family.profiles(familyId ?? ""),
-    queryFn: () =>
-      api.get<{ familyId: string; familyName: string; profiles: ProfileSummary[] }>(
-        path`/families/${familyId}/profiles`,
-      ),
+    queryFn: () => api.get<FamilyProfiles>(path`/families/${familyId}/profiles`),
     enabled: Boolean(familyId),
   });
 }
@@ -163,6 +177,8 @@ export function useCreateProfile(familyId: Uuid) {
       // 지금 안 떠 있는 홈의 것까지 다시 받는다 — 안 그러면 홈에 옛 가족이 먼저 뜨고 새 아이 대신 첫째가 잠깐 선다
       qc.invalidateQueries({ queryKey: qk.family.profiles(familyId), refetchType: "all" });
       qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId), refetchType: "all" });
+      // `/me` 는 이 계정이 관리하는 프로필이다 — 계정 없는 아이가 늘었다
+      qc.invalidateQueries({ queryKey: qk.me() });
     },
   });
 }
@@ -201,7 +217,9 @@ export function useClaimProfile() {
         "/profiles/claim",
         { claimCode },
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.me() }),
+    // 이 계정의 세상이 바뀐다(가족이 생긴다) — 받아 둔 옛 `/me` 로 다음 화면이 길을 정하지 않게 비운다.
+    // 코드 미리 보기는 남긴다 — 지우면 떠나는 동안 코드 화면이 다시 물어 방금 쓴 코드를 「이미 쓴 코드」 라 했다
+    onSuccess: () => qc.removeQueries({ predicate: (q) => q.queryKey[0] !== "invites" }),
   });
 }
 
@@ -218,7 +236,7 @@ export function useUpdateSupportMode(profileId: Uuid, familyId: Uuid) {
   });
 }
 
-/** 철회하면 그 순간부터 측정 · 예측이 422 가 된다. 과거 기록은 지우지 않는다 */
+/** 거두면 그 순간부터 측정 · 활동 저장이 막힌다(CONSENT_REQUIRED). 지난 기록은 지우지 않는다 */
 export function useUpdateConsent(profileId: Uuid, familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
@@ -230,6 +248,8 @@ export function useUpdateConsent(profileId: Uuid, familyId: Uuid) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.family.profiles(familyId) });
       qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId) });
+      // `/me` 의 프로필에도 measurable · consent 가 있다
+      qc.invalidateQueries({ queryKey: qk.me() });
     },
   });
 }
@@ -293,15 +313,15 @@ export function useCreatePrediction(profileId: Uuid) {
 
 /* ─── 코치 ─────────────────────────────────────────────────── */
 
-/** 비동기다. 202 로 접수만 되고 status 가 RUNNING 으로 시작한다 */
 /**
  * 오늘 운동을 짜 달라고 한다. 채팅이 아니라 **고른 조건**을 보낸다(9/23 회의).
+ * 비동기다 — 202 로 접수만 되고 status 가 RUNNING 으로 시작한다.
  *
  * ▲ 계약의 요청은 한 주 단위(`weekStart` · `daysPerWeek` · `minutesPerSession`)다.
  * 하루 단위와 조건 칸을 요청해 두었다(`BACKEND_ASKS.md`). `minutesPerSession` 은
  * 지금 서버도 알아듣게 같이 보낸다.
  */
-export interface PlanRequest {
+interface PlanRequest {
   /** 누구의 운동인지 */
   profileId: string;
   /** YYYY-MM-DD. 그날 하루 */
@@ -332,14 +352,20 @@ export function useStartCoachRun(familyId: Uuid) {
   });
 }
 
-/** RUNNING 인 동안 폴링한다. 서버가 pollAfterMs 를 준다 */
+/** RUNNING 인 동안 0.7초마다 묻는다(서버가 시작할 때 준 pollAfterMs 와 같은 값) */
 export function useCoachRun(runId: Uuid | undefined) {
   return useQuery({
     queryKey: qk.coach.run(runId ?? ""),
     queryFn: () => api.get<CoachRun>(path`/coach/runs/${runId}`),
     enabled: Boolean(runId),
-    // 짜는 동안은 촘촘히 — 단계가 하나씩 차오르는 것이 이 화면의 전부다
-    refetchInterval: (q) => (q.state.data?.status === "RUNNING" ? 700 : false),
+    // 짜는 동안은 촘촘히 — 단계가 하나씩 차오르는 것이 이 화면의 전부다.
+    // 막혔거나 없어진 회차(4xx)면 멈춘다 — 다시 물어도 같은 답을 0.7초마다 받았다. 늦음 · 너무 잦음(408 · 429)은 다시 묻는다
+    refetchInterval: (q) => {
+      const e = q.state.error;
+      const settled =
+        e instanceof ApiError && e.status < 500 && e.status !== 408 && e.status !== 429;
+      return q.state.data?.status === "RUNNING" && !settled ? 700 : false;
+    },
   });
 }
 
@@ -371,8 +397,12 @@ export function useApproveCoachRun(runId: Uuid, familyId: Uuid) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.coach.run(runId) });
       qc.invalidateQueries({ queryKey: qk.coach.latest(familyId) });
-      // 승인으로 미션이 생성됐다
+      // 승인으로 운동이 생겼다 — 목록 · 이번 주 링 · 리그의 잡힌 날 · 알림이 다 바뀐다
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "league"] });
+      qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId) });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
 }
@@ -382,7 +412,7 @@ export function useRejectCoachRun(runId: Uuid, familyId?: Uuid) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (reason?: string) =>
-      api.post<CoachRun>(path`/coach/runs/${runId}/reject`, { reason }),
+      api.post<CoachRejectResult>(path`/coach/runs/${runId}/reject`, { reason }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.coach.run(runId) });
       if (familyId) qc.invalidateQueries({ queryKey: qk.coach.latest(familyId) });
@@ -390,7 +420,7 @@ export function useRejectCoachRun(runId: Uuid, familyId?: Uuid) {
   });
 }
 
-/** 대화 중에 나온 제안을 그대로 미션으로. 보호자만 할 수 있다 */
+/** 직접 짠 운동을 그날의 운동으로 등록한다(날마다 한 건). 보호자만 할 수 있다 */
 export function useCreateMission(familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
@@ -409,6 +439,10 @@ export function useCreateMission(familyId: Uuid) {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       qc.invalidateQueries({ queryKey: ["family", familyId, "fitness-map"] });
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
+      // 잡힌 날이 늘면 리그 달성률의 분모가 바뀐다
+      qc.invalidateQueries({ queryKey: ["family", familyId, "league"] });
+      // 아이 종에 「새 운동이 생겼어요」 가 뜬다 — 한 폰을 같이 쓰면 60초를 기다리지 않게(등록 · 한 칸 끝과 같다)
+      qc.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
 }
@@ -448,10 +482,16 @@ export function useCurrentMissions(familyId: Uuid | undefined) {
   });
 }
 
-/** 컴포넌트 밖에 둔다 — 렌더마다 새 함수면 합친 결과도 매번 새것이 된다 */
-function mergeMissions(results: { data?: MissionList; isPending: boolean; error: unknown }[]) {
+/**
+ * 컴포넌트 밖에 둔다 — 렌더마다 새 함수면 합친 결과도 매번 새것이 된다.
+ * 기다리는 중 · 못 받음을 같이 돌려준다 — 못 받은 것을 「오늘 운동이 없어요」 로 그리면
+ * 부모가 같은 운동을 한 번 더 받는다. **둘 다 받아야 오늘을 말한다** — 다 한 것만 못 받으면
+ * 다 한 날이 「오늘 운동이 아직 없어요」 가 되어 「AI에게 운동 받기」 가 떴다.
+ */
+function mergeMissions(
+  results: { data?: MissionList; isPending: boolean; error: unknown; refetch: () => unknown }[],
+) {
   const [active, done] = results;
-  // 다 한 것을 못 받아도 아직인 것은 보인다 — 오늘 할 운동이 가려지지 않게
   const seen = new Set<string>();
   const missions = [...(active.data?.missions ?? []), ...(done.data?.missions ?? [])].filter(
     (m) => {
@@ -462,9 +502,11 @@ function mergeMissions(results: { data?: MissionList; isPending: boolean; error:
     },
   );
   return {
-    data: active.data ? { ...active.data, missions } : undefined,
-    isPending: active.isPending,
-    error: active.error,
+    // 다 한 것이 오기 전에는 합치지 않는다 — 아이가 다 한 날 「오늘 운동이 아직 없어요」 가 먼저 번쩍였다
+    data: active.data && done.data ? { ...active.data, missions } : undefined,
+    isPending: active.isPending || done.isPending,
+    error: active.error ?? done.error,
+    refetch: () => results.forEach((r) => void r.refetch()),
   };
 }
 
@@ -483,9 +525,7 @@ export function useConfirmParticipant(missionId: Uuid, familyId: Uuid) {
   });
 }
 
-/* ─── 영상 ─────────────────────────────────────────────────── */
-
-/* ─── 응원 · 리포트 ────────────────────────────────────────── */
+/* ─── 응원 ─────────────────────────────────────────────────── */
 
 /** 부모→자녀뿐 아니라 자녀→부모도 된다. 대칭이어야 감시가 아니라 응원이 된다 */
 export function useSendCheer(familyId: Uuid) {
@@ -630,6 +670,8 @@ export function useCompleteSession(missionId: Uuid, familyId: Uuid) {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
       qc.invalidateQueries({ queryKey: ["family", familyId, "league"] });
+      // 다 하면 부모 종에 점이 뜬다 — 한 폰을 같이 쓰면 60초를 기다리지 않게
+      qc.invalidateQueries({ queryKey: ["notifications"] });
       refreshProgress(qc);
     },
   });
@@ -652,7 +694,13 @@ export function useSaveAvailability(profileId: Uuid) {
   return useMutation({
     mutationFn: (slots: AvailabilitySlot[]) =>
       api.put<Availability>(path`/profiles/${profileId}/availability`, { slots }),
-    onSuccess: (saved) => qc.setQueryData(qk.profile.availability(profileId), saved),
+    onSuccess: (saved) => {
+      qc.setQueryData(qk.profile.availability(profileId), saved);
+      // 시간표가 잡힌 날을 정한다 — 리그 달성률이 달라질 수 있다
+      qc.invalidateQueries({
+        predicate: (q) => q.queryKey[0] === "family" && q.queryKey[2] === "league",
+      });
+    },
   });
 }
 
@@ -753,7 +801,7 @@ export function useRestDays(familyId: Uuid | undefined, month: string) {
 
 /**
  * 쉬는 날 카드를 쓰거나(`date`) 되돌린다(`cancel`).
- * 쉬는 날은 달력 · 이어서 한 날 · 리그 달성률이 다 달라지니 그 가족 것과 사람마다의 진행을 다시 받는다.
+ * 쉬는 날은 달력 · 이어서 한 날 · 리그 달성률이 달라진다 — 그것만 다시 받는다(가족 것 전부를 다시 받지 않는다).
  */
 export function useRestDay(familyId: Uuid) {
   const qc = useQueryClient();
@@ -765,8 +813,10 @@ export function useRestDay(familyId: Uuid) {
     onSuccess: (rest) => {
       // 돌려받은 카드를 바로 넣는다 — 다시 받기 전까지 되돌리기 줄이 남아 한 번 더 누르면 404 였다
       if (rest?.month) qc.setQueryData(qk.family.restDays(familyId, rest.month), rest);
-      void qc.invalidateQueries({ queryKey: ["family", familyId] });
-      void qc.invalidateQueries({ queryKey: ["profile"] });
+      void qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
+      void qc.invalidateQueries({ queryKey: ["family", familyId, "league"] });
+      void qc.invalidateQueries({ queryKey: ["family", familyId, "rest-days"] });
+      refreshProgress(qc);
     },
   });
 }

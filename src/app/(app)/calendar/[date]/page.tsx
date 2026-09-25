@@ -15,12 +15,12 @@ import { VideoThumb } from "@/components/ui/video-thumb";
 import { ChildSwitch } from "@/components/domain/child-switch";
 import { DayRings } from "@/components/domain/day-rings";
 import { StickerArt } from "@/components/domain/sticker-art";
-import type { DayLog, Mission, MissionSession, ProfileWithSex } from "@/lib/api/types";
+import type { DayLog, Mission, ProfileWithSex } from "@/lib/api/types";
 import { useCalendar, useFamilyProfiles, useFitnessMap, useMissions } from "@/lib/api/queries";
 import { daySummary, didSomething, isRealDate, plannedDay, plannedOn } from "@/lib/day";
 import { callName } from "@/lib/family";
 import { VERIFIED_COPY } from "@/lib/mission";
-import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
+import { PHASE_LABEL, sessionsOf, stepMinutes, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { stickerOf } from "@/lib/stickers";
 import { daysBefore, longDate, monthOf, today, weekOf, weekdayOf } from "@/lib/today";
@@ -55,8 +55,9 @@ function Day() {
   const date = isRealDate(params.date) ? params.date : now;
 
   const kidView = useIsKidView();
-  const { familyId, isPending, error: sessionError } = useSession();
-  const { data: map, isPending: mapPending, error: mapError, refetch } = useFitnessMap(familyId);
+  const { familyId, isPending, error: sessionError, refetch: refetchMe } = useSession();
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
+  const { data: map, isLoading: mapLoading, error: mapError, refetch } = useFitnessMap(familyId);
   const { data: family } = useFamilyProfiles(familyId);
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
@@ -75,22 +76,25 @@ function Day() {
     refetch: refetchCalendar,
     isRefetching,
   } = useCalendar(familyId, who?.profileId ?? undefined, { from: week.from, to: week.to });
-  const { data: active } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
+  // 한 번만 받는다 — 앞으로 할 것도 이 목록에서 날짜로 고른다(전에는 ACTIVE 와 ALL 을 둘 다 받았다)
   const { data: all } = useMissions(familyId, { scope: "ALL" });
 
   const back = kidView ? "/kid" : "/parent";
-  const failure = sessionError ?? mapError;
+  const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
     return (
       <>
         <AppBar backHref={back} title="하루 기록" />
         <Stage wide>
-          <ErrorState error={failure} onRetry={() => void refetch()} />
+          <ErrorState
+            error={failure}
+            onRetry={() => void (sessionError ? refetchMe() : refetch())}
+          />
         </Stage>
       </>
     );
   }
-  if (isPending || mapPending) return <DaySkeleton back={back} />;
+  if (isPending || mapLoading) return <DaySkeleton back={back} />;
   // 볼 아이가 없다 — 아이가 아직 누구인지 안 골랐거나, 가족에 아이가 없다. 빈 칸을 기다리게 두지 않는다
   if (!who) {
     return (
@@ -119,11 +123,16 @@ function Day() {
   const summary = daySummary(log);
   // 한 칸이라도 한 것만 「한 운동」. 아직 시작 안 한 오늘 운동은 「할 운동」 이다
   const doneEntries = (log?.entries ?? []).filter(didSomething);
-  const planned = plannedOn(active?.missions ?? [], who.profileId ?? undefined, date, now).filter(
-    (m) => !doneEntries.some((e) => e.missionId === m.missionId),
-  );
+  // 쉬기로 한 날에는 할 운동을 늘어놓지 않는다 — 쉬는 날에 운동을 권하지 않는다(규칙 15).
+  // 그날 기록이 오기 전에도 — 이미 한 운동 · 쉬기로 한 날인지 모르는 채 「할 운동」 이 먼저 번쩍였다
+  const planned =
+    !calendar || log?.rest
+      ? []
+      : plannedOn(all?.missions ?? [], who.profileId ?? undefined, date, now).filter(
+          (m) => !doneEntries.some((e) => e.missionId === m.missionId),
+        );
   const plannedDays = new Set(
-    (active?.missions ?? [])
+    (all?.missions ?? [])
       .filter((m) => m.participants?.some((p) => p.profileId === who.profileId))
       .map((m) => plannedDay(m, now))
       .filter((d): d is string => Boolean(d)),
@@ -217,7 +226,7 @@ function Day() {
                   type="button"
                   onClick={() => go(d)}
                   disabled={!open(d)}
-                  aria-pressed={d === date}
+                  aria-current={d === date ? "date" : undefined}
                   aria-label={`${longDate(d)}${day && day.minutes > 0 ? ` · ${day.minutes}분` : ""}${got ? ` · ${got.label} 스티커` : ""}`}
                   className="press flex w-full flex-col items-center gap-1 disabled:opacity-40"
                 >
@@ -243,7 +252,8 @@ function Day() {
           })}
         </ol>
 
-        {calendarError ? (
+        {/* 받아 둔 기록이 있으면 다시 받다 실패해도 그대로 — 위 요일 링 줄은 그대로인데 가운데만 오류가 됐다 */}
+        {calendarError && !calendar ? (
           <section className="card">
             <ErrorState
               error={calendarError}
@@ -255,10 +265,10 @@ function Day() {
           <Skeleton className="h-[26rem] w-full rounded-3xl" />
         ) : (
           <section className="card-hero">
-            {/* 쉬는 날 카드를 쓴 날 — 빈 날이 아니라 쉬기로 한 날이다 */}
-            {log?.rest && (
+            {/* 쉬는 날 카드를 쓴 날 — 빈 날이 아니라 쉬기로 한 날이다. 그날 움직였으면 한 것이 먼저다(달력 칸과 같게) */}
+            {log?.rest && summary.moved === 0 && (
               <p className="text-caption text-ink-soft mb-2 text-center font-extrabold">
-                쉬기로 한 날 · 쉬는 날 카드
+                쉬기로 한 날
               </p>
             )}
             <div className="grid place-items-center pt-2">
@@ -271,13 +281,9 @@ function Day() {
               />
             </div>
 
-            {/* 칭찬은 받은 날에만 칸으로 — 0장을 적어 두면 못 받은 날이 된다(규칙 12) */}
-            <div
-              className={cn(
-                "mt-5 grid gap-2",
-                summary.stickers > 0 ? "grid-cols-3" : "grid-cols-2",
-              )}
-            >
+            {/* 칭찬은 받은 날에만 칸으로 — 0장을 적어 두면 못 받은 날이 된다(규칙 12).
+                둥근 회색 면 없이 선으로 나눈다 */}
+            <div className="divide-line mt-5 grid auto-cols-fr grid-flow-col divide-x">
               <Tile
                 dot="bg-signal"
                 label="움직인 시간"
@@ -343,9 +349,9 @@ function Day() {
         {log && log.stickers.length > 0 && (
           <Card>
             <CardHead title="받은 칭찬" />
-            <ul className="mt-2 space-y-2">
+            <ul className="divide-rows mt-1">
               {log.stickers.map((st) => (
-                <li key={st.cheerId} className="bg-sub flex items-center gap-4 rounded-2xl p-3">
+                <li key={st.cheerId} className="flex items-center gap-4 py-3">
                   <StickerArt id={st.stickerId} className="size-20 shrink-0" />
                   <div className="min-w-0">
                     <p className="text-lead font-extrabold">
@@ -393,7 +399,7 @@ function Tile({
   goal?: string | null;
 }) {
   return (
-    <div className="bg-sub rounded-2xl px-2 py-3 text-center">
+    <div className="px-2 text-center">
       <p className="text-micro text-ink-soft flex items-center justify-center gap-1 font-bold">
         {dot && <span aria-hidden className={cn("size-2 rounded-full", dot)} />}
         {label}
@@ -419,35 +425,31 @@ function Leader({ label, value }: { label: string; value: string }) {
 }
 
 /**
- * 칸 하나의 그림 — 영상이 있으면 썸네일, 없으면 준비 · 본 · 정리 조각.
- * 조각은 셋 다 같은 회색이다. 「본」 만 파랑으로 채웠더니 고른 칸처럼 보였다.
+ * 칸 하나의 그림 — 영상이 있으면 썸네일. 없으면 두지 않는다 — 회색 칸에 「준비 · 본 · 정리」 를 적으면
+ * 둥근 바탕 안의 글자가 되고(9/25), 바로 아래 줄(「준비운동 · 1분」)과 같은 말을 한 번 더 한다.
+ * 한 운동의 칸은 모두 영상이 있거나 모두 없어서 줄이 어긋나지 않는다.
  */
-function Thumb({ videoId, phase }: { videoId?: string | null; phase: MissionSession["phase"] }) {
-  if (videoId)
-    return <VideoThumb videoId={videoId} className="aspect-video w-20 shrink-0 rounded-xl" />;
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "text-caption bg-sub text-ink-soft grid aspect-video w-20 shrink-0 place-items-center rounded-xl font-extrabold",
-      )}
-    >
-      {PHASE_LABEL[phase].replace("운동", "")}
-    </span>
-  );
+function Thumb({ videoId }: { videoId?: string | null }) {
+  if (!videoId) return null;
+  return <VideoThumb videoId={videoId} className="aspect-video w-20 shrink-0 rounded-xl" />;
 }
 
 /** 그날 한 운동 한 개 — 칸마다 한 줄. 칸 없이 직접 적은 것(걷기 등)은 무엇으로 확인했는지만 */
 function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; mission?: Mission }) {
-  const clips = sessionsOf(mission);
+  // 칸 이름과 영상만 쓴다 — 끝냈는지는 그날 기록(`entry.sessions`)이 말한다
+  const clips = sessionsOf(mission, null);
   if (!entry.sessions || entry.sessions.length === 0) {
     return (
       <li className="flex items-center gap-3">
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-extrabold">{entry.title}</span>
           <span className="text-caption text-ink-soft block">
-            {entry.minutes > 0 && `${entry.minutes}분 · `}
-            {entry.verifiedBy ? VERIFIED_COPY[entry.verifiedBy] : ""}
+            {[
+              entry.minutes > 0 && `${entry.minutes}분`,
+              entry.verifiedBy && VERIFIED_COPY[entry.verifiedBy],
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </span>
         </span>
         {entry.completed && <Done />}
@@ -462,12 +464,11 @@ function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; missi
           const clip = clips.find((c) => c.title === s.title)?.clip ?? clips[i]?.clip;
           return (
             <li key={`${s.title}-${i}`} className="flex items-center gap-3">
-              <Thumb videoId={mission ? clip?.videoId : null} phase={s.phase} />
+              <Thumb videoId={mission ? clip?.videoId : null} />
               <span className={cn("min-w-0 flex-1", !s.done && "opacity-50")}>
                 <span className="block truncate text-sm font-bold">{s.title}</span>
                 <span className="text-caption text-ink-soft block">
-                  {PHASE_LABEL[s.phase]}
-                  {s.minutes != null && ` · ${s.minutes}분`}
+                  {PHASE_LABEL[s.phase]} · {stepMinutes(s)}분
                 </span>
               </span>
               {s.done && <Done />}
@@ -479,12 +480,10 @@ function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; missi
   );
 }
 
-/** 했다는 표시 — 초록은 해낸 자리에만 */
+/** 했다는 표시 — 초록 체크 하나. 둥근 면에 넣지 않는다. 초록은 해낸 자리에만 */
 function Done() {
   return (
-    <span className="bg-done-soft text-done grid size-7 shrink-0 place-items-center rounded-full">
-      <Check aria-label="했어요" className="size-4" strokeWidth={3} />
-    </span>
+    <Check role="img" aria-label="했어요" className="text-done size-5 shrink-0" strokeWidth={3} />
   );
 }
 
@@ -496,13 +495,16 @@ function PlannedRows({
   mission: Mission;
   nameOf: (profileId: string, fallback: string) => string;
 }) {
-  const sessions = sessionsOf(mission);
+  // 앞으로 할 운동이라 끝낸 칸이 없다 — 칸 이름 · 시간 · 영상만 쓴다
+  const sessions = sessionsOf(mission, null);
   const together = (mission.participants?.length ?? 0) > 1;
   return (
     <li>
       <p className="text-sm font-extrabold">
         {mission.title}
-        <span className="text-ink-soft ml-1.5 font-bold">{totalMinutes(sessions)}분</span>
+        {totalMinutes(sessions) > 0 && (
+          <span className="text-ink-soft ml-1.5 font-bold">{totalMinutes(sessions)}분</span>
+        )}
       </p>
       {together && (
         <p className="text-caption text-ink-soft mt-0.5 font-semibold">
@@ -514,12 +516,11 @@ function PlannedRows({
       <ul className="mt-2 space-y-2">
         {sessions.map((s) => (
           <li key={s.position} className="flex items-center gap-3">
-            <Thumb videoId={s.clip?.videoId} phase={s.phase} />
+            <Thumb videoId={s.clip?.videoId} />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-bold">{s.title}</span>
               <span className="text-caption text-ink-soft block">
-                {PHASE_LABEL[s.phase]}
-                {s.minutes != null && ` · ${s.minutes}분`}
+                {PHASE_LABEL[s.phase]} · {stepMinutes(s)}분
               </span>
             </span>
           </li>

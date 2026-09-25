@@ -7,12 +7,11 @@ import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { PhotoSheet } from "@/components/domain/photo-sheet";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
+import { ErrorState } from "@/components/ui/error-state";
 import { ListRow } from "@/components/ui/list-row";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useFamilyProfiles } from "@/lib/api/queries";
-import { useSession } from "@/lib/session";
-import { useAuthStore } from "@/stores/auth-store";
-import { useBodyStore } from "@/stores/body-store";
-import { usePhotoStore } from "@/stores/photo-store";
+import { useSession, useSignOut } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
@@ -25,12 +24,9 @@ import { useRoleStore } from "@/stores/role-store";
  */
 export default function SettingsPage() {
   const router = useRouter();
-  const { profile, familyId } = useSession();
+  const { profile, familyId, isPending, error, refetch } = useSession();
   const { data: family } = useFamilyProfiles(familyId);
-  const signOut = useAuthStore((s) => s.signOut);
-  const resetRole = useRoleStore((s) => s.reset);
-  const resetPhotos = usePhotoStore((s) => s.reset);
-  const resetBody = useBodyStore((s) => s.reset);
+  const signOut = useSignOut();
   const mode = useRoleStore((s) => s.mode);
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const parentView = profile?.role === "PARENT" && mode !== "kid";
@@ -40,6 +36,46 @@ export default function SettingsPage() {
     ? family?.profiles?.find((p) => p.profileId === childProfileId)
     : profile;
   const [photoOpen, setPhotoOpen] = useState(false);
+
+  // 누구인지 받기 전에 「나 · 우리집 · 아이 화면」 을 그리면 로그아웃도 없이 아이 화면처럼 보였다
+  if (isPending) {
+    return (
+      <>
+        <AppBar back title="설정" />
+        <Stage wide className="space-y-3">
+          <Skeleton className="h-20 w-full rounded-3xl" />
+          <Skeleton className="h-28 w-full rounded-3xl" />
+        </Stage>
+      </>
+    );
+  }
+
+  const logout = (
+    <button
+      type="button"
+      onClick={() => {
+        router.replace("/login");
+        signOut();
+      }}
+      className="card press text-ink-soft block w-full text-center text-sm font-bold"
+    >
+      로그아웃
+    </button>
+  );
+
+  // 누구인지 못 받으면 「나 · 아이 화면」 으로 그리지 않는다. 로그아웃은 남긴다 — 나갈 길이다.
+  // 아이 모드(부모 폰을 빌려 쓰는 중일 수 있다)에서는 내지 않는다 — 아이가 부모를 로그아웃시킨다
+  if (error) {
+    return (
+      <>
+        <AppBar back title="설정" />
+        <Stage wide className="space-y-3">
+          <ErrorState error={error} onRetry={() => void refetch()} />
+          {mode !== "kid" && logout}
+        </Stage>
+      </>
+    );
+  }
 
   return (
     <>
@@ -76,23 +112,9 @@ export default function SettingsPage() {
           )}
         </ul>
 
-        {/* 아이 화면에서는 로그아웃을 내지 않는다. 부모 폰을 빌려 쓰다 눌러 버리면 곤란하다 */}
-        {parentView && (
-          <button
-            type="button"
-            onClick={() => {
-              signOut();
-              resetRole();
-              // 이 기기에만 둔 아이 사진 · 키 몸무게도 — 다음에 이 기기를 쓰는 사람이 보지 않게
-              resetPhotos();
-              resetBody();
-              router.replace("/login");
-            }}
-            className="card press text-ink-soft block w-full text-center text-sm font-bold"
-          >
-            로그아웃
-          </button>
-        )}
+        {/* 부모 폰을 빌려 쓰는 아이 화면에서는 로그아웃을 내지 않는다 — 눌러 버리면 곤란하다.
+            자기 계정으로 들어온 아이는 나갈 수 있어야 한다 */}
+        {!kidOnParentPhone && logout}
       </Stage>
       {parentView && profile?.profileId && (
         <PhotoSheet

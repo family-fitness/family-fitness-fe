@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * 화면 본문.
- * 폰 너비 프레임과 탭바 여백은 루트 레이아웃(.app-frame / .app-main)이 맡는다.
+ * 폰 너비 프레임과 아래 여백(홈 인디케이터)은 루트 레이아웃(.app-frame / .app-main)이 맡는다.
  */
 export function Screen({ children, className }: { children: ReactNode; className?: string }) {
   return (
@@ -15,7 +15,7 @@ export function Screen({ children, className }: { children: ReactNode; className
   );
 }
 
-/** 탭바가 없는 화면(온보딩, 초대)에서 쓴다 */
+/** 막대 없이 한가운데 서는 화면(로그인 · 초대코드 · 끊김 · 없는 주소)에서 쓴다 */
 export function PlainScreen({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <PageTransition>

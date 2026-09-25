@@ -107,10 +107,18 @@ export function ScoreTrend({ tests }: { tests: FitnessTestSummary[] }) {
               tabIndex={0}
               aria-label={`${month(p.testedOn)} ${p.overallPercentile}점`}
               onClick={() => setActive((cur) => (cur === i ? null : i))}
-              onFocus={() => setActive(i)}
+              // 단추라면 엔터 · 스페이스로도 눌린다. 마우스를 올려 바뀌는 모양은 두지 않는다(폰에서는 누른 뒤에도 남는다)
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                e.preventDefault();
+                setActive((cur) => (cur === i ? null : i));
+              }}
+              // 키보드로 옮겨 왔을 때만 초점으로 연다 — 손가락으로 누르면 초점이 먼저 열고 누름이 바로 닫아
+              // 처음 누른 점은 아무것도 안 떴다
+              onFocus={(e) => {
+                if (e.currentTarget.matches(":focus-visible")) setActive(i);
+              }}
               onBlur={() => setActive(null)}
-              onPointerEnter={(e) => e.pointerType === "mouse" && setActive(i)}
-              onPointerLeave={(e) => e.pointerType === "mouse" && setActive(null)}
               className="cursor-pointer"
             >
               {/* 누르는 자리는 점보다 넓게 */}

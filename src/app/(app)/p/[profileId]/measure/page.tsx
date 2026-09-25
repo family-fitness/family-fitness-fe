@@ -18,13 +18,12 @@ import { errorMessage } from "@/lib/errors";
 import type { FitnessItem, FitnessTestSource } from "@/lib/api/types";
 import { useCreateFitnessTest, useFamilyProfiles, useFitnessItems } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
-import { today } from "@/lib/today";
+import { REMEASURE_DAYS } from "@/lib/remeasure";
+import { daysSince, today } from "@/lib/today";
 import { bodyError, bodyValue, rangeHint } from "@/lib/body";
 import { useBodyStore } from "@/stores/body-store";
-import { cn } from "@/lib/utils";
+import { cn, withJosa } from "@/lib/utils";
 import { ArtIcon } from "@/components/ui/art-icon";
-
-/** 체력 측정 입력. */
 
 /** RHF 필드 이름. 항목 코드가 "012" 라 그대로 쓰면 경로 파서가 숫자로 본다 */
 const field = (itemCode: string) => `item_${itemCode}`;
@@ -35,12 +34,18 @@ export default function MeasurePage() {
   // 첫 시작에서 왔다 — 여기까지 전부 바꿔치기라 뒤로 갈 곳이 없다(홈 화면 앱이면 앱을 나간다). 뒤로는 홈으로
   const fromStart = useSearchParams().get("from") === "start";
   const nav = fromStart ? { backHref: "/parent" } : { back: true };
-  const { familyId, isPending: sessionPending } = useSession();
+  const {
+    familyId,
+    isPending: sessionPending,
+    error: sessionError,
+    refetch: refetchMe,
+  } = useSession();
 
   /** 측정은 **주소의 프로필**에 저장한다. 로그인한 사람이 아니다. */
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
   const {
     data: family,
-    isPending: familyPending,
+    isLoading: familyLoading,
     error: familyError,
     refetch: refetchFamily,
   } = useFamilyProfiles(familyId);
@@ -53,6 +58,7 @@ export default function MeasurePage() {
     data: itemsData,
     isLoading: itemsLoading,
     error: itemsError,
+    refetch: refetchItems,
   } = useFitnessItems(profile?.ageGroup);
 
   const [showEquipment, setShowEquipment] = useState(false);
@@ -60,12 +66,19 @@ export default function MeasurePage() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [testedOn, setTestedOn] = useState(today());
 
-  /** 키와 몸무게. */
+  /**
+   * 키와 몸무게. 한 달 안에 적은 값만 미리 채운다 — 그보다 오래된 값을 채워 두면 항목만 적고 저장한 순간
+   * 몇 달 전 키가 오늘 잰 키로 올라간다(규칙 11). 오래된 값은 흐린 자리 글자로만 보인다
+   */
   const pendingBody = useBodyStore((st) => (profileId ? st.byProfile[profileId] : undefined));
+  const recentBody =
+    pendingBody && (daysSince(pendingBody.measuredOn) ?? Infinity) <= REMEASURE_DAYS
+      ? pendingBody
+      : undefined;
   const rememberBody = useBodyStore((st) => st.set);
   const forgetBody = useBodyStore((st) => st.clear);
-  const [heightCm, setHeightCm] = useState(() => String(pendingBody?.heightCm ?? ""));
-  const [weightKg, setWeightKg] = useState(() => String(pendingBody?.weightKg ?? ""));
+  const [heightCm, setHeightCm] = useState(() => String(recentBody?.heightCm ?? ""));
+  const [weightKg, setWeightKg] = useState(() => String(recentBody?.weightKg ?? ""));
   // 범위를 벗어난 값은 서버가 422 로 돌려보낸다. 다 적고 나서 알면 늦다
   const heightProblem = bodyError("heightCm", heightCm);
   const weightProblem = bodyError("weightKg", weightKg);
@@ -94,16 +107,21 @@ export default function MeasurePage() {
     ([key, v]) => key.startsWith("item_") && v !== "" && v !== undefined,
   ).length;
 
-  if (sessionPending || familyPending || itemsLoading) return <MeasureSkeleton />;
+  if (sessionPending || familyLoading || itemsLoading) return <MeasureSkeleton />;
 
-  // 못 불러온 것을 "그런 프로필 없음" 으로 그리지 않는다
-  const failure = familyError ?? itemsError;
+  // 못 불러온 것을 "그런 프로필 없음" 으로 그리지 않는다. 다시 부를 때는 못 받은 것을 다시 부른다
+  const failure = sessionError ?? (family ? null : familyError) ?? (itemsData ? null : itemsError);
   if (failure) {
     return (
       <>
         <PageHeader title="체력 측정" {...nav} />
         <Screen>
-          <ErrorState error={failure} onRetry={() => void refetchFamily()} />
+          <ErrorState
+            error={failure}
+            onRetry={() =>
+              void (sessionError ? refetchMe() : !family ? refetchFamily() : refetchItems())
+            }
+          />
         </Screen>
       </>
     );
@@ -120,27 +138,8 @@ export default function MeasurePage() {
     );
   }
 
-  // 만 4세 미만은 국민체력100 규준 자체가 없다. 비활성화가 아니라 폼을 띄우지 않는다
-  if (!profile.measurable) {
-    return (
-      <>
-        <PageHeader title="체력 측정" {...nav} />
-        <Screen>
-          <EmptyState
-            scene="rest"
-            title="만 4세부터 측정할 수 있어요"
-            action={
-              <Button size="md" variant="soft" onClick={() => router.push("/parent")}>
-                홈으로
-              </Button>
-            }
-          />
-        </Screen>
-      </>
-    );
-  }
-
-  // 동의가 없으면 저장이 422 다. 다 채우고 나서 막으면 그동안 적은 게 전부 헛수고가 된다
+  // 동의가 없으면 저장이 422 다. 다 채우고 나서 막으면 그동안 적은 게 전부 헛수고가 된다.
+  // 나이보다 먼저 본다 — 동의를 거두면 서버가 measurable 도 false 로 주어, 열 살에게 「만 4세부터」 가 떴다
   if (profile.consentRequired && !profile.consentGiven) {
     return (
       <>
@@ -160,17 +159,33 @@ export default function MeasurePage() {
     );
   }
 
+  // 만 4세 미만은 국민체력100 규준 자체가 없다. 비활성화가 아니라 폼을 띄우지 않는다
+  if (profile.measurable === false) {
+    return (
+      <>
+        <PageHeader title="체력 측정" {...nav} />
+        <Screen>
+          <EmptyState
+            scene="rest"
+            title="만 4세부터 측정할 수 있어요"
+            action={
+              <Button size="md" variant="soft" onClick={() => router.push("/parent")}>
+                홈으로
+              </Button>
+            }
+          />
+        </Screen>
+      </>
+    );
+  }
+
   // 연령대에 맞는 항목이 하나도 없는 경우. 서버가 빈 배열을 줄 수 있다
   if (easy.length === 0 && equipment.length === 0) {
     return (
       <>
         <PageHeader title="체력 측정" {...nav} />
         <Screen>
-          <EmptyState
-            scene="no-record"
-            title="측정할 수 있는 항목이 아직 없어요"
-            description={`${profile.ageGroup} 연령대의 항목을 불러오지 못했어요. 잠시 후 다시 들어와 주세요.`}
-          />
+          <EmptyState scene="no-record" title="측정할 수 있는 항목이 아직 없어요" />
         </Screen>
       </>
     );
@@ -178,6 +193,24 @@ export default function MeasurePage() {
 
   const onSubmit = handleSubmit(async (form) => {
     setServerError(null);
+
+    // 키 · 몸무게가 범위를 벗어났으면 보내지 않는다 — 빼고 보내면 적은 줄 알았던 키가 사라진다
+    if (heightProblem || weightProblem) {
+      setServerError("키 · 몸무게를 다시 봐 주세요.");
+      return;
+    }
+    // 접어 둔 장비 항목은 화면에서 빠져 검사를 건너뛴다. 접기 전에 적은 값도 여기서 다시 본다
+    const hidden = equipment.find((item) => {
+      const raw = form[field(item.itemCode ?? "")];
+      return raw !== undefined && raw !== "" && rules(item).validate(raw) !== true;
+    });
+    if (hidden && !showEquipment) {
+      setShowEquipment(true);
+      setServerError(
+        `${withJosa(hidden.itemLabel ?? hidden.itemName ?? "", "을를")} 다시 봐 주세요.`,
+      );
+      return;
+    }
 
     const items = Object.entries(form)
       .filter(([key, value]) => key.startsWith("item_") && value !== "" && value !== undefined)
@@ -199,11 +232,14 @@ export default function MeasurePage() {
         ...(height != null ? { heightCm: height } : {}),
         ...(weight != null ? { weightKg: weight } : {}),
       });
-      // 서버는 받아 두고도 돌려주지 않는다. 방금 적은 값이 사라지지 않게 남긴다
-      if (height != null && weight != null) {
-        rememberBody(profileId, { heightCm: height, weightKg: weight, measuredOn: testedOn });
-      } else {
-        forgetBody(profileId);
+      // 서버는 받아 두고도 돌려주지 않는다. 방금 적은 값이 사라지지 않게 남긴다.
+      // 지난 날짜로 적은 회차는 「지금 몸」 을 바꾸지 않는다 — 더 최근에 적어 둔 값을 옛 값으로 덮거나 지웠다
+      if (testedOn >= (pendingBody?.measuredOn ?? "")) {
+        if (height != null && weight != null) {
+          rememberBody(profileId, { heightCm: height, weightKg: weight, measuredOn: testedOn });
+        } else {
+          forgetBody(profileId);
+        }
       }
       router.replace(`/p/${profileId}/result${fromStart ? "?from=start" : ""}`);
     } catch (error) {
@@ -268,7 +304,7 @@ export default function MeasurePage() {
               <BodyInput
                 label="키"
                 unit="cm"
-                placeholder="138"
+                placeholder={String(pendingBody?.heightCm ?? 138)}
                 value={heightCm}
                 onChange={setHeightCm}
                 hint={rangeHint("heightCm")}
@@ -277,7 +313,7 @@ export default function MeasurePage() {
               <BodyInput
                 label="몸무게"
                 unit="kg"
-                placeholder="34"
+                placeholder={String(pendingBody?.weightKg ?? 34)}
                 value={weightKg}
                 onChange={setWeightKg}
                 hint={rangeHint("weightKg")}
@@ -311,12 +347,7 @@ export default function MeasurePage() {
                 aria-expanded={showEquipment}
                 className="press flex min-h-12 w-full items-center gap-3 text-left"
               >
-                <span
-                  aria-hidden
-                  className="bg-sub text-ink-soft grid size-10 shrink-0 place-items-center rounded-xl"
-                >
-                  <ArtIcon name="icon/menu-equipment" className="size-6" />
-                </span>
+                <ArtIcon name="icon/menu-equipment" className="size-9 shrink-0" />
                 <span className="flex-1">
                   <span className="block text-sm font-bold">장비가 있으면 더 정확해요</span>
                   <span className="text-ink-soft text-xs">{equipment.length}개 항목</span>
@@ -344,10 +375,7 @@ export default function MeasurePage() {
           )}
 
           {serverError && (
-            <p
-              role="alert"
-              className="bg-signal-soft text-signal-deep rounded-xl px-4 py-3 text-sm font-semibold"
-            >
+            <p role="alert" className="text-signal-deep text-center text-sm font-semibold">
               {serverError}
             </p>
           )}
@@ -385,8 +413,6 @@ function rules(item: FitnessItem) {
     },
   };
 }
-
-/** 서버 오류 코드 → 사람 말. 계약서 §2 의 목록이 그대로 들어온다 */
 
 /** 키 · 몸무게 한 칸. */
 function BodyInput({
@@ -433,20 +459,20 @@ function BodyInput({
   );
 }
 
+/** 서버 오류 코드 → 사람 말. 계약서 §2 의 목록이 그대로 들어온다 */
 const messageFor = (error: unknown) =>
   errorMessage(
     error,
     {
       NO_ITEMS: "한 항목이라도 입력해 주세요.",
       NOT_MEASURABLE: "만 4세부터 측정할 수 있어요.",
-      CONSENT_REQUIRED: "보호자 동의가 필요해요. 설정에서 동의를 켜 주세요.",
-      DUPLICATE_DATE: "그 날짜의 측정이 이미 있어요. 날짜를 바꾸거나 기존 기록을 확인해 주세요.",
-      ITEM_NOT_ALLOWED: "지금 저장할 수 없는 항목이 섞여 있어요. 새로고침 후 다시 시도해 주세요.",
-      UNKNOWN_ITEM: "지금 저장할 수 없는 항목이 섞여 있어요. 새로고침 후 다시 시도해 주세요.",
-      ITEM_NOT_FOR_AGE_GROUP:
-        "이 연령대에서 잴 수 없는 항목이 있어요. 새로고침 후 다시 시도해 주세요.",
+      CONSENT_REQUIRED: "보호자 동의가 필요해요.",
+      DUPLICATE_DATE: "그 날짜의 측정이 이미 있어요.",
+      ITEM_NOT_ALLOWED: "지금 저장할 수 없는 항목이 섞여 있어요.",
+      UNKNOWN_ITEM: "지금 저장할 수 없는 항목이 섞여 있어요.",
+      ITEM_NOT_FOR_AGE_GROUP: "이 연령대에서 잴 수 없는 항목이 있어요.",
     },
-    "저장하지 못했어요. 잠시 후 다시 시도해 주세요.",
+    "저장하지 못했어요.",
   );
 
 function MeasureSkeleton() {

@@ -23,8 +23,19 @@ import {
   toggleMove,
   upcomingDays,
 } from "@/lib/routine";
-import { dayRings, daySummary, didSomething, isRealDate, plannedDay } from "@/lib/day";
+import {
+  dayRings,
+  daySummary,
+  dayWork,
+  didSomething,
+  isRealDate,
+  missionsOn,
+  plannedDay,
+  todayLine,
+} from "@/lib/day";
 import { UNLOCKS, decorationsAt, newlyUnlocked, nextUnlock } from "@/lib/unlocks";
+import { orderSessions, totalMinutes } from "@/lib/session-plan";
+import { todayActivity } from "@/lib/activity";
 import { josa } from "@/lib/utils";
 
 let failed = 0;
@@ -98,6 +109,16 @@ check(
   withJosa("골드", "으로로") === "골드로" && withJosa("다이아", "으로로") === "다이아로",
 );
 check("받침 ㄹ 뒤는 「로」 — 서울로", withJosa("서울", "으로로") === "서울로");
+check(
+  "받침 없으면 「를」 — 윗몸말아올리기를 · 악력을",
+  withJosa("윗몸말아올리기", "을를") === "윗몸말아올리기를" &&
+    withJosa("악력", "을를") === "악력을",
+);
+check(
+  "뒤 괄호는 읽지 않는다 — 상대악력(%)을 · 왕복오래달리기(15m)를",
+  withJosa("상대악력(%)", "을를") === "상대악력(%)을" &&
+    withJosa("왕복오래달리기(15m)", "을를") === "왕복오래달리기(15m)를",
+);
 
 /* ─── 가족 리그 ──────────────────────────────────────── */
 
@@ -201,6 +222,33 @@ check(
 check("되풀이는 4주까지", repeatDates(["2026-09-23"], 9).length === 4);
 check("겹친 날은 한 번만", repeatDates(["2026-09-23", "2026-09-23"], 1).length === 1);
 
+/* ─── 칸 시간 ─────────────────────────────────────────── */
+
+check(
+  "시간이 없거나 0분인 칸은 1분 — 운동하기 타이머와 같은 셈",
+  totalMinutes([{ minutes: 5 }, { minutes: null }, { minutes: 0 }]) === 7,
+);
+{
+  // 영상 완주 운동은 칸도 시간도 없이 온다 — 오늘 목표가 1분이 되지 않고 적어 둔 시간으로 물러선다
+  const video = {
+    missionId: "v",
+    startDate: "2026-09-24",
+    endDate: "2026-09-24",
+    targetMetric: "VIDEO_DONE",
+    participants: [{ profileId: "A", completed: false }],
+  } as unknown as NonNullable<Parameters<typeof todayActivity>[0]["missions"]>[number];
+  const goal = todayActivity({
+    profileId: "A",
+    missions: [video],
+    weekLogs: [],
+    availability: { slots: [{ day: "THU", start: "18:00", minutes: 30 }] } as unknown as Parameters<
+      typeof todayActivity
+    >[0]["availability"],
+    now: "2026-09-24",
+  }).goal;
+  check("시간 없는 영상 운동의 날 목표는 적어 둔 운동 시간", goal === 30, `${goal}분`);
+}
+
 /* ─── 하루 기록 ─────────────────────────────────────────── */
 
 const dayLog: DayLog = {
@@ -297,6 +345,81 @@ check(
   plannedDay(mission("2026-09-26", "2026-09-26", "STEPS"), "2026-09-24") === null,
 );
 
+/* ─── 한 사람의 오늘 — 끝낸 칸은 사람마다 ─────────────────── */
+
+{
+  const shared = {
+    missionId: "m",
+    startDate: "2026-09-24",
+    endDate: "2026-09-24",
+    targetMetric: "TIMER_MINUTES",
+    sessions: [
+      { position: 1, phase: "WARMUP", title: "a", minutes: 1 },
+      { position: 2, phase: "MAIN", title: "b", minutes: 4 },
+    ],
+    participants: [
+      { profileId: "A", completed: false, doneSessions: [1, 2] },
+      { profileId: "B", completed: false, doneSessions: [] },
+    ],
+  } as unknown as Parameters<typeof plannedDay>[0];
+  const a = dayWork([shared], "A", "2026-09-24");
+  const b = dayWork([shared], "B", "2026-09-24");
+  check("형제가 같은 운동을 받아도 끝낸 칸은 저마다", a.done === 2 && b.done === 0);
+  check(
+    "한마디 — 다 했어요 · 운동 있어요",
+    todayLine(a, false) === "오늘 다 했어요" && todayLine(b, false) === "오늘 운동 있어요",
+  );
+  check("쉬는 날이어도 한 만큼이 먼저", todayLine(a, true) === "오늘 다 했어요");
+  check("아직이면 쉬는 날", todayLine(b, true) === "오늘 쉬는 날");
+  check("참여자가 아니면 오늘 운동이 없다", dayWork([shared], "C", "2026-09-24").total === 0);
+  const older = {
+    ...shared,
+    sessions: [
+      { position: 1, phase: "WARMUP", title: "a", minutes: 1, completed: true },
+      { position: 2, phase: "MAIN", title: "b", minutes: 4 },
+    ],
+    participants: [{ profileId: "A", completed: false }],
+  } as unknown as Parameters<typeof plannedDay>[0];
+  check(
+    "사람마다의 기록이 아직 안 오면 칸의 끝냄으로 물러선다",
+    dayWork([older], "A", "2026-09-24").done === 1,
+  );
+  check(
+    "사람마다의 기록이 오면 칸에 적힌 끝냄은 믿지 않는다",
+    dayWork(
+      [
+        {
+          ...older,
+          participants: [{ profileId: "A", completed: false, doneSessions: [] }],
+        } as unknown as Parameters<typeof plannedDay>[0],
+      ],
+      "A",
+      "2026-09-24",
+    ).done === 0,
+  );
+  check(
+    "끝나는 날이 없는 운동은 하루짜리",
+    missionsOn([{ ...shared, endDate: undefined }], "A", "2026-09-24").length === 1 &&
+      missionsOn([{ ...shared, endDate: undefined }], "A", "2026-09-25").length === 0,
+  );
+  check(
+    "걸음수는 오늘 칸에 넣지 않는다",
+    dayWork([{ ...shared, targetMetric: "STEPS" }], "A", "2026-09-24").total === 0,
+  );
+  const mixed = [
+    { position: 2, phase: "WARMUP", title: "준비" },
+    { position: 1, phase: "COOLDOWN", title: "정리" },
+    { position: Number.NaN, phase: "MAIN", title: "차례 없음" },
+  ] as unknown as Parameters<typeof orderSessions>[0];
+  check(
+    "부모가 짠 차례대로 한다 — 준비 · 본 · 정리로 다시 줄 세우지 않는다",
+    same(
+      orderSessions(mixed).map((s) => s.title),
+      ["정리", "준비", "차례 없음"],
+    ),
+  );
+}
+
 /* ─── 토큰 새로 받기(401 → /auth/refresh → 다시 부르기) ───────────── */
 
 {
@@ -347,6 +470,26 @@ check(
   );
   const c = await api.get<{ ok: boolean }>("/z");
   check("다음 요청은 새 토큰으로 바로 간다", c.ok === true && refreshCalls === 1);
+
+  g.fetch = (async () => new Response(null, { status: 200 })) as typeof fetch;
+  check("본문 없는 200 도 성공이다", (await api.post("/n")) === undefined);
+
+  const { path, query } = await import("@/lib/api/client");
+  check(
+    "경로 값은 인코딩한다 — 「?」 로 시작해도",
+    path`/missions/${"?x"}/confirm` === "/missions/%3Fx/confirm",
+  );
+  check(
+    "query() 가 만든 조회 문자열만 그대로 붙는다",
+    path`/clips${query({ q: "a b" })}` === "/clips?q=a+b" && path`/clips${query({})}` === "/clips",
+  );
+  let threw = false;
+  try {
+    void path`/families/${undefined}/missions`;
+  } catch {
+    threw = true;
+  }
+  check("빈 값이 든 경로는 부르지 않는다", threw);
 }
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);

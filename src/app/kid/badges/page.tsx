@@ -3,7 +3,9 @@
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { Card, CardHead } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { AchievementGrid } from "@/components/domain/achievement-grid";
@@ -13,6 +15,7 @@ import { useProgress } from "@/lib/api/queries";
 import { STAGES, stageOf } from "@/lib/levels";
 import { whenOf } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
+import { useHydrated } from "@/lib/view-role";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
@@ -27,10 +30,34 @@ import { useRoleStore } from "@/stores/role-store";
  */
 export default function BadgesPage() {
   const childProfileId = useRoleStore((s) => s.childProfileId);
-  const { data: progress, isPending, error, refetch } = useProgress(childProfileId ?? undefined);
+  // 꺼진 조회(아이를 아직 안 골랐을 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
+  const { data: progress, isLoading, error, refetch } = useProgress(childProfileId ?? undefined);
+  // 고른 아이는 이 기기에 있다 — 서버가 그린 첫 화면에는 없어서, 새로고침하면 「누구인지 골라 주세요」 가 번쩍였다
+  const hydrated = useHydrated();
 
-  if (isPending) return <BadgesSkeleton />;
-  if (error || !progress) {
+  if (!hydrated || isLoading) return <BadgesSkeleton />;
+  if (!childProfileId) {
+    return (
+      <>
+        <AppBar backHref="/kid" title="레벨과 업적" />
+        <Stage wide>
+          <EmptyState
+            scene="waiting"
+            title="누구인지 골라 주세요"
+            action={
+              <NavLink
+                href="/start"
+                className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"
+              >
+                고르러 가기
+              </NavLink>
+            }
+          />
+        </Stage>
+      </>
+    );
+  }
+  if (!progress) {
     return (
       <>
         <AppBar backHref="/kid" title="레벨과 업적" />
@@ -56,7 +83,8 @@ export default function BadgesPage() {
           </p>
           <XpGauge progress={progress} className="mt-3" />
 
-          {/* 다섯 모습 — 지금 모습만 진하게. 앞으로 될 모습은 흐리게 미리 보인다 */}
+          {/* 다섯 모습 — 지금 모습은 이름을 진하게. 앞으로 될 모습은 흐리게 미리 보인다.
+              둥근 면을 깔지 않는다(리그의 티어 메달과 같다) */}
           <ol className="mt-4 grid grid-cols-5 gap-1" aria-label="키움이가 자라는 모습">
             {STAGES.map((s) => {
               const now = s.stage === stage.stage;
@@ -64,10 +92,7 @@ export default function BadgesPage() {
               return (
                 <li
                   key={s.stage}
-                  className={cn(
-                    "flex flex-col items-center gap-1 rounded-2xl py-2",
-                    now && "bg-signal-soft",
-                  )}
+                  className="flex flex-col items-center gap-1 py-2"
                   aria-current={now ? "step" : undefined}
                 >
                   <LevelBuddy
@@ -77,8 +102,8 @@ export default function BadgesPage() {
                   />
                   <span
                     className={cn(
-                      "text-micro leading-tight font-bold",
-                      now ? "text-signal-deep" : "text-ink-soft",
+                      "text-micro leading-tight",
+                      now ? "text-signal-deep font-extrabold" : "text-ink-soft font-bold",
                     )}
                   >
                     {s.name.replace(" 키움이", "")}

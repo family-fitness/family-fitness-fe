@@ -50,15 +50,20 @@ import { useRoleStore } from "@/stores/role-store";
  */
 export default function ParentHomePage() {
   const router = useRouter();
-  const { familyId, profile, isPending, error: sessionError } = useSession();
+  const { familyId, profile, isPending, error: sessionError, refetch: refetchMe } = useSession();
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
   const {
     data: map,
-    isPending: mapPending,
+    isLoading: mapLoading,
     error: mapError,
     refetch: refetchMap,
     isRefetching,
   } = useFitnessMap(familyId);
-  const { data: missions } = useCurrentMissions(familyId);
+  const {
+    data: missions,
+    error: missionsError,
+    refetch: refetchMissions,
+  } = useCurrentMissions(familyId);
 
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
@@ -73,11 +78,12 @@ export default function ParentHomePage() {
   const child = children.find((c) => c.profileId === childProfileId) ?? children[0];
 
   const week = weekOf();
-  const { data: calendar, isPending: calendarPending } = useCalendar(
-    familyId,
-    child?.profileId,
-    week,
-  );
+  const {
+    data: calendar,
+    isPending: calendarPending,
+    error: calendarError,
+    refetch: refetchCalendar,
+  } = useCalendar(familyId, child?.profileId, week);
   // 영상 줄은 아이의 키울 힘으로 — 서버가 준 가장 낮은 요인
   const { data: latest } = useLatestFitnessTest(child?.profileId);
   const weakest = latest?.weakest?.factor;
@@ -109,19 +115,24 @@ export default function ParentHomePage() {
   );
 
   /** 실패를 기다림보다 먼저 본다 */
-  const failure = sessionError ?? mapError;
+  const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
     return (
       <>
         <AppBar title="우리집" />
         <Stage>
-          <ErrorState error={failure} onRetry={() => void refetchMap()} retrying={isRefetching} />
+          <ErrorState
+            error={failure}
+            // `/me` 가 실패했으면 `/me` 를 — 지도만 다시 부르면 가족 번호 없이 `/families//…` 를 불렀다
+            onRetry={() => void (sessionError ? refetchMe() : refetchMap())}
+            retrying={isRefetching}
+          />
         </Stage>
       </>
     );
   }
 
-  if (isPending || mapPending) return <ParentHomeSkeleton />;
+  if (isPending || mapLoading) return <ParentHomeSkeleton />;
 
   // 아이를 아직 등록하지 않았다. 이 앱은 아이가 없으면 할 일이 없다
   if (!child) {
@@ -150,6 +161,7 @@ export default function ParentHomePage() {
           onSelect={setChild}
           familyId={familyId ?? undefined}
           missions={missions?.missions}
+          missionsFailed={Boolean(missionsError)}
           onInvite={() => setInviting(true)}
         />
 
@@ -158,6 +170,8 @@ export default function ParentHomePage() {
           familyId={familyId ?? ""}
           parentProfileId={profile?.profileId ?? ""}
           missions={missions?.missions}
+          missionsFailed={Boolean(missionsError)}
+          onRetryMissions={refetchMissions}
         />
 
         <WeekPanel
@@ -166,6 +180,8 @@ export default function ParentHomePage() {
           days={week.days}
           logs={calendar?.days}
           loading={calendarPending}
+          failed={Boolean(calendarError)}
+          onRetry={() => void refetchCalendar()}
           meta={
             progress && progress.streakDays > 1 ? (
               <StreakChip days={progress.streakDays} />

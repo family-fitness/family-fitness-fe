@@ -15,14 +15,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FactorIcon } from "@/components/domain/factor-icon";
 import { FactorRadar } from "@/components/domain/factor-radar";
 import { ScoreLine } from "@/components/domain/factor-view";
+import { ErrorState } from "@/components/ui/error-state";
+import { ApiError } from "@/lib/api/client";
 import {
   useAvailability,
   useFitnessMap,
+  useLatestCoachRun,
   useLatestFitnessTest,
   useStartCoachRun,
 } from "@/lib/api/queries";
 import { errorMessage } from "@/lib/errors";
-import { FACTORS, type Factor } from "@/lib/fitness-factors";
+import { FACTORS, isFactor, type Factor } from "@/lib/fitness-factors";
 import { useSession } from "@/lib/session";
 import { today, weekdayCode } from "@/lib/today";
 import { cn } from "@/lib/utils";
@@ -55,31 +58,58 @@ export default function PlanPage() {
 
 function PlanForm() {
   const router = useRouter();
-  const { familyId, profile } = useSession();
-  const { data: map, isPending } = useFitnessMap(familyId);
+  const {
+    familyId,
+    profile,
+    isPending: sessionPending,
+    error: sessionError,
+    refetch: refetchMe,
+  } = useSession();
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
+  const { data: map, isLoading: mapLoading, error: mapError, refetch } = useFitnessMap(familyId);
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const kids = (map?.members ?? []).filter((m) => m.role === "CHILD");
   const kid = kids.find((k) => k.profileId === childProfileId) ?? kids[0];
   const { data: latest } = useLatestFitnessTest(kid?.profileId);
   const start = useStartCoachRun(familyId ?? "");
+  // 이미 짜고 있거나 받아 둔 제안 — 다시 짜 달라고 했다가 막히면 그리로 간다
+  const { data: current } = useLatestCoachRun(familyId);
 
   const { data: availability } = useAvailability(kid?.profileId);
   // 고르기 전에는 오늘 적어 둔 시간이 기본이다. 적어 둔 게 없으면 20분
   const [picked, setPicked] = useState<number | null>(null);
   const todaySlot = availability?.slots.find((s) => s.day === weekdayCode());
   const minutes = picked ?? nearest(todaySlot?.minutes ?? 20);
-  const setMinutes = setPicked;
   const [place, setPlace] = useState<"HOME" | "OUTDOOR">("HOME");
   const [quiet, setQuiet] = useState(true);
   const [focus, setFocus] = useState<Factor | null>(null);
   // 운동 찾기에서 담아 둔 동작 — 있으면 직접 짜기로 바로
   const gathered = useRoutineStore((s) => s.moves.length);
   useRoutineReady();
-  // 참여 방식이 「매번 같이」 면 부모도 같이가 기본이다
-  const [withParent, setWithParent] = useState(profile?.supportMode === "FULL");
+  // 참여 방식이 「매번 같이」 면 부모도 같이가 기본이다. 고르기 전에는 기본값을 따른다 —
+  // 처음 한 번만 읽으면 새로고침 직후(/me 가 오기 전)에는 늘 「혼자」 였다
+  const [pickedWithParent, setWithParent] = useState<boolean | null>(null);
+  const withParent = pickedWithParent ?? profile?.supportMode === "FULL";
   const [error, setError] = useState<string | null>(null);
+  /** 막힌 까닭이 「이미 있는 제안」 이면 그리로 가는 길 */
+  const [existing, setExisting] = useState(false);
 
-  if (isPending) {
+  const failure = sessionError ?? (map ? null : mapError);
+  if (failure) {
+    return (
+      <>
+        <AppBar backHref="/parent" title="오늘 운동 짜기" />
+        <Stage wide>
+          <ErrorState
+            error={failure}
+            onRetry={() => void (sessionError ? refetchMe() : refetch())}
+          />
+        </Stage>
+      </>
+    );
+  }
+
+  if (sessionPending || mapLoading) {
     return (
       <>
         <AppBar backHref="/parent" title="오늘 운동 짜기" />
@@ -92,13 +122,15 @@ function PlanForm() {
   }
 
   const name = kid?.name ?? "아이";
-  // 서버가 준 가장 낮은 요인. 부모가 고르지 않으면 코치가 이걸 키운다
-  const weakest = latest?.weakest?.factor as Factor | undefined;
+  // 서버가 준 가장 낮은 요인. 부모가 고르지 않으면 코치가 이걸 키운다 — 육각형 밖(협응력 · 평형성)이면 두지 않는다
+  const given = latest?.weakest?.factor;
+  const weakest = isFactor(given) ? given : undefined;
   const shownFocus = focus ?? weakest ?? null;
 
   const submit = async () => {
     if (!kid?.profileId) return;
     setError(null);
+    setExisting(false);
     try {
       const run = await start.mutateAsync({
         profileId: kid.profileId,
@@ -111,6 +143,10 @@ function PlanForm() {
       });
       router.push(`/plan/run/${run.coachRunId}`);
     } catch (e) {
+      setExisting(
+        e instanceof ApiError &&
+          (e.code === "RUN_IN_PROGRESS" || e.code === "ALREADY_RUN_THIS_WEEK"),
+      );
       setError(
         errorMessage(
           e,
@@ -118,10 +154,10 @@ function PlanForm() {
             NOT_A_PARENT: "보호자만 운동을 짤 수 있어요.",
             ALREADY_RUN_THIS_WEEK: "이번 주 제안은 이미 받았어요.",
             RUN_IN_PROGRESS: "짜고 있는 제안이 있어요.",
-            CONSENT_REQUIRED: "보호자 동의가 있어야 짤 수 있어요.",
-            TEMPORARILY_UNAVAILABLE: "코치가 잠깐 쉬고 있어요. 조금 뒤에 다시 해 주세요.",
+            CONSENT_REQUIRED: "보호자 동의가 필요해요.",
+            TEMPORARILY_UNAVAILABLE: "코치가 잠깐 쉬고 있어요.",
           },
-          "짜 달라고 하지 못했어요. 잠시 후 다시 해 주세요.",
+          "짜 달라고 하지 못했어요.",
         ),
       );
     }
@@ -148,7 +184,6 @@ function PlanForm() {
             <p className="mt-3 text-center text-sm font-bold">
               <span className="text-ink-soft">{focus ? "고른 힘" : "키울 힘"}</span>{" "}
               <span className="text-signal-deep font-extrabold">{shownFocus}</span>
-              {!focus && <span className="text-ink-soft"> · 가장 낮은 요인</span>}
             </p>
           )}
         </section>
@@ -185,7 +220,7 @@ function PlanForm() {
           />
           <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="운동 시간">
             {MINUTES.map((m) => (
-              <Chip key={m} on={minutes === m} onClick={() => setMinutes(m)}>
+              <Chip key={m} on={minutes === m} onClick={() => setPicked(m)}>
                 {m}분
               </Chip>
             ))}
@@ -260,9 +295,21 @@ function PlanForm() {
         </section>
 
         {error && (
-          <p role="alert" className="card text-signal-deep text-sm font-semibold">
-            {error}
-          </p>
+          <div role="alert" className="card flex items-center justify-between gap-3">
+            <p className="text-signal-deep text-sm font-semibold">{error}</p>
+            {existing && current?.coachRunId && (
+              <NavLink
+                href={
+                  current.status === "RUNNING"
+                    ? `/plan/run/${current.coachRunId}`
+                    : `/plan/${current.coachRunId}`
+                }
+                className="press text-signal-strong min-h-11 shrink-0 content-center text-sm font-extrabold"
+              >
+                제안 보기
+              </NavLink>
+            )}
+          </div>
         )}
       </Stage>
 

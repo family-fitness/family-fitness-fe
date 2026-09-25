@@ -17,7 +17,9 @@ import { cn, formatDate } from "@/lib/utils";
  * 못 한 것이 아니라 아직인 것이다. 아이 업적 화면과 부모의 아이 기록이 같이 쓴다(9/25).
  */
 export function AchievementGrid({ achievements }: { achievements: AchievementView[] }) {
-  const [open, setOpen] = useState<AchievementView | null>(null);
+  // 고른 업적은 닫아도 남긴다 — 시트가 내려가는 동안 제목과 메달이 비지 않게
+  const [picked, setPicked] = useState<AchievementView | null>(null);
+  const [open, setOpen] = useState(false);
 
   return (
     <>
@@ -28,7 +30,10 @@ export function AchievementGrid({ achievements }: { achievements: AchievementVie
             <li key={a.code}>
               <button
                 type="button"
-                onClick={() => setOpen(a)}
+                onClick={() => {
+                  setPicked(a);
+                  setOpen(true);
+                }}
                 className="press bg-sub flex w-full flex-col items-center gap-1.5 rounded-2xl px-1.5 py-3"
                 aria-label={`${a.title}${got ? " · 받았어요" : " · 아직"}`}
               >
@@ -50,21 +55,21 @@ export function AchievementGrid({ achievements }: { achievements: AchievementVie
         })}
       </ul>
 
-      <Sheet open={Boolean(open)} onClose={() => setOpen(null)} title={open?.title}>
-        {open && (
+      <Sheet open={open} onClose={() => setOpen(false)} title={picked?.title ?? "업적"}>
+        {picked && (
           <div className="flex flex-col items-center pb-2 text-center">
-            {open.earnedAt ? (
+            {picked.earnedAt ? (
               <KiumMedal
-                art={artFor(badgeArt(open.code))}
+                art={artFor(badgeArt(picked.code))}
                 size={220}
-                label={`${open.title} 메달`}
+                label={`${picked.title} 메달`}
               />
             ) : (
-              <ArtIcon name={badgeArt(open.code)} className="my-8 size-28 opacity-30 grayscale" />
+              <ArtIcon name={badgeArt(picked.code)} className="my-8 size-28 opacity-30 grayscale" />
             )}
-            <p className="text-body mt-2 font-bold">{open.description}</p>
+            <p className="text-body mt-2 font-bold">{picked.description}</p>
             <p className="text-caption text-ink-soft mt-1 font-semibold">
-              {open.earnedAt ? `${formatDate(dayOf(open.earnedAt))}에 받았어요` : "아직이에요"}
+              {picked.earnedAt ? `${formatDate(dayOf(picked.earnedAt))}에 받았어요` : "아직이에요"}
             </p>
           </div>
         )}

@@ -23,7 +23,8 @@ export function cn(...inputs: ClassValue[]) {
 
 /** "8월 26일" */
 export function formatDate(iso: string): string {
-  const d = new Date(iso);
+  // 날짜만 온 값(2026-09-25)은 그 나라의 그날로 읽는다 — `new Date` 는 UTC 자정으로 읽어 서쪽 시간대에서 하루 앞이 된다
+  const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T00:00:00` : iso);
   return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
@@ -35,10 +36,16 @@ const JOSA = {
   와과: ["과", "와"],
   /** 「플래티넘으로 · 골드로」. 받침 ㄹ 뒤는 「로」(서울로) */
   으로로: ["으로", "로"],
+  /** 「플래티넘이에요 · 골드예요」 */
+  이에요: ["이에요", "예요"],
 } as const;
 
 export function josa(word: string, kind: keyof typeof JOSA): string {
-  const last = word.trimEnd().at(-1);
+  // 뒤에 붙은 괄호는 읽지 않는다 — 「왕복오래달리기(15m)」 는 「달리기」 에 조사가 붙는다
+  const last = word
+    .trimEnd()
+    .replace(/\s*\([^()]*\)$/, "")
+    .at(-1);
   if (!last) return JOSA[kind][1];
 
   // 숫자는 읽는 소리로 — 영 · 일 · 삼 · 육 · 칠 · 팔(십)은 받침이 있고 이 · 사 · 오 · 구는 없다

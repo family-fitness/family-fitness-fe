@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/app-shell/page-header";
 import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Screen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import type { SupportMode } from "@/lib/api/types";
@@ -17,13 +17,7 @@ import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { ArtIcon } from "@/components/ui/art-icon";
 
-/**
- * 참여 방식.
- *
- * 설명은 **고르는 데 필요한 것만** 남긴다. 앞 문장("같이 뛰기는 어려워요")은
- * 제목이 이미 하는 말이고, 뒤 문장이 실제로 달라지는 것 — 코치가 나를 미션에
- * 넣느냐 마느냐 — 을 말한다.
- */
+/** 참여 방식 — 셋 중 하나. 이름과 그림만 둔다(풀이 줄을 달지 않는다) */
 const MODES: {
   value: SupportMode;
   title: string;
@@ -50,26 +44,25 @@ const MODES: {
 function SupportModePageContent() {
   const router = useRouter();
   const params = useSearchParams();
-  const { profile, familyId, isPending } = useSession();
+  const { profile, familyId, isPending, error: sessionError, refetch } = useSession();
   const update = useUpdateSupportMode(profile?.profileId ?? "", familyId ?? "");
   const [error, setError] = useState<string | null>(null);
 
   /*
-    여기가 끝이 아닌 길이 둘이다 — 초대를 받아 막 들어온 길, 가입 중인 길.
-    둘 다 고르고 나서 갈 곳이 있어야 하고, 뒤로 가기를 주면 안 된다.
+    초대를 받아 막 들어온 길이면 여기가 끝이 아니다 — 고르고 나서 갈 곳이 있어야 하고,
+    뒤로 가기를 주면 안 된다. 가입 중인 길은 첫 시작의 한 칸으로 따로 묻는다.
   */
-  const from = params.get("from");
-  const joining = from === "claim" || from === "onboarding";
+  const joining = params.get("from") === "claim";
 
+  // 자녀에게는 없는 설정이다 — 부모 화면(ParentOnly)이라 자녀는 여기까지 오지 않는다
   if (isPending) return <SupportSkeleton />;
-
-  // 자녀에게는 없는 설정이다. 서버도 422 로 막는다
-  if (profile?.role === "CHILD") {
+  // 누구의 참여 방식인지 못 받으면 셋 다 안 고른 채로 그리지 않는다 — 누르면 엉뚱한 곳에 저장하려 했다
+  if (sessionError) {
     return (
       <>
-        <PageHeader title="참여 방식" back />
+        <PageHeader title="참여 방식" back={!joining} />
         <Screen>
-          <EmptyState scene="no-mission" title="이 설정은 보호자만 있어요" />
+          <ErrorState error={sessionError} onRetry={() => void refetch()} />
         </Screen>
       </>
     );
@@ -100,7 +93,7 @@ function SupportModePageContent() {
                         errorMessage(
                           e,
                           { NOT_APPLICABLE: "자녀 프로필에는 없는 설정이에요." },
-                          "바꾸지 못했어요. 잠시 후 다시 시도해 주세요.",
+                          "바꾸지 못했어요.",
                         ),
                       );
                     }
@@ -110,12 +103,7 @@ function SupportModePageContent() {
                     on && "ring-signal ring-2",
                   )}
                 >
-                  <span
-                    aria-hidden
-                    className="bg-signal-soft text-signal-strong grid size-11 shrink-0 place-items-center rounded-2xl"
-                  >
-                    <ArtIcon name={mode.art} className="size-6" />
-                  </span>
+                  <ArtIcon name={mode.art} className="size-10 shrink-0" />
                   <span className="min-w-0 flex-1">
                     <span className="text-body block font-bold">{mode.title}</span>
                   </span>
@@ -135,20 +123,13 @@ function SupportModePageContent() {
         </ul>
 
         {error && (
-          <p
-            role="alert"
-            className="bg-signal-soft text-signal-deep rounded-xl px-4 py-3 text-sm font-semibold"
-          >
+          <p role="alert" className="text-signal-deep text-center text-sm font-semibold">
             {error}
           </p>
         )}
 
         {joining && (
-          <Button
-            size="block"
-            disabled={!current}
-            onClick={() => router.replace(from === "onboarding" ? "/parent" : "/start")}
-          >
+          <Button size="block" disabled={!current} onClick={() => router.replace("/start")}>
             다 골랐어요
           </Button>
         )}
@@ -164,12 +145,9 @@ function SupportSkeleton() {
       <Screen className="space-y-5">
         <Skeleton className="h-10 w-full" />
         {[0, 1, 2].map((i) => (
-          <div key={i} className="flex gap-3 py-2">
-            <Skeleton className="size-11 rounded-xl" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-3 w-full" />
-            </div>
+          <div key={i} className="flex items-center gap-3 py-2">
+            <Skeleton className="size-10 rounded-xl" />
+            <Skeleton className="h-4 w-32" />
           </div>
         ))}
       </Screen>

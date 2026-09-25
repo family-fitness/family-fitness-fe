@@ -7,6 +7,7 @@ import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Screen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -20,17 +21,35 @@ import { ProfileAvatar } from "@/components/domain/profile-avatar";
 
 /** 보호자 동의 관리. */
 function ConsentPageContent() {
-  const { profile, familyId, isPending: sessionPending } = useSession();
-  const { data: family, isLoading: familyLoading } = useFamilyProfiles(familyId);
+  const {
+    familyId,
+    isPending: sessionPending,
+    error: sessionError,
+    refetch: refetchMe,
+  } = useSession();
+  const {
+    data: family,
+    isLoading: familyLoading,
+    error: familyError,
+    refetch,
+    isRefetching,
+  } = useFamilyProfiles(familyId);
 
+  // 부모 화면(ParentOnly)이라 자녀는 여기까지 오지 않는다
   if (sessionPending || familyLoading) return <ConsentSkeleton />;
 
-  if (profile?.role === "CHILD") {
+  // 못 받은 것을 「동의가 필요한 가족이 없어요」 로 그리지 않는다
+  const failure = sessionError ?? (family ? null : familyError);
+  if (failure) {
     return (
       <>
         <PageHeader title="보호자 동의" back />
         <Screen>
-          <EmptyState scene="waiting" title="이 설정은 보호자만 있어요" />
+          <ErrorState
+            error={failure}
+            onRetry={() => void (sessionError ? refetchMe() : refetch())}
+            retrying={isRefetching}
+          />
         </Screen>
       </>
     );
@@ -74,11 +93,7 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
       setConfirming(false);
     } catch (e) {
       setError(
-        errorMessage(
-          e,
-          { NOT_A_PARENT: "보호자 계정에서만 바꿀 수 있어요." },
-          "바꾸지 못했어요. 잠시 후 다시 시도해 주세요.",
-        ),
+        errorMessage(e, { NOT_A_PARENT: "보호자 계정에서만 바꿀 수 있어요." }, "바꾸지 못했어요."),
       );
     }
   };
@@ -146,7 +161,6 @@ function ConsentSkeleton() {
     <>
       <PageHeader title="보호자 동의" back />
       <Screen className="space-y-6">
-        <Skeleton className="h-12 w-full" />
         {[0, 1].map((i) => (
           <div key={i} className="flex items-center gap-3 py-2">
             <Skeleton className="size-11 rounded-full" />

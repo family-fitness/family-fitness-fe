@@ -19,7 +19,6 @@ declare global {
   interface Window {
     YT?: {
       Player: new (el: HTMLElement, options: YtOptions) => YtPlayer;
-      PlayerState: { PLAYING: number; ENDED: number };
     };
     onYouTubeIframeAPIReady?: () => void;
   }
@@ -45,6 +44,8 @@ interface YtOptions {
 }
 
 const PLAYING = 1;
+/** 유튜브 플레이어 상태 — 받는 중 */
+const BUFFERING = 3;
 const ENDED = 0;
 
 /** API 스크립트는 한 번만 넣는다 */
@@ -137,27 +138,44 @@ export function ClipPlayer({
     };
   }, [videoId, startSec]);
 
-  // 켜고 끄기 · 되풀이
+  // 켜고 끄기 · 되풀이. 못 불러온 영상은 건드리지 않는다 — 준비된 뒤에 막히면(비공개 · 임베드 금지)
+  // 보는 고리가 막힌 재생으로 읽어 아이의 타이머를 세웠다
   useEffect(() => {
     const p = player.current;
-    if (!ready || !p) return;
+    if (!ready || !p || failed) return;
     if (!playing) {
       p.pauseVideo();
       return;
     }
 
     p.playVideo();
-    // 막혔나 본다. 소리를 끄고 한 번 더, 그래도 안 되면 위에 알린다
-    let second: ReturnType<typeof setTimeout> | undefined;
-    const first = setTimeout(() => {
-      if (p.getPlayerState() === PLAYING) return;
-      p.mute();
-      setMuted(true);
-      p.playVideo();
-      second = setTimeout(() => {
-        if (p.getPlayerState() !== PLAYING) blocked.current?.();
-      }, 1500);
-    }, 1500);
+    /*
+      막혔나 본다. 소리를 끄고 한 번 더, 그래도 안 되면 위에 알린다.
+      받는 중(BUFFERING)은 막힌 것이 아니다 — 느린 망에서 소리를 끄고 아이의 타이머를 멈추지 않게 조금 더
+      기다려 본다. 전에는 받는 중이면 거기서 보기를 그만둬, 받다가 멈춰 선 영상을 아무도 몰랐다
+    */
+    let waits = 0;
+    let quiet = false;
+    let check: ReturnType<typeof setTimeout> | undefined;
+    const look = () => {
+      const state = p.getPlayerState();
+      if (state === PLAYING) return;
+      if (state === BUFFERING && waits < 4) {
+        waits += 1;
+        check = setTimeout(look, 1500);
+        return;
+      }
+      if (!quiet) {
+        quiet = true;
+        p.mute();
+        setMuted(true);
+        p.playVideo();
+        check = setTimeout(look, 1500);
+        return;
+      }
+      blocked.current?.();
+    };
+    check = setTimeout(look, 1500);
 
     // 클립 끝에 닿으면 처음으로. 잡힌 시간이 클립보다 길다
     const loop = setInterval(() => {
@@ -166,23 +184,19 @@ export function ClipPlayer({
     }, 300);
 
     return () => {
-      clearTimeout(first);
-      clearTimeout(second);
+      clearTimeout(check);
       clearInterval(loop);
     };
-  }, [ready, playing, startSec, endSec]);
+  }, [ready, playing, startSec, endSec, failed]);
 
+  // 못 불러오면 한 줄로 — 동작 이름은 위(칸 · 시트 제목)에 있다. 영상 크기의 빈 상자를 세워 두지 않는다
   if (failed) {
-    return (
-      <div className="bg-sub grid aspect-video w-full place-content-center gap-1 rounded-2xl px-6 text-center">
-        <p className="text-sm font-extrabold">{title}</p>
-        <p className="text-caption text-ink-soft">영상을 못 불러왔어요</p>
-      </div>
-    );
+    return <p className="text-caption text-ink-soft py-2 text-center">영상을 못 불러왔어요</p>;
   }
 
+  // 틀은 남색 — 검정으로 면을 채우지 않는다. 스크립트를 받는 동안 썸네일이 그 위에 흐리게 선다
   return (
-    <div className="bg-ink relative overflow-hidden rounded-2xl">
+    <div className="bg-signal-deep relative overflow-hidden rounded-2xl">
       <div className="aspect-video w-full">
         <iframe
           ref={frame}
@@ -194,18 +208,15 @@ export function ClipPlayer({
         />
       </div>
 
-      {/* 유튜브 스크립트를 받는 동안. 회색 상자로 멈춰 있으면 아이는 고장으로 본다 */}
+      {/* 유튜브 스크립트를 받는 동안 — 그 영상의 썸네일이 자리를 잡는다. 회색 상자로 멈춰 있으면 아이는 고장으로 본다 */}
       {!ready && (
-        <div className="absolute inset-0">
+        <div className="absolute inset-0" aria-hidden>
           {/* eslint-disable-next-line @next/next/no-img-element -- 유튜브 썸네일은 외부 주소라 최적화가 안 된다 */}
           <img
             src={`https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`}
             alt=""
             className="size-full object-cover opacity-70"
           />
-          <span className="text-caption bg-ink/60 absolute right-3 bottom-3 rounded-full px-2.5 py-1 font-bold text-white">
-            영상을 불러오는 중
-          </span>
         </div>
       )}
 
@@ -216,7 +227,7 @@ export function ClipPlayer({
             player.current?.unMute();
             setMuted(false);
           }}
-          className="press bg-ink/65 absolute top-2 right-2 flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-sm font-bold text-white"
+          className="press bg-signal-deep/80 absolute top-2 right-2 flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-sm font-bold text-white"
         >
           <Volume2 aria-hidden className="size-4" />
           소리 켜기

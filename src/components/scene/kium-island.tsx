@@ -7,7 +7,7 @@ import type { Stage } from "@/lib/levels";
 import { decorationsAt, type DecorationId } from "@/lib/unlocks";
 import { cn } from "@/lib/utils";
 
-import { buddyFrame } from "./buddy";
+import { BUDDY_FRAME, mascotImage } from "./buddy";
 import { ISLAND, buildIsland, footRatio, type Island } from "./island";
 import { loadThree, readPalette } from "./toon";
 
@@ -61,7 +61,7 @@ export function KiumIsland({
   const standIn = useRef<HTMLDivElement>(null);
   const mascotSize = Math.round(height * ISLAND.mascot);
   /** 캐릭터 그림의 몸 비율 — 주문한 그림(PNG)과 코드 그림이 발끝 자리가 다르다 */
-  const buddy = buddyFrame(stage, cheer);
+  const buddy = BUDDY_FRAME;
   const decorKey = decorationsAt(level).join();
 
   useEffect(() => {
@@ -120,7 +120,6 @@ export function KiumIsland({
           plants: count,
           seed,
           decorations: decorKey ? (decorKey.split(",") as DecorationId[]) : [],
-          frame: buddy,
           // 움직임 줄이기면 튀어나오지 않는다 — 처음부터 서 있다
           unveil: still ? null : unveil,
           palette: readPalette(),
@@ -132,7 +131,9 @@ export function KiumIsland({
             .normalize(),
         });
       } catch {
+        // 못 지었어도 컨텍스트는 바로 돌려준다 — 폰은 WebGL 컨텍스트 수가 적다
         renderer.dispose();
+        renderer.forceContextLoss();
         canvas.remove();
         return;
       }
@@ -187,13 +188,14 @@ export function KiumIsland({
         자라는 순간은 **처음 보일 때** 튼다. 지을 때 틀면, 섬이 화면 아래에 있는 동안
         아무도 안 보는 데서 나무가 다 자라 버린다(다 했어요 카드가 늦게 내려올 때).
       */
-      let armed = grow && !still;
+      // 새로 열린 장식은 나무가 자라지 않는 날에도 튀어나와야 한다 — 기다리는 채로 영영 숨지 않게
+      let armed = (grow || Boolean(unveil)) && !still;
       const fire = () => {
         if (!armed) return;
         armed = false;
         const now = clock();
         if (facing !== null) turn = { from: angle, to: facing, at: now };
-        island.sprout(now);
+        if (grow) island.sprout(now);
         if (unveil) island.reveal(now);
       };
       const frame = (now: number) => {
@@ -278,8 +280,9 @@ export function KiumIsland({
       canvas.classList.replace("opacity-0", "opacity-100");
       stand.style.opacity = "0";
 
-      const observer = new IntersectionObserver(([entry]) => {
-        visible = entry.isIntersecting;
+      // 한 번에 여러 개가 오면 마지막이 지금이다
+      const observer = new IntersectionObserver((entries) => {
+        visible = entries[entries.length - 1].isIntersecting;
         if (visible && !document.hidden) start();
         else stop();
       });
@@ -330,7 +333,7 @@ export function KiumIsland({
       ref={host}
       role="img"
       aria-label={label}
-      className={cn("relative w-full touch-pan-y select-none", className)}
+      className={cn("relative w-full touch-pan-y touch-pinch-zoom select-none", className)}
       style={{ height }}
     >
       {/* 섬이 오기 전의 캐릭터. 섬 위에 설 자리와 똑같은 곳에 선다 */}
@@ -347,45 +350,4 @@ export function KiumIsland({
       </div>
     </div>
   );
-}
-
-/**
- * 서 있는 캐릭터를 그림 한 장으로. 섬 위에 세울 종이 인형이다.
- *
- * 레벨 그림 파일이 있으면 그 파일을, 아직이면 코드로 그린 SVG 를 옮겨 그린다.
- * SVG 안의 색은 CSS 변수라 그림 파일 안에서는 풀리지 않는다 — 값으로 바꿔 넣는다.
- */
-export async function mascotImage(stand: HTMLElement): Promise<HTMLImageElement | null> {
-  const img = stand.querySelector("img");
-  if (img) return load(img.src);
-
-  const svg = stand.querySelector("svg");
-  if (!svg) return null;
-  const copy = svg.cloneNode(true) as SVGSVGElement;
-  // 크게 옮겨 그려야 폰 화면에서 흐리지 않다
-  copy.setAttribute("width", "512");
-  copy.setAttribute("height", "512");
-  const css = getComputedStyle(document.documentElement);
-  const markup = new XMLSerializer()
-    .serializeToString(copy)
-    .replace(
-      /var\((--[\w-]+)\)/g,
-      (_, name: string) => css.getPropertyValue(name).trim() || "#000",
-    );
-  const url = URL.createObjectURL(new Blob([markup], { type: "image/svg+xml" }));
-  try {
-    return await load(url);
-  } finally {
-    URL.revokeObjectURL(url);
-  }
-}
-
-function load(src: string) {
-  return new Promise<HTMLImageElement | null>((resolve) => {
-    const image = new Image();
-    image.decoding = "async";
-    image.onload = () => resolve(image);
-    image.onerror = () => resolve(null);
-    image.src = src;
-  });
 }

@@ -50,8 +50,9 @@ function Calendar() {
   const router = useRouter();
   const params = useSearchParams();
   const kidView = useIsKidView();
-  const { familyId, isPending, error: sessionError } = useSession();
-  const { data: map, isPending: mapPending, error: mapError, refetch } = useFitnessMap(familyId);
+  const { familyId, isPending, error: sessionError, refetch: refetchMe } = useSession();
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
+  const { data: map, isLoading: mapLoading, error: mapError, refetch } = useFitnessMap(familyId);
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
 
@@ -65,17 +66,10 @@ function Calendar() {
   const suffix = asked && asked === who?.profileId ? `?profileId=${encodeURIComponent(asked)}` : "";
 
   const now = today();
-  // 주소창 값은 믿지 않는다 — 모양이 틀리면 이번 달로.
-  // 예전 알림은 날짜만 싣고 온다(`?date=`). 그 날짜가 든 달을 연다
+  // 주소창 값은 믿지 않는다 — 모양이 틀리면 이번 달로
   const askedMonth = params.get("month");
-  const askedDate = params.get("date");
-  const validDate = askedDate && /^\d{4}-\d{2}-\d{2}$/.test(askedDate) ? askedDate : null;
   const month =
-    askedMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(askedMonth)
-      ? askedMonth
-      : validDate
-        ? monthOf(validDate)
-        : monthOf(now);
+    askedMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(askedMonth) ? askedMonth : monthOf(now);
   const grid = monthGrid(month);
 
   const {
@@ -85,10 +79,10 @@ function Calendar() {
     refetch: refetchCalendar,
   } = useCalendar(familyId, who?.profileId ?? undefined, { from: grid.from, to: grid.to });
   const logs = new Map((calendar?.days ?? []).map((d) => [d.date, d]));
-  // 앞으로 잡힌 운동 — 이 아이가 하는 것만. 걸음수는 넣지 않는다(규칙 2)
-  const { data: active } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
+  // 앞으로 잡힌 운동 — 이 아이가 하는 것만. 걸음수는 넣지 않는다(규칙 2). 하루 기록과 같은 목록(ALL)을 쓴다
+  const { data: missions } = useMissions(familyId, { scope: "ALL" });
   const planned = new Set(
-    (active?.missions ?? [])
+    (missions?.missions ?? [])
       .filter((m) => m.participants?.some((p) => p.profileId === who?.profileId))
       .map((m) => plannedDay(m, now))
       .filter((d): d is string => Boolean(d)),
@@ -100,18 +94,21 @@ function Calendar() {
     });
 
   const back = kidView ? "/kid" : "/parent";
-  const failure = sessionError ?? mapError;
+  const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
     return (
       <>
         <AppBar backHref={back} title="캘린더" />
         <Stage wide>
-          <ErrorState error={failure} onRetry={() => void refetch()} />
+          <ErrorState
+            error={failure}
+            onRetry={() => void (sessionError ? refetchMe() : refetch())}
+          />
         </Stage>
       </>
     );
   }
-  if (isPending || mapPending) return <CalendarSkeleton />;
+  if (isPending || mapLoading) return <CalendarSkeleton />;
 
   // 볼 아이가 없다 — 빈 달력을 기다리게 두지 않는다
   if (!who) {
@@ -141,7 +138,9 @@ function Calendar() {
   const stickers = [...logs.values()]
     .filter((d) => monthOf(d.date) === month)
     .reduce((sum, d) => sum + d.stickers.length, 0);
-  const tileState = calendarError ? "error" : calendarPending ? "pending" : "ready";
+  // 받아 둔 기록이 있으면 다시 받다 실패해도 그대로 — 칸은 그려져 있는데 합만 「—」 가 됐다
+  const failedCalendar = Boolean(calendarError) && !calendar;
+  const tileState = failedCalendar ? "error" : calendarPending ? "pending" : "ready";
 
   return (
     <>
@@ -197,7 +196,9 @@ function Calendar() {
                   <DayCell
                     date={date}
                     log={logs.get(date)}
-                    planned={planned.has(date)}
+                    // 쉬기로 한 날에는 운동이 잡혀 있어도 점선 고리를 두지 않는다(규칙 15).
+                    // 기록이 오기 전에도 — 벌써 한 날 · 쉬기로 한 날에 점선 고리가 먼저 번쩍였다
+                    planned={Boolean(calendar) && planned.has(date) && !logs.get(date)?.rest}
                     future={date > now}
                     isToday={date === now}
                     loading={calendarPending}
@@ -229,13 +230,8 @@ function Calendar() {
             )}
           </ul>
 
-          {/* 이 달 — 칸 셋(칭찬을 받은 달) · 둘 */}
-          <div
-            className={cn(
-              "mt-4 grid gap-2",
-              stickers > 0 || tileState !== "ready" ? "grid-cols-3" : "grid-cols-2",
-            )}
-          >
+          {/* 이 달 — 칸 셋(칭찬을 받은 달) · 둘. 둥근 회색 면 없이 선으로 나눈다(이번 주 칸과 같다) */}
+          <div className="divide-line border-line mt-4 grid auto-cols-fr grid-flow-col divide-x border-t pt-4">
             <MonthTile label="운동한 날" value={days.length} unit="일" state={tileState} />
             <MonthTile label="움직인 시간" value={total} unit="분" state={tileState} />
             {/* 칭찬은 받은 달에만 칸으로 — 0장을 적어 두면 못 받은 달이 된다(규칙 12) */}
@@ -243,7 +239,7 @@ function Calendar() {
               <MonthTile label="받은 칭찬" value={stickers} unit="장" state={tileState} />
             )}
           </div>
-          {calendarError && (
+          {failedCalendar && (
             <button
               type="button"
               onClick={() => void refetchCalendar()}
@@ -350,7 +346,7 @@ function MonthTile({
   state: "pending" | "error" | "ready";
 }) {
   return (
-    <div className="bg-sub rounded-2xl px-2 py-3 text-center">
+    <div className="px-2 text-center">
       <p className="text-micro text-ink-soft font-bold">{label}</p>
       {state === "ready" ? (
         <p className="metric-value mt-1 text-2xl">
@@ -374,7 +370,8 @@ function MonthTile({
 function CalendarSkeleton() {
   return (
     <>
-      <AppBar title="캘린더" />
+      {/* 기다리는 동안에도 나갈 길 — 뒤로(기록이 없으면 첫 화면) */}
+      <AppBar back title="캘린더" />
       <Stage wide className="space-y-3">
         <Skeleton className="h-[30rem] w-full rounded-3xl" />
       </Stage>

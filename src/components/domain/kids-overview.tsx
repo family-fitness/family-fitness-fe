@@ -7,10 +7,11 @@ import { CardHead } from "@/components/ui/card";
 import { NavLink } from "@/components/ui/nav-link";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { StreakChip } from "@/components/domain/streak-chip";
+import { WeekDots } from "@/components/domain/week-dots";
 import type { DayLog, FitnessMapMember, Mission } from "@/lib/api/types";
-import { useFamilyCalendars, useProgress } from "@/lib/api/queries";
-import { sessionsOf } from "@/lib/session-plan";
-import { today, weekOf } from "@/lib/today";
+import { useFamilyCalendars, useProgress, useRestDays } from "@/lib/api/queries";
+import { dayWork, todayLine } from "@/lib/day";
+import { monthOf, today, weekOf } from "@/lib/today";
 import { cn } from "@/lib/utils";
 
 /**
@@ -27,21 +28,33 @@ export function KidsOverview({
   onSelect,
   familyId,
   missions,
+  missionsFailed,
   onInvite,
 }: {
   kids: FitnessMapMember[];
   selectedId: string | undefined;
   onSelect: (profileId: string) => void;
   familyId: string | undefined;
+  /** 아직 못 받았으면 undefined — 오늘 한마디를 말하지 않는다 */
   missions: Mission[] | undefined;
+  missionsFailed: boolean;
   onInvite: () => void;
 }) {
   const week = weekOf();
   const ids = kids.map((k) => k.profileId ?? "").filter(Boolean);
   // 부모 홈 「이번 주」 와 같은 범위 · 같은 키 — 고른 아이 것은 캐시를 나눠 쓴다
   const calendars = useFamilyCalendars(familyId, ids, { from: week.from, to: week.to });
-  const logsOf = (profileId: string | undefined) =>
-    (profileId ? calendars[ids.indexOf(profileId)]?.data?.days : undefined) ?? [];
+  // 받는 중이면 undefined · 못 받았으면 null — 빈 한 주로 그리지 않는다
+  const logsOf = (profileId: string | undefined) => {
+    const q = profileId ? calendars[ids.indexOf(profileId)] : undefined;
+    return q?.data?.days ?? (q?.error ? null : undefined);
+  };
+  // 쉬는 날 카드는 가족 단위 — 달력 기록을 못 받아도 오늘이 쉬는 날인지 안다(규칙 15).
+  // 쉬는 날 목록을 못 받으면 달력 기록의 쉬는 날 표시로 — 대시보드와 같은 셈
+  const { data: restDays } = useRestDays(familyId, monthOf(today()));
+  const restToday = restDays
+    ? restDays.days.includes(today())
+    : kids.some((k) => logsOf(k.profileId)?.find((d) => d.date === today())?.rest);
 
   return (
     <section className="card" aria-label="우리 아이">
@@ -54,7 +67,9 @@ export function KidsOverview({
             selected={kid.profileId === selectedId}
             onSelect={() => kid.profileId && onSelect(kid.profileId)}
             logs={logsOf(kid.profileId)}
+            rest={restToday}
             missions={missions}
+            missionsFailed={missionsFailed}
             days={week.days}
           />
         ))}
@@ -86,44 +101,30 @@ function KidLine({
   selected,
   onSelect,
   logs,
+  rest,
   missions,
+  missionsFailed,
   days,
 }: {
   kid: FitnessMapMember;
   selected: boolean;
   onSelect: () => void;
-  logs: DayLog[];
+  /** 이번 주 기록. 받는 중이면 undefined · 못 받았으면 null */
+  logs: DayLog[] | null | undefined;
+  /** 오늘이 쉬는 날인가(가족 단위) */
+  rest: boolean;
   missions: Mission[] | undefined;
+  missionsFailed: boolean;
   /** 이번 주 월~일 */
   days: string[];
 }) {
   const { data: progress } = useProgress(kid.profileId);
   const now = today();
-  const byDate = new Map(logs.map((l) => [l.date, l]));
-  const todayLog = byDate.get(now);
-
-  // 오늘 이 아이가 하는 운동 — 걸음수(자기 신고)는 세지 않는다(규칙 2)
-  const mine = (missions ?? []).filter(
-    (m) =>
-      m.targetMetric !== "STEPS" &&
-      (m.startDate ?? "") <= now &&
-      now <= (m.endDate ?? "") &&
-      m.participants?.some((p) => p.profileId === kid.profileId),
-  );
-  const sessions = mine.flatMap((m) => sessionsOf(m));
-  const doneCount = sessions.filter((s) => s.completed).length;
-  const status =
-    sessions.length > 0 && doneCount === sessions.length
-      ? "오늘 다 했어요"
-      : doneCount > 0
-        ? `오늘 ${doneCount} / ${sessions.length}개`
-        : todayLog?.rest
-          ? "오늘 쉬는 날"
-          : mine.length > 0
-            ? "오늘 운동 있어요"
-            : "오늘 운동 없어요";
+  // 운동 목록을 못 받았으면 오늘을 말하지 않는다 — 「오늘 운동 없어요」 로 그리면 부모가 같은 운동을 또 받는다
+  const status = missions ? todayLine(dayWork(missions, kid.profileId, now), rest) : null;
   const score = kid.latest?.overallPercentile ?? null;
-  const moved = days.filter((d) => (byDate.get(d)?.minutes ?? 0) > 0).length;
+  // 잰 적은 있는데 점수가 없는 아이 — 만 7~10세는 규준이 비어 있다(규칙 8). 「아직 재지 않았어요」 가 아니다
+  const measured = Boolean(kid.latest?.testedOn);
 
   return (
     <li>
@@ -146,7 +147,12 @@ function KidLine({
             {kid.name}
           </span>
           <span className="text-caption text-ink-soft block truncate">
-            {status}
+            {status ??
+              (missionsFailed ? (
+                "—"
+              ) : (
+                <span className="skeleton inline-block h-3 w-16 rounded align-middle" />
+              ))}
             {progress && progress.streakDays > 1 && (
               <>
                 {" · "}
@@ -154,39 +160,36 @@ function KidLine({
               </>
             )}
           </span>
-          {/* 이번 주 월~일 — 움직인 날만 채운다. 쉰 날을 빠진 날처럼 칠하지 않는다 */}
-          <span className="mt-1.5 flex gap-1" aria-label={`이번 주 ${moved}일 움직였어요`}>
-            {days.map((d) => {
-              const on = (byDate.get(d)?.minutes ?? 0) > 0;
-              return (
-                <span
-                  key={d}
-                  aria-hidden
-                  className={cn(
-                    "size-2.5 rounded-full",
-                    on ? "bg-signal" : "bg-sub",
-                    d === now && !on && "ring-signal ring-1",
-                  )}
-                />
-              );
-            })}
-          </span>
+          <WeekDots days={days} logs={logs} />
         </span>
-        {/* 신체 점수 — 또래 평균 50 눈금과 늘 같이(규칙 10). 안 쟀으면 0 으로 그리지 않는다 */}
+        {/* 신체 점수 — 또래 평균 50 눈금과 늘 같이(규칙 10). 안 쟀으면 0 으로 그리지 않는다.
+            쟀는데 비교 기준이 없는 나이면 빈 막대 — 0 이 아니라 비어 있음이다 */}
         <span className="flex w-24 shrink-0 flex-col items-end">
-          {score != null ? (
+          {measured ? (
             <>
-              <span className="metric-value text-2xl leading-none">
-                {score}
-                <span className="metric-unit">점</span>
+              <span
+                className={cn("metric-value text-2xl leading-none", score == null && "text-faint")}
+              >
+                {score ?? "—"}
+                {score != null && <span className="metric-unit">점</span>}
               </span>
               <span
                 className="record-rail mt-1.5 w-16"
                 role="img"
-                aria-label={`신체 점수 ${score}, 또래 평균 50`}
+                aria-label={
+                  score != null
+                    ? `신체 점수 ${score}, 또래 평균 50`
+                    : "신체 점수 없음, 또래 평균 50"
+                }
               >
-                <span className="record-fill" style={{ width: `${score}%` }} />
-                <span className="record-avg" />
+                {score != null ? (
+                  <>
+                    <span className="record-fill" style={{ width: `${score}%` }} />
+                    <span className="record-avg" />
+                  </>
+                ) : (
+                  <span className="record-dash" />
+                )}
               </span>
             </>
           ) : (

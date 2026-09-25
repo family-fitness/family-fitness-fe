@@ -36,8 +36,15 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # 여기까지와 아래 셋이 `npm run verify` 와 같다 — 로컬에서 통과한 것이 CI 에서도 통과한다
+      - name: Check assets
+        run: npm run check:assets
+
       - name: Check mock server rules
         run: npm run check:mocks
+
+      - name: Check lib
+        run: npm run check:lib
 
       - name: Build
         run: npm run build

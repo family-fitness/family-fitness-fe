@@ -47,11 +47,41 @@ export default function StickerPage() {
 function StickerForm() {
   const { profileId } = useParams<{ profileId: string }>();
   const missionId = useSearchParams().get("missionId");
-  const { familyId, profile } = useSession();
-  const { data: family } = useFamilyProfiles(familyId);
+  const {
+    familyId,
+    profile,
+    isPending: sessionPending,
+    error: sessionError,
+    refetch: refetchMe,
+  } = useSession();
+  const { data: family, error: familyError, refetch: refetchFamily } = useFamilyProfiles(familyId);
   const now = today();
-  const { data: calendar, isPending } = useCalendar(familyId, profileId, { from: now, to: now });
-  const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
+  const {
+    data: calendar,
+    isLoading: isPending,
+    error: calendarError,
+    refetch: refetchCalendar,
+  } = useCalendar(familyId, profileId, {
+    from: now,
+    to: now,
+  });
+  const {
+    data: missions,
+    error: missionsError,
+    refetch: refetchMissions,
+  } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
+  // 누구에게 · 오늘 무엇을 했는지 못 받았으면 「아이에게 붙여 줄 스티커」 로 얼버무리지 않는다.
+  // 알림에서 운동을 달고 왔으면 운동 목록도 — 못 받으면 단추가 말없이 안 눌렸다
+  const failed = Boolean(
+    sessionError ??
+    (family ? null : familyError) ??
+    (calendar ? null : calendarError) ??
+    (missionId && !missions ? missionsError : null),
+  );
+  // 알림에서 곧장 열면 운동 목록 · 나(/me)가 늦게 온다 — 오기 전에 보내면 걸음수 확인을 건너뛰거나
+  // 단추가 아무 일도 안 했다
+  const ready = Boolean(profile?.profileId) && (!missionId || missions !== undefined);
   const send = useSendCheer(familyId ?? "");
   const confirm = useConfirmParticipant(missionId ?? "", familyId ?? "");
 
@@ -92,7 +122,7 @@ function StickerForm() {
         errorMessage(
           e,
           { NOT_A_PARENT: "스티커는 보호자 계정에서 붙일 수 있어요." },
-          "붙이지 못했어요. 잠시 후 다시 해 주세요.",
+          "붙이지 못했어요.",
         ),
       );
     }
@@ -131,7 +161,23 @@ function StickerForm() {
       <AppBar backHref="/parent" title="칭찬 스티커" />
       <Stage wide className="space-y-3 pb-32">
         <section className="card-hero">
-          {isPending ? (
+          {failed ? (
+            <p className="text-ink-soft flex items-center justify-between gap-3 text-sm">
+              불러오지 못했어요
+              <button
+                type="button"
+                onClick={() => {
+                  if (sessionError) return void refetchMe();
+                  void refetchFamily();
+                  void refetchCalendar();
+                  if (missionId) void refetchMissions();
+                }}
+                className="press text-signal-strong min-h-11 shrink-0 px-1 font-extrabold"
+              >
+                다시 불러오기
+              </button>
+            </p>
+          ) : sessionPending || isPending ? (
             <Skeleton className="h-6 w-48" />
           ) : (
             <h2 className="text-lead font-extrabold">
@@ -145,8 +191,8 @@ function StickerForm() {
               {log.entries.map((e) => e.title).join(" · ")}
             </p>
           )}
-          {/* 고른 것 하나가 크게 */}
-          <div className="bg-sub mt-4 grid h-36 place-items-center rounded-2xl">
+          {/* 고른 것 하나가 크게 — 둥근 회색 면에 담지 않는다 */}
+          <div className="mt-4 grid h-36 place-items-center">
             {sticker ? (
               <div key={sticker.id} className="badge-pop flex flex-col items-center gap-1">
                 <StickerArt id={sticker.id} className="size-24" />
@@ -219,7 +265,7 @@ function StickerForm() {
         <button
           type="button"
           onClick={() => void submit()}
-          disabled={!sticker || send.isPending || confirm.isPending}
+          disabled={!sticker || !ready || send.isPending || confirm.isPending}
           data-off={!sticker ? "" : undefined}
           className="press bg-signal-strong shadow-lift data-off:bg-line data-off:text-ink-soft flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white disabled:opacity-100 data-off:shadow-none"
         >

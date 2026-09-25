@@ -1,7 +1,7 @@
 /**
  * 에셋 준비 — 투명 여백을 잘라내고 public/assets 로 옮긴다.
  *
- *   node scripts/prepare-assets.mjs [원본폴더]
+ *   node scripts/prepare-assets.mjs <원본폴더>
  *
  * 왜 필요한가
  *   이미지 생성 AI 가 뽑은 PNG 는 그림이 1024 캔버스 가운데에 놓이고 사방에 여백이 남는다.
@@ -11,11 +11,18 @@
  *   알파가 거의 0 인 잔여 픽셀도 함께 버린다. 그게 남아 있으면 잘라낸 상자가
  *   실제 그림보다 훨씬 커진다 — 머리 하나가 캔버스 절반을 차지하는 것처럼 보인다.
  */
-import { mkdir, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 
-const SRC = process.argv[2] ?? "family-fitness-assets/public/assets";
+/**
+ * 원본 폴더는 꼭 적는다 — 기본값으로 두면 가장 오래된 1차 폴더를 읽어 옛 그림이 새 그림을 덮는다
+ */
+const SRC = process.argv[2];
+if (!SRC) {
+  console.error("원본 폴더를 적어 주세요 — node scripts/prepare-assets.mjs <원본폴더>");
+  process.exit(1);
+}
 const OUT = "public/assets";
 /** 이 값 이하의 알파는 없는 픽셀로 본다 */
 const ALPHA_THRESHOLD = 24;
@@ -242,10 +249,8 @@ for (const group of await readdir(SRC, { withFileTypes: true })) {
   }
 }
 
-await writeFile(
-  path.join(OUT, "manifest.json"),
-  JSON.stringify({ generatedAt: new Date().toISOString(), assets: report }, null, 2) + "\n",
-);
-
 const total = report.reduce((sum, r) => sum + r.bytes, 0);
 console.log(`${report.length}장 정리 완료 → ${OUT} (${(total / 1024 / 1024).toFixed(1)}MB)`);
+
+// 화면은 목록에 있는 그림만 부른다 — 정리한 김에 목록도 새로 쓴다
+await import("./list-assets.mjs");

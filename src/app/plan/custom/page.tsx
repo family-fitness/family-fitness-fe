@@ -58,10 +58,14 @@ export default function CustomPlanPage() {
 
 function CustomPlan() {
   const router = useRouter();
-  const { familyId } = useSession();
+  const { familyId, error: sessionError, refetch: refetchMe } = useSession();
   const childProfileId = useRoleStore((s) => s.childProfileId);
-  const { data: family } = useFamilyProfiles(familyId);
-  const { data: availability } = useAvailability(childProfileId ?? undefined);
+  const {
+    data: family,
+    isLoading: familyLoading,
+    error: familyError,
+    refetch: refetchFamily,
+  } = useFamilyProfiles(familyId);
   const moves = useRoutineStore((s) => s.moves);
   const ready = useRoutineReady();
   const { shift, setMinutes, remove, tidy, clear } = useRoutineStore();
@@ -72,6 +76,8 @@ function CustomPlan() {
   const firstKid = kids.find((k) => k.profileId === childProfileId) ?? kids[0];
   const [who, setWho] = useState<Uuid[] | null>(null);
   const chosen = who ?? (firstKid?.profileId ? [firstKid.profileId] : []);
+  // 「운동할 수 있는 날」 점은 지금 짜는 첫 아이의 시간표로 — 기기에 고른 아이가 아니라
+  const { data: availability } = useAvailability(chosen[0]);
   const now = today();
   const [days, setDays] = useState<string[]>([now]);
   const [weeks, setWeeks] = useState<(typeof WEEKS)[number]["value"]>("1");
@@ -132,13 +138,9 @@ function CustomPlan() {
       const reason = errorMessage(
         e,
         { NOT_A_PARENT: "보호자만 운동을 만들 수 있어요." },
-        "등록하지 못했어요. 잠시 후 다시 해 주세요.",
+        "등록하지 못했어요.",
       );
-      setProblem(
-        made.length > 0
-          ? `${made.length}일은 등록됐어요. 남은 날은 다시 눌러 주세요 — ${reason}`
-          : reason,
-      );
+      setProblem(made.length > 0 ? `${made.length}일은 등록됐어요 · ${reason}` : reason);
     } finally {
       if (here.current) setSaving(false);
     }
@@ -223,7 +225,7 @@ function CustomPlan() {
               <li key={m.clip.clipId} className="py-3">
                 {/* 첫 줄 — 차례 · 이름 · 빼기. 이름이 잘리지 않게 한 줄을 다 준다 */}
                 <div className="flex items-start gap-2">
-                  <span className="bg-signal-soft text-signal-deep mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-xs font-extrabold tabular-nums">
+                  <span className="text-signal-deep w-6 shrink-0 text-center text-sm leading-snug font-extrabold tabular-nums">
                     {i + 1}
                   </span>
                   <div className="min-w-0 flex-1">
@@ -301,6 +303,19 @@ function CustomPlan() {
         {/* 2. 누가 — 아이 혼자 · 엄마랑 같이 */}
         <Card>
           <CardHead title="누가 할까요" meta={`${chosen.length}명`} />
+          {/* 가족을 못 받으면 고를 사람이 비어 보인다 — 비었다고 두지 않고 못 불러왔다고 */}
+          {(sessionError ?? (family ? null : familyError)) && (
+            <p className="text-ink-soft mt-2 flex items-center justify-between gap-3 text-sm">
+              가족을 불러오지 못했어요
+              <button
+                type="button"
+                onClick={() => void (sessionError ? refetchMe() : refetchFamily())}
+                className="press text-signal-strong min-h-11 shrink-0 px-1 font-extrabold"
+              >
+                다시 불러오기
+              </button>
+            </p>
+          )}
           <ul className="mt-3 flex flex-wrap gap-2">
             {people.map((p) => {
               const on = chosen.includes(p.profileId ?? "");
@@ -384,10 +399,13 @@ function CustomPlan() {
         <div className="card-hero py-3">
           <p className="text-caption text-ink-soft text-center font-semibold">
             {moves.length}개 · {minutes}분 ·{" "}
-            {people
-              .filter((p) => chosen.includes(p.profileId ?? ""))
-              .map((p) => p.name)
-              .join(" · ") || "아무도 안 골랐어요"}
+            {/* 가족을 받는 동안은 「아무도 안 골랐어요」 가 아니다 */}
+            {familyLoading
+              ? "…"
+              : people
+                  .filter((p) => chosen.includes(p.profileId ?? ""))
+                  .map((p) => p.name)
+                  .join(" · ") || "아무도 안 골랐어요"}
           </p>
           {problem && (
             <p role="alert" className="text-signal-deep mt-1 text-center text-sm font-semibold">

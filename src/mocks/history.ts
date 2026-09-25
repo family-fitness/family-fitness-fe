@@ -3,9 +3,9 @@
  *
  * ▲ 서버에 아직 없다(`BACKEND_ASKS.md`). 목이 제안한 모양으로 답한다.
  *
- * 지난 날들은 **날짜로 정해지는 값**으로 심는다. 새로고침할 때마다 달력이 바뀌면
- * 시연 중에 방금 본 칸이 사라진다. 오늘 칸만 지금 미션 진행에서 계산한다 —
- * 아이가 방금 한 것이 바로 비쳐야 하기 때문이다.
+ * 시연 가족의 지난 날들은 **날짜로 정해지는 값**으로 심는다. 새로고침할 때마다 달력이 바뀌면
+ * 시연 중에 방금 본 칸이 사라진다. 그 위에 등록된 운동에서 한 것을 얹는다 — 아이가 방금 한 것이
+ * 바로 비치고, 자정이 지나도 어제 한 것이 남는다.
  */
 import { HttpResponse, http, type PathParams } from "msw";
 
@@ -20,7 +20,16 @@ import type {
 } from "@/lib/api/types";
 import { dayOf, daysBefore, today, weekdayCode } from "@/lib/today";
 
-import { BASE, DEMO, db, fail, type MissionRow } from "./db";
+import {
+  BASE,
+  DEMO,
+  DEMO_SCHEDULE,
+  db,
+  fail,
+  participantOf,
+  sessionsOfRow,
+  type MissionRow,
+} from "./db";
 
 /**
  * 같은 글자에는 늘 같은 0~1. FNV-1a 에 마무리 섞기(MurmurHash3 fmix32)를 더했다.
@@ -59,8 +68,9 @@ export function hasHistory(profileId: string) {
 function pastDay(profileId: string, date: string): DayLog | null {
   const r = roll(`${profileId}:${date}`);
   // 아이는 운동할 수 있는 요일(월 · 수 · 금 · 토)에 주로 한다 — 리그는 잡힌 날로 센다.
-  // 엄마는 아이보다 덜 한다. 응원만 하는 날이 많다
-  const planned = (db.availability[profileId] ?? []).some((s) => s.day === weekdayCode(date));
+  // 엄마는 아이보다 덜 한다. 응원만 하는 날이 많다. 요일은 처음 심은 시간표로 — 지금 시간표를
+  // 고쳤다고 지난 기록이 바뀌지 않게
+  const planned = (DEMO_SCHEDULE[profileId] ?? []).some((s) => s.day === weekdayCode(date));
   const rate = profileId === DEMO.kid ? (planned ? 0.84 : 0.4) : 0.38;
   // 아이는 어제 · 그제는 늘 했다. 시연을 여는 날 이번 주가 텅 비어 있으면
   // 이어서 하는 모습을 보여 줄 수 없다
@@ -102,24 +112,34 @@ function pastDay(profileId: string, date: string): DayLog | null {
   };
 }
 
-/** 오늘 칸 — 지금 돌아가는 미션에서 계산한다 */
-function todayOf(profileId: string, date: string): DayLog | null {
-  const live = db.missions.filter(
-    (m) =>
-      (m.startDate ?? "") <= date &&
-      date <= (m.endDate ?? "") &&
-      (m.participants ?? []).some((p) => p.profileId === profileId),
-  );
+/** 여러 날에 걸친 운동인가 — 끝나는 날이 없으면 하루짜리다 */
+const spans = (m: MissionRow) => (m.endDate ?? m.startDate) !== m.startDate;
+
+/**
+ * 이 사람의 운동이 그날에 서는가 — 달력 · 리그 · 경험치가 이 하나로 센다.
+ * 하루짜리는 그날. 여러 날짜리는 오늘(하는 중)과, 지난날이면 그날 끝낸 칸이 있는 날에만 —
+ * 기간 안의 날마다 세우면 한 번 한 운동이 날마다 한 것(또는 날마다 안 한 것)이 되어 연속 · 나무 · 리그가 틀어졌다
+ */
+export function standsOn(m: MissionRow, profileId: string, date: string): boolean {
+  const me = participantOf(m, profileId);
+  const end = m.endDate ?? m.startDate ?? "";
+  if (!me || date < (m.startDate ?? "") || date > end) return false;
+  if (!spans(m) || date === today()) return true;
+  const doneDays = Object.values(me.doneOn ?? {});
+  if (doneDays.includes(date)) return true;
+  // 끝내 한 칸도 안 했으면 지난 마지막 날 하루로 센다 — 어느 날에도 안 세면 긴 운동을 잡아 두기만 해도 달성률이 지켜졌다
+  return date === end && end < today() && doneDays.length === 0;
+}
+
+/** 그날 등록된 운동에서 한 것 — 오늘이든 지난날이든 */
+function liveDay(profileId: string, date: string): DayLog | null {
+  const live = db.missions.filter((m) => standsOn(m, profileId, date));
   if (live.length === 0) return null;
 
-  const entries: DayEntry[] = live.map((m) => entryOf(m, profileId));
+  const entries: DayEntry[] = live.map((m) => entryOf(m, profileId, date));
   const minutes = entries.reduce((sum, e) => sum + e.minutes, 0);
   const planned = live.reduce((sum, m) => sum + plannedOf(m), 0);
   return { date, minutes, plannedMinutes: planned || null, entries, stickers: [] };
-}
-
-function sessionsOfRow(m: MissionRow): MissionSession[] {
-  return ((m as unknown as { sessions?: MissionSession[] }).sessions ?? []).slice();
 }
 
 function plannedOf(m: MissionRow): number {
@@ -128,41 +148,61 @@ function plannedOf(m: MissionRow): number {
   return m.targetMetric === "TIMER_MINUTES" ? (m.targetValue ?? 0) : 0;
 }
 
-function entryOf(m: MissionRow, profileId: string): DayEntry {
-  const me = (m.participants ?? []).find((p) => p.profileId === profileId);
+function entryOf(m: MissionRow, profileId: string, date: string): DayEntry {
+  const me = participantOf(m, profileId);
   const sessions = sessionsOfRow(m);
   const planned = plannedOf(m);
+  // 끝낸 칸은 사람마다다 — 형제가 같은 운동을 받아도 이 사람이 끝낸 칸만 센다.
+  // 여러 날짜리는 그날 끝낸 칸만(끝낸 날을 모르는 옛 기록은 끝낸 칸 전부)
+  const done = new Set(me?.doneSessions ?? []);
+  const onDay = (s: MissionSession) =>
+    !spans(m) || !me?.doneOn?.[s.position] || me.doneOn[s.position] === date;
+  const isDone = (s: MissionSession) =>
+    (Boolean(me?.completed) && !spans(m)) || (done.has(s.position) && onDay(s));
+  // 여러 날짜리를 다 한 것은 마지막 칸을 끝낸 날 하루에만 — 날마다 「다 했어요」 로 세지 않는다
+  const lastDay = Object.values(me?.doneOn ?? {})
+    .sort()
+    .at(-1);
+  const completed = Boolean(me?.completed) && (!spans(m) || !lastDay || lastDay === date);
   // 칸이 있으면 끝낸 칸의 시간을 더하고, 없으면 진행률로 셈한다
   const minutes =
     sessions.length > 0
-      ? sessions.filter((s) => s.completed).reduce((sum, s) => sum + (s.minutes ?? 0), 0)
+      ? sessions.filter(isDone).reduce((sum, s) => sum + (s.minutes ?? 0), 0)
       : Math.round((me?.progress ?? 0) * planned);
   return {
     missionId: m.missionId ?? "",
     title: m.title ?? "운동",
     minutes: m.targetMetric === "STEPS" ? 0 : minutes,
     verifiedBy: me?.verifiedBy ?? null,
-    completed: Boolean(me?.completed),
+    completed,
     sessions:
       sessions.length > 0
         ? sessions.map((s) => ({
             title: s.title,
             phase: s.phase,
             minutes: s.minutes ?? null,
-            done: Boolean(s.completed),
+            done: isDone(s),
           }))
         : null,
   };
 }
 
 /**
- * 그날 한 운동. 오늘이면 지금 미션에서, 지난날이면 심어 둔 기록에서.
+ * 그날 한 운동 — 등록된 운동에서 한 것, 지난날이면 심어 둔 기록까지.
  * 레벨 · 연속 · 업적도 이 값으로 센다 — 달력과 레벨이 다른 날을 세면 안 된다.
  */
 export function dayLogFor(profileId: string, date: string): DayLog | null {
   if (date > today()) return null;
-  if (date === today()) return todayOf(profileId, date);
-  return hasHistory(profileId) ? pastDay(profileId, date) : null;
+  const live = liveDay(profileId, date);
+  const past = date < today() && hasHistory(profileId) ? pastDay(profileId, date) : null;
+  if (!past || !live) return past ?? live;
+  return {
+    date,
+    minutes: past.minutes + live.minutes,
+    plannedMinutes: (past.plannedMinutes ?? 0) + (live.plannedMinutes ?? 0) || null,
+    entries: [...past.entries, ...live.entries],
+    stickers: [],
+  };
 }
 
 /** 그날 받은 스티커. 칭찬 목록에서 스티커가 붙은 것만 */

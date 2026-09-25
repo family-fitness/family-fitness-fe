@@ -15,9 +15,9 @@ import { cn } from "@/lib/utils";
 
   꼭지점마다 요인 그림 · 이름 · 값이 늘 보인다. 눌러야 나오는 값은 부모가 안 누른다.
 
-  **안 잰 요인은 0으로 그리지 않는다.** 가운데로 꺾여 들어가면 꼴찌처럼 보인다(규칙 8).
-  그 꼭지점은 비워 두고 「안 잼」 이라고 적는다. 잰 두 꼭지점 사이를 건너뛰는 선은
-  점선으로 — 모르는 구간을 아는 척하지 않는다.
+  **값이 없는 요인은 0으로 그리지 않는다.** 가운데로 꺾여 들어가면 꼴찌처럼 보인다(규칙 8).
+  그 꼭지점은 비워 두고 「—」 로 적는다(안 잰 것일 수도, 잰 나이에 비교 기준이 없는 것일 수도 있다).
+  잰 두 꼭지점 사이를 건너뛰는 선은 점선으로 — 모르는 구간을 아는 척하지 않는다.
 */
 
 const W = 320;
@@ -85,8 +85,9 @@ export function FactorRadar({
           .filter((e) => e !== null)
       : [];
 
+  // 화면의 「—」 와 같은 말 — 「안 잰」 이라 읽으면 쟀는데 비교 기준이 없는 나이의 값까지 안 잰 것이 된다
   const summary = hex
-    .map((p) => `${p.factor} ${p.percentile == null ? "안 잰" : `또래 백분위 ${p.percentile}`}`)
+    .map((p) => `${p.factor} ${p.percentile == null ? "값 없음" : `또래 백분위 ${p.percentile}`}`)
     .join(", ");
 
   return (
@@ -202,8 +203,10 @@ export function FactorRadar({
                   {p.factor}
                 </span>
               </span>
+              {/* 값이 없으면 「—」 — 안 잰 것일 수도, 잰 나이에 비교 기준이 없는 것일 수도 있다(규칙 8).
+                  어느 쪽인지는 요인 표가 항목과 같이 말한다 */}
               {missing ? (
-                <span className="text-micro text-faint mt-0.5 font-semibold">안 잼</span>
+                <span className="text-micro text-faint mt-0.5 font-semibold">—</span>
               ) : (
                 <span className="text-ink text-base font-extrabold tabular-nums">
                   {p.percentile}

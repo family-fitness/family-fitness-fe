@@ -14,8 +14,8 @@ import { HttpResponse, http, type PathParams } from "msw";
 import type { FamilyLeague, RestDays } from "@/lib/api/types";
 import { daysBefore, monthOf, today, weekdayCode } from "@/lib/today";
 
-import { BASE, db, fail, saveRestDays } from "./db";
-import { dayLogFor, hasHistory } from "./history";
+import { BASE, DEMO_SCHEDULE, acting, db, fail, saveRestDays } from "./db";
+import { dayLogFor, hasHistory, standsOn } from "./history";
 
 /** 한 달에 주는 쉬는 날 카드 */
 const REST_PER_MONTH = 2;
@@ -62,18 +62,18 @@ function daysLeftIn(date: string): number {
   return last - Number(date.slice(8));
 }
 
-/** 그날 이 아이에게 운동이 잡혀 있었나 — 등록된 운동(걸음수 뺌). 시연 가족은 운동할 수 있는 요일도 */
+/**
+ * 그날 이 아이에게 운동이 잡혀 있었나 — 등록된 운동(걸음수 뺌). 시연 가족은 지난 기록을 심은 요일도 —
+ * 지금 시간표로 세면 시간표를 고치는 순간 지난 달성률이 바뀐다
+ */
 function planned(profileId: string, date: string): boolean {
+  // 달력과 같은 셈 — 여러 날짜리는 오늘과 한 날에만 잡힌 날이다(standsOn)
   const registered = db.missions.some(
-    (m) =>
-      m.targetMetric !== "STEPS" &&
-      (m.startDate ?? "") <= date &&
-      date <= (m.endDate ?? "") &&
-      m.participants?.some((p) => p.profileId === profileId),
+    (m) => m.targetMetric !== "STEPS" && standsOn(m, profileId, date),
   );
   if (registered) return true;
   if (!hasHistory(profileId)) return false;
-  return (db.availability[profileId] ?? []).some((slot) => slot.day === weekdayCode(date));
+  return (DEMO_SCHEDULE[profileId] ?? []).some((slot) => slot.day === weekdayCode(date));
 }
 
 /** 우리 가족의 이번 달 달성률(%) — 아이마다 (해낸 날 ÷ 잡힌 날, 쉬는 날 뺌) 의 평균. 셀 날이 없으면 null */
@@ -145,6 +145,8 @@ export const league = [
 
   /** 쉬는 날 카드 쓰기. 지난 날에는 못 쓴다 — 빈 날을 나중에 덮으면 카드가 핑계가 된다 */
   http.post<PathParams>(`${BASE}/families/:familyId/rest-days`, async ({ request }) => {
+    // 쉬는 날 카드는 부모가 쓴다(규칙 15)
+    if (acting()?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자만 쓸 수 있습니다");
     const { date } = (await request.json().catch(() => ({}))) as { date?: string };
     const now = today();
     if (
@@ -172,6 +174,8 @@ export const league = [
 
   /** 쉬는 날 되돌리기 — 오늘이나 앞날만. 카드는 돌려준다 */
   http.delete<PathParams>(`${BASE}/families/:familyId/rest-days/:date`, ({ params }) => {
+    if (acting()?.role !== "PARENT")
+      return fail(403, "NOT_A_PARENT", "보호자만 되돌릴 수 있습니다");
     const date = String(params.date);
     if (date < today()) return fail(422, "INVALID_DATE", "지난 날은 되돌릴 수 없습니다");
     if (!db.restDays.includes(date)) return fail(404, "NOT_REST_DAY", "쉬는 날이 아닙니다");

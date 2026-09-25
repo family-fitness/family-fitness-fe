@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
@@ -12,7 +12,6 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrajectoryChart } from "@/components/domain/trajectory-chart";
 import { errorMessage } from "@/lib/errors";
-import type { PredictionResult } from "@/lib/api/types";
 import {
   useCreatePrediction,
   useFamilyProfiles,
@@ -25,9 +24,9 @@ import { useSession } from "@/lib/session";
 export default function FuturePage() {
   const router = useRouter();
   const { profileId } = useParams<{ profileId: string }>();
-  const { familyId } = useSession();
+  const { familyId, error: sessionError, refetch: refetchMe } = useSession();
   // 가족 전체에서 찾는다 — 연령대를 알아야 항목 이름과 단위를 붙일 수 있다
-  const { data: family } = useFamilyProfiles(familyId);
+  const { data: family, error: familyError, refetch: refetchFamily } = useFamilyProfiles(familyId);
   const profile = family?.profiles?.find((p) => p.profileId === profileId);
 
   const {
@@ -39,25 +38,24 @@ export default function FuturePage() {
   // 예측 응답에는 항목 코드만 있다. "50" 만 있으면 무슨 수치인지 알 수 없다
   const { data: items } = useFitnessItems(profile?.ageGroup);
   const create = useCreatePrediction(profileId);
-
-  const [result, setResult] = useState<PredictionResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // 결과와 실패는 요청이 들고 있는 것을 그대로 읽는다. 따로 상태에 옮기면 개발 모드에서 effect 가
+  // 두 번 돌 때 첫 응답을 버리고 그래프 없이 제목만 남았다
+  const result = create.data;
+  const error = create.error ? predictMessage(create.error) : null;
 
   const hasTest = Boolean(latest?.fitnessTestId);
+  // 누구인지 받기 전에는 모른다 — 모르는 채 「첫 측정 하기」 를 먼저 세우면 만 4세 미만에게 번쩍 뜬다(규칙 4)
+  const measurable = profile != null && profile.measurable !== false;
+  // 누구인지 못 받았으면 단추를 세울지 모른다 — 말없이 비우지 않고 다시 불러오기
+  const unknownWho = profile == null && Boolean(sessionError ?? familyError);
+  const retryWho = () => void (sessionError ? refetchMe() : refetchFamily());
 
   /** 조회 엔드포인트가 없어서 들어오면 만든다(POST). **한 번만 만들어야 한다.** */
   const requested = useRef(false);
   useEffect(() => {
     if (!hasTest || requested.current) return;
     requested.current = true;
-    let cancelled = false;
-    create
-      .mutateAsync({})
-      .then((r) => !cancelled && setResult(r))
-      .catch((e) => !cancelled && setError(predictMessage(e)));
-    return () => {
-      cancelled = true;
-    };
+    create.mutate({});
     // create 는 매 렌더 새 객체다. 측정 유무가 바뀔 때만 다시 시도한다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasTest]);
@@ -66,7 +64,7 @@ export default function FuturePage() {
 
   // 불러오지 못한 것과 아직 안 잰 것은 다르다. 섞으면 서버가 죽었을 때
   // 이미 잰 사람에게 "측정을 먼저 해 주세요" 라고 말하게 된다
-  if (latestError) {
+  if (latestError && latest === undefined) {
     return (
       <>
         <PageHeader title="10년 위 연령대" back />
@@ -84,11 +82,24 @@ export default function FuturePage() {
         <Screen>
           <EmptyState
             scene="no-record"
-            title="측정을 먼저 해 주세요"
+            title="아직 재지 않았어요"
             action={
-              <Button size="md" onClick={() => router.push(`/p/${profileId}/measure`)}>
-                측정 입력하기
-              </Button>
+              // 만 4세 미만은 잴 수 없다 — 단추를 끄지 않고 없앤다(규칙 4)
+              measurable ? (
+                <Button size="md" onClick={() => router.push(`/p/${profileId}/measure`)}>
+                  첫 측정 하기
+                </Button>
+              ) : (
+                unknownWho && (
+                  <button
+                    type="button"
+                    onClick={retryWho}
+                    className="press text-signal-strong min-h-11 px-2 text-sm font-extrabold"
+                  >
+                    다시 불러오기
+                  </button>
+                )
+              )
             }
           />
         </Screen>
@@ -96,7 +107,18 @@ export default function FuturePage() {
     );
   }
 
-  const points = result?.points ?? [];
+  // 한 항목 · 지금대로(MAINTAIN)의 점만 — 여러 항목 · 여러 갈래가 섞이면 한 선에 이어 그려진다.
+  // 띠(p10~p90)가 없는 점은 쓰지 않는다 — 그림이 서지 않는데 아래 줄에 가운데 값만 남으면 정해진 앞날처럼 읽힌다(규칙 3)
+  const code = result?.points?.[0]?.itemCode;
+  const points = (result?.points ?? []).filter(
+    (p) =>
+      (p.scenario ?? "MAINTAIN") === "MAINTAIN" &&
+      p.itemCode === code &&
+      p.p10 != null &&
+      p.p50 != null &&
+      p.p90 != null,
+  );
+  const drawn = points.length >= 2;
   const first = points.find((p) => p.yearsFromNow === 0);
   const last = [...points].sort((a, b) => (b.yearsFromNow ?? 0) - (a.yearsFromNow ?? 0))[0];
 
@@ -122,14 +144,17 @@ export default function FuturePage() {
           )}
 
           {create.isPending && !result && <Skeleton className="mt-4 h-50 w-full rounded-xl" />}
-          {result && points.length > 0 && (
+          {result && drawn && (
             <div className="mt-3">
               <TrajectoryChart points={points} unit={unit} />
             </div>
           )}
+          {result && !drawn && (
+            <p className="text-ink-soft mt-4 text-sm font-semibold">지금은 계산할 수 없어요</p>
+          )}
         </section>
 
-        {result && points.length > 0 && (
+        {result && drawn && (
           <>
             {first && last && (
               <dl className="card divide-rows py-1">
@@ -160,23 +185,14 @@ export default function FuturePage() {
 
         {error && (
           <div className="space-y-3">
-            <p
-              role="alert"
-              className="bg-signal-soft text-signal-deep rounded-xl px-4 py-3 text-sm font-semibold"
-            >
+            <p role="alert" className="text-signal-deep text-sm font-semibold">
               {error}
             </p>
             <Button
               size="block"
               variant="outline"
               loading={create.isPending}
-              onClick={() => {
-                setError(null);
-                create
-                  .mutateAsync({})
-                  .then(setResult)
-                  .catch((e) => setError(predictMessage(e)));
-              }}
+              onClick={() => create.mutate({})}
             >
               다시 시도
             </Button>
@@ -191,11 +207,11 @@ const predictMessage = (error: unknown) =>
   errorMessage(
     error,
     {
-      NO_FITNESS_TEST: "측정 기록이 있어야 볼 수 있어요.",
-      CONSENT_REQUIRED: "보호자 동의가 필요해요. 설정에서 확인해 주세요.",
-      TEMPORARILY_UNAVAILABLE: "지금은 계산할 수 없어요. 잠시 후 다시 시도해 주세요.",
+      NO_FITNESS_TEST: "아직 재지 않았어요.",
+      CONSENT_REQUIRED: "보호자 동의가 필요해요.",
+      TEMPORARILY_UNAVAILABLE: "지금은 계산할 수 없어요.",
     },
-    "불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+    "불러오지 못했어요.",
   );
 
 function FutureSkeleton() {

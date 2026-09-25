@@ -2,20 +2,16 @@
 
 import type { PredictionPoint } from "@/lib/api/types";
 
-/** 지금 연령대와 10년 위 연령대의 분포 — 한 사람의 앞날이 아니다(규칙 3) */
-export function TrajectoryChart({
-  points,
-  unit,
-  width = 320,
-  height = 200,
-}: {
-  points: PredictionPoint[];
-  unit?: string;
-  width?: number;
-  height?: number;
-}) {
+const width = 320;
+const height = 200;
+
+/**
+ * 지금 연령대와 10년 위 연령대의 분포 — 한 사람의 앞날이 아니다(규칙 3).
+ * p10~p90 띠가 없는 점은 그리지 않는다 — 가운데 선만 남으면 정해진 앞날처럼 보인다.
+ */
+export function TrajectoryChart({ points, unit }: { points: PredictionPoint[]; unit?: string }) {
   const usable = points
-    .filter((p) => p.p50 != null)
+    .filter((p) => p.p10 != null && p.p50 != null && p.p90 != null)
     .sort((a, b) => (a.yearsFromNow ?? 0) - (b.yearsFromNow ?? 0));
 
   if (usable.length < 2) return null;

@@ -17,7 +17,7 @@ function voiceOf(): SpeechSynthesisVoice | null {
   );
 }
 
-export function speak(text: string) {
+function speak(text: string) {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const synth = window.speechSynthesis;
   synth.cancel();

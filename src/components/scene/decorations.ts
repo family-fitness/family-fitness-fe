@@ -30,10 +30,9 @@ export const DECOR_SPOTS: Record<DecorationId, { turn: number; r: number }> = {
 /** 나무가 장식 자리에서 떨어져야 하는 거리 */
 export const DECOR_CLEAR = 0.62;
 
+/** 장식 하나 — 서 있기만 한다(풍차도 돌지 않는다, 떠다니는 움직임 없음) */
 export interface Decoration {
   group: T.Group;
-  /** 매 장면 — 풍차 날개처럼 도는 것만 */
-  update?(t: number): void;
 }
 
 export function buildDecoration(
@@ -163,12 +162,7 @@ export function buildDecoration(
       const axle = keep(new THREE.SphereGeometry(0.06, 12, 8));
       hub.add(solid(axle, navy));
       group.add(hub);
-      return {
-        group,
-        update(t) {
-          hub.rotation.z = -t * 0.7;
-        },
-      };
+      return { group };
     }
     case "lighthouse": {
       // 흰 · 파랑 띠 셋, 노란 등, 남색 지붕

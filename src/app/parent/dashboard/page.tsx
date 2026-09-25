@@ -16,6 +16,7 @@ import { InviteSheet } from "@/components/domain/invite-sheet";
 import { LeagueRow } from "@/components/domain/league-row";
 import { RestCardRow } from "@/components/domain/rest-card";
 import { StreakChip } from "@/components/domain/streak-chip";
+import { WeekDots } from "@/components/domain/week-dots";
 import type { DayLog, FitnessMapMember, Mission } from "@/lib/api/types";
 import {
   useFamilyCalendars,
@@ -23,9 +24,9 @@ import {
   useFitnessMap,
   useCurrentMissions,
   useProgress,
+  useRestDays,
 } from "@/lib/api/queries";
-import { daySummary } from "@/lib/day";
-import { sessionsOf } from "@/lib/session-plan";
+import { daySummary, dayWork, todayLine } from "@/lib/day";
 import { useSession } from "@/lib/session";
 import { monthGrid, monthLabel, monthOf, today, weekOf } from "@/lib/today";
 import { cn } from "@/lib/utils";
@@ -37,20 +38,21 @@ import { cn } from "@/lib/utils";
  *   「이번 달 우리 가족」  운동한 날 · 움직인 시간 · 끝낸 운동 · 받은 칭찬 — 누가 하든 한 곳에 모인다
  *   「구성원」           사람마다 오늘 · 이번 주 · 며칠 이어서. 아직 안 들어온 자리는 초대
  *
- * 구성원끼리 점수를 나란히 세우지 않는다 — 가족 안에서 줄을 세우면 형제 비교가 된다(규칙 10).
+ * 이 화면에서는 구성원끼리 점수를 나란히 세우지 않는다 — 한 사람이 한 줄, 오늘 · 이번 주 · 이어서만(규칙 10).
+ * 아이들의 신체 점수를 한 번에 보는 자리는 부모 홈의 「우리 아이」 다(9/25 요청, 등록한 차례로).
  * 흐름 시연판(9/17)의 대시보드는 무엇을 보여 줄지만 참고했다. 모양은 이 앱의 결이다.
  */
 export default function FamilyDashboardPage() {
-  const { familyId, profile, isPending, error: sessionError } = useSession();
+  const { familyId, profile, isPending, error: sessionError, refetch: refetchMe } = useSession();
   const {
     data: map,
-    isPending: mapPending,
+    isLoading: mapLoading,
     error: mapError,
     refetch,
     isRefetching,
   } = useFitnessMap(familyId);
   const { data: family } = useFamilyProfiles(familyId);
-  const { data: missions } = useCurrentMissions(familyId);
+  const { data: missions, error: missionsError } = useCurrentMissions(familyId);
   // 초대 시트 — 닫힘(undefined) · 누구든(null) · 이 자리로(id)
   const [inviting, setInviting] = useState<string | null | undefined>(undefined);
 
@@ -65,23 +67,33 @@ export default function FamilyDashboardPage() {
     from: week.from < grid.from ? week.from : grid.from,
     to: week.to > grid.to ? week.to : grid.to,
   });
+  // 쉬는 날 카드는 가족 단위 — 달력 기록을 못 받아도 오늘이 쉬는 날인지 안다
+  const { data: restDays } = useRestDays(familyId, month);
 
-  const failure = sessionError ?? mapError;
+  const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
     return (
       <>
         <AppBar backHref="/parent" title="우리 가족" />
         <Stage wide>
-          <ErrorState error={failure} onRetry={() => void refetch()} retrying={isRefetching} />
+          <ErrorState
+            error={failure}
+            onRetry={() => void (sessionError ? refetchMe() : refetch())}
+            retrying={isRefetching}
+          />
         </Stage>
       </>
     );
   }
-  if (isPending || mapPending) return <DashboardSkeleton />;
+  if (isPending || mapLoading) return <DashboardSkeleton />;
 
-  // 받은 순서가 아니라 아이디로 잇는다 — 아이디 없는 사람이 끼면 기록이 옆 사람에게 붙었다
-  const logsOf = (profileId: string | undefined) =>
-    (profileId ? calendars[ids.indexOf(profileId)]?.data?.days : undefined) ?? [];
+  // 받은 순서가 아니라 아이디로 잇는다 — 아이디 없는 사람이 끼면 기록이 옆 사람에게 붙었다.
+  // 받는 중이면 undefined · 못 받았으면 null(사람 줄의 점이 빈 한 주로 서지 않게), 합계에는 빈 목록으로
+  const daysOf = (profileId: string | undefined) => {
+    const q = profileId ? calendars[ids.indexOf(profileId)] : undefined;
+    return q?.data?.days ?? (q?.error ? null : undefined);
+  };
+  const logsOf = (profileId: string | undefined) => daysOf(profileId) ?? [];
   const monthLogs = members.flatMap((m) =>
     logsOf(m.profileId).filter((d) => monthOf(d.date) === month),
   );
@@ -99,6 +111,10 @@ export default function FamilyDashboardPage() {
     .flatMap((m) => logsOf(m.profileId).filter((d) => monthOf(d.date) === month))
     .reduce((sum, d) => sum + d.stickers.length, 0);
   const profiles = family?.profiles ?? [];
+  // 쉬는 날 카드는 가족 단위 — 오늘 쓴 날이면 운동을 권하지 않는다(규칙 15)
+  const restToday = restDays
+    ? restDays.days.includes(now)
+    : members.some((m) => logsOf(m.profileId).find((d) => d.date === now)?.rest);
 
   return (
     <>
@@ -154,14 +170,16 @@ export default function FamilyDashboardPage() {
             )}
             className="border-line mt-3 border-t pt-2"
           />
-          <NavLink
-            href="/plan"
-            className="press border-line mt-2 flex min-h-12 items-center gap-3 border-t pt-3"
-          >
-            <ArtIcon name="icon/menu-ai" className="size-8" />
-            <span className="min-w-0 flex-1 text-sm font-extrabold">AI 코치에게 운동 받기</span>
-            <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
-          </NavLink>
+          {!restToday && (
+            <NavLink
+              href="/plan"
+              className="press border-line mt-2 flex min-h-12 items-center gap-3 border-t pt-3"
+            >
+              <ArtIcon name="icon/menu-ai" className="size-8" />
+              <span className="min-w-0 flex-1 text-sm font-extrabold">AI 코치에게 운동 받기</span>
+              <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
+            </NavLink>
+          )}
         </section>
 
         {/* 둘째 묶음 — 구성원. 한 사람이 한 줄, 점수로 줄 세우지 않는다 */}
@@ -176,8 +194,10 @@ export default function FamilyDashboardPage() {
                 hasAccount={
                   profiles.find((p) => p.profileId === m.profileId)?.hasAccount ?? m.hasAccount
                 }
-                logs={logsOf(m.profileId)}
+                logs={daysOf(m.profileId)}
+                rest={restToday}
                 missions={missions?.missions}
+                missionsFailed={Boolean(missionsError)}
                 onInvite={() => setInviting(m.profileId ?? null)}
               />
             ))}
@@ -202,7 +222,6 @@ export default function FamilyDashboardPage() {
       </Stage>
 
       <InviteSheet
-        key={inviting ?? "any"}
         open={inviting !== undefined}
         onClose={() => setInviting(undefined)}
         familyName={map?.familyName ?? "우리 가족"}
@@ -265,38 +284,33 @@ function MemberLine({
   me,
   hasAccount,
   logs,
+  rest,
   missions,
+  missionsFailed,
   onInvite,
 }: {
   member: FitnessMapMember;
   me: boolean;
   hasAccount: boolean | undefined;
-  logs: DayLog[];
+  /** 이번 주 기록. 받는 중이면 undefined · 못 받았으면 null */
+  logs: DayLog[] | null | undefined;
+  /** 오늘이 쉬는 날인가(가족 단위) */
+  rest: boolean;
+  /** 아직 못 받았으면 undefined — 오늘 한마디를 말하지 않는다 */
   missions: Mission[] | undefined;
+  missionsFailed: boolean;
   onInvite: () => void;
 }) {
   const { data: progress } = useProgress(member.profileId);
   const child = member.role === "CHILD";
   const week = weekOf();
-  const byDate = new Map(logs.map((l) => [l.date, l]));
   const now = today();
-
-  // 오늘 이 사람이 하는 운동 — 걸음수(자기 신고)는 세지 않는다(규칙 2)
-  const mine = (missions ?? []).filter(
-    (m) =>
-      m.targetMetric !== "STEPS" &&
-      (m.startDate ?? "") <= now &&
-      now <= (m.endDate ?? "") &&
-      m.participants?.some((p) => p.profileId === member.profileId),
-  );
-  const sessions = mine.flatMap((m) => sessionsOf(m));
-  const doneCount = sessions.filter((s) => s.completed).length;
-  const today_ =
-    mine.length === 0
-      ? "오늘 운동 없어요"
-      : sessions.length > 0 && doneCount === sessions.length
-        ? "오늘 다 했어요"
-        : `오늘 ${doneCount} / ${sessions.length}개`;
+  // 부모 홈의 아이 줄과 같은 한마디 — 같은 아이의 오늘을 두 화면이 다르게 말하지 않게
+  const today_ = missions
+    ? todayLine(dayWork(missions, member.profileId, now), rest)
+    : missionsFailed
+      ? "—"
+      : null;
 
   const body = (
     <>
@@ -313,28 +327,15 @@ function MemberLine({
         <span className="text-caption text-ink-soft block truncate">
           {child ? "자녀" : "부모"} · {member.ageGroup}
           {/* 아이는 부모 폰을 빌려 쓰는 게 기본이라 계정이 없어도 오늘을 적는다. 부모 자리만 「아직 안 들어옴」 */}
-          {!child && hasAccount === false ? " · 아직 안 들어옴" : ` · ${today_}`}
+          {!child && hasAccount === false ? (
+            " · 아직 안 들어옴"
+          ) : today_ ? (
+            ` · ${today_}`
+          ) : (
+            <span className="skeleton ml-1 inline-block h-3 w-14 rounded align-middle" />
+          )}
         </span>
-        {/* 이번 주 월~일 — 움직인 날만 채운다. 쉰 날을 빠진 날처럼 칠하지 않는다 */}
-        <span
-          className="mt-1.5 flex gap-1"
-          aria-label={`이번 주 ${week.days.filter((d) => (byDate.get(d)?.minutes ?? 0) > 0).length}일 움직였어요`}
-        >
-          {week.days.map((d) => {
-            const moved = (byDate.get(d)?.minutes ?? 0) > 0;
-            return (
-              <span
-                key={d}
-                aria-hidden
-                className={cn(
-                  "size-2.5 rounded-full",
-                  moved ? "bg-signal" : "bg-sub",
-                  d === now && !moved && "ring-signal ring-1",
-                )}
-              />
-            );
-          })}
-        </span>
+        <WeekDots days={week.days} logs={logs} />
       </span>
       {progress && progress.streakDays > 1 && (
         <span className="text-caption shrink-0">

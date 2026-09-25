@@ -6,13 +6,15 @@ import Link from "next/link";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
 import { NavLink } from "@/components/ui/nav-link";
+import { Skeleton } from "@/components/ui/skeleton";
 import { FactorView, FirstMeasure } from "@/components/domain/factor-view";
 import { REMEASURE_DAYS } from "@/lib/remeasure";
 import type { FitnessMapMember, Mission } from "@/lib/api/types";
 import { useCheers, useLatestCoachRun, useLatestFitnessTest, useRestDays } from "@/lib/api/queries";
+import { missionsOn } from "@/lib/day";
 import { VERIFIED_COPY } from "@/lib/mission";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
-import { dayOf, daysSince, monthOf, today } from "@/lib/today";
+import { daysSince, monthOf, today } from "@/lib/today";
 import { cn, formatDate, withJosa } from "@/lib/utils";
 
 /**
@@ -26,11 +28,16 @@ export function ChildPanel({
   familyId,
   parentProfileId,
   missions,
+  missionsFailed,
+  onRetryMissions,
 }: {
   child: FitnessMapMember;
   familyId: string;
   parentProfileId: string;
+  /** 아직 못 받았으면 undefined */
   missions: Mission[] | undefined;
+  missionsFailed: boolean;
+  onRetryMissions: () => void;
 }) {
   const { data: latest, isPending } = useLatestFitnessTest(child.profileId);
   const name = child.name ?? "아이";
@@ -51,7 +58,7 @@ export function ChildPanel({
         <FirstMeasure child={child} />
       ) : (
         <>
-          {/* 육각형 · 그 아래 통합 신체 점수 · 출처. 아이 기록 · 측정 결과와 같은 한 부품이다 */}
+          {/* 육각형 · 그 아래 통합 신체 점수. 아이 기록 · 측정 결과와 같은 한 부품이다 */}
           <FactorView
             points={latest?.radar}
             name={name}
@@ -66,7 +73,7 @@ export function ChildPanel({
       {/* 한 달이 지나면 다시 재자고 말한다. 막지 않고, 오래됐다고 탓하지 않는다(규칙 11) */}
       {since != null && since >= REMEASURE_DAYS && (
         <PanelRow
-          href={`/parent/update/${child.profileId}`}
+          href={`/p/${child.profileId}/measure`}
           art="icon/menu-measure"
           title="키 · 몸무게를 새로 잴 때예요"
           note={`지난번에 잰 지 ${since}일`}
@@ -80,6 +87,8 @@ export function ChildPanel({
           childProfileId={child.profileId ?? ""}
           childName={name}
           missions={missions}
+          missionsFailed={missionsFailed}
+          onRetryMissions={onRetryMissions}
         />
       </div>
     </section>
@@ -123,12 +132,16 @@ function TodaySection({
   childProfileId,
   childName,
   missions,
+  missionsFailed,
+  onRetryMissions,
 }: {
   familyId: string;
   parentProfileId: string;
   childProfileId: string;
   childName: string;
   missions: Mission[] | undefined;
+  missionsFailed: boolean;
+  onRetryMissions: () => void;
 }) {
   const { data: given } = useCheers(familyId, childProfileId);
   const { data: run } = useLatestCoachRun(familyId);
@@ -139,25 +152,27 @@ function TodaySection({
 
   const now = today();
   const restToday = Boolean(rest?.days.includes(now));
-  const mine = (missions ?? []).filter(
-    (m) =>
-      (m.startDate ?? "") <= now &&
-      now <= (m.endDate ?? "") &&
-      m.participants?.some((p) => p.profileId === childProfileId),
-  );
+  const mine = missionsOn(missions, childProfileId, now);
   // 시간으로 재는 운동과 직접 적는 걸음수를 가른다. 걸음수는 서버가 모르는 값이다(규칙 2)
   const timed = mine.filter((m) => m.targetMetric !== "STEPS");
   const reported = mine.filter((m) => m.targetMetric === "STEPS");
   // 등록을 기다리는 제안. 등록해야 운동이 된다(규칙 1) — 여기서 말하지 않으면 아이 화면이 왜 빈지 모른다.
-  // 이 아이의 제안일 때만 — 아이가 둘이면 첫째 제안이 둘째 칸에 뜨고 둘째의 「AI에게 받기」 를 가렸다
+  // 이 아이의 제안일 때만 — 아이가 둘이면 첫째 제안이 둘째 칸에 뜨고 둘째의 「AI에게 받기」 를 가렸다.
+  // 기간이 지난 제안은 뺀다 — 지난주 제안이 오늘의 「AI에게 받기」 를 가리지 않게
   const proposals = (run?.proposals ?? []).filter(
     (p) =>
-      (p.participants ?? []).length === 0 ||
-      p.participants?.some((x) => x.profileId === childProfileId),
+      (p.endDate ?? p.startDate ?? now) >= now &&
+      ((p.participants ?? []).length === 0 ||
+        p.participants?.some((x) => x.profileId === childProfileId)),
   );
   const waiting =
     run?.status === "AWAITING_APPROVAL" && run.coachRunId && proposals.length > 0
-      ? { id: run.coachRunId, title: proposals[0]?.title }
+      ? {
+          id: run.coachRunId,
+          title: proposals[0]?.title,
+          // 오늘 하는 제안인가 — 내일부터인 제안은 쉬는 날에도 보인다(오늘 운동을 권하는 게 아니다)
+          today: (proposals[0]?.startDate ?? now) <= now,
+        }
       : null;
 
   const head = (
@@ -168,7 +183,8 @@ function TodaySection({
     />
   );
 
-  const proposal = waiting && (
+  // 쉬는 날에는 오늘 운동을 권하지 않는다(규칙 15) — 앞날 제안까지 가리지는 않는다
+  const proposal = waiting && !(restToday && waiting.today) && (
     <PanelRow
       href={`/plan/${waiting.id}`}
       art="icon/menu-ai"
@@ -176,6 +192,32 @@ function TodaySection({
       note={waiting.title ?? "오늘 운동 제안"}
     />
   );
+
+  // 운동 목록을 못 받았으면 「아직 오늘 운동이 없어요」 로 그리지 않는다 — 부모가 같은 운동을 또 받는다
+  if (!missions) {
+    return (
+      <>
+        {head}
+        {missionsFailed ? (
+          <p className="text-ink-soft mt-1 flex items-center justify-between gap-3 text-sm">
+            오늘 운동을 불러오지 못했어요
+            <button
+              type="button"
+              onClick={onRetryMissions}
+              className="press text-signal-strong min-h-11 shrink-0 px-1 font-extrabold"
+            >
+              다시 불러오기
+            </button>
+          </p>
+        ) : (
+          <div className="mt-1 space-y-2" aria-busy>
+            <Skeleton className="h-6 w-44" />
+            <Skeleton className="h-4 w-56" />
+          </div>
+        )}
+      </>
+    );
+  }
 
   if (timed.length === 0 && reported.length === 0) {
     return (
@@ -209,15 +251,30 @@ function TodaySection({
     );
   }
 
-  const main = timed[0];
-  const sessions = main ? sessionsOf(main) : [];
+  // 오늘 운동마다 — 끝냈나 · 칭찬을 붙였나. 칭찬은 운동마다다
+  const items = timed.map((mission) => {
+    const sessions = sessionsOf(mission, childProfileId);
+    const done = sessions.filter((s) => s.completed).length;
+    const me = mission.participants?.find((p) => p.profileId === childProfileId);
+    return {
+      mission,
+      sessions,
+      done,
+      finished: Boolean(me?.completed) || (sessions.length > 0 && done === sessions.length),
+      praised: (given?.cheers ?? []).some(
+        (c) => c.fromProfileId === parentProfileId && c.missionId === mission.missionId,
+      ),
+    };
+  });
+  // 칭찬을 기다리는 운동이 먼저, 그다음 아직인 운동 — 둘째 운동이 첫째의 칭찬 단추를 가리지 않게
+  const focus =
+    items.find((i) => i.finished && !i.praised) ?? items.find((i) => !i.finished) ?? items[0];
+  const main = focus?.mission;
+  const sessions = focus?.sessions ?? [];
   const minutes = totalMinutes(sessions);
-  const doneCount = sessions.filter((s) => s.completed).length;
-  const me = main?.participants?.find((p) => p.profileId === childProfileId);
-  const finished = Boolean(me?.completed) || (sessions.length > 0 && doneCount === sessions.length);
-  const praisedToday = (given?.cheers ?? []).some(
-    (c) => c.fromProfileId === parentProfileId && c.missionId && dayOf(c.createdAt) === now,
-  );
+  const doneCount = focus?.done ?? 0;
+  const finished = focus?.finished ?? false;
+  const praisedToday = focus?.praised ?? false;
   const phases = (["WARMUP", "MAIN", "COOLDOWN"] as const)
     .map((p) => [p, sessions.filter((s) => s.phase === p).length] as const)
     .filter(([, n]) => n > 0)
@@ -229,7 +286,12 @@ function TodaySection({
       {head}
       {main && (
         <div className="mt-1">
-          <p className="text-lead truncate font-extrabold">{main.title}</p>
+          <p className="text-lead truncate font-extrabold">
+            {main.title}
+            {items.length > 1 && (
+              <span className="text-ink-soft text-sm font-bold"> 외 {items.length - 1}개</span>
+            )}
+          </p>
           <p className="text-caption text-ink-soft mt-0.5">
             {sessions.length}개 · {minutes}분{phases && ` · ${phases}`}
           </p>

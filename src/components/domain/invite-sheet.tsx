@@ -54,11 +54,18 @@ export function InviteSheet({
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const close = () => {
-    setCode(null);
-    setError(null);
-    onClose();
-  };
+  // 열릴 때마다 처음부터 — 부를 자리는 연 줄의 사람으로. 닫을 때 비우면 내려가는 동안 내용이 바뀌고,
+  // 부르는 쪽이 key 로 새로 그리면 내려가지도 못하고 사라졌다
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setPicked(initialId ?? null);
+      setCode(null);
+      setError(null);
+      setCopied(null);
+    }
+  }
 
   const make = async () => {
     if (!seat?.profileId) return;
@@ -88,7 +95,7 @@ export function InviteSheet({
   const copy = (what: "code" | "link", text: string) => {
     // 복사가 안 되는 브라우저(주소가 https 가 아닐 때 등) — 조용히 넘어가면 복사된 줄 안다
     if (!navigator.clipboard) {
-      setError("복사하지 못했어요. 길게 눌러 직접 골라 주세요.");
+      setError("복사하지 못했어요.");
       return;
     }
     navigator.clipboard
@@ -97,7 +104,7 @@ export function InviteSheet({
         setCopied(what);
         setTimeout(() => setCopied(null), 1500);
       })
-      .catch(() => setError("복사하지 못했어요. 길게 눌러 직접 골라 주세요."));
+      .catch(() => setError("복사하지 못했어요."));
   };
 
   // 폰의 공유 — 카카오톡 · 문자 · 메일. 안 되는 브라우저(데스크톱 일부)에서는 링크 복사로
@@ -113,12 +120,12 @@ export function InviteSheet({
     } catch (e) {
       // 사람이 공유 창을 닫았다 — 실패가 아니다. 그 밖에는 링크 복사로 돌린다
       if (e instanceof DOMException && e.name === "AbortError") return;
-      setError("보내지 못했어요. 링크를 복사해 보내 주세요.");
+      setError("보내지 못했어요.");
     }
   };
 
   return (
-    <Sheet open={open} onClose={close} title="초대하기">
+    <Sheet open={open} onClose={onClose} title="초대하기">
       {loading ? (
         <div className="space-y-3 pb-2" aria-hidden>
           <Skeleton className="h-14 w-full" />
@@ -129,7 +136,7 @@ export function InviteSheet({
           <p className="text-body font-bold">모두 들어와 있어요</p>
           <NavLink
             href="/parent/family"
-            onClick={close}
+            onClick={onClose}
             className="press bg-sub mt-3 flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold"
           >
             가족 더하기

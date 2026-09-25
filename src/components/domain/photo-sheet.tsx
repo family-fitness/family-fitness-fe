@@ -29,7 +29,17 @@ export function PhotoSheet({
         <PhotoPicker
           value={photo ?? null}
           name={name}
-          onChange={(dataUrl) => (dataUrl ? set(profileId, dataUrl) : remove(profileId))}
+          onChange={(dataUrl) => {
+            if (!dataUrl) return remove(profileId);
+            try {
+              set(profileId, dataUrl);
+            } catch (e) {
+              // 저장소가 차서 못 남겼다 — 화면에만 남은 사진을 되돌린다(새로고침하면 사라져 거짓말이 된다)
+              if (photo) set(profileId, photo);
+              else remove(profileId);
+              throw e;
+            }
+          }}
         />
       </div>
     </Sheet>
