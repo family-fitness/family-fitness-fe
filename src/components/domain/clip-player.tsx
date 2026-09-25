@@ -44,6 +44,8 @@ interface YtOptions {
 }
 
 const PLAYING = 1;
+/** 유튜브 플레이어 상태 — 받는 중 */
+const BUFFERING = 3;
 const ENDED = 0;
 
 /** API 스크립트는 한 번만 넣는다 */
@@ -146,15 +148,20 @@ export function ClipPlayer({
     }
 
     p.playVideo();
-    // 막혔나 본다. 소리를 끄고 한 번 더, 그래도 안 되면 위에 알린다
+    // 막혔나 본다. 소리를 끄고 한 번 더, 그래도 안 되면 위에 알린다.
+    // 받는 중(BUFFERING)은 막힌 것이 아니다 — 느린 망에서 소리를 끄고 아이의 타이머를 멈추지 않게
+    const stuck = () => {
+      const state = p.getPlayerState();
+      return state !== PLAYING && state !== BUFFERING;
+    };
     let second: ReturnType<typeof setTimeout> | undefined;
     const first = setTimeout(() => {
-      if (p.getPlayerState() === PLAYING) return;
+      if (!stuck()) return;
       p.mute();
       setMuted(true);
       p.playVideo();
       second = setTimeout(() => {
-        if (p.getPlayerState() !== PLAYING) blocked.current?.();
+        if (stuck()) blocked.current?.();
       }, 1500);
     }, 1500);
 
@@ -193,18 +200,15 @@ export function ClipPlayer({
         />
       </div>
 
-      {/* 유튜브 스크립트를 받는 동안. 회색 상자로 멈춰 있으면 아이는 고장으로 본다 */}
+      {/* 유튜브 스크립트를 받는 동안 — 그 영상의 썸네일이 자리를 잡는다. 회색 상자로 멈춰 있으면 아이는 고장으로 본다 */}
       {!ready && (
-        <div className="absolute inset-0">
+        <div className="absolute inset-0" aria-hidden>
           {/* eslint-disable-next-line @next/next/no-img-element -- 유튜브 썸네일은 외부 주소라 최적화가 안 된다 */}
           <img
             src={`https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`}
             alt=""
             className="size-full object-cover opacity-70"
           />
-          <span className="text-caption bg-ink/60 absolute right-3 bottom-3 rounded-full px-2.5 py-1 font-bold text-white">
-            영상을 불러오는 중
-          </span>
         </div>
       )}
 
@@ -215,7 +219,7 @@ export function ClipPlayer({
             player.current?.unMute();
             setMuted(false);
           }}
-          className="press bg-ink/65 absolute top-2 right-2 flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-sm font-bold text-white"
+          className="press bg-signal-deep/80 absolute top-2 right-2 flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-sm font-bold text-white"
         >
           <Volume2 aria-hidden className="size-4" />
           소리 켜기
