@@ -3,7 +3,9 @@
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { Card, CardHead } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { AchievementGrid } from "@/components/domain/achievement-grid";
@@ -27,9 +29,31 @@ import { useRoleStore } from "@/stores/role-store";
  */
 export default function BadgesPage() {
   const childProfileId = useRoleStore((s) => s.childProfileId);
-  const { data: progress, isPending, error, refetch } = useProgress(childProfileId ?? undefined);
+  // 꺼진 조회(아이를 아직 안 골랐을 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
+  const { data: progress, isLoading, error, refetch } = useProgress(childProfileId ?? undefined);
 
-  if (isPending) return <BadgesSkeleton />;
+  if (isLoading) return <BadgesSkeleton />;
+  if (!childProfileId) {
+    return (
+      <>
+        <AppBar backHref="/kid" title="레벨과 업적" />
+        <Stage wide>
+          <EmptyState
+            scene="waiting"
+            title="누구인지 골라 주세요"
+            action={
+              <NavLink
+                href="/start"
+                className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"
+              >
+                고르러 가기
+              </NavLink>
+            }
+          />
+        </Stage>
+      </>
+    );
+  }
   if (error || !progress) {
     return (
       <>

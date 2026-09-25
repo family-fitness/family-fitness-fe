@@ -41,10 +41,10 @@ import { cn } from "@/lib/utils";
  * 흐름 시연판(9/17)의 대시보드는 무엇을 보여 줄지만 참고했다. 모양은 이 앱의 결이다.
  */
 export default function FamilyDashboardPage() {
-  const { familyId, profile, isPending, error: sessionError } = useSession();
+  const { familyId, profile, isPending, error: sessionError, refetch: refetchMe } = useSession();
   const {
     data: map,
-    isPending: mapPending,
+    isLoading: mapLoading,
     error: mapError,
     refetch,
     isRefetching,
@@ -72,12 +72,16 @@ export default function FamilyDashboardPage() {
       <>
         <AppBar backHref="/parent" title="우리 가족" />
         <Stage wide>
-          <ErrorState error={failure} onRetry={() => void refetch()} retrying={isRefetching} />
+          <ErrorState
+            error={failure}
+            onRetry={() => void (sessionError ? refetchMe() : refetch())}
+            retrying={isRefetching}
+          />
         </Stage>
       </>
     );
   }
-  if (isPending || mapPending) return <DashboardSkeleton />;
+  if (isPending || mapLoading) return <DashboardSkeleton />;
 
   // 받은 순서가 아니라 아이디로 잇는다 — 아이디 없는 사람이 끼면 기록이 옆 사람에게 붙었다
   const logsOf = (profileId: string | undefined) =>

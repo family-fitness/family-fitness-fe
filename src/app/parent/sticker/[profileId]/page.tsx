@@ -50,8 +50,15 @@ function StickerForm() {
   const { familyId, profile } = useSession();
   const { data: family } = useFamilyProfiles(familyId);
   const now = today();
-  const { data: calendar, isPending } = useCalendar(familyId, profileId, { from: now, to: now });
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
+  const { data: calendar, isLoading: isPending } = useCalendar(familyId, profileId, {
+    from: now,
+    to: now,
+  });
   const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
+  // 알림에서 곧장 열면 운동 목록 · 나(/me)가 늦게 온다 — 오기 전에 보내면 걸음수 확인을 건너뛰거나
+  // 단추가 아무 일도 안 했다
+  const ready = Boolean(profile?.profileId) && (!missionId || missions !== undefined);
   const send = useSendCheer(familyId ?? "");
   const confirm = useConfirmParticipant(missionId ?? "", familyId ?? "");
 
@@ -219,7 +226,7 @@ function StickerForm() {
         <button
           type="button"
           onClick={() => void submit()}
-          disabled={!sticker || send.isPending || confirm.isPending}
+          disabled={!sticker || !ready || send.isPending || confirm.isPending}
           data-off={!sticker ? "" : undefined}
           className="press bg-signal-strong shadow-lift data-off:bg-line data-off:text-ink-soft flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white disabled:opacity-100 data-off:shadow-none"
         >

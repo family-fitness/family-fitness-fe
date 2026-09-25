@@ -7,6 +7,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Ring } from "@/components/ui/ring";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -73,9 +74,20 @@ const plannedSecOf = (s: MissionSession | undefined) => Math.max(1, s?.minutes ?
 
 export default function PlayPage() {
   const { missionId } = useParams<{ missionId: string }>();
-  const { familyId } = useSession();
+  const {
+    familyId,
+    isPending: sessionPending,
+    error: sessionError,
+    refetch: refetchMe,
+  } = useSession();
   const kidId = useRoleStore((s) => s.childProfileId) ?? "";
-  const { data: missions, isPending } = useMissions(familyId, { scope: "ALL" });
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
+  const {
+    data: missions,
+    isLoading,
+    error: missionsError,
+    refetch,
+  } = useMissions(familyId, { scope: "ALL" });
   const { data: progress } = useProgress(kidId || undefined);
   const complete = useCompleteSession(missionId, familyId ?? "");
 
@@ -270,7 +282,21 @@ export default function PlayPage() {
     document.getElementById("step-end")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [finished]);
 
-  if (isPending) return <PlaySkeleton />;
+  if (sessionPending || isLoading) return <PlaySkeleton />;
+  const failure = sessionError ?? missionsError;
+  if (failure) {
+    return (
+      <>
+        <AppBar backHref="/kid" title="오늘 운동" />
+        <Stage wide>
+          <ErrorState
+            error={failure}
+            onRetry={() => void (sessionError ? refetchMe() : refetch())}
+          />
+        </Stage>
+      </>
+    );
+  }
 
   if (!mission || sessions.length === 0) {
     return (

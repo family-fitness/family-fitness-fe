@@ -50,10 +50,11 @@ import { useRoleStore } from "@/stores/role-store";
  */
 export default function ParentHomePage() {
   const router = useRouter();
-  const { familyId, profile, isPending, error: sessionError } = useSession();
+  const { familyId, profile, isPending, error: sessionError, refetch: refetchMe } = useSession();
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
   const {
     data: map,
-    isPending: mapPending,
+    isLoading: mapLoading,
     error: mapError,
     refetch: refetchMap,
     isRefetching,
@@ -120,13 +121,18 @@ export default function ParentHomePage() {
       <>
         <AppBar title="우리집" />
         <Stage>
-          <ErrorState error={failure} onRetry={() => void refetchMap()} retrying={isRefetching} />
+          <ErrorState
+            error={failure}
+            // `/me` 가 실패했으면 `/me` 를 — 지도만 다시 부르면 가족 번호 없이 `/families//…` 를 불렀다
+            onRetry={() => void (sessionError ? refetchMe() : refetchMap())}
+            retrying={isRefetching}
+          />
         </Stage>
       </>
     );
   }
 
-  if (isPending || mapPending) return <ParentHomeSkeleton />;
+  if (isPending || mapLoading) return <ParentHomeSkeleton />;
 
   // 아이를 아직 등록하지 않았다. 이 앱은 아이가 없으면 할 일이 없다
   if (!child) {

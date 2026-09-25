@@ -28,15 +28,23 @@ import { InviteSheet } from "@/components/domain/invite-sheet";
 
 /** 가족 더하기. */
 export default function MembersPage() {
-  const { profile, familyId, isPending: sessionPending } = useSession();
-  const { data: family, isPending, error, refetch } = useFamilyProfiles(familyId);
+  const {
+    profile,
+    familyId,
+    isPending: sessionPending,
+    error: sessionError,
+    refetch: refetchMe,
+  } = useSession();
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
+  const { data: family, isLoading, error: familyError, refetch } = useFamilyProfiles(familyId);
+  const error = sessionError ?? familyError;
   const childProfileId = useRoleStore((s) => s.childProfileId);
 
   const [adding, setAdding] = useState(false);
   // 초대 시트 — 닫힘(undefined) · 이 자리로(id). 가족 대시보드와 같은 시트다
   const [inviting, setInviting] = useState<string | null | undefined>(undefined);
 
-  if (sessionPending || isPending) return <MembersSkeleton />;
+  if (sessionPending || isLoading) return <MembersSkeleton />;
 
   // 못 불러온 것을 "아무도 없음" 으로 그리면 가족이 사라진 것처럼 보인다
   if (error) {
@@ -44,7 +52,7 @@ export default function MembersPage() {
       <>
         <AppBar backHref="/parent/dashboard" title="가족" />
         <PlainScreen className="pt-1">
-          <ErrorState error={error} onRetry={() => void refetch()} />
+          <ErrorState error={error} onRetry={() => void (sessionError ? refetchMe() : refetch())} />
         </PlainScreen>
       </>
     );

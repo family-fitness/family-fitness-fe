@@ -47,12 +47,12 @@ import { useRoleStore } from "@/stores/role-store";
  */
 export default function KidHomePage() {
   const router = useRouter();
-  const { familyId, isPending, error: sessionError } = useSession();
+  const { familyId, isPending, error: sessionError, refetch: refetchMe } = useSession();
   const childProfileId = useRoleStore((s) => s.childProfileId);
 
   const {
     data: map,
-    isPending: mapPending,
+    isLoading: mapLoading,
     error: mapError,
     refetch: refetchMap,
     isRefetching,
@@ -90,13 +90,17 @@ export default function KidHomePage() {
       <>
         <AppBar title="오늘" />
         <Stage wide>
-          <ErrorState error={failure} onRetry={() => void refetchMap()} retrying={isRefetching} />
+          <ErrorState
+            error={failure}
+            onRetry={() => void (sessionError ? refetchMe() : refetchMap())}
+            retrying={isRefetching}
+          />
         </Stage>
       </>
     );
   }
 
-  if (isPending || mapPending) return <KidHomeSkeleton />;
+  if (isPending || mapLoading) return <KidHomeSkeleton />;
 
   if (!me) {
     return (

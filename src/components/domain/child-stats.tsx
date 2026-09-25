@@ -37,7 +37,12 @@ export function MonthStats({
 }) {
   const now = today();
   const month = monthGrid(monthOf(now));
-  const { data, isPending, error } = useCalendar(familyId, profileId, {
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
+  const {
+    data,
+    isLoading: isPending,
+    error,
+  } = useCalendar(familyId, profileId, {
     from: month.from,
     to: month.to,
   });
@@ -149,8 +154,14 @@ export function RecentDays({
   profileId: string;
 }) {
   const now = today();
-  const { data, isPending, error, refetch } = useCalendar(familyId, profileId, {
-    from: daysBefore(20),
+  // 여섯 주 — 캘린더가 한 번에 주는 만큼(42일). 스무 날만 보면 그 전에 한 아이도 「없어요」 가 됐다
+  const {
+    data,
+    isLoading: isPending,
+    error,
+    refetch,
+  } = useCalendar(familyId, profileId, {
+    from: daysBefore(41),
     to: now,
   });
   const days = (data?.days ?? [])
@@ -172,7 +183,7 @@ export function RecentDays({
           불러오지 못했어요 · 다시
         </button>
       ) : days.length === 0 ? (
-        <p className="text-ink-soft mt-1 text-sm">아직 없어요</p>
+        <p className="text-ink-soft mt-1 text-sm">최근 기록이 없어요</p>
       ) : (
         <ul className="divide-rows mt-1">
           {days.map((d) => {
