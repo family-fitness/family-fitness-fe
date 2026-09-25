@@ -29,7 +29,6 @@ import { dayOf } from "@/lib/today";
 import clipsJson from "./clips.json";
 import fixturesJson from "./fixtures.json";
 
-/** 픽스처의 모양. */
 /** 선택 표시(`?`)만 걷어낸다. */
 export type Concrete<T> = T extends (infer U)[]
   ? Concrete<U>[]
@@ -37,6 +36,7 @@ export type Concrete<T> = T extends (infer U)[]
     ? { [K in keyof T]-?: Concrete<T[K]> }
     : T;
 
+/** 픽스처의 모양. */
 interface Fixtures {
   me: MeResponse;
   profiles: FamilyProfiles;
@@ -211,12 +211,12 @@ function seedTests(): Record<string, FitnessTestSummary[]> {
   };
 }
 
-/** 아이는 월 · 수 · 금 저녁과 토요일 오전, 엄마는 토요일 오전에 같이 */
 /** 시연 가족이 처음 적어 둔 운동 시간. 지난 기록은 이 요일로 심는다 — 지금 시간표를 고쳐도 지난날은 그대로 */
 export const DEMO_SCHEDULE: Readonly<
   Record<string, readonly { day: string; start: string; minutes: number }[]>
 > = seedAvailability();
 
+/** 아이는 월 · 수 · 금 저녁과 토요일 오전, 엄마는 토요일 오전에 같이 */
 function seedAvailability(): Record<string, { day: string; start: string; minutes: number }[]> {
   return {
     [KID_ID]: [
@@ -248,7 +248,6 @@ function demoMap() {
   return map;
 }
 
-/** 목 서버가 만들고 고치는 값들. 응답과 같은 모양이어야 화면이 진짜처럼 돈다 */
 /**
  * 목이 돌려주는 프로필.
  *
