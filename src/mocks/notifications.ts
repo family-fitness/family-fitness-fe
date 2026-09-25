@@ -138,7 +138,10 @@ function notificationsFor(profileId: string): NotificationView[] {
         missionId: m.missionId ?? null,
         date: now,
         stickerId: null,
-        createdAt: `${now}T07:30:00+09:00`,
+        // 아침 7시 반 — 그 전에 잡힌 운동은 지금으로. 아직 오지 않은 시각은 아래에서 걸러져 종에 안 떴다
+        createdAt: new Date(
+          Math.min(Date.now(), Date.parse(`${now}T07:30:00+09:00`)),
+        ).toISOString(),
       });
     }
     // 새 업적 — 두 주 안에 받은 것
