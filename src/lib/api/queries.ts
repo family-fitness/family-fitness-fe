@@ -435,6 +435,8 @@ export function useCreateMission(familyId: Uuid) {
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
       // 잡힌 날이 늘면 리그 달성률의 분모가 바뀐다
       qc.invalidateQueries({ queryKey: ["family", familyId, "league"] });
+      // 아이 종에 「새 운동이 생겼어요」 가 뜬다 — 한 폰을 같이 쓰면 60초를 기다리지 않게(등록 · 한 칸 끝과 같다)
+      qc.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
 }
