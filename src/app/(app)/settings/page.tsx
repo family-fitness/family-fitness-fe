@@ -11,13 +11,15 @@ import { ListRow } from "@/components/ui/list-row";
 import { useFamilyProfiles } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { useAuthStore } from "@/stores/auth-store";
+import { useBodyStore } from "@/stores/body-store";
+import { usePhotoStore } from "@/stores/photo-store";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
  * 설정 — 계정과 이 기기에 관한 것만.
  *
  * 9/23 "너무 설정에 메뉴가 몰려 있다". 쓰는 자리가 따로 있는 것은 그리로 옮겼다 —
- * 가족 · 초대 · 참여 방식은 부모 홈의 가족 카드(가족 관리), 운동할 수 있는 시간은 짜는 화면 ·
+ * 가족 · 초대 · 참여 방식은 부모 홈 「우리 가족」 → 가족 대시보드 · 가족 관리, 운동할 수 있는 시간은 짜는 화면 ·
  * 직접 짜기 · 캘린더, 즐겨찾기는 운동 찾기. 여기에는 누가 쓰는지 · 동의 · 로그아웃만 남는다.
  * 자녀 프로필에는 없는 줄은 비활성으로 두지 않고 아예 내지 않는다.
  */
@@ -27,8 +29,16 @@ export default function SettingsPage() {
   const { data: family } = useFamilyProfiles(familyId);
   const signOut = useAuthStore((s) => s.signOut);
   const resetRole = useRoleStore((s) => s.reset);
+  const resetPhotos = usePhotoStore((s) => s.reset);
+  const resetBody = useBodyStore((s) => s.reset);
   const mode = useRoleStore((s) => s.mode);
+  const childProfileId = useRoleStore((s) => s.childProfileId);
   const parentView = profile?.role === "PARENT" && mode !== "kid";
+  // 지금 이 기기를 쓰는 사람 — 아이 화면이면 그 아이(부모 폰을 빌려 쓰는 중이다)
+  const kidOnParentPhone = profile?.role === "PARENT" && mode === "kid";
+  const me = kidOnParentPhone
+    ? family?.profiles?.find((p) => p.profileId === childProfileId)
+    : profile;
   const [photoOpen, setPhotoOpen] = useState(false);
 
   return (
@@ -37,22 +47,21 @@ export default function SettingsPage() {
       <Stage wide className="space-y-3">
         {/* 지금 누구로 쓰고 있나. 한 기기를 부모와 아이가 번갈아 쓴다 */}
         <section className="card flex items-center gap-3">
-          {/* 누르면 내 사진 바꾸기 */}
-          <button
-            type="button"
-            onClick={() => setPhotoOpen(true)}
-            aria-label="내 사진 바꾸기"
-            className="press grid size-12 shrink-0 place-items-center rounded-full"
-          >
-            <ProfileAvatar
-              profileId={profile?.profileId}
-              name={profile?.name}
-              size="lg"
-              tone={parentView ? "mark" : "signal"}
-            />
-          </button>
+          {/* 부모 화면에서만 누르면 내 사진 바꾸기 — 아이가 빌려 쓰는 중에 부모 사진을 바꾸지 않게 */}
+          {parentView ? (
+            <button
+              type="button"
+              onClick={() => setPhotoOpen(true)}
+              aria-label="내 사진 바꾸기"
+              className="press grid size-12 shrink-0 place-items-center rounded-full"
+            >
+              <ProfileAvatar profileId={me?.profileId} name={me?.name} size="lg" tone="mark" />
+            </button>
+          ) : (
+            <ProfileAvatar profileId={me?.profileId} name={me?.name} size="lg" tone="signal" />
+          )}
           <div className="min-w-0 flex-1">
-            <p className="text-lead truncate font-extrabold">{profile?.name ?? "나"}</p>
+            <p className="text-lead truncate font-extrabold">{me?.name ?? "나"}</p>
             <p className="text-caption text-ink-soft mt-0.5">
               {family?.familyName ?? "우리집"} · {parentView ? "부모 화면" : "아이 화면"}
             </p>
@@ -74,6 +83,9 @@ export default function SettingsPage() {
             onClick={() => {
               signOut();
               resetRole();
+              // 이 기기에만 둔 아이 사진 · 키 몸무게도 — 다음에 이 기기를 쓰는 사람이 보지 않게
+              resetPhotos();
+              resetBody();
               router.replace("/login");
             }}
             className="card press text-ink-soft block w-full text-center text-sm font-bold"
@@ -87,7 +99,7 @@ export default function SettingsPage() {
           아니며, 건강에 관한 판단은 전문가와 상담하세요.
         </p>
       </Stage>
-      {profile?.profileId && (
+      {parentView && profile?.profileId && (
         <PhotoSheet
           open={photoOpen}
           onClose={() => setPhotoOpen(false)}

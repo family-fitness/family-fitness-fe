@@ -8,6 +8,7 @@ import { PlainScreen } from "@/components/app-shell/screen";
 import { Stage } from "@/components/app-shell/stage";
 import { CardHead } from "@/components/ui/card";
 import { ListRow } from "@/components/ui/list-row";
+import { NavLink } from "@/components/ui/nav-link";
 import { ErrorState } from "@/components/ui/error-state";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
@@ -41,7 +42,7 @@ export default function MembersPage() {
   if (error) {
     return (
       <>
-        <AppBar backHref="/parent" title="가족" />
+        <AppBar backHref="/parent/dashboard" title="가족" />
         <PlainScreen className="pt-1">
           <ErrorState error={error} onRetry={() => void refetch()} />
         </PlainScreen>
@@ -58,7 +59,7 @@ export default function MembersPage() {
 
   return (
     <>
-      <AppBar backHref="/parent" title={family?.familyName ?? "가족"} />
+      <AppBar backHref="/parent/dashboard" title={family?.familyName ?? "가족"} />
       <Stage wide className="space-y-3">
         <section className="card">
           <CardHead title="구성원" meta={`${profiles.length}명`} />
@@ -71,14 +72,25 @@ export default function MembersPage() {
               />
             ))}
           </ul>
-          <button
-            type="button"
-            onClick={() => setAdding(true)}
-            className="press bg-sub mt-2 flex min-h-12 w-full items-center justify-center gap-1.5 rounded-2xl text-sm font-bold"
-          >
-            <Plus className="text-signal-strong size-4" aria-hidden />
-            가족 더하기
-          </button>
+          {/* 아이는 첫 시작과 같은 흐름으로(키 · 몸무게 · 운동 시간 · 사진) — 시트로 따로 받으면 반쪽 아이가 생긴다.
+              보호자만 여기서 자리를 만들고 초대한다 */}
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <NavLink
+              href="/start/child"
+              className="press bg-sub flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-bold"
+            >
+              <Plus className="text-signal-strong size-4" aria-hidden />
+              아이 등록하기
+            </NavLink>
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="press bg-sub flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-bold"
+            >
+              <Plus className="text-signal-strong size-4" aria-hidden />
+              보호자 더하기
+            </button>
+          </div>
         </section>
 
         {/* 부모 홈에서 내려온 것들. 가족에 관한 일은 여기 모인다 */}
@@ -116,23 +128,32 @@ export default function MembersPage() {
 
 function MemberRow({ profile, onInvite }: { profile: ProfileSummary; onInvite: () => void }) {
   const [photoOpen, setPhotoOpen] = useState(false);
+  // 동의를 거둔 아이는 사진도 올리지 않는다
+  const canPhoto = !(profile.role === "CHILD" && profile.consentRequired && !profile.consentGiven);
+  const avatar = (
+    <ProfileAvatar
+      profileId={profile.profileId}
+      name={profile.name}
+      tone={profile.role === "CHILD" ? "signal" : "mark"}
+    />
+  );
   return (
     <li className="py-3.5">
       <div className="flex items-center gap-3">
         {/* 누르면 사진 바꾸기 — 계정 없는 아이 사진도 부모가 붙인다 */}
-        <button
-          type="button"
-          onClick={() => setPhotoOpen(true)}
-          aria-label={`${profile.name ?? ""} 사진 바꾸기`}
-          className="press grid size-11 shrink-0 place-items-center rounded-full"
-        >
-          <ProfileAvatar
-            profileId={profile.profileId}
-            name={profile.name}
-            tone={profile.role === "CHILD" ? "signal" : "mark"}
-          />
-        </button>
-        {profile.profileId && (
+        {canPhoto ? (
+          <button
+            type="button"
+            onClick={() => setPhotoOpen(true)}
+            aria-label={`${profile.name ?? ""} 사진 바꾸기`}
+            className="press grid size-11 shrink-0 place-items-center rounded-full"
+          >
+            {avatar}
+          </button>
+        ) : (
+          <span className="grid size-11 shrink-0 place-items-center">{avatar}</span>
+        )}
+        {canPhoto && profile.profileId && (
           <PhotoSheet
             open={photoOpen}
             onClose={() => setPhotoOpen(false)}
@@ -184,7 +205,8 @@ function AddMemberSheet({
   const [birthDate, setBirthDate] = useState("");
   // 미리 켜 두지 않는다. 기본값이 여성이면 고르지 않은 아빠가 여성으로 저장된다
   const [sex, setSex] = useState<"M" | "F" | null>(null);
-  const [role, setRole] = useState<"PARENT" | "CHILD">("CHILD");
+  // 아이는 「아이 등록하기」(첫 시작과 같은 흐름)로 — 여기서는 보호자 자리만
+  const role = "PARENT" as const;
   // 두 가지를 따로 받는다. 한 칸으로 묶으면 무엇에 동의했는지 흐려진다
   const [personal, setPersonal] = useState(false);
   const [health, setHealth] = useState(false);
@@ -199,7 +221,7 @@ function AddMemberSheet({
     (!needsConsent || (personal && health));
 
   return (
-    <Sheet open={open} onClose={onClose} title="가족 더하기">
+    <Sheet open={open} onClose={onClose} title="보호자 더하기">
       <form
         className="space-y-5"
         onSubmit={async (e) => {
@@ -273,27 +295,6 @@ function AddMemberSheet({
           </div>
         </Field>
 
-        <Field label="역할" group>
-          <div className="flex gap-2">
-            {(
-              [
-                ["CHILD", "자녀"],
-                ["PARENT", "부모"],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setRole(value)}
-                aria-pressed={role === value}
-                className={cn("chip press", role === value && "chip-on")}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </Field>
-
         {/* 서버가 동의를 자동으로 찍지 않는다. 보호자가 두 가지를 각각 직접 켠다 */}
         {needsConsent && (
           <div role="group" aria-label="보호자 동의" className="space-y-2">
@@ -349,7 +350,7 @@ function AddMemberSheet({
 function MembersSkeleton() {
   return (
     <>
-      <AppBar backHref="/parent" title="가족" />
+      <AppBar backHref="/parent/dashboard" title="가족" />
       <PlainScreen className="space-y-6 pt-1">
         <Skeleton className="h-9 w-40" />
         {[0, 1].map((i) => (

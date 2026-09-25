@@ -22,6 +22,8 @@ interface BodyState {
   byProfile: Record<string, LastBody>;
   set: (profileId: string, body: LastBody) => void;
   clear: (profileId: string) => void;
+  /** 로그아웃 — 아이 키 · 몸무게를 이 기기에 남기지 않는다 */
+  reset: () => void;
 }
 
 export const useBodyStore = create<BodyState>()(
@@ -35,6 +37,7 @@ export const useBodyStore = create<BodyState>()(
           delete next[profileId];
           return { byProfile: next };
         }),
+      reset: () => set({ byProfile: {} }),
     }),
     { name: "ff-body" },
   ),

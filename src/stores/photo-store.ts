@@ -13,6 +13,8 @@ interface PhotoState {
   byProfile: Record<string, string>;
   set: (profileId: string, dataUrl: string) => void;
   remove: (profileId: string) => void;
+  /** 로그아웃 — 이 기기를 다른 사람이 쓸 수 있다. 아이 사진을 남기지 않는다 */
+  reset: () => void;
 }
 
 export const usePhotoStore = create<PhotoState>()(
@@ -27,6 +29,7 @@ export const usePhotoStore = create<PhotoState>()(
           delete next[profileId];
           return { byProfile: next };
         }),
+      reset: () => set({ byProfile: {} }),
     }),
     { name: "ff-photos" },
   ),
