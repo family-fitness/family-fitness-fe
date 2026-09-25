@@ -58,11 +58,13 @@ export default function FamilyDashboardPage() {
   const month = monthOf(now);
   const grid = monthGrid(month);
   const members = map?.members ?? [];
-  const calendars = useFamilyCalendars(
-    familyId,
-    members.map((m) => m.profileId ?? "").filter(Boolean),
-    { from: grid.from, to: grid.to },
-  );
+  // 이번 달 칸과 이번 주 점을 한 번에 — 달 초에는 이번 주가 지난달에 걸친다(10/1 목요일이면 9/28~30)
+  const week = weekOf(now);
+  const ids = members.map((m) => m.profileId ?? "").filter(Boolean);
+  const calendars = useFamilyCalendars(familyId, ids, {
+    from: week.from < grid.from ? week.from : grid.from,
+    to: week.to > grid.to ? week.to : grid.to,
+  });
 
   const failure = sessionError ?? mapError;
   if (failure) {
@@ -77,8 +79,9 @@ export default function FamilyDashboardPage() {
   }
   if (isPending || mapPending) return <DashboardSkeleton />;
 
+  // 받은 순서가 아니라 아이디로 잇는다 — 아이디 없는 사람이 끼면 기록이 옆 사람에게 붙었다
   const logsOf = (profileId: string | undefined) =>
-    calendars[members.findIndex((m) => m.profileId === profileId)]?.data?.days ?? [];
+    (profileId ? calendars[ids.indexOf(profileId)]?.data?.days : undefined) ?? [];
   const monthLogs = members.flatMap((m) =>
     logsOf(m.profileId).filter((d) => monthOf(d.date) === month),
   );
@@ -90,7 +93,11 @@ export default function FamilyDashboardPage() {
   const activeDays = new Set(monthLogs.filter((d) => d.minutes > 0).map((d) => d.date)).size;
   const minutes = monthLogs.reduce((sum, d) => sum + d.minutes, 0);
   const done = monthLogs.reduce((sum, d) => sum + daySummary(d).done, 0);
-  const stickers = monthLogs.reduce((sum, d) => sum + d.stickers.length, 0);
+  // 칭찬은 아이가 받은 것만 — 아이가 부모에게 돌려보낸 고마워요는 칭찬이 아니다(규칙 12)
+  const stickers = members
+    .filter((m) => m.role === "CHILD")
+    .flatMap((m) => logsOf(m.profileId).filter((d) => monthOf(d.date) === month))
+    .reduce((sum, d) => sum + d.stickers.length, 0);
   const profiles = family?.profiles ?? [];
 
   return (
@@ -205,6 +212,7 @@ export default function FamilyDashboardPage() {
         onClose={() => setInviting(undefined)}
         familyName={map?.familyName ?? "우리 가족"}
         members={profiles}
+        loading={!family}
         initialId={inviting}
       />
     </>
