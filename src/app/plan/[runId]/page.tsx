@@ -1,6 +1,5 @@
 "use client";
 
-import { Check } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -104,6 +103,11 @@ function Proposal() {
 
   const approved = run.status === "APPROVED";
   const rejected = run.status === "REJECTED";
+  // 짜다가 실패했으면 제안이 없다 — 「제안 · 아직 등록 전」 과 0개 · 0분 대신 실패를 말하고 다시 짜게
+  const failed = run.status === "FAILED";
+  // 등록은 서버가 된다고 할 때만(canApprove)
+  const open = run.status === "AWAITING_APPROVAL" && run.canApprove !== false;
+  const settled = approved || rejected || failed;
 
   const register = async () => {
     setProblem(null);
@@ -117,9 +121,9 @@ function Proposal() {
           {
             ALREADY_APPROVED: "이미 등록한 제안이에요.",
             NOT_A_PARENT: "보호자만 등록할 수 있어요.",
-            CONSENT_REQUIRED: "보호자 동의가 있어야 운동을 저장할 수 있어요.",
+            CONSENT_REQUIRED: "보호자 동의가 필요해요.",
           },
-          "등록하지 못했어요. 잠시 후 다시 해 주세요.",
+          "등록하지 못했어요.",
         ),
       );
     }
@@ -128,7 +132,7 @@ function Proposal() {
   return (
     <>
       <AppBar backHref="/parent" title="오늘 운동 제안" />
-      <Stage wide className={cn("space-y-3", !approved && !rejected && "pb-40")}>
+      <Stage wide className={cn("space-y-3", open && "pb-40")}>
         <section className="card-hero">
           {/* 제안인지 등록한 운동인지(규칙 1) — 둥근 딱지가 아니라 제목 위 한 줄 글자로 */}
           <p
@@ -141,7 +145,9 @@ function Proposal() {
               ? "오늘 운동으로 등록했어요"
               : rejected
                 ? "이번엔 안 하기로 했어요"
-                : "제안 · 아직 등록 전"}
+                : failed
+                  ? "제안을 짜지 못했어요"
+                  : "제안 · 아직 등록 전"}
           </p>
           {/* 서버가 지은 이름을 그대로 */}
           <h2 className="page-title mt-2">{proposal?.title ?? "오늘 운동"}</h2>
@@ -150,9 +156,7 @@ function Proposal() {
             {people.length > 0 && ` · ${people.join(" · ")}`}
           </p>
           {proposal?.rationale && (
-            <p className="bg-sub mt-3 rounded-2xl px-4 py-3 text-sm leading-relaxed">
-              {proposal.rationale}
-            </p>
+            <p className="mt-3 text-sm leading-relaxed">{proposal.rationale}</p>
           )}
         </section>
 
@@ -179,11 +183,7 @@ function Proposal() {
                   .filter(Boolean)
                   .join(" ~ ")}
               />
-              {p.rationale && (
-                <p className="bg-sub mt-2 rounded-2xl px-4 py-3 text-sm leading-relaxed">
-                  {p.rationale}
-                </p>
-              )}
+              {p.rationale && <p className="mt-2 text-sm leading-relaxed">{p.rationale}</p>}
               <Citations items={p.citations} className="mt-2" />
               {list.length > 0 && (
                 <div className="mt-2">
@@ -194,14 +194,8 @@ function Proposal() {
           );
         })}
 
-        {(approved || rejected) && (
+        {settled && (
           <div className="grid gap-2">
-            {approved && (
-              <p className="text-done flex min-h-12 items-center justify-center gap-1.5 text-sm font-extrabold">
-                <Check aria-hidden className="size-4" strokeWidth={3} />
-                아이 화면에 오늘 운동이 떴어요
-              </p>
-            )}
             <Link
               href={approved ? "/parent" : "/plan"}
               className="press bg-sub flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold"
@@ -212,7 +206,7 @@ function Proposal() {
         )}
       </Stage>
 
-      {!approved && !rejected && (
+      {open && (
         <Dock>
           {problem && (
             <p role="alert" className="text-signal-deep mb-2 text-center text-sm font-semibold">
