@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useRestDay, useRestDays } from "@/lib/api/queries";
 import { artFor } from "@/lib/art";
 import { errorMessage } from "@/lib/errors";
@@ -27,11 +28,22 @@ export function RestCardRow({
   familyId: string | undefined;
   /** 아이가 오늘 이미 움직였다 — 오늘은 쉬는 날로 못 고른다 */
   movedToday: boolean;
+  /** 줄을 감싸는 자리 — 위 가름선도 여기에. 줄이 없으면 선도 없다 */
   className?: string;
 }) {
   const now = today();
-  const { data: rest } = useRestDays(familyId, monthOf(now));
+  const { data: rest, isLoading } = useRestDays(familyId, monthOf(now));
   const [open, setOpen] = useState(false);
+  // 열 때마다 새 시트 — 지난번에 고른 날 · 지난 오류가 남아 있지 않게. 닫힐 때는 그대로 두어 내려가는 움직임이 산다
+  const [round, setRound] = useState(0);
+  // 받는 동안은 줄 모양으로 자리를 잡는다. 못 받으면(서버에 아직 없으면) 선째 없앤다
+  if (isLoading) {
+    return (
+      <div className={className}>
+        <Skeleton className="h-12 w-full" />
+      </div>
+    );
+  }
   if (!familyId || !rest) return null;
 
   const restToday = rest.days.includes(now);
@@ -43,11 +55,14 @@ export function RestCardRow({
       : `이번 달 ${rest.left}장 남았어요`;
 
   return (
-    <>
+    <div className={className}>
       <button
         type="button"
-        onClick={() => setOpen(true)}
-        className={cn("press flex min-h-12 w-full items-center gap-3 text-left", className)}
+        onClick={() => {
+          setRound((r) => r + 1);
+          setOpen(true);
+        }}
+        className="press flex min-h-12 w-full items-center gap-3 text-left"
       >
         {/* 그림이 오기 전에는 자리를 잡지 않는다 — 줄 앞이 비어 보인다 */}
         {artFor("icon/menu-rest") && <ArtIcon name="icon/menu-rest" className="size-8" />}
@@ -61,6 +76,7 @@ export function RestCardRow({
         <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
       </button>
       <RestCardSheet
+        key={round}
         open={open}
         onClose={() => setOpen(false)}
         familyId={familyId}
@@ -68,7 +84,7 @@ export function RestCardRow({
         left={rest.left}
         movedToday={movedToday}
       />
-    </>
+    </div>
   );
 }
 
@@ -121,9 +137,7 @@ function RestCardSheet({
 
   return (
     <Sheet open={open} onClose={onClose} title="쉬는 날 카드">
-      <p className="text-caption text-ink-soft">
-        쉬는 날은 이어서 한 날이 끊기지 않고, 리그 달성률에서 빠져요 · 이번 달 {left}장 남음
-      </p>
+      <p className="text-caption text-ink-soft">이번 달 {left}장 남음</p>
 
       <div className="mt-3 grid grid-cols-4 gap-2" role="radiogroup" aria-label="쉴 날">
         {choices.map((d) => {

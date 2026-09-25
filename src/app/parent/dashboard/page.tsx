@@ -138,16 +138,15 @@ export default function FamilyDashboardPage() {
             )}
           </div>
           {/* 쉬는 날 카드 — 오늘 이미 움직인 아이가 있으면 오늘은 못 고른다 */}
-          <div className="border-line mt-3 border-t pt-2">
-            <RestCardRow
-              familyId={familyId ?? undefined}
-              movedToday={members.some(
-                (m) =>
-                  m.role === "CHILD" &&
-                  (logsOf(m.profileId).find((d) => d.date === now)?.minutes ?? 0) > 0,
-              )}
-            />
-          </div>
+          <RestCardRow
+            familyId={familyId ?? undefined}
+            movedToday={members.some(
+              (m) =>
+                m.role === "CHILD" &&
+                (logsOf(m.profileId).find((d) => d.date === now)?.minutes ?? 0) > 0,
+            )}
+            className="border-line mt-3 border-t pt-2"
+          />
           <NavLink
             href="/plan"
             className="press border-line mt-2 flex min-h-12 items-center gap-3 border-t pt-3"

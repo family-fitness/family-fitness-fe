@@ -476,6 +476,7 @@ export function useConfirmParticipant(missionId: Uuid, familyId: Uuid) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "league"] });
       refreshProgress(qc);
     },
   });
@@ -616,6 +617,7 @@ export function useCompleteSession(missionId: Uuid, familyId: Uuid) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "league"] });
       refreshProgress(qc);
     },
   });
@@ -748,7 +750,9 @@ export function useRestDay(familyId: Uuid) {
       cancel
         ? api.delete<RestDays>(path`/families/${familyId}/rest-days/${date}`)
         : api.post<RestDays>(path`/families/${familyId}/rest-days`, { date }),
-    onSuccess: () => {
+    onSuccess: (rest) => {
+      // 돌려받은 카드를 바로 넣는다 — 다시 받기 전까지 되돌리기 줄이 남아 한 번 더 누르면 404 였다
+      if (rest?.month) qc.setQueryData(qk.family.restDays(familyId, rest.month), rest);
       void qc.invalidateQueries({ queryKey: ["family", familyId] });
       void qc.invalidateQueries({ queryKey: ["profile"] });
     },
