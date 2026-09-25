@@ -1,6 +1,5 @@
 "use client";
 
-import { Activity } from "lucide-react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 
@@ -20,19 +19,15 @@ import { RecordRow } from "@/components/domain/record-bar";
 import { isFactor } from "@/lib/fitness-factors";
 import { useFamilyProfiles, useFitnessMap, useLatestFitnessTest } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
-import { useIsKidView } from "@/lib/view-role";
 import { formatDate } from "@/lib/utils";
 
-/** 측정 결과. */
+/** 측정 결과 — 부모 화면이다(레이아웃이 아이를 돌려보낸다). */
 export default function ResultPage() {
   const { profileId } = useParams<{ profileId: string }>();
   // 첫 시작 → 측정 → 결과는 전부 바꿔치기다. 뒤로는 홈으로(앱을 나가지 않게)
   const nav = useSearchParams().get("from") === "start" ? { backHref: "/parent" } : { back: true };
   const { familyId } = useSession();
-  // 부모 폰을 아이가 쓰는 동안에도 서열은 감춘다
-  const kidView = useIsKidView();
-  // 가족 전체에서 찾는다. useSession().profiles 는 이 계정이 관리하는 프로필만이라
-  // 자녀가 자기 계정을 가지면 거기서 빠진다
+  // 가족 전체에서 찾는다. `/me` 는 이 계정이 관리하는 프로필만이라 자녀가 자기 계정을 가지면 거기서 빠진다
   const { data: family } = useFamilyProfiles(familyId);
   const { data: map } = useFitnessMap(familyId);
   const member = map?.members?.find((m) => m.profileId === profileId);
@@ -53,6 +48,9 @@ export default function ResultPage() {
     );
   }
 
+  // 만 4세 미만은 잴 수 없다 — 측정 단추를 끄지 않고 없앤다(규칙 4)
+  const measurable = (profile ?? member)?.measurable !== false;
+
   // 이력이 없어도 404 가 아니다. fitnessTestId 가 null 로 온다
   if (!test || test.fitnessTestId == null) {
     return (
@@ -61,14 +59,16 @@ export default function ResultPage() {
         <Screen>
           <EmptyState
             scene="no-record"
-            title="아직 기록이 없어요"
+            title="아직 재지 않았어요"
             action={
-              <Link
-                href={`/p/${profileId}/measure`}
-                className="press bg-signal-strong text-body mt-1 rounded-xl px-5 py-3 font-bold text-white"
-              >
-                측정 입력하기
-              </Link>
+              measurable && (
+                <Link
+                  href={`/p/${profileId}/measure`}
+                  className="press bg-signal-strong text-body mt-1 rounded-xl px-5 py-3 font-bold text-white"
+                >
+                  첫 측정 하기
+                </Link>
+              )
             }
           />
         </Screen>
@@ -98,7 +98,7 @@ export default function ResultPage() {
 
       <Stage wide className="space-y-3">
         {/* 육각형은 부모 화면에만. 안쪽으로 들어간 꼭지점이 곧 약한 요인이다(규칙 10) */}
-        {!kidView && radar.length > 0 && (
+        {radar.length > 0 && (
           <section className="card-hero">
             <CardHead title="요인별 모양" />
             {/* 육각형 · 그 아래 통합 신체 점수(9/25) — 점수는 가족 체력 지도가 준 이 회차의 또래 백분위 */}
@@ -111,26 +111,22 @@ export default function ResultPage() {
           </section>
         )}
 
-        {/** 잘하는 것을 먼저 말한다. 약한 것부터 들이밀면 아이가 화면을 닫는다. */}
+        {/* 잘하는 것을 먼저 말한다 */}
         {(strongest || weakest) && (
           <section className="card divide-rows py-1">
             <FactorLine
               label={onlyOneFactor ? "지금 재 본 영역" : "잘하고 있는 영역"}
               factor={strongest?.factor}
             />
-            {/* 약한 요인은 아이에게 말하지 않는다 */}
-            {!onlyOneFactor && weakest && !kidView && (
+            {!onlyOneFactor && weakest && (
               <FactorLine label="지금 키우기 좋은 영역" factor={weakest.factor} />
             )}
           </section>
         )}
 
         <section className="card">
-          {/* 막대 가운데 눈금이 무엇인지 글로 — 아이 홈 · 요인 표와 같은 말. 몇 항목인지는 머리에 있다 */}
-          <CardHead
-            title="항목별"
-            meta={kidView ? "또래 평균 50" : "국민체력100 등급 · 또래 평균 50"}
-          />
+          {/* 막대 가운데 눈금이 무엇인지 글로 — 요인 표와 같은 말. 몇 항목인지는 머리에 있다 */}
+          <CardHead title="항목별" meta="국민체력100 등급 · 또래 평균 50" />
           <div className="divide-rows">
             {items.map((entry, index) => (
               <div key={entry.itemCode} className="py-3.5">
@@ -138,21 +134,16 @@ export default function ResultPage() {
                   label={entry.itemLabel ?? entry.itemCode ?? ""}
                   value={`${entry.value}${entry.unit ?? ""}`}
                   percentile={entry.percentile}
-                  /* 서준에게 백분위 표를 보여주면 그걸로 끝이다 — 아이에겐 상태만 */
-                  caption={kidView ? undefined : entry.topPercentText}
+                  caption={entry.topPercentText}
                   delay={index * 0.08}
                 />
-                {/* 자녀 화면에서는 서열(등급) 대신 상태(band) 만 보여준다. 딱지 대신 글자 한 줄 */}
+                {/* 등급 · 상태 — 딱지 대신 글자 한 줄 */}
                 <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5">
-                  {!kidView && (
-                    <>
-                      <GradeBadge grade={entry.grade} />
-                      {entry.band && (
-                        <span aria-hidden className="text-faint text-xs">
-                          ·
-                        </span>
-                      )}
-                    </>
+                  <GradeBadge grade={entry.grade} />
+                  {entry.band && (
+                    <span aria-hidden className="text-faint text-xs">
+                      ·
+                    </span>
                   )}
                   <BandChip band={entry.band} />
                 </p>
@@ -161,34 +152,24 @@ export default function ResultPage() {
           </div>
         </section>
 
-        {/* 다음에 뭘 할지. 서버가 정한 방향을 그대로 따른다.
-            제안 · 미션 · 보호자는 부모의 말이라 아이 화면에서는 통째로 뺀다 */}
-        {kidView ? (
-          <Link
-            href="/kid"
-            className="press bg-signal-strong flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold text-white"
-          >
-            오늘 운동 하러 가기
-          </Link>
-        ) : (
-          <>
-            <Link
-              href="/plan"
-              className="press bg-signal-strong flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
-            >
-              <ArtIcon name="icon/menu-ai" className="size-5" />
-              AI에게 운동 받기
-            </Link>
-            <ul className="card divide-rows py-1">
-              <ListRow
-                href={`/p/${profileId}/future`}
-                art="icon/menu-future"
-                title="10년 위 연령대 보기"
-              />
-              <ListRow href={`/p/${profileId}/measure`} art="icon/menu-measure" title="새로 재기" />
-            </ul>
-          </>
-        )}
+        {/* 다음에 뭘 할지 */}
+        <Link
+          href="/plan"
+          className="press bg-signal-strong flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
+        >
+          <ArtIcon name="icon/menu-ai" className="size-5" />
+          AI에게 운동 받기
+        </Link>
+        <ul className="card divide-rows py-1">
+          <ListRow
+            href={`/p/${profileId}/future`}
+            art="icon/menu-future"
+            title="10년 위 연령대 보기"
+          />
+          {measurable && (
+            <ListRow href={`/p/${profileId}/measure`} art="icon/menu-measure" title="새로 재기" />
+          )}
+        </ul>
       </Stage>
     </>
   );
@@ -217,19 +198,12 @@ function ResultSkeleton() {
   );
 }
 
-/** 한 요인 한 줄 — 요인 아이콘과 이름 */
+/** 한 요인 한 줄 — 요인 그림과 이름. 육각형 밖의 요인(협응력 · 평형성)은 그림이 없어 자리만 둔다 */
 function FactorLine({ label, factor }: { label: string; factor: string | undefined }) {
   return (
     <div className="flex items-center gap-3 py-3">
-      <span
-        aria-hidden
-        className="bg-signal-soft text-signal-strong grid size-10 shrink-0 place-items-center rounded-xl"
-      >
-        {isFactor(factor) ? (
-          <FactorIcon factor={factor} className="size-6" />
-        ) : (
-          <Activity className="size-5" strokeWidth={2.1} />
-        )}
+      <span aria-hidden className="grid size-10 shrink-0 place-items-center">
+        {isFactor(factor) && <FactorIcon factor={factor} className="size-8" />}
       </span>
       <div className="min-w-0">
         <p className="text-caption text-ink-soft font-bold">{label}</p>
