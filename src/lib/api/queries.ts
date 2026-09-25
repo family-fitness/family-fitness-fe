@@ -592,6 +592,17 @@ export function useProgress(profileId: Uuid | undefined) {
   });
 }
 
+/** 여러 사람의 레벨 · 업적을 한꺼번에 — 리그의 우리 가족 프로필. 키가 `useProgress` 와 같아 캐시를 나눠 쓴다 */
+export function useProgresses(profileIds: Uuid[]) {
+  return useQueries({
+    queries: profileIds.map((profileId) => ({
+      queryKey: qk.profile.progress(profileId),
+      queryFn: () => api.get<ProgressView>(path`/profiles/${profileId}/progress`),
+      enabled: Boolean(profileId),
+    })),
+  });
+}
+
 /**
  * 한 칸 끝냈다. 앱 안 타이머로 잰 시간이라 `TIMER` 로 남는다.
  * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.

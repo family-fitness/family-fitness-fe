@@ -9,8 +9,14 @@ import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FamilyProfile } from "@/components/domain/family-profile";
 import { RestCardRow } from "@/components/domain/rest-card";
-import { useFamilyCalendars, useFamilyLeague, useFitnessMap } from "@/lib/api/queries";
+import {
+  useFamilyCalendars,
+  useFamilyLeague,
+  useFitnessMap,
+  useProgresses,
+} from "@/lib/api/queries";
 import { artFor } from "@/lib/art";
 import { TIERS, nextTier, prevTier, tierArt, tierIndex, tierName, zoneOf } from "@/lib/league";
 import { useSession } from "@/lib/session";
@@ -47,6 +53,8 @@ function League() {
     .map((m) => m.profileId ?? "")
     .filter(Boolean);
   const todays = useFamilyCalendars(familyId, kidIds, { from: now, to: now });
+  // 우리 가족 프로필 — 아이마다 레벨 · 업적
+  const progresses = useProgresses(kidIds);
   const movedToday = todays.some((q) => (q.data?.days ?? []).some((d) => d.minutes > 0));
 
   // 로그인(/me)이 깨져도 여기서 말한다 — 가족을 모르면 리그 요청이 꺼진 채 뼈대만 돈다
@@ -75,30 +83,27 @@ function League() {
       : zone === "down" && down
         ? `지금 자리면 다음 달 ${withJosa(tierName(down), "으로로")} 내려가요`
         : `지금 자리면 다음 달도 ${tierName(league.tier)}예요`;
-  const art = tierArt(league.tier);
   const at = tierIndex(league.tier);
+  const kids = (map?.members ?? []).filter((m) => m.role === "CHILD");
 
   return (
     <>
       <AppBar backHref={backHref} title="가족 리그" />
       <Stage wide className="space-y-3">
-        {/* 첫 묶음 — 이번 달 우리 가족의 자리 */}
-        <section className="card-hero" aria-label="이번 달 우리 가족">
-          <div className="flex items-center gap-4">
-            {artFor(art) && <ArtIcon name={art} className="size-16" />}
-            <div className="min-w-0 flex-1">
-              <p className="metric-label">
-                {monthLabel(month)} · {league.daysLeft}일 남음
-              </p>
-              <p className="text-metric mt-0.5 font-extrabold">{tierName(league.tier)} 리그</p>
-              <p className="text-caption text-ink-soft mt-0.5 font-bold">
-                {rank != null ? `${league.groupSize}가족 중 ${rank}등` : "아직 순위가 없어요"}
-              </p>
-            </div>
-          </div>
+        {/* 첫 묶음 — 우리 가족 프로필. 레벨이 오르고 업적이 쌓일수록 화려해진다(9/25) */}
+        <FamilyProfile
+          familyName={map?.familyName ?? "우리 가족"}
+          tier={league.tier}
+          place={rank != null ? `${league.groupSize}가족 중 ${rank}등` : "아직 순위가 없어요"}
+          meta={`${monthLabel(month)} · ${league.daysLeft}일 남음`}
+          kids={kids}
+          progresses={kids.map((k) => progresses[kidIds.indexOf(k.profileId ?? "")]?.data)}
+        />
 
+        {/* 둘째 묶음 — 이번 달. 달성률 · 다음 달 자리 · 티어 메달 · 쉬는 날 카드 */}
+        <section className="card" aria-label="이번 달">
           {rate != null && (
-            <div className="mt-4">
+            <div>
               <div className="flex items-end justify-between">
                 <p className="metric-label">이번 달 달성률</p>
                 <p className="metric-value text-metric">
@@ -115,22 +120,28 @@ function League() {
             </div>
           )}
 
-          {/* 티어 사다리 — 지금 자리만 채운다. 지나온 칸은 옅게 */}
-          <ol className="mt-4 grid grid-cols-5 gap-1.5" aria-label="티어">
+          {/* 티어 메달 다섯 — 지금 자리만 진하게. 둥근 칸에 글자를 넣지 않고 메달 그림과 이름으로(9/25) */}
+          <ol className={cn("grid grid-cols-5 gap-1", rate != null && "mt-4")} aria-label="티어">
             {TIERS.map((t, i) => (
               <li
                 key={t.id}
                 aria-current={i === at ? "step" : undefined}
-                className={cn(
-                  "text-micro rounded-xl py-2 text-center font-extrabold",
-                  i === at
-                    ? "bg-signal-strong text-white"
-                    : i < at
-                      ? "bg-signal-soft text-signal-deep"
-                      : "bg-sub text-ink-soft",
-                )}
+                className="flex flex-col items-center gap-1"
               >
-                {t.name}
+                {artFor(tierArt(t.id)) && (
+                  <ArtIcon
+                    name={tierArt(t.id)}
+                    className={cn("size-10", i !== at && "opacity-35 grayscale")}
+                  />
+                )}
+                <span
+                  className={cn(
+                    "text-micro font-extrabold",
+                    i === at ? "text-signal-deep" : "text-ink-soft",
+                  )}
+                >
+                  {t.name}
+                </span>
               </li>
             ))}
           </ol>
@@ -143,7 +154,7 @@ function League() {
           />
         </section>
 
-        {/* 둘째 묶음 — 이번 달 순위. 올라가는 자리 · 내려가는 자리를 선으로 가른다 */}
+        {/* 셋째 묶음 — 이번 달 순위. 올라가는 자리 · 내려가는 자리를 선으로 가른다 */}
         <section className="card" aria-label="이번 달 순위">
           <CardHead title="이번 달 순위" meta={`${league.groupSize}가족`} />
           <ol className="mt-1">
