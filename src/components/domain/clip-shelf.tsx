@@ -24,8 +24,9 @@ export function ClipShelf({ factor }: { factor: Factor | null }) {
   if (!isPending && clips.length === 0) return null;
 
   const title = factor ? `${factor} 키우는 운동` : "해 볼 만한 운동";
-  const more = `/videos${factor ? `?factor=${encodeURIComponent(factor)}` : ""}`;
-  const open = (clipId: string) => `${more}${factor ? "&" : "?"}clip=${encodeURIComponent(clipId)}`;
+  // 운동 찾기도 같은 줄(본운동 · 이 힘)로 연다 — 거르지 않고 열면 첫 40개 밖의 클립은 시범이 안 열렸다
+  const more = `/videos?phase=MAIN${factor ? `&factor=${encodeURIComponent(factor)}` : ""}`;
+  const open = (clipId: string) => `${more}&clip=${encodeURIComponent(clipId)}`;
 
   return (
     <section aria-label={title} className="pt-2">
@@ -48,7 +49,7 @@ export function ClipShelf({ factor }: { factor: Factor | null }) {
                   >
                     <span className="relative block overflow-hidden rounded-2xl">
                       <VideoThumb videoId={c.videoId} className="aspect-video w-full" />
-                      <span className="text-micro absolute right-1.5 bottom-1.5 rounded-md bg-black/70 px-1.5 py-0.5 font-bold text-white">
+                      <span className="text-micro bg-ink/70 absolute right-1.5 bottom-1.5 rounded-md px-1.5 py-0.5 font-bold text-white">
                         {clock(c.endSec - c.startSec)}
                       </span>
                     </span>
