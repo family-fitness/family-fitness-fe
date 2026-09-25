@@ -167,7 +167,12 @@ function TodaySection({
   );
   const waiting =
     run?.status === "AWAITING_APPROVAL" && run.coachRunId && proposals.length > 0
-      ? { id: run.coachRunId, title: proposals[0]?.title }
+      ? {
+          id: run.coachRunId,
+          title: proposals[0]?.title,
+          // 오늘 하는 제안인가 — 내일부터인 제안은 쉬는 날에도 보인다(오늘 운동을 권하는 게 아니다)
+          today: (proposals[0]?.startDate ?? now) <= now,
+        }
       : null;
 
   const head = (
@@ -178,8 +183,8 @@ function TodaySection({
     />
   );
 
-  // 쉬는 날에는 운동을 권하지 않는다(규칙 15)
-  const proposal = waiting && !restToday && (
+  // 쉬는 날에는 오늘 운동을 권하지 않는다(규칙 15) — 앞날 제안까지 가리지는 않는다
+  const proposal = waiting && !(restToday && waiting.today) && (
     <PanelRow
       href={`/plan/${waiting.id}`}
       art="icon/menu-ai"
