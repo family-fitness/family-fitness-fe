@@ -90,8 +90,84 @@ const KID_EXTRA = [
   },
 ];
 
+/**
+ * 시연 가족 부모의 측정. 체력 지도는 엄마 62 · 아빠 29 로 잰 사람인데 픽스처의 `latest` 는 빈 회차라,
+ * 대시보드는 점수를 말하고 측정 결과 화면은 「아직 재지 않았어요」 를 말했다. 지도와 같은 날 · 같은 점수로 채운다
+ */
+const PARENT_TESTS: Record<string, { testedOn: string; items: [string, number, number][] }> = {
+  "00000000-0000-4000-8000-000000000011": {
+    testedOn: "2026-09-10",
+    // [항목, 값, 백분위] — 평균 62
+    items: [
+      ["012", 14, 70],
+      ["019", 32, 58],
+      ["041", 0.52, 55],
+      ["028", 58, 65],
+    ],
+  },
+  "00000000-0000-4000-8000-000000000013": {
+    testedOn: "2026-08-30",
+    // 평균 29 — 건강검진에서 경고를 받은 아빠(도현)
+    items: [
+      ["012", 2, 18],
+      ["019", 20, 30],
+      ["041", 0.44, 28],
+      ["028", 48, 40],
+    ],
+  },
+};
+
+function parentLatest(
+  profileId: string,
+  test: (typeof PARENT_TESTS)[string],
+): Concrete<LatestFitnessTest> {
+  const catalogue = fixtures.itemsByAgeGroup["성인"]?.items ?? [];
+  const items = test.items.map(([itemCode, value, percentile]) => {
+    const meta = catalogue.find((i) => i.itemCode === itemCode);
+    return {
+      itemCode,
+      itemLabel: meta?.itemLabel ?? itemCode,
+      unit: meta?.unit ?? "",
+      value,
+      percentile,
+      grade:
+        percentile >= 90
+          ? "1등급"
+          : percentile >= 75
+            ? "2등급"
+            : percentile >= 50
+              ? "3등급"
+              : "참가",
+      band: bandOf(percentile),
+      topPercentText: `상위 ${100 - percentile}%`,
+    };
+  });
+  const factorOf = (code: string) => catalogue.find((i) => i.itemCode === code)?.factor ?? "유연성";
+  const sorted = [...items].sort((a, b) => a.percentile - b.percentile);
+  const edge = (i: (typeof items)[number]) => ({
+    factor: factorOf(i.itemCode),
+    itemCode: i.itemCode,
+    percentile: i.percentile,
+  });
+  const factors = ["심폐지구력", "근력", "근지구력", "유연성", "민첩성", "순발력"];
+  return {
+    fitnessTestId: `00000000-0000-4000-8000-0000000000${profileId.slice(-2)}`,
+    testedOn: test.testedOn,
+    radar: factors.map((factor) => ({
+      factor,
+      percentile: items.find((i) => factorOf(i.itemCode) === factor)?.percentile ?? null,
+    })),
+    items,
+    weakest: edge(sorted[0]),
+    strongest: edge(sorted[sorted.length - 1]),
+    coachDirection: "GROWTH",
+    disclaimer: fixtures.fitnessMap.disclaimer,
+  } as unknown as Concrete<LatestFitnessTest>;
+}
+
 function demoLatest() {
   const all = structuredClone(fixtures.latestByProfile);
+  for (const [id, test] of Object.entries(PARENT_TESTS)) all[id] = parentLatest(id, test);
   const kid = all[KID_ID];
   if (!kid) return all;
   kid.items = [...kid.items, ...(KID_EXTRA as typeof kid.items)];
@@ -271,6 +347,7 @@ function demoBody(): Record<string, { heightCm: number; weightKg: number }> {
   return {
     [DEMO.kid]: { heightCm: 139, weightKg: 34 },
     [DEMO.mom]: { heightCm: 163, weightKg: 56 },
+    [DEMO.dad]: { heightCm: 176, weightKg: 81 },
   };
 }
 
@@ -511,6 +588,21 @@ export function sessionsFor(
   const warm = pickClips((c) => ok(c) && c.phase === "WARMUP" && c.factor === "유연성", 2, skip);
   const main = pickClips((c) => ok(c) && c.phase === "MAIN" && c.factor === focus, mainCount, skip);
   const cool = pickClips((c) => ok(c) && c.phase === "COOLDOWN", 2, skip);
+  // 조용한 본운동이 모자라면(순발력은 거의 다 뛰는 동작이다) 그 힘을 기르는 다른 동작으로 채운다 —
+  // 본운동이 비어 4분짜리가 되거나, 한 동작을 20분 되풀이하지 않게
+  if (main.length < 2) {
+    const more = pickClips(
+      (c) =>
+        c.homeOk &&
+        !c.props &&
+        c.phase === "MAIN" &&
+        c.factor === focus &&
+        !main.some((m) => m.title === c.title),
+      mainCount - main.length,
+      skip,
+    );
+    main.push(...more);
+  }
   // 준비 · 정리는 1분씩, 남는 시간을 본운동이 나눈다. 나머지는 앞 칸부터 1분씩 더한다
   const mainTotal = Math.max(main.length, minutes - warm.length - cool.length);
   const base = Math.floor(mainTotal / Math.max(1, main.length));

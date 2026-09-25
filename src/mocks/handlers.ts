@@ -161,10 +161,7 @@ const identity = [
     if (db.stage === "fresh") return HttpResponse.json(FRESH_ME);
     const me = acting();
     if (!me) return HttpResponse.json(fixtures.me);
-    // 새로 만든 가족이면 픽스처가 아니라 지금 가족을 돌려준다
-    if (me.profileId === DEMO.mom && db.profiles.familyId === DEMO.familyId) {
-      return HttpResponse.json(fixtures.me);
-    }
+    // 지금 가족에서 — 픽스처를 돌려주면 참여 방식을 바꿔도 `/me` 는 옛 값을 말한다
     return HttpResponse.json({
       userId: fixtures.me.userId,
       nextStep: "HOME",
@@ -249,8 +246,10 @@ const identity = [
 
   http.post(`${BASE}/families/:familyId/profiles`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
-    const birthDate = String(body.birthDate ?? "2020-01-01");
-    const age = ageOf(birthDate) ?? 0;
+    const name = String(body.name ?? "").trim();
+    const birthDate = String(body.birthDate ?? "");
+    const age = ageOf(birthDate);
+    if (!name || age == null) return fail(400, "INVALID_INPUT", "이름과 생일이 필요합니다");
     const consentRequired = age < 14;
 
     const consent = body.guardianConsent as
@@ -263,16 +262,19 @@ const identity = [
     const profile: Profile = {
       profileId: uuid(),
       familyId: db.profiles.familyId ?? DEMO.familyId,
-      name: String(body.name ?? ""),
+      name,
       role: body.role === "PARENT" ? "PARENT" : "CHILD",
       ageGroup: ageGroupOf(age),
+      ...(body.sex === "M" || body.sex === "F" ? { sex: body.sex } : {}),
+      birthDate,
       hasAccount: false,
       inviteStatus: "NONE",
       supportMode: body.role === "PARENT" ? "CHEER_ONLY" : null,
       // 만 4세 미만은 규준 자체가 없다
       measurable: age >= 4,
       consentRequired,
-      consentGiven: consentRequired ? true : true,
+      // 14세 미만은 위에서 동의를 받아야 여기까지 온다
+      consentGiven: true,
     };
     db.profiles.profiles.push(profile);
     const mapMember: MapMember = {
@@ -280,6 +282,7 @@ const identity = [
       name: profile.name,
       role: profile.role,
       ageGroup: profile.ageGroup,
+      ...(profile.sex ? { sex: profile.sex } : {}),
       hasAccount: false,
       supportMode: profile.supportMode,
       measurable: profile.measurable,
@@ -372,8 +375,9 @@ const identity = [
 
     const given = body.personalData && body.healthData;
     profile.consentGiven = given;
-    // 철회하면 그 순간부터 측정이 막힌다
-    profile.measurable = given && profile.ageGroup !== "유아기";
+    // 철회하면 그 순간부터 측정이 막힌다. 다시 주면 만 4세가 넘었는지로 — 연령대(유아기 0~6세)로 보면
+    // 동의를 한 번 거둔 5살은 영영 못 잰다
+    profile.measurable = given && (ageOf((profile as Profile).birthDate) ?? 99) >= 4;
     syncMapMember(profile);
     saveFamily();
 
@@ -531,8 +535,10 @@ const fitness = [
         weightKg?: number;
         items: { itemCode: string; value: number }[];
       };
+      // 지난 날짜로 적은 회차는 이력에만 들어간다 — 가장 최근 회차가 「지금」 이다
+      const newest = !((db.latest[profileId]?.testedOn ?? "") > body.testedOn);
       // 같이 적어 온 키 · 몸무게는 들고 있다가 latest 로 돌려준다
-      if (body.heightCm && body.weightKg) {
+      if (newest && body.heightCm && body.weightKg) {
         db.body[profileId] = { heightCm: body.heightCm, weightKg: body.weightKg };
       }
       const measured = (body.items ?? []).filter((i) => Number.isFinite(i.value));
@@ -588,12 +594,14 @@ const fitness = [
         factor,
         percentile: items.find((i) => factorOf(i.itemCode) === factor)?.percentile ?? null,
       }));
-      db.latest[profileId] = {
-        ...result,
-        radar: radar as Concrete<LatestFitnessTest>["radar"],
-        coachDirection: sorted[0].percentile > 75 ? "STRENGTHEN" : "GROWTH",
-      };
-      // 다시 재기는 덮어쓰기가 아니라 추가다(규칙 11)
+      if (newest) {
+        db.latest[profileId] = {
+          ...result,
+          radar: radar as Concrete<LatestFitnessTest>["radar"],
+          coachDirection: sorted[0].percentile > 75 ? "STRENGTHEN" : "GROWTH",
+        };
+      }
+      // 다시 재기는 덮어쓰기가 아니라 추가다(규칙 11). 최근 회차가 먼저
       db.tests[profileId] = [
         {
           fitnessTestId: result.fitnessTestId,
@@ -603,10 +611,10 @@ const fitness = [
           weightKg: body.weightKg ?? null,
         },
         ...(db.tests[profileId] ?? []),
-      ];
+      ].sort((a, b) => b.testedOn.localeCompare(a.testedOn));
 
       const member = db.fitnessMap.members.find((m) => m.profileId === profileId);
-      if (member) {
+      if (member && newest) {
         member.headline = `${profile.ageGroup} 상위 ${100 - overall}%`;
         member.latest = {
           fitnessTestId: result.fitnessTestId,
