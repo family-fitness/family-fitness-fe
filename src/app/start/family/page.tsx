@@ -1,3 +1,6 @@
+import { Suspense } from "react";
+
+import { WizardSkeleton } from "@/components/app-shell/wizard";
 import { Onboarding } from "@/components/domain/onboarding";
 
 /**
@@ -5,5 +8,9 @@ import { Onboarding } from "@/components/domain/onboarding";
  * 한 화면에 질문 하나씩(9/25). 흐름은 `Onboarding` 에.
  */
 export default function CreateFamilyPage() {
-  return <Onboarding mode="family" />;
+  return (
+    <Suspense fallback={<WizardSkeleton />}>
+      <Onboarding mode="family" />
+    </Suspense>
+  );
 }

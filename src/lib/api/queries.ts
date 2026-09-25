@@ -160,8 +160,9 @@ export function useCreateProfile(familyId: Uuid) {
       guardianConsent?: { personalData: boolean; healthData: boolean };
     }) => api.post<ProfileSummary>(path`/families/${familyId}/profiles`, body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.family.profiles(familyId) });
-      qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId) });
+      // 지금 안 떠 있는 홈의 것까지 다시 받는다 — 안 그러면 홈에 옛 가족이 먼저 뜨고 새 아이 대신 첫째가 잠깐 선다
+      qc.invalidateQueries({ queryKey: qk.family.profiles(familyId), refetchType: "all" });
+      qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId), refetchType: "all" });
     },
   });
 }
