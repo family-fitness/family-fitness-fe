@@ -166,8 +166,9 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
     한 번 정하면 그대로 둔다 — 고른 뒤 /me 가 다시 오면 칸이 빠져 다음 칸(운동 시간)을 건너뛰었다
   */
   const [askSupport, setAskSupport] = useState<boolean | null>(null);
-  if (askSupport === null && !sessionPending) {
-    setAskSupport(mode === "child" && profile?.role === "PARENT" && profile.supportMode == null);
+  // 누구인지 받은 뒤에 정한다 — /me 가 먼저 실패하면 「안 묻기」 로 굳어 다시 불러온 뒤에도 묻지 않았다
+  if (askSupport === null && profile) {
+    setAskSupport(mode === "child" && profile.role === "PARENT" && profile.supportMode == null);
   }
 
   const steps: StepId[] = (
