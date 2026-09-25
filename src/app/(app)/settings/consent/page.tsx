@@ -43,11 +43,6 @@ function ConsentPageContent() {
       <PageHeader title="보호자 동의" back />
 
       <Screen className="space-y-6">
-        <p className="text-ink-soft text-sm leading-relaxed">
-          만 14세 미만 가족의 측정 기록을 저장하려면 보호자 동의가 필요해요. 개인정보와 건강정보 두
-          가지에 모두 동의해야 저장돼요.
-        </p>
-
         {needConsent.length === 0 ? (
           <EmptyState scene="waiting" title="동의가 필요한 가족이 없어요" />
         ) : (
@@ -57,11 +52,6 @@ function ConsentPageContent() {
             ))}
           </ul>
         )}
-
-        <p className="text-faint text-caption leading-relaxed">
-          동의를 철회해도 이미 저장된 측정 기록은 지워지지 않아요. 기록 삭제가 필요하면 가족
-          설정에서 프로필을 지워 주세요.
-        </p>
       </Screen>
     </>
   );
@@ -100,7 +90,7 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
         <div className="min-w-0 flex-1">
           <p className="text-body font-bold">{child.name}</p>
           <p className={cn("mt-0.5 text-xs font-semibold", given ? "text-done" : "text-ink-soft")}>
-            {given ? "동의함 · 측정을 저장할 수 있어요" : "동의 없음 · 측정을 저장할 수 없어요"}
+            {given ? "동의함" : "동의 없음"}
           </p>
         </div>
 
@@ -120,19 +110,12 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
         </p>
       )}
 
-      {/* 되돌리기 어려운 동작이라 무슨 일이 생기는지 미리 적는다 */}
       <Sheet
         open={confirming}
         onClose={() => setConfirming(false)}
         title={`${child.name}의 동의를 철회할까요`}
       >
         <div className="space-y-4">
-          <ul className="text-ink-soft space-y-2 text-sm leading-relaxed">
-            <li>· 새 측정을 저장할 수 없어요</li>
-            <li>· 10년 위 연령대 보기를 쓸 수 없어요</li>
-            <li>· 이미 저장된 기록은 지워지지 않아요</li>
-            <li>· 다시 동의하면 바로 되돌아와요</li>
-          </ul>
           <div className="flex gap-2">
             <Button
               variant="outline"

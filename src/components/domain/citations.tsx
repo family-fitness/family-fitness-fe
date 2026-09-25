@@ -24,9 +24,7 @@ export function Citations({
   if (!items || items.length === 0) {
     return (
       <p className={className}>
-        <span className="text-faint text-caption">
-          근거를 불러오지 못했어요. 이 제안은 참고만 해 주세요.
-        </span>
+        <span className="text-faint text-caption">근거를 불러오지 못했어요.</span>
       </p>
     );
   }

@@ -147,8 +147,7 @@ export function InviteSheet({
             {code.code}
           </p>
           <p className="text-caption text-ink-soft mt-2 text-center">
-            {code.until ? `${code.until}까지 · ` : ""}
-            {code.for} 자리로만 들어와요
+            {code.until ? `${code.until}까지` : ""}
           </p>
           <div className="mt-5 grid grid-cols-2 gap-2">
             <button

@@ -8,7 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 /**
- * 첫 시작 화면의 틀(9/25) — 위에 진행 게이지, 한 화면에 질문 하나, 까닭 한 줄, 아래 붙는 단추 하나.
+ * 첫 시작 화면의 틀(9/25) — 위에 진행 게이지, 한 화면에 질문 하나, 아래 붙는 단추 하나.
+ * 왜 묻는지 · 무엇에 쓰는지 같은 설명 줄은 두지 않는다(9/25 「설명식 문구는 다 지워」).
  *
  * 다른 앱의 첫 로그인처럼 한 번에 한 가지만 묻는다. 게이지가 있어 끝이 보인다 — 끝이 안 보이는 폼은 중간에 닫힌다.
  * 이 화면의 `<h1>` 은 질문이다.
@@ -22,7 +23,6 @@ export function WizardShell({
   onBack,
   art,
   title,
-  reason,
   children,
   action,
   onSubmit,
@@ -35,8 +35,6 @@ export function WizardShell({
   /** 질문 위 그림 — 키움이 */
   art?: ReactNode;
   title: ReactNode;
-  /** 왜 묻는지 한 줄 */
-  reason?: ReactNode;
   children?: ReactNode;
   /** 아래 붙는 단추 — `type="submit"` 으로 준다 */
   action?: ReactNode;
@@ -85,7 +83,6 @@ export function WizardShell({
         <div className="px-6 pt-6">
           {art && <div className="mb-4 flex justify-center">{art}</div>}
           <h1 className="page-title leading-snug">{title}</h1>
-          {reason && <p className="text-ink-soft text-body mt-2 leading-relaxed">{reason}</p>}
         </div>
 
         <div className="mt-7 flex-1 px-6">{children}</div>
@@ -109,21 +106,19 @@ export function WizardSkeleton() {
 }
 
 /**
- * 큰 선택 단추 — 제목 · 한 줄 설명 · 오른쪽 동그라미. 바탕 위에 흰 면으로 선다.
+ * 큰 선택 단추 — 제목 · 오른쪽 동그라미. 바탕 위에 흰 면으로 선다. 설명 줄은 두지 않는다.
  * `multi` 면 네모 체크(여럿 고르기), 아니면 동그라미(하나 고르기).
  */
 export function ChoiceButton({
   selected,
   onClick,
   title,
-  note,
   art,
   multi = false,
 }: {
   selected: boolean;
   onClick: () => void;
   title: ReactNode;
-  note?: ReactNode;
   art?: ReactNode;
   multi?: boolean;
 }) {
@@ -143,7 +138,6 @@ export function ChoiceButton({
         <span className={cn("block text-base font-extrabold", selected && "text-signal-deep")}>
           {title}
         </span>
-        {note && <span className="text-caption text-ink-soft mt-0.5 block">{note}</span>}
       </span>
       <span
         aria-hidden

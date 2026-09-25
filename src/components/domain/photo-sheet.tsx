@@ -31,7 +31,6 @@ export function PhotoSheet({
           name={name}
           onChange={(dataUrl) => (dataUrl ? set(profileId, dataUrl) : remove(profileId))}
         />
-        <p className="text-caption text-ink-soft mt-4 text-center">이 기기에만 저장돼요</p>
       </div>
     </Sheet>
   );

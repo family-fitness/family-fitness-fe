@@ -107,7 +107,6 @@ export default function MembersPage() {
               href={`/parent/sticker/${kid.profileId}`}
               art="icon/menu-cheer"
               title="칭찬 스티커 붙이기"
-              description={`${kid.name}에게 오늘 한 장`}
             />
           )}
         </ul>
@@ -298,25 +297,12 @@ function AddMemberSheet({
         {/* 서버가 동의를 자동으로 찍지 않는다. 보호자가 두 가지를 각각 직접 켠다 */}
         {needsConsent && (
           <div role="group" aria-label="보호자 동의" className="space-y-2">
-            <p className="text-caption text-ink-soft">
-              만 14세 미만이라 보호자 동의가 있어야 저장돼요. 설정에서 언제든 철회할 수 있어요.
-            </p>
             {(
               [
-                [
-                  personal,
-                  setPersonal,
-                  "개인정보 처리에 동의해요",
-                  "이름 · 생년월일을 또래 기준과 견주는 데만 써요",
-                ],
-                [
-                  health,
-                  setHealth,
-                  "건강정보 처리에 동의해요",
-                  "측정값과 운동 기록이 여기에 저장돼요",
-                ],
+                [personal, setPersonal, "개인정보 처리에 동의해요"],
+                [health, setHealth, "건강정보 처리에 동의해요"],
               ] as const
-            ).map(([on, set, title, note]) => (
+            ).map(([on, set, title]) => (
               <label key={title} className="bg-sub flex items-start gap-3 rounded-2xl p-3.5">
                 <input
                   type="checkbox"
@@ -324,10 +310,7 @@ function AddMemberSheet({
                   onChange={(e) => set(e.target.checked)}
                   className="accent-signal mt-0.5 size-4.5"
                 />
-                <span className="text-sm leading-relaxed">
-                  <span className="block font-bold">{title}</span>
-                  <span className="text-ink-soft mt-0.5 block text-xs">{note}</span>
-                </span>
+                <span className="text-sm leading-relaxed font-bold">{title}</span>
               </label>
             ))}
           </div>

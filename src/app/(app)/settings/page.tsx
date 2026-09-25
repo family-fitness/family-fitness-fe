@@ -93,11 +93,6 @@ export default function SettingsPage() {
             로그아웃
           </button>
         )}
-
-        <p className="text-caption text-ink-soft px-1 leading-relaxed">
-          국민체력100 측정 데이터를 바탕으로 한 참고 정보입니다. 질병의 진단·치료를 위한 것이
-          아니며, 건강에 관한 판단은 전문가와 상담하세요.
-        </p>
       </Stage>
       {parentView && profile?.profileId && (
         <PhotoSheet

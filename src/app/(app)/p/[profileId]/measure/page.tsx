@@ -319,9 +319,7 @@ export default function MeasurePage() {
                 </span>
                 <span className="flex-1">
                   <span className="block text-sm font-bold">장비가 있으면 더 정확해요</span>
-                  <span className="text-ink-soft text-xs">
-                    악력계 · 넓은 공간이 필요한 {equipment.length}개 항목
-                  </span>
+                  <span className="text-ink-soft text-xs">{equipment.length}개 항목</span>
                 </span>
                 {showEquipment ? (
                   <ChevronUp className="text-faint size-4" aria-hidden />
@@ -362,10 +360,6 @@ export default function MeasurePage() {
           >
             결과 보기
           </Button>
-          {/* 못 누르는 까닭 한 줄 — 아이 등록과 같은 자리 · 같은 모양. 키 · 몸무게만으로는 결과가 없다 */}
-          {filledCount === 0 && (
-            <p className="text-faint text-caption text-center">항목을 하나 이상 적어 주세요</p>
-          )}
         </form>
       </Stage>
     </>

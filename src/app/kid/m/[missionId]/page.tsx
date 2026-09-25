@@ -334,7 +334,6 @@ export default function PlayPage() {
               <Finish
                 allDone={allDone}
                 doneCount={doneCount}
-                total={sessions.length}
                 minutes={doneMin}
                 xp={xp}
                 levelBefore={levelBefore}
@@ -559,7 +558,6 @@ const FEEL_LINE: Record<Feel, string> = {
 function Finish({
   allDone,
   doneCount,
-  total,
   minutes,
   xp,
   levelBefore,
@@ -569,7 +567,6 @@ function Finish({
 }: {
   allDone: boolean;
   doneCount: number;
-  total: number;
   minutes: number;
   xp: number;
   levelBefore: number | null;
@@ -633,10 +630,7 @@ function Finish({
       <h2 className="page-title mt-1">
         {allDone ? "오늘 거 다 했어요!" : `${doneCount}개 했어요!`}
       </h2>
-      <p className="text-caption text-ink-soft mt-1 font-semibold">
-        {minutes}분 움직였어요 · 섬에 나무가 자랐어요
-        {!allDone && ` · ${total - doneCount}개는 다음에`}
-      </p>
+      <p className="text-caption text-ink-soft mt-1 font-semibold">{minutes}분 움직였어요</p>
 
       {progress && (
         <div className="bg-sub mt-4 rounded-2xl p-4 text-left">
@@ -693,7 +687,7 @@ function Finish({
 
       {/* 칭찬은 부모가 보낸다. 아이는 알리기만 한다(규칙 12) */}
       {told ? (
-        <p className="bg-done-soft text-done mt-4 flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold">
+        <p className="text-done mt-4 flex min-h-12 items-center justify-center gap-1.5 text-sm font-extrabold">
           <Check aria-hidden className="size-4" strokeWidth={3} />
           알렸어요 · 기다리는 중
         </p>

@@ -140,8 +140,6 @@ function ClaimContent() {
           {seat ? `${seat.profileName} 자리로 들어가기` : "가족으로 들어가기"}
         </Button>
       </div>
-
-      <p className="text-faint text-caption text-center">코드는 7일 동안 씁니다</p>
     </PlainScreen>
   );
 }

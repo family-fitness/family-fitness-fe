@@ -84,20 +84,18 @@ const STARTS = [
 ];
 const MINUTES = [10, 20, 30] as const;
 
-const SUPPORT: { value: SupportMode; title: string; note: string; art: string }[] = [
+const SUPPORT: { value: SupportMode; title: string; art: string }[] = [
   {
     value: "CHEER_ONLY",
     title: "응원할게요",
-    note: "아이 운동을 보고 칭찬 스티커를 보내요",
     art: "icon/mode-cheer",
   },
   {
     value: "WEEKEND",
     title: "주말에는 같이",
-    note: "주말 운동에 나도 들어가요",
     art: "icon/mode-weekend",
   },
-  { value: "FULL", title: "매번 같이", note: "나도 재고 같이 운동해요", art: "icon/mode-full" },
+  { value: "FULL", title: "매번 같이", art: "icon/mode-full" },
 ];
 
 export function Onboarding({ mode }: { mode: "family" | "child" }) {
@@ -404,11 +402,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
         );
       case "family":
         return (
-          <WizardShell
-            {...common}
-            title="가족 이름을 정해 주세요"
-            reason="홈 맨 위와 가족 리그에 이 이름이 나와요"
-          >
+          <WizardShell {...common} title="가족 이름을 정해 주세요">
             <BigInput
               label="가족 이름"
               value={familyName}
@@ -425,40 +419,22 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
         );
       case "me-sex":
         return (
-          <WizardShell
-            {...common}
-            title="보호자님의 성별을 알려 주세요"
-            reason="국민체력100 기준이 성별로 나뉘어요"
-          >
+          <WizardShell {...common} title="보호자님의 성별을 알려 주세요">
             <div className="space-y-3" role="radiogroup" aria-label="보호자 성별">
-              <ChoiceButton
-                selected={meSex === "F"}
-                onClick={() => setMeSex("F")}
-                title="여성"
-                note="아이 화면에서 엄마로 불려요"
-              />
-              <ChoiceButton
-                selected={meSex === "M"}
-                onClick={() => setMeSex("M")}
-                title="남성"
-                note="아이 화면에서 아빠로 불려요"
-              />
+              <ChoiceButton selected={meSex === "F"} onClick={() => setMeSex("F")} title="여성" />
+              <ChoiceButton selected={meSex === "M"} onClick={() => setMeSex("M")} title="남성" />
             </div>
           </WizardShell>
         );
       case "me-birth":
         return (
-          <WizardShell
-            {...common}
-            title="생년월일을 알려 주세요"
-            reason="같은 나이대 또래와 견줘요"
-          >
+          <WizardShell {...common} title="생년월일을 알려 주세요">
             <DateInput label="보호자 생년월일" value={meBirth} onChange={setMeBirth} />
           </WizardShell>
         );
       case "me-photo":
         return (
-          <WizardShell {...common} title="프로필 사진을 올릴까요?" reason="이 기기에만 저장돼요">
+          <WizardShell {...common} title="프로필 사진을 올릴까요?">
             <PhotoPicker value={mePhoto} name={meName} onChange={setMePhoto} />
           </WizardShell>
         );
@@ -470,11 +446,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
         );
       case "kid-birth":
         return (
-          <WizardShell
-            {...common}
-            title={`${kid}의 생일은 언제예요?`}
-            reason="나이에 맞는 측정 항목과 또래 기준을 골라요"
-          >
+          <WizardShell {...common} title={`${kid}의 생일은 언제예요?`}>
             <DateInput
               label="아이 생일"
               value={kidBirth}
@@ -488,7 +460,6 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
           <WizardShell
             {...common}
             title={`${withJosa(kid, "은는")} 여자아이인가요, 남자아이인가요?`}
-            reason="국민체력100 기준이 성별로 나뉘어요"
           >
             <div className="space-y-3" role="radiogroup" aria-label="아이 성별">
               <ChoiceButton
@@ -506,11 +477,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
         );
       case "kid-body":
         return (
-          <WizardShell
-            {...common}
-            title={`${withJosa(kid, "은는")} 지금 얼마나 컸나요?`}
-            reason="몸이 자라면 기준도 달라져요"
-          >
+          <WizardShell {...common} title={`${withJosa(kid, "은는")} 지금 얼마나 컸나요?`}>
             <div className="space-y-4">
               <UnitInput
                 label="키"
@@ -535,42 +502,32 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
         );
       case "kid-photo":
         return (
-          <WizardShell {...common} title={`${kid} 사진도 올릴까요?`} reason="이 기기에만 저장돼요">
+          <WizardShell {...common} title={`${kid} 사진도 올릴까요?`}>
             <PhotoPicker value={kidPhoto} name={kidName} onChange={setKidPhoto} />
           </WizardShell>
         );
       case "consent":
         return (
-          <WizardShell
-            {...common}
-            title="보호자 동의가 필요해요"
-            reason="설정에서 언제든 거둘 수 있어요"
-          >
+          <WizardShell {...common} title="보호자 동의가 필요해요">
             <div className="space-y-3">
               <ChoiceButton
                 multi
                 selected={consent.personalData}
                 onClick={() => setConsent((c) => ({ ...c, personalData: !c.personalData }))}
                 title="개인정보 처리에 동의해요"
-                note="이름과 생년월일을 또래 기준과 견주는 데만 써요"
               />
               <ChoiceButton
                 multi
                 selected={consent.healthData}
                 onClick={() => setConsent((c) => ({ ...c, healthData: !c.healthData }))}
                 title="건강정보 처리에 동의해요"
-                note="측정값과 운동 기록이 여기에 들어가요"
               />
             </div>
           </WizardShell>
         );
       case "support":
         return (
-          <WizardShell
-            {...common}
-            title="얼마나 같이 하실래요?"
-            reason="AI 코치가 보호자님을 넣을지 정해요"
-          >
+          <WizardShell {...common} title="얼마나 같이 하실래요?">
             <div className="space-y-3" role="radiogroup" aria-label="참여 방식">
               {SUPPORT.map((s) => (
                 <ChoiceButton
@@ -578,7 +535,6 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
                   selected={support === s.value}
                   onClick={() => setSupport(s.value)}
                   title={s.title}
-                  note={s.note}
                   art={<ArtIcon name={s.art} className="size-10" />}
                 />
               ))}
@@ -587,11 +543,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
         );
       case "schedule":
         return (
-          <WizardShell
-            {...common}
-            title={`${withJosa(kid, "은는")} 언제 운동할 수 있어요?`}
-            reason="AI 코치가 이 시간에 맞춰 짜요"
-          >
+          <WizardShell {...common} title={`${withJosa(kid, "은는")} 언제 운동할 수 있어요?`}>
             <div className="space-y-6">
               <fieldset>
                 <legend className="text-ink-soft text-sm font-bold">요일</legend>
@@ -662,11 +614,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
         );
       case "measure":
         return (
-          <WizardShell
-            {...common}
-            title={`지금 ${kid} 체력을 재 볼까요?`}
-            reason="체력 육각형과 AI 코치가 이 기록으로 움직여요"
-          >
+          <WizardShell {...common} title={`지금 ${kid} 체력을 재 볼까요?`}>
             <div className="space-y-3" role="radiogroup" aria-label="첫 측정">
               <ChoiceButton
                 selected={later === false}
@@ -689,11 +637,6 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
             onBack={undefined}
             art={<LevelBuddy stage={3} size={168} cheer />}
             title="준비됐어요!"
-            reason={
-              mode === "family"
-                ? `${familyName.trim() || family?.familyName || "우리 가족"}의 첫 운동을 시작해요`
-                : `${kid} 등록이 끝났어요`
-            }
           />
         );
     }
