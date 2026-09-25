@@ -13,18 +13,19 @@
  */
 
 /** 배포할 때마다 올린다. 올리면 옛 저장분이 지워진다 */
-const VERSION = "v1";
+const VERSION = "v3";
 const SHELL = `shell-${VERSION}`;
 const ASSETS = `assets-${VERSION}`;
 
-/** 끊겼을 때 보여줄 화면 */
+/** 끊겼을 때 보여줄 화면과 그 그림(src/app/offline/page.tsx) */
 const OFFLINE = "/offline";
+const OFFLINE_ART = "/assets/scene/kiumi-rest.png";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(SHELL)
-      .then((cache) => cache.addAll([OFFLINE]))
+      .then((cache) => cache.addAll([OFFLINE, OFFLINE_ART]))
       .then(() => self.skipWaiting()),
   );
 });

@@ -14,7 +14,8 @@ import path from "node:path";
 import sharp from "sharp";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
-const SOURCE = path.join(ROOT, "public/assets/move/move-jump-rope.png");
+/** 만세 하는 키움이 — 스플래시에 서는 3단계와 같은 모습 */
+const SOURCE = path.join(ROOT, "public/assets/level/level-3-cheer.png");
 const OUT = path.join(ROOT, "public");
 /** Next 가 파일 이름만 보고 <link> 를 만들어 주는 자리 */
 const APP = path.join(ROOT, "src/app");

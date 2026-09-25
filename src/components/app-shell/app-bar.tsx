@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 export function AppBar({
   back,
   backHref,
+  onBack,
   title,
   right,
   className,
@@ -18,28 +19,38 @@ export function AppBar({
   back?: boolean;
   /** 돌아갈 곳. 주면 뒤로 가는 움직임도 방향이 맞는다 */
   backHref?: string;
+  /**
+   * 화면 안에서 한 단계 되돌릴 때. 라우트가 안 바뀌는 자리에 쓴다 —
+   * 세션을 하다 목록으로 돌아가는 것처럼.
+   */
+  onBack?: () => void;
   title?: string;
   right?: ReactNode;
   className?: string;
 }) {
   const router = useRouter();
-  const showBack = back || Boolean(backHref);
+  const showBack = back || Boolean(backHref) || Boolean(onBack);
 
   const backButton = backHref ? (
     <Link
       href={backHref}
       transitionTypes={["nav-back"]}
       aria-label="뒤로"
-      className="press text-ink-soft hover:text-ink grid size-10 shrink-0 place-items-center rounded-full"
+      className="press text-ink-soft grid size-10 shrink-0 place-items-center rounded-full"
     >
       <ChevronLeft className="size-6" />
     </Link>
   ) : (
     <button
       type="button"
-      onClick={() => router.back()}
+      onClick={() => {
+        if (onBack) onBack();
+        // 알림 · 링크로 곧장 열어 되돌아갈 기록이 없으면 첫 화면으로 — 눌러도 아무 일이 없으면 갇힌 것 같다
+        else if (window.history.length > 1) router.back();
+        else router.replace("/");
+      }}
       aria-label="뒤로"
-      className="press text-ink-soft hover:text-ink grid size-10 shrink-0 place-items-center rounded-full"
+      className="press text-ink-soft grid size-10 shrink-0 place-items-center rounded-full"
     >
       <ChevronLeft className="size-6" />
     </button>
@@ -49,7 +60,8 @@ export function AppBar({
     <header
       className={cn(
         "sticky top-0 z-30 flex h-14 items-center gap-1 px-2",
-        "bg-paper/90 backdrop-blur-sm",
+        // 흐림(backdrop-blur)을 쓰지 않는다 — 구를 때마다 뒤를 다시 흐려 낮은 폰이 버벅였다
+        "bg-ground",
         className,
       )}
       style={{ viewTransitionName: "app-bar" }}

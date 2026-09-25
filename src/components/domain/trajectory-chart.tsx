@@ -1,24 +1,17 @@
 "use client";
 
-import { useId } from "react";
-
 import type { PredictionPoint } from "@/lib/api/types";
 
-/** 10년 뒤 분포. */
-export function TrajectoryChart({
-  points,
-  unit,
-  width = 320,
-  height = 200,
-}: {
-  points: PredictionPoint[];
-  unit?: string;
-  width?: number;
-  height?: number;
-}) {
-  const bandId = useId();
+const width = 320;
+const height = 200;
+
+/**
+ * 지금 연령대와 10년 위 연령대의 분포 — 한 사람의 앞날이 아니다(규칙 3).
+ * p10~p90 띠가 없는 점은 그리지 않는다 — 가운데 선만 남으면 정해진 앞날처럼 보인다.
+ */
+export function TrajectoryChart({ points, unit }: { points: PredictionPoint[]; unit?: string }) {
   const usable = points
-    .filter((p) => p.p50 != null)
+    .filter((p) => p.p10 != null && p.p50 != null && p.p90 != null)
     .sort((a, b) => (a.yearsFromNow ?? 0) - (b.yearsFromNow ?? 0));
 
   if (usable.length < 2) return null;
@@ -67,15 +60,8 @@ export function TrajectoryChart({
         width="100%"
         height={height}
         role="img"
-        aria-label={`지금 ${first.p50}${unit ?? ""}, ${last.yearsFromNow}년 위 연령대는 ${last.p10}에서 ${last.p90}${unit ?? ""} 사이에 있습니다`}
+        aria-label={`지금 연령대 가운데 ${first.p50}${unit ?? ""}, ${last.yearsFromNow}년 위 연령대는 ${last.p10}에서 ${last.p90}${unit ?? ""} 사이에 있습니다`}
       >
-        <defs>
-          <linearGradient id={bandId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--color-signal)" stopOpacity="0.2" />
-            <stop offset="100%" stopColor="var(--color-signal)" stopOpacity="0.08" />
-          </linearGradient>
-        </defs>
-
         {/* 가로 눈금 */}
         {[lo - pad, (lo + hi) / 2, hi + pad].map((v) => (
           <g key={v}>
@@ -100,7 +86,7 @@ export function TrajectoryChart({
         ))}
 
         {/* p10~p90 띠. 이게 이 그림의 핵심이다 */}
-        <polygon points={band} fill={`url(#${bandId})`} />
+        <polygon points={band} fill="var(--color-signal)" fillOpacity={0.14} />
         <path
           d={line("p10")}
           fill="none"
@@ -158,7 +144,7 @@ export function TrajectoryChart({
       </svg>
 
       <figcaption className="text-faint text-micro mt-1 leading-relaxed">
-        진한 선이 가운데(50%), 옅은 띠가 열에 여덟이 들어가는 범위(10~90%) 예요.
+        진한 선 가운데(50%) · 옅은 띠 10~90%
       </figcaption>
     </figure>
   );

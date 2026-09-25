@@ -1,49 +1,85 @@
 "use client";
 
-import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { useParams } from "next/navigation";
 
 import { AppBar } from "@/components/app-shell/app-bar";
-import { SectionTitle, Stage } from "@/components/app-shell/stage";
+import { Stage } from "@/components/app-shell/stage";
+import { Card, CardHead } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
-import { Illustration } from "@/components/ui/illustration";
+import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FactorRadar } from "@/components/domain/factor-radar";
-import { ScoreDial } from "@/components/domain/score-dial";
-import { daysSince } from "@/lib/today";
-import { useFamilyProfiles, useFitnessMap, useLatestFitnessTest } from "@/lib/api/queries";
+import { FactorView } from "@/components/domain/factor-view";
+import { MonthStats, RecentDays } from "@/components/domain/child-stats";
+import { LevelBuddy } from "@/components/domain/level-buddy";
+import { GrowthPole } from "@/components/scene/growth-pole";
+import { AchievementGrid } from "@/components/domain/achievement-grid";
+import { FactorTable } from "@/components/domain/factor-table";
+import { IslandCard } from "@/components/domain/island-card";
+import { ScoreTrend } from "@/components/domain/score-trend";
+import { REMEASURE_DAYS } from "@/lib/remeasure";
+import type { FitnessTestSummary } from "@/lib/api/types";
+import {
+  useFamilyProfiles,
+  useFitnessItems,
+  useFitnessMap,
+  useFitnessTests,
+  useLatestFitnessTest,
+  useProgress,
+} from "@/lib/api/queries";
+import { stageOf } from "@/lib/levels";
 import { useSession } from "@/lib/session";
+import { daysSince } from "@/lib/today";
 import { useBodyStore } from "@/stores/body-store";
 import { formatDate, withJosa } from "@/lib/utils";
+import { ArtIcon } from "@/components/ui/art-icon";
 
 /**
- * 아이 한 명 자세히 — 어떻게 자라고 있나.
- * ▲ 서버가 `/fitness-tests/latest` 만 줘서 추이를 그릴 수 없다. 이력 조회를 요청해 뒀다.
+ * 아이 기록 — 전적 검색 사이트(op.gg · maple.gg)처럼 한 아이의 통계를 한 화면에.
+ *
+ * 맨 위 프로필 머리(레벨 캐릭터 · 이름 · 서버가 준 한 줄)와 신체 점수 · 육각형,
+ * 그 아래 이번 달 칸 넷 · 최근 기록(날마다 한 줄) · 요인 표 · 점수 흐름 · 키와 몸무게 순이다.
+ * 육각형 아래 요인 표가 그래프의 표 쌍둥이다. **부모 화면에만** 있다(규칙 10).
  */
 export default function ChildDetailPage() {
   const { profileId } = useParams<{ profileId: string }>();
-  const { familyId, isPending } = useSession();
+  const { familyId, isPending, error: sessionError, refetch: refetchMe } = useSession();
 
-  const { data: family, error: familyError, refetch } = useFamilyProfiles(familyId);
-  const { data: map } = useFitnessMap(familyId);
+  // 꺼진 조회의 isPending 은 영영 true 다 — 가족을 기다릴 때는 isLoading 으로 본다.
+  // 안 기다리면 가족이 오기 전에 「찾을 수 없는 프로필이에요」 가 번쩍 떴다
+  const {
+    data: family,
+    isLoading: familyLoading,
+    error: familyError,
+    refetch: refetchFamily,
+  } = useFamilyProfiles(familyId);
+  const { data: map, isLoading: mapLoading } = useFitnessMap(familyId);
   const {
     data: latest,
     isPending: latestPending,
     error: latestError,
+    refetch: refetchLatest,
   } = useLatestFitnessTest(profileId);
-  const body = useBodyStore((s) => s.byProfile[profileId]);
+  const { data: history } = useFitnessTests(profileId);
+  const {
+    data: progress,
+    isPending: progressPending,
+    error: progressError,
+  } = useProgress(profileId);
+  const localBody = useBodyStore((s) => s.byProfile[profileId]);
 
   const profile = family?.profiles?.find((p) => p.profileId === profileId);
   const member = map?.members?.find((m) => m.profileId === profileId);
+  const { data: catalog } = useFitnessItems(profile?.ageGroup);
 
-  if (isPending || latestPending) {
+  if (isPending || familyLoading || mapLoading || latestPending) {
     return (
       <>
-        <AppBar back title="자라는 기록" />
-        <Stage className="space-y-6">
-          <Skeleton className="mx-auto size-44 rounded-full" />
-          <Skeleton className="h-24 w-full rounded-2xl" />
+        <AppBar back title="아이 기록" />
+        <Stage wide className="space-y-3">
+          <Skeleton className="h-112 w-full rounded-3xl" />
+          <Skeleton className="h-72 w-full rounded-3xl" />
         </Stage>
       </>
     );
@@ -51,13 +87,19 @@ export default function ChildDetailPage() {
 
   // 불러오지 못한 것과 없는 것은 다르다. 섞으면 서버가 죽었을 때
   // 부모에게 "그런 아이는 없습니다" 라고 말하게 된다
-  const failure = familyError ?? latestError;
+  const failure =
+    sessionError ?? (family ? null : familyError) ?? (latest === undefined ? latestError : null);
   if (failure) {
     return (
       <>
-        <AppBar back title="자라는 기록" />
+        <AppBar back title="아이 기록" />
         <Stage>
-          <ErrorState error={failure} onRetry={() => void refetch()} />
+          <ErrorState
+            error={failure}
+            onRetry={() =>
+              void (sessionError ? refetchMe() : !family ? refetchFamily() : refetchLatest())
+            }
+          />
         </Stage>
       </>
     );
@@ -66,111 +108,216 @@ export default function ChildDetailPage() {
   if (!profile) {
     return (
       <>
-        <AppBar back title="자라는 기록" />
+        <AppBar back title="아이 기록" />
         <Stage>
-          <EmptyState
-            scene="no-record"
-            title="찾을 수 없는 프로필이에요"
-            description="다른 가족의 프로필이거나 지워진 프로필일 수 있어요."
-          />
+          <EmptyState scene="no-record" title="찾을 수 없는 프로필이에요" />
         </Stage>
       </>
     );
   }
 
+  const name = profile.name ?? "아이";
   const score = member?.latest?.overallPercentile ?? null;
-  const days = daysSince(latest?.testedOn);
-  const radar = latest?.radar ?? [];
+  const testedOn = member?.latest?.testedOn ?? latest?.testedOn ?? null;
+  const tests = history?.tests ?? [];
+  const stage = stageOf(progress?.level);
+  // 키 자의 키움이 — 레벨을 받은 뒤에 세운다. 모르는 채 1단계로 지었다가 받고 나서 다시 지으면 깜빡이고 WebGL 이 하나 더 든다
+  const poleStage = progress ? stage.stage : progressError ? stageOf(undefined).stage : null;
 
   return (
     <>
-      <AppBar back title={`${profile.name} 기록`} />
-      <Stage className="space-y-8">
-        <section className="pt-1">
-          <ScoreDial score={score} size={180} label={`${profile.name} 신체 점수`} />
-        </section>
-
-        {/* 지금 몸 */}
-        <section>
-          <SectionTitle action={<Illustration name="item/item-growth-tree" size={30} />}>
-            지금 몸
-          </SectionTitle>
-          <dl className="divide-rows">
-            <BodyRow label="나이대" value={profile.ageGroup ?? "-"} />
-            <BodyRow
-              label="키"
-              value={body ? `${body.heightCm}cm` : "아직 안 적었어요"}
-              note={body && formatDate(body.measuredOn)}
-            />
-            <BodyRow
-              label="몸무게"
-              value={body ? `${body.weightKg}kg` : "아직 안 적었어요"}
-              note={body && formatDate(body.measuredOn)}
-            />
-            <BodyRow
-              label="마지막으로 잰 날"
-              value={
-                latest?.testedOn
-                  ? `${formatDate(latest.testedOn)}${days != null ? ` · ${days}일 전` : ""}`
-                  : "아직 안 쟀어요"
-              }
-            />
-          </dl>
-
-          {/* 없는 걸 있는 척 그리지 않는다 */}
-          <p className="text-faint text-caption mt-3 leading-relaxed">
-            지난 기록을 나란히 보여드리려면 서버에 기록이 쌓여야 해요. 준비되는 대로 여기에 변화
-            그래프가 생깁니다.
-          </p>
-        </section>
-
-        {radar.length >= 3 && (
-          <section>
-            <SectionTitle>요인별로 보면</SectionTitle>
-            <FactorRadar points={radar} size={200} />
-          </section>
-        )}
-
-        <section className="space-y-2">
-          <Link
-            href={`/p/${profileId}/measure`}
-            className="press bg-signal block rounded-2xl py-4 text-center text-base font-extrabold text-white"
-          >
-            {withJosa(profile.name ?? "아이", "은는")} 다시 재기
-          </Link>
-          <Link
-            href={`/p/${profileId}/result`}
-            className="press border-line block rounded-2xl border py-4 text-center text-base font-bold"
-          >
-            측정 결과 자세히
-          </Link>
-        </section>
-
-        {!latest?.fitnessTestId && (
-          <div className="border-line flex items-center gap-3 rounded-2xl border border-dashed p-4">
-            <Illustration
-              name="scene/scene-first-body"
-              fallback="scene/scene-first-measure"
-              size={52}
-            />
-            <p className="text-ink-soft text-sm leading-relaxed">
-              한 가지만 재도 또래 중 어디쯤인지 바로 보여요.
-            </p>
+      <AppBar back title="아이 기록" />
+      <Stage wide className="space-y-3">
+        <Card hero>
+          {/* 프로필 머리 — 캐릭터 · 이름 · 레벨 · 서버가 준 한 줄 그대로(규칙 9) */}
+          <div className="flex items-center gap-4">
+            <LevelBuddy stage={stage.stage} size={80} />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lead font-extrabold">{name}</h2>
+              <p className="text-caption text-ink-soft mt-0.5 font-bold">
+                {progress ? `Lv.${progress.level} · ${stage.name}` : " "}
+              </p>
+              {member?.headline && (
+                <p className="text-signal-deep text-caption mt-1 font-extrabold">
+                  {member.headline}
+                </p>
+              )}
+            </div>
           </div>
+          <div className="border-line mt-4 border-t pt-3">
+            <p className="text-caption text-ink-soft font-bold">
+              체력{testedOn && ` · ${formatDate(testedOn)} 측정`}
+            </p>
+            {/* 잰 적이 있는지로 가른다 — 만 7~10세는 쟀어도 점수가 없을 수 있다(규칙 8) */}
+            {testedOn == null && (
+              <p className="text-lead mt-2 font-extrabold">아직 재지 않았어요</p>
+            )}
+          </div>
+          {/* 육각형 · 그 아래 통합 신체 점수(9/25) · 출처 */}
+          <FactorView points={latest?.radar} name={name} pending={false} score={score} />
+        </Card>
+
+        <MonthStats
+          familyId={familyId ?? undefined}
+          profileId={profileId}
+          streak={progress?.streakDays}
+          streakState={progressError ? "error" : progressPending ? "pending" : "ready"}
+        />
+        <RecentDays familyId={familyId ?? undefined} profileId={profileId} />
+
+        <Card>
+          <CardHead title="요인별" meta="또래 평균 50" />
+          <FactorTable radar={latest?.radar} results={latest?.items} catalog={catalog?.items} />
+        </Card>
+
+        {tests.length > 0 && (
+          <Card>
+            <CardHead title="신체 점수 흐름" meta={`${tests.length}번 쟀어요`} />
+            <ScoreTrend tests={tests} />
+          </Card>
         )}
+
+        <BodyGrowth
+          profileId={profileId}
+          name={name}
+          measurable={profile.measurable !== false}
+          stage={poleStage}
+          tests={tests}
+          fallback={
+            latest?.heightCm && latest?.weightKg && latest?.testedOn
+              ? {
+                  heightCm: latest.heightCm,
+                  weightKg: latest.weightKg,
+                  measuredOn: latest.testedOn,
+                }
+              : localBody
+          }
+          lastTestedOn={latest?.testedOn}
+        />
+
+        {/* 아이 화면의 섬을 부모도 본다. 해낸 날이 쌓이는 곳 */}
+        <IslandCard profileId={profileId} name={name} />
+
+        {/* 어떤 업적이 있는지 — 받은 것 · 아직인 것과 얻는 법(9/25 「어떤 업적이 있는지도 보이는 장소」) */}
+        {progress && progress.achievements.length > 0 && (
+          <Card>
+            <CardHead
+              title="업적"
+              meta={`${progress.achievements.filter((a) => a.earnedAt).length} / ${progress.achievements.length}`}
+            />
+            <div className="mt-2">
+              <AchievementGrid achievements={progress.achievements} />
+            </div>
+          </Card>
+        )}
+
+        <Card href={`/p/${profileId}/future`} label="10년 위 연령대 보기">
+          <div className="flex items-center gap-3">
+            <ArtIcon name="icon/menu-future" className="size-9 shrink-0" />
+            <p className="min-w-0 flex-1 text-sm font-extrabold">10년 위 연령대 보기</p>
+            <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
+          </div>
+        </Card>
       </Stage>
     </>
   );
 }
 
-function BodyRow({ label, value, note }: { label: string; value: string; note?: string | false }) {
+/**
+ * 키 · 몸무게. 마지막 값과, 처음 잰 때보다 얼마나 자랐는지.
+ *
+ * 서버가 이력을 주면 이력으로, 아직이면 최근 회차나 기기에 둔 값으로.
+ * 다시 재기는 덮어쓰기가 아니라 추가다 — 지난 값이 남아야 자란 걸 보여 준다(규칙 11).
+ */
+function BodyGrowth({
+  profileId,
+  name,
+  measurable,
+  stage,
+  tests,
+  fallback,
+  lastTestedOn,
+}: {
+  profileId: string;
+  name: string;
+  /** 만 4세 미만이면 측정 단추를 없앤다(규칙 4) */
+  measurable: boolean;
+  /** 키 자에 세울 키움이 단계. 레벨을 받기 전이면 null — 자를 아직 세우지 않는다 */
+  stage: ReturnType<typeof stageOf>["stage"] | null;
+  tests: FitnessTestSummary[];
+  fallback: { heightCm: number; weightKg: number; measuredOn: string } | undefined;
+  lastTestedOn: string | null | undefined;
+}) {
+  const withBody = tests
+    .filter((t) => t.heightCm != null && t.weightKg != null)
+    .sort((a, b) => a.testedOn.localeCompare(b.testedOn));
+  const first = withBody[0];
+  const now = withBody[withBody.length - 1];
+  const height = now?.heightCm ?? fallback?.heightCm ?? null;
+  const weight = now?.weightKg ?? fallback?.weightKg ?? null;
+  const measuredOn = now?.testedOn ?? fallback?.measuredOn ?? null;
+  const grew =
+    first && now && first !== now && first.heightCm != null && now.heightCm != null
+      ? Math.round((now.heightCm - first.heightCm) * 10) / 10
+      : null;
+  const due = (daysSince(lastTestedOn) ?? 0) >= REMEASURE_DAYS;
+  // 잰 키를 오래된 것부터. 이력이 아직 없으면 기기에 적어 둔 한 번이라도
+  const records = withBody.length
+    ? withBody.map((t) => ({ date: t.testedOn, heightCm: t.heightCm as number }))
+    : fallback
+      ? [{ date: fallback.measuredOn, heightCm: fallback.heightCm }]
+      : [];
+
   return (
-    <div className="flex items-baseline justify-between gap-3 py-3.5">
-      <dt className="text-sm font-bold">{label}</dt>
-      <dd className="text-ink-soft text-right text-sm">
-        {value}
-        {note && <span className="text-faint text-caption ml-1.5">{note}</span>}
-      </dd>
-    </div>
+    <Card>
+      <CardHead
+        title="키 · 몸무게"
+        meta={measuredOn ? `${formatDate(measuredOn)} 기준` : undefined}
+      />
+      {height != null && weight != null ? (
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <div className="tile">
+            <p className="metric-label">키</p>
+            <p className="metric-value text-metric mt-1">
+              {height}
+              <span className="metric-unit">cm</span>
+            </p>
+          </div>
+          <div className="tile">
+            <p className="metric-label">몸무게</p>
+            <p className="metric-value text-metric mt-1">
+              {weight}
+              <span className="metric-unit">kg</span>
+            </p>
+          </div>
+        </div>
+      ) : (
+        <p className="text-ink-soft mt-1 text-sm">아직 안 적었어요</p>
+      )}
+      {records.length > 0 &&
+        (stage != null ? (
+          <GrowthPole records={records} stage={stage} className="mt-2" />
+        ) : (
+          <Skeleton className="mt-2 h-56 w-full rounded-2xl" />
+        ))}
+      {grew != null && grew > 0 && first && (
+        <p className="text-caption text-ink-soft mt-2.5 font-semibold">
+          {formatDate(first.testedOn)}보다 <b className="text-ink">{grew}cm</b> 자랐어요
+        </p>
+      )}
+      {measurable && (
+        <NavLink
+          href={`/p/${profileId}/measure`}
+          className={
+            due
+              ? "press bg-signal-strong mt-3 flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
+              : "press bg-sub text-ink mt-3 flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold"
+          }
+        >
+          <ArtIcon name="icon/menu-measure" className="size-5" />
+          {withJosa(name, "을를")} 새로 재기
+        </NavLink>
+      )}
+    </Card>
   );
 }

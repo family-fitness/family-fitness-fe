@@ -4,6 +4,12 @@ const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN ?? "http://localhost:8080";
 
 const nextConfig: NextConfig = {
   /**
+   * 개발 서버가 AGENTS.md · CLAUDE.md 를 만들지 않게 한다. develop 에는 웹 프론트를 돌리는 파일만 둔다 —
+   * 두 파일이 없으면 `next dev` 가 새로 만들어, 모르고 커밋하면 문서가 다시 올라간다.
+   */
+  agentRules: false,
+
+  /**
    * 브라우저에게는 /api/v1/... 이 프론트와 같은 출처로 보이고,
    * Next 서버가 뒤에서 백엔드로 넘긴다.
    *
@@ -44,7 +50,15 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+            /*
+              카메라·마이크·위치는 쓰지 않는다.
+
+              compute-pressure 는 유튜브 플레이어가 기기 부하를 보고 화질을
+              낮추는 데 쓴다. 막아 두면 영상 화면마다 위반 경고가 뜨고
+              저사양 기기에서 화질이 안 내려간다. 유튜브에만 열어 준다.
+            */
+            value:
+              'camera=(), microphone=(), geolocation=(), interest-cohort=(), compute-pressure=(self "https://www.youtube.com" "https://www.youtube-nocookie.com")',
           },
         ],
       },

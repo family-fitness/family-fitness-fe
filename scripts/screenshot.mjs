@@ -4,7 +4,7 @@ import { chromium } from "playwright";
  * 화면 캡처 도구.
  *
  *   npm run dev
- *   npm run shot -- http://localhost:3000 ./shots light viewport /home /missions
+ *   npm run shot -- http://localhost:3001 ./shots light viewport /parent /kid
  *
  * PR 에 붙일 스크린샷을 뽑고, 만든 화면을 직접 눈으로 검토할 때 쓴다.
  * 설치된 Chrome 을 그대로 쓰므로 별도 브라우저를 내려받지 않는다.

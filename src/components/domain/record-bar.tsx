@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 
 /** 기록 막대. */
-export function RecordBar({
+function RecordBar({
   percentile,
   label,
   className,
@@ -55,8 +55,9 @@ export function RecordRow({
         <span className="text-sm font-semibold">{label}</span>
         <span className="tabular text-ink-soft text-sm">{value}</span>
       </div>
+      {/* 비교 기준이 없는 나이면 빗금 막대가 말한다 — 풀이 줄을 달지 않는다 */}
       <RecordBar percentile={percentile} label={caption} delay={delay} />
-      <p className="text-faint text-caption">{caption ?? "이 나이대는 아직 비교 기준이 없어요"}</p>
+      {percentile != null && caption && <p className="text-ink-soft text-caption">{caption}</p>}
     </div>
   );
 }

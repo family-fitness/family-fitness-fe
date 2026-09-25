@@ -1,7 +1,7 @@
 /**
  * 에셋 준비 — 투명 여백을 잘라내고 public/assets 로 옮긴다.
  *
- *   node scripts/prepare-assets.mjs [원본폴더]
+ *   node scripts/prepare-assets.mjs <원본폴더>
  *
  * 왜 필요한가
  *   이미지 생성 AI 가 뽑은 PNG 는 그림이 1024 캔버스 가운데에 놓이고 사방에 여백이 남는다.
@@ -11,11 +11,18 @@
  *   알파가 거의 0 인 잔여 픽셀도 함께 버린다. 그게 남아 있으면 잘라낸 상자가
  *   실제 그림보다 훨씬 커진다 — 머리 하나가 캔버스 절반을 차지하는 것처럼 보인다.
  */
-import { mkdir, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readdir } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 
-const SRC = process.argv[2] ?? "family-fitness-assets/public/assets";
+/**
+ * 원본 폴더는 꼭 적는다 — 기본값으로 두면 가장 오래된 1차 폴더를 읽어 옛 그림이 새 그림을 덮는다
+ */
+const SRC = process.argv[2];
+if (!SRC) {
+  console.error("원본 폴더를 적어 주세요 — node scripts/prepare-assets.mjs <원본폴더>");
+  process.exit(1);
+}
 const OUT = "public/assets";
 /** 이 값 이하의 알파는 없는 픽셀로 본다 */
 const ALPHA_THRESHOLD = 24;
@@ -27,24 +34,29 @@ const ALPHA_THRESHOLD = 24;
  * 280px 면 충분하다. 원본 그대로 두면 79장에 27MB 라 폰에서 느리고 저장소도 무겁다.
  */
 const MAX_EDGE = {
-  char: 256,
   item: 256,
   deco: 256,
   move: 384,
   scene: 384,
   anim: 384,
-  stamp: 256,
-  // 배경은 화면 폭을 채운다. 2배 화면까지 감안해 가로를 넉넉히 둔다
-  bg: 1024,
+  // 레벨 캐릭터는 아이 홈에서 150px 로 가장 크게 뜬다. 2배 화면까지
+  level: 384,
+  // 스티커는 캘린더 칸에 작게, 붙이기 화면에 크게 뜬다
+  sticker: 320,
+  badge: 256,
+  // 아이콘 그림은 줄 앞 · 칸 안에 많아야 56px 로 뜬다. 2배 화면까지
+  icon: 192,
+  // 리그 메달은 리그 화면 머리에 64px 로 가장 크게 뜬다. 3배 화면까지
+  league: 192,
 };
 
 /**
  * 여백을 잘라내지 않는 분류.
  *
- * 배경은 가로로 긴 띠라서 여백째로 구도가 완성돼 있다. 잘라내면 구름만 남아
- * 화면 폭에 맞춰 늘어나면서 뭉개진다.
+ * 레벨 캐릭터는 다섯 단계가 **같은 자리에 같은 크기로** 서야 자라는 것으로 읽힌다.
+ * 단계마다 머리 위 새싹 높이가 달라서, 잘라내면 몸 크기가 단계마다 달라진다.
  */
-const KEEP_MARGIN = new Set(["bg"]);
+const KEEP_MARGIN = new Set(["level"]);
 
 /**
  * 프레임을 **한 장씩 잘라내면 안 되는** 분류.
@@ -167,7 +179,7 @@ for (const group of await readdir(SRC, { withFileTypes: true })) {
 
   /*
     격자로 뽑힌 프레임과, 혼자만 장식이 붙어 크기가 확 다른 프레임을 걸러낸다.
-    걸러낸 번호는 anim-frames.ts 에 안 실리므로 화면이 알아서 건너뛴다.
+    걸러낸 장은 옮기지 않는다. 화면은 동작마다 고른 한 장만 쓴다.
   */
   const rejected = [];
   if (GROUPED.has(group.name)) {
@@ -237,42 +249,8 @@ for (const group of await readdir(SRC, { withFileTypes: true })) {
   }
 }
 
-/*
-  애니메이션 프레임 수를 코드가 알 수 있게 적어 둔다.
-
-  프레임을 3장에서 6장으로 늘리면 코드도 같이 고쳐야 하는데, 그걸 잊으면
-  4~6번 프레임이 조용히 안 나온다. 에셋을 넣을 때 여기서 세어 두면
-  화면은 있는 만큼 알아서 쓴다.
-*/
-const animFrames = {};
-for (const item of report) {
-  const match = item.file.match(/^anim\/(.+)-(\d+)\.png$/);
-  if (!match) continue;
-  const [, motion, frame] = match;
-  animFrames[motion] = [...(animFrames[motion] ?? []), Number(frame)].sort((a, b) => a - b);
-}
-
-await writeFile(
-  "src/lib/anim-frames.ts",
-  `/**
- * 동작별로 쓸 수 있는 프레임 번호. **손으로 고치지 않는다** —
- * \`node scripts/prepare-assets.mjs\` 가 에셋을 넣을 때 다시 쓴다.
- *
- * 격자로 잘못 뽑힌 장은 여기 안 실린다 — 화면이 알아서 건너뛴다.
- */
-export const ANIM_FRAMES: Record<string, number[]> = {
-${Object.entries(animFrames)
-  .sort(([a], [b]) => a.localeCompare(b))
-  .map(([motion, frames]) => `  ${motion}: [${frames.join(", ")}],`)
-  .join("\n")}
-};
-`,
-);
-
-await writeFile(
-  path.join(OUT, "manifest.json"),
-  JSON.stringify({ generatedAt: new Date().toISOString(), assets: report }, null, 2) + "\n",
-);
-
 const total = report.reduce((sum, r) => sum + r.bytes, 0);
 console.log(`${report.length}장 정리 완료 → ${OUT} (${(total / 1024 / 1024).toFixed(1)}MB)`);
+
+// 화면은 목록에 있는 그림만 부른다 — 정리한 김에 목록도 새로 쓴다
+await import("./list-assets.mjs");

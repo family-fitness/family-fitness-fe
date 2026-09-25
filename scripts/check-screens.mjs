@@ -13,44 +13,53 @@ import { chromium } from "playwright";
 const PORT = process.argv[2] ?? "3001";
 const BASE = `http://localhost:${PORT}`;
 const KID = "00000000-0000-4000-8000-000000000012";
+/** 시연 가족에게 와 있는 AI 편성 회차(`src/mocks/fixtures.json` 의 coachRun) */
+const RUN = "0271ff7b-6e8f-4685-986a-a3a881352cd2";
 
 const ROUTES = [
   "/",
   "/login",
   "/claim",
   "/start",
-  "/start/parent",
+  "/start/family",
   "/start/child",
   "/start/who",
   "/parent",
-  "/parent/history",
   "/parent/family",
+  "/parent/dashboard",
+  "/parent/league",
   `/parent/child/${KID}`,
+  `/parent/sticker/${KID}`,
   "/kid",
-  "/kid/pick",
-  "/kid/done",
-  "/kid/praise",
-  `/kid/play/video-IdpXx2gm90o`,
-  "/coach/weekly",
-  "/coach/chat",
-  "/missions/none",
+  "/kid/badges",
+  "/kid/m/seed-today",
+  "/calendar",
+  "/calendar/2026-09-23",
+  "/notifications",
+  "/plan",
+  "/plan/custom",
+  // 시연 가족에게 와 있는 제안(목의 회차) — 짜는 과정 · 제안
+  `/plan/run/${RUN}`,
+  `/plan/${RUN}`,
   "/videos",
-  "/videos/favorites",
-  "/videos/recent",
-  "/family/cheer",
-  "/family/report",
+  "/videos?list=favorites",
   "/settings",
   "/settings/support-mode",
   "/settings/consent",
+  "/settings/schedule",
   `/p/${KID}/measure`,
   `/p/${KID}/result`,
   `/p/${KID}/future`,
+  "/offline",
 ];
 
 /** 손가락이 닿는 최소 크기 */
 const MIN_TAP = 40;
-/** 무시할 콘솔 잡음 — 목 데이터의 가짜 영상 id 때문에 나는 것들 */
-const NOISE = /favicon|ytimg|_next\/image|400 |404 /;
+/**
+ * 무시할 콘솔 잡음 — 남의 것(유튜브 · 썸네일 · 파비콘 · next/image)을 못 받은 것만. 우리 API 의 400 · 404 는
+ * 잡음이 아니다 — 전에는 400 · 404 를 통째로 넘겨 우리 요청이 틀려도 몰랐다
+ */
+const NOISE = /favicon|ytimg|youtube|_next\/image/;
 
 /**
  * 아이 화면에 나오면 안 되는 말.
@@ -70,18 +79,26 @@ const PARENT_WORDS = [
   "철회",
   "약점",
   "하위",
+  // 가족 리그는 부모 화면에만(규칙 14) — 아이에게 순위를 말하지 않는다(규칙 10)
+  "리그",
+  "순위",
+  "달성률",
+  "티어",
 ];
 
 /** 아이 모드로 열어 보는 경로. 부모 화면은 막히는 게 맞아서 여기 넣지 않는다 */
 const KID_ROUTES = [
   "/kid",
-  "/kid/pick",
-  "/kid/done",
-  "/kid/praise",
+  "/kid/badges",
+  "/calendar",
+  "/calendar/2026-09-23",
+  "/notifications",
   "/videos",
   "/settings",
-  `/p/${KID}/result`,
 ];
+
+/** 부모 화면 — 아이 모드로 열면 아이 홈으로 돌아가야 한다(백분위 · 등급 · 약한 요인은 부모의 것, 규칙 10) */
+const PARENT_ONLY = [`/p/${KID}/result`, `/p/${KID}/future`, `/p/${KID}/measure`, "/parent"];
 
 const browser = await chromium.launch({ channel: "chrome" });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -115,8 +132,11 @@ for (const route of ROUTES) {
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e).split("\n")[0]));
   page.on("console", (m) => {
+    if (m.type() !== "error") return;
     const text = m.text();
-    if (m.type() === "error" && !NOISE.test(text)) errors.push(text.split("\n")[0]);
+    const where = m.location()?.url ?? "";
+    if (NOISE.test(text) || NOISE.test(where)) return;
+    errors.push(`${text.split("\n")[0]}${where ? ` — ${where}` : ""}`);
   });
 
   try {
@@ -149,10 +169,83 @@ for (const route of ROUTES) {
       );
       if (unnamed.length > 0) out.push(`이름 없는 버튼 ${unnamed.length}개`);
 
-      // 화면 색은 흰색 하나로 간다
+      // 바탕은 연회색 하나로 간다(--color-ground). 화면마다 바탕을 따로 칠하면
+      // 흰 카드가 떠 보이지 않는다
       const frame = document.querySelector(".app-frame");
-      if (frame && getComputedStyle(frame).backgroundColor !== "rgb(255, 255, 255)") {
-        out.push("앱 배경이 흰색이 아님");
+      if (frame && getComputedStyle(frame).backgroundColor !== "rgb(244, 245, 247)") {
+        out.push("앱 바탕이 --color-ground 가 아님");
+      }
+
+      /*
+        글자 대비. 작은 글씨는 4.5:1, 큰 글씨(24px · 굵은 19px 이상)는 3:1.
+        연한 회색 글자가 흰 카드 위에서 2.8:1 로 햇빛 아래 사라지고 있었다.
+        바탕은 글자에서 위로 올라가며 처음 만나는 칠한 면으로 본다.
+      */
+      /*
+        색 문자열을 [r, g, b, a] 로. Tailwind v4 는 반투명 색을 oklab() · color-mix() 로
+        내보내서 숫자만 뽑으면 엉뚱한 색이 된다 — 캔버스에 칠해서 브라우저가 읽게 한다.
+      */
+      const pen = document.createElement("canvas").getContext("2d", { willReadFrequently: true });
+      const rgb = (c) => {
+        pen.clearRect(0, 0, 1, 1);
+        pen.fillStyle = "rgba(0,0,0,0)";
+        pen.fillStyle = c;
+        pen.fillRect(0, 0, 1, 1);
+        const [r, g, b, a] = pen.getImageData(0, 0, 1, 1).data;
+        return [r, g, b, a / 255];
+      };
+      const lum = ([r, g, b]) => {
+        const f = (v) => {
+          v /= 255;
+          return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+        };
+        return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+      };
+      /*
+        글자 뒤의 바탕. 위로 올라가며 칠한 면을 모으고, 반투명한 면은 아래 면과
+        섞는다 — 썸네일 위 검은 반투명 띠를 흰색으로 보면 흰 글자가 1:1 로 잡힌다.
+      */
+      const bgOf = (el) => {
+        const layers = [];
+        for (let n = el; n; n = n.parentElement) {
+          const c = rgb(getComputedStyle(n).backgroundColor);
+          const a = c[3];
+          if (a === 0) continue;
+          layers.push([c[0], c[1], c[2], a]);
+          if (a >= 0.99) break;
+        }
+        let out = [255, 255, 255];
+        for (const [r, g, b, a] of layers.reverse()) {
+          out = [r * a + out[0] * (1 - a), g * a + out[1] * (1 - a), b * a + out[2] * (1 - a)];
+        }
+        return out;
+      };
+      /** 반투명 글자도 바탕에 섞어서 본다 */
+      const fgOf = (color, bg) => {
+        const c = rgb(color);
+        const a = c[3];
+        return [c[0] * a + bg[0] * (1 - a), c[1] * a + bg[1] * (1 - a), c[2] * a + bg[2] * (1 - a)];
+      };
+      const faint = [];
+      for (const el of document.querySelectorAll("body *")) {
+        const own = [...el.childNodes].some((t) => t.nodeType === 3 && t.textContent.trim());
+        if (!own) continue;
+        const st = getComputedStyle(el);
+        if (st.visibility === "hidden" || Number(st.opacity) < 0.5) continue;
+        const box = el.getBoundingClientRect();
+        if (box.width === 0 || box.height === 0) continue;
+        const bg = bgOf(el);
+        const fg = fgOf(st.color, bg);
+        const [a, b] = [lum(fg), lum(bg)];
+        const ratio = (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+        const size = parseFloat(st.fontSize);
+        const large = size >= 24 || (size >= 18.66 && Number(st.fontWeight) >= 700);
+        if (ratio < (large ? 3 : 4.5)) {
+          faint.push(`${el.textContent.trim().slice(0, 12)}(${ratio.toFixed(1)})`);
+        }
+      }
+      if (faint.length > 0) {
+        out.push(`글자 대비 부족 ${faint.length}곳: ${faint.slice(0, 4).join(" · ")}`);
       }
       return out;
     }, MIN_TAP);
@@ -186,10 +279,50 @@ for (const route of KID_ROUTES) {
   await page.close();
 }
 
+for (const route of PARENT_ONLY) {
+  const page = await kidContext.newPage();
+  try {
+    await page.goto(`${BASE}${route}`, { waitUntil: "load", timeout: 30000 });
+    await page.waitForURL((url) => url.pathname === "/kid", { timeout: 8000 });
+  } catch {
+    problems.push(`${route} (아이 모드)\n    아이 홈으로 돌아가지 않음: ${page.url()}`);
+  }
+  await page.close();
+}
+
+/* ─── 좁은 폰에서 한 번 더 ─────────────────────────────────── */
+
+/**
+ * 320px. 아이폰 SE 와 갤럭시 폴드 접은 화면이 이만하다.
+ *
+ * 390 에서만 보면 가로로 넘치는 걸 못 잡는다 — 긴 이름 하나에 아이 홈
+ * 제목이 화면 밖으로 나가던 것이 여기서 잡혔다.
+ * 여기서는 **가로 스크롤만** 본다. 누르는 크기와 제목 수는 폭과 무관하다.
+ */
+const narrow = await browser.newContext({ viewport: { width: 320, height: 720 } });
+await narrow.addInitScript(...seed("parent"));
+
+for (const route of ROUTES) {
+  const page = await narrow.newPage();
+  try {
+    await page.goto(`${BASE}${route}`, { waitUntil: "load", timeout: 30000 });
+    await page.waitForTimeout(900);
+    const over = await page.evaluate(
+      () => document.documentElement.scrollWidth > window.innerWidth + 1,
+    );
+    if (over) problems.push(`${route} (320px)\n    가로 스크롤`);
+  } catch {
+    // 넓은 화면에서 이미 봤다. 여기서 못 연 건 따로 적지 않는다
+  }
+  await page.close();
+}
+
 await browser.close();
 
 if (problems.length > 0) {
   console.error("화면 문제:\n  " + problems.join("\n  "));
   process.exit(1);
 }
-console.log(`화면 ${ROUTES.length}개 · 아이 모드 ${KID_ROUTES.length}개 이상 없음`);
+console.log(
+  `화면 ${ROUTES.length}개 · 아이 모드 ${KID_ROUTES.length + PARENT_ONLY.length}개 · 좁은 폰 ${ROUTES.length}개 이상 없음`,
+);

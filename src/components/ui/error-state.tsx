@@ -18,21 +18,24 @@ export function ErrorState({
   retrying?: boolean;
 }) {
   const router = useRouter();
-  const unauthorized = error instanceof ApiError && error.status === 401;
+  const status = error instanceof ApiError ? error.status : 0;
+  const unauthorized = status === 401;
+  // 막혔거나(403 — 동의 · 권한) 없는(404) 것은 다시 불러도 같다 — 다시 불러오기를 주지 않고 까닭을 코드로 말한다
+  const settled = status === 403 || status === 404;
+  const title = unauthorized
+    ? "다시 로그인해 주세요"
+    : status === 403
+      ? ((error as ApiError).commonMessage ?? "볼 수 없어요")
+      : status === 404
+        ? "찾을 수 없어요"
+        : "불러오지 못했어요";
 
   return (
     <div className="flex flex-col items-center py-10 text-center">
-      <Illustration name="scene/scene-error" size={140} />
-      <p className="mt-4 text-lg font-extrabold">
-        {unauthorized ? "다시 로그인해 주세요" : "불러오지 못했어요"}
-      </p>
-      <p className="text-ink-soft mt-2 text-sm leading-relaxed">
-        {unauthorized
-          ? "로그인이 풀렸어요. 다시 들어오면 기록은 그대로 있어요."
-          : "인터넷 연결을 확인하고 다시 눌러 주세요. 기록은 지워지지 않았어요."}
-      </p>
+      <Illustration name="scene/kiumi-rest" size={140} />
+      <p className="mt-4 text-lg font-extrabold">{title}</p>
 
-      {onRetry && !unauthorized && (
+      {onRetry && !unauthorized && !settled && (
         <Button size="md" variant="outline" className="mt-5" loading={retrying} onClick={onRetry}>
           <RotateCw className="size-4" aria-hidden />
           다시 불러오기

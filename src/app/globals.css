@@ -2,50 +2,73 @@
 @import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 
 /* ─────────────────────────────────────────────
-   우리가족 체력키움
-   컨셉: 체육 기록판. 국민체력100 측정 기록을 가족 단위로 읽는다.
-   타이포가 주인공이고, 색은 셋뿐이고, 선으로 구획을 나눈다.
-   숫자는 전광판 글자로 크게 띄운다 — 기록이 주인공인 서비스라서.
-   ───────────────────────────────────────────── */
-/* ─────────────────────────────────────────────
-   우리가족 체력키움 — 색 · 서체
+   우리가족 체력키움 — 색 · 면 · 서체
 
-   색은 국민체력100 공식 사이트에서 그대로 가져왔다.
-   공공데이터 기반 서비스라 그 기관이 쓰는 색을 쓰는 게 맞고,
-   AI 가 기본값으로 뱉는 보라·네온 계열을 피하는 방법이기도 하다.
+   **헬스 앱의 결로 간다.** 삼성헬스 · 애플 피트니스가 공통으로 쓰는 모양이
+   이 서비스에도 맞는다 — 측정값을 매일 들여다보는 앱이기 때문이다.
 
-     흰 배경 #FFFFFF · 연회색 #F4F4F4 · 본문 #333333
-     공식 파랑 #2784E6 (로그인 버튼) · 로고 남색 #1B2574
+     · 바탕은 아주 연한 회색, 내용은 흰 카드 위에 얹는다
+       (흰 바탕에 선만 그으면 문서처럼 보인다)
+     · 카드는 크게 둥글고 그림자는 아주 옅다
+     · 숫자가 주인공이다. 크게, 굵게, 본문과 같은 서체로
+     · 색은 하나다. 요인마다 다른 색을 칠하면 그 색이 잘잘못으로 읽힌다
+
+   색은 국민체력100 공식 사이트에서 가져왔다. 공공데이터 기반 서비스라
+   그 기관이 쓰는 색을 쓰는 게 맞고, AI 가 기본값으로 뱉는 보라·네온을
+   피하는 방법이기도 하다.
 
    쓰지 않는 것 — 그라데이션, 네온, 보라, 채도 높은 형광색.
    ───────────────────────────────────────────── */
 @theme {
-  /* 바탕 · 글자 */
-  --color-paper: #ffffff; /* 배경은 흰색으로 통일 */
-  --color-sub: #f4f4f4; /* 구획을 나눌 때만 쓰는 연회색 */
-  --color-ink: #22262b;
-  --color-ink-soft: #667079;
-  --color-faint: #98a1aa;
-  --color-line: #e3e6ea;
-  --color-rule: #1b2574;
+  /* ── 면 ──
+     ground  화면 바탕 (아주 연한 회색)
+     paper   카드 · 떠 있는 면
+     sub     카드 안에서 한 겹 더 눌러야 할 때 */
+  --color-ground: #f4f5f7;
+  --color-paper: #ffffff;
+  --color-sub: #f1f3f6;
 
-  /* 포인트 — 국민체력100 공식 */
+  /* ── 글자 ──
+     셋 다 흰 카드 위에서 4.5:1 을 넘긴다. 연한 회색 글자(#949ca6)는 2.8:1 이라
+     작은 글씨가 햇빛 아래에서 사라졌다 */
+  --color-ink: #16191d;
+  --color-ink-soft: #4f5963;
+  --color-faint: #687079;
+  --color-line: #e8eaee;
+
+  /* ── 포인트 — 국민체력100 공식 ──
+     signal        그래프 · 링 · 막대 같은 **표시**. 글자를 얹지 않는다
+     signal-strong 글자가 올라가는 **면**(버튼 · 고른 칩)과 파랑 글자.
+                   공식 파랑 위 흰 글자는 3.8:1 이라 한 단계만 진하게 (4.95:1) */
   --color-signal: #2784e6;
+  --color-signal-strong: #1a6fd1;
   --color-signal-deep: #1b2574;
   --color-signal-soft: #eaf3fd;
+  /* 키움 섬 받침의 그늘 면 */
+  --color-signal-pale: #d4e5f9;
+  /* 남색 링의 빈 자리 */
+  --color-deep-soft: #e4e7f2;
+
+  /* 또래 평균 선. 눈금(line)보다 진하고 글자(faint)보다 연하다 — 기준선도 하나의
+     계열이라 흰 바탕에서 3:1 은 넘긴다 */
+  --color-baseline: #8b939c;
+  /* 강조하지 않는 막대. 오늘 칸만 파랑이고 나머지는 이 회색 */
+  --color-bar: #cfd5dc;
 
   /* 기록 강조 — 마스코트 노랑 */
   --color-mark: #ffb800;
   --color-mark-soft: #fff5dc;
+  /* 키움 섬의 노랑 그늘 면. 입체의 두 톤 중 어두운 쪽 */
+  --color-mark-shade: #e0a100;
 
-  /* 완료 */
-  --color-done: #1f8a5f;
+  /* 해냈다는 표시. 등급이나 점수에는 쓰지 않는다 */
+  --color-done: #1b7f57;
   --color-done-soft: #e6f4ee;
 
-  /* 서체 */
+  /* ── 서체 ──
+     **하나만 쓴다.** 숫자 전용 둥근 서체를 따로 두었더니 화면마다 서체가 둘이라
+     "중구난방" 의 한 원인이 됐다. 숫자는 굵기와 크기로 띄운다 */
   --font-sans: "Pretendard Variable", Pretendard, system-ui, sans-serif;
-  /* 숫자 전용. 본문과 같은 서체를 쓰면 점수가 글에 묻힌다 */
-  --font-num: var(--font-num-face), "Pretendard Variable", sans-serif;
 
   /*
     글자 크기. 임의값(text-[0.7rem])을 흩뿌리면 같은 뜻인데 화면마다 다른 크기가 된다.
@@ -54,18 +77,38 @@
     body    본문
     lead    줄의 제목
   */
-  --text-micro: 0.66rem;
-  --text-caption: 0.72rem;
-  --text-body: 0.95rem;
-  --text-lead: 1.04rem;
+  --text-micro: 0.68rem;
+  --text-caption: 0.75rem;
+  --text-body: 0.94rem;
+  --text-lead: 1.05rem;
+  /* 카드의 숫자. metric 은 작은 카드, metric-lg 는 화면의 주인공 숫자 */
+  --text-metric: 1.75rem;
+  --text-metric-lg: 2.75rem;
 
-  --radius-card: 16px;
+  /* ── 모서리 ──
+     카드는 크게 둥글다. 헬스 앱이 공통으로 쓰는 값이 20~24px 이다 */
+  --radius-card: 20px;
+  --radius-tile: 14px;
+
   --width-phone: 30rem;
+}
+
+/*
+  떠 있는 정도.
+
+  그림자는 **아주 옅게** 한 겹만 쓴다. 진하게 쓰면 2010년대 머티리얼처럼 보이고,
+  아예 없으면 카드가 바탕에 눌어붙어 구획이 안 보인다.
+*/
+@theme {
+  --shadow-card: 0 1px 2px rgba(22, 25, 29, 0.04), 0 4px 16px rgba(22, 25, 29, 0.05);
+  --shadow-lift: 0 2px 6px rgba(22, 25, 29, 0.06), 0 12px 32px rgba(22, 25, 29, 0.08);
+  /* 시트가 올라오는 결 — 빨리 떠서 부드럽게 멈춘다(폰의 바닥 시트) */
+  --ease-sheet: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 html {
   /*
-    **흰 화면 하나로 간다.** 다크 모드를 따로 두지 않는다.
+    **밝은 화면 하나로 간다.** 다크 모드를 따로 두지 않는다.
 
     이걸 적지 않으면 기기가 다크 모드일 때 브라우저가 입력칸·스크롤바·달력
     같은 기본 UI 를 제멋대로 어둡게 칠한다. 화면은 흰데 입력칸만 검은
@@ -73,260 +116,273 @@ html {
   */
   color-scheme: light;
 
-  /* 데스크톱 거터. 흰 앱 화면이 기기처럼 떠 보이게 한 단계만 어둡게 */
-  background-color: #eef1f5;
-  background-attachment: fixed;
+  /* 데스크톱 거터. 앱 화면이 기기처럼 떠 보이게 한 단계 더 어둡게 */
+  background-color: #e4e7ec;
   overflow-x: hidden;
+  /* 시트가 뒤 화면을 잠그면 스크롤바가 사라진다 — 그 폭만큼 화면이 옆으로 튀지 않게 자리를 늘 둔다 */
+  scrollbar-gutter: stable;
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  /* 흰색은 .app-frame 이 칠한다. 여기서 칠하면 데스크톱 거터까지 하얘진다 */
+  /* 바탕은 .app-frame 이 칠한다. 여기서 칠하면 데스크톱 거터까지 같은 색이 된다 */
   color: var(--color-ink);
   font-family: var(--font-sans);
 }
 
-/* ── 앱 프레임 ── */
-.app-frame {
-  max-width: var(--width-phone);
-  margin: 0 auto;
-  min-height: 100dvh;
-  background: var(--color-paper);
-  box-shadow:
-    0 0 0 1px rgba(27, 37, 116, 0.06),
-    0 18px 50px -20px rgba(27, 37, 116, 0.22);
-  padding-top: env(safe-area-inset-top);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
-}
-/* 대화 입력창. 탭바 바로 위에 붙어 화면 바닥에 머문다 —
-   sticky 로 두면 글이 짧을 때 화면 가운데에 떠 버린다 */
-.composer {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 30;
-  display: flex;
-  justify-content: center;
-  pointer-events: none;
-}
-.composer > * {
-  width: 100%;
-  max-width: var(--width-phone);
-  pointer-events: auto;
-  background: var(--color-paper);
-  border-top: 1px solid var(--color-line);
-}
+/*
+  이 앱의 부품 모양(.card · .chip · .field …)은 components 층에 둔다.
 
-/* 탭바를 없앴다. 아래 여백은 홈 인디케이터만큼만 남긴다 */
-.app-main {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 1.5rem);
-}
-
-/* ── 타이포 ── */
-/* 영문 eyebrow — 제목 위에 놓는 작은 라벨 */
-.eyebrow {
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  color: var(--color-signal);
-}
-/* 화면 제목. 크게 쓴다 — 이 앱은 읽는 앱이 아니라 보는 앱이다 */
-.page-title {
-  font-size: 1.9rem;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.15;
-}
-/* 제목 아래 굵은 선 */
-.rule {
-  border-bottom: 2.5px solid var(--color-rule);
-}
-.rule-thin {
-  border-bottom: 1px solid var(--color-line);
-}
-/* 전광판 숫자 */
-/* 크게 뜨는 숫자 — 점수, 개수 */
-.board-num {
-  font-family: var(--font-num);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 0.9;
-}
-/* 줄 맞춰 읽는 숫자 — 시간, 퍼센트 */
-.tabular {
-  font-family: var(--font-num);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-/* ── 섹션 제목: 제목 ──── 영문라벨 ── */
-.section-head {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-.section-head h2 {
-  font-size: 1.15rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-}
-.section-head::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: var(--color-line);
-}
-
-/* ── 칩 ── */
-/* 누르는 것은 44px 아래로 내려가지 않는다. 아이 손가락이 닿아야 한다 */
-.chip {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  border: 1.5px solid var(--color-line);
-  border-radius: 999px;
-  padding: 0.35rem 1rem;
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--color-ink-soft);
-  white-space: nowrap;
-  background: transparent;
-}
-/* 고른 칩. 검정으로 채우면 흑백 앱처럼 보인다 — 국민체력100 파랑을 쓴다 */
-.chip-on {
-  background: var(--color-signal);
-  border-color: var(--color-signal);
-  color: #ffffff;
-}
-
-/* ── 카드 ── */
-/* 배경이 흰색이라 카드에 흰 배경을 또 깔 수 없다.
-   구획은 선으로만 나눈다. 균일한 라운드 카드를 나열하는 건
-   AI 가 만든 화면에서 가장 자주 보이는 모양이라 피한다. */
-.divide-rows > * + * {
-  border-top: 1px solid var(--color-line);
-}
-
-/* ── 전광판 ── */
-/* ── 기록 막대 ── */
-/* 또래 평균(50) 자리에 눈금을 둔다. 기준이 없으면 위치가 뜻을 잃는다 */
-.record-rail {
-  position: relative;
-  height: 10px;
-  border-radius: 999px;
-  background: var(--color-line);
-  overflow: hidden;
-}
-.record-fill {
-  position: absolute;
-  inset-block: 0;
-  left: 0;
-  border-radius: 999px;
-  background: var(--color-signal);
-}
-.record-avg {
-  position: absolute;
-  inset-block: -3px;
-  left: 50%;
-  width: 2px;
-  background: var(--color-ink);
-  opacity: 0.55;
-}
-
-/* 규준이 없는 항목. 0% 막대를 그리면 꼴찌처럼 보인다 */
-.record-dash {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background-image: repeating-linear-gradient(
-    -45deg,
-    var(--color-line) 0 6px,
-    transparent 6px 12px
-  );
-  opacity: 0.7;
-}
-
-/* ── 터치 피드백 ── */
-.press {
-  transition:
-    transform 0.08s ease,
-    background 0.15s ease;
-  touch-action: manipulation;
-}
-.press:active {
-  transform: scale(0.97);
-}
-
-/* ── 모션 ── */
-@keyframes shimmer {
-  0% {
-    background-position: -180% 0;
+  층 밖에 두면 Tailwind 유틸리티(utilities 층)보다 **늘 이긴다.** 그러면 `card py-1` ·
+  `field pr-12` · `app-main pb-28` 처럼 부품을 조금 고치려던 유틸리티가 소리 없이
+  무시된다 — 입력칸 글자가 단위 밑으로 들어가고, 마지막 칸이 아래 단추 밑에 숨었다.
+*/
+@layer components {
+  /* ── 앱 프레임 ── */
+  .app-frame {
+    max-width: var(--width-phone);
+    margin: 0 auto;
+    min-height: 100dvh;
+    /* 바탕은 아주 연한 회색. 내용은 흰 카드로 그 위에 얹는다 */
+    background: var(--color-ground);
+    box-shadow:
+      0 0 0 1px rgba(27, 37, 116, 0.06),
+      0 18px 50px -20px rgba(27, 37, 116, 0.22);
+    padding-top: env(safe-area-inset-top);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
   }
-  100% {
-    background-position: 180% 0;
+  /* 탭바를 없앴다. 아래 여백은 홈 인디케이터만큼만 남긴다 */
+  .app-main {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 1.5rem);
   }
-}
-.skeleton {
-  border-radius: 8px;
-  background: linear-gradient(100deg, #eceff2 30%, #f6f8fa 50%, #eceff2 70%);
-  background-size: 220% 100%;
-  animation: shimmer 1.25s ease-in-out infinite;
-}
 
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+  /* ── 타이포 ── */
+  /* 화면 제목. 헬스 앱의 큰 제목 크기 — 화면의 1/3 을 차지하지 않을 만큼 */
+  .page-title {
+    font-size: 1.625rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
   }
-  to {
-    opacity: 1;
-    transform: none;
+  /* 크게 뜨는 숫자 — 점수, 개수. 비례 숫자로 둔다: 고정폭은 큰 글씨에서 헐렁하다 */
+  .board-num {
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
   }
-}
-.rise {
-  animation: rise 0.45s ease-out both;
-}
+  /* 줄 맞춰 읽는 숫자 — 표 안의 시간, 퍼센트. 여기만 고정폭 */
+  .tabular {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
 
-/* 기록이 왼쪽에서 차오른다 */
-@keyframes fill {
-  from {
-    width: 0;
-  }
-}
-.fill {
-  animation: fill 0.7s cubic-bezier(0.16, 0.84, 0.3, 1) both;
-}
+  /* ── 카드 ──
+     헬스 앱의 기본 단위. 바탕(연회색) 위에 흰 면을 얹고 아주 옅은 그림자로 띄운다.
 
-/* 전광판이 켜진다 */
-@keyframes boardOn {
-  0% {
-    opacity: 0.2;
+     **같은 크기 카드를 줄줄이 세우지 않는다.** 크기와 역할이 다 같으면 그게
+     AI 가 만든 화면의 대표 신호다(AGENTS.md). 큰 것 하나 · 작은 것 여럿처럼
+     무게를 다르게 준다. */
+  .card {
+    background: var(--color-paper);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+    padding: 1rem 1.125rem;
   }
-  35% {
-    opacity: 1;
+  /* 화면의 주인공. 점수·레이더처럼 한 화면에 하나뿐인 것 */
+  .card-hero {
+    background: var(--color-paper);
+    border-radius: 24px;
+    box-shadow: var(--shadow-lift);
+    padding: 1.25rem 1.25rem 1.125rem;
   }
-  55% {
-    opacity: 0.5;
+  /* 카드 머리 — 왼쪽 제목, 오른쪽에 날짜나 › */
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.94rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--color-ink);
   }
-  100% {
-    opacity: 1;
+  /* 누르는 카드. 눌리는 느낌만 주고 색은 안 바뀐다 */
+  .card-tap {
+    display: block;
+    width: 100%;
+    text-align: left;
+    transition: transform 0.08s ease;
   }
-}
-.board-on {
-  animation: boardOn 0.7s ease-out both;
-}
+  .card-tap:active {
+    transform: scale(0.988);
+  }
 
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  scrollbar-width: none;
+  /* 카드 안에서 한 겹 더 눌러야 할 때 */
+  .tile {
+    background: var(--color-sub);
+    border-radius: var(--radius-tile);
+    padding: 0.75rem 0.875rem;
+  }
+
+  /* ── 지표 한 칸 ──
+     라벨 위, 큰 숫자 아래. 헬스 앱이 수치를 보여 주는 가장 작은 단위다 */
+  .metric-label {
+    font-size: var(--text-micro);
+    font-weight: 700;
+    color: var(--color-faint);
+    letter-spacing: 0.01em;
+  }
+  .metric-value {
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--color-ink);
+  }
+  .metric-unit {
+    font-size: 0.5em;
+    font-weight: 700;
+    color: var(--color-ink-soft);
+    margin-left: 0.15em;
+  }
+
+  /* ── 칩 ── */
+  /* 누르는 것은 44px 아래로 내려가지 않는다. 아이 손가락이 닿아야 한다 */
+  .chip {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    border: 0;
+    border-radius: 999px;
+    padding: 0.35rem 1rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--color-ink-soft);
+    white-space: nowrap;
+    background: var(--color-sub);
+  }
+  /* 고른 칩. 검정으로 채우면 흑백 앱처럼 보인다 — 국민체력100 파랑을 쓴다 */
+  .chip-on {
+    background: var(--color-signal-strong);
+    color: #ffffff;
+  }
+
+  /* 카드 안의 목록은 다시 카드로 감싸지 않고 선으로 나눈다 */
+  .divide-rows > * + * {
+    border-top: 1px solid var(--color-line);
+  }
+
+  /* ── 기록 막대 ── */
+  /* 또래 평균(50) 자리에 눈금을 둔다. 기준이 없으면 위치가 뜻을 잃는다 */
+  .record-rail {
+    position: relative;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--color-sub);
+    overflow: hidden;
+  }
+  .record-fill {
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    border-radius: 999px;
+    background: var(--color-signal);
+  }
+  .record-avg {
+    position: absolute;
+    inset-block: -3px;
+    left: 50%;
+    width: 2px;
+    background: var(--color-ink);
+    opacity: 0.55;
+  }
+
+  /* 규준이 없는 항목. 0% 막대를 그리면 꼴찌처럼 보인다 */
+  .record-dash {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background-image: repeating-linear-gradient(
+      -45deg,
+      var(--color-line) 0 6px,
+      transparent 6px 12px
+    );
+    opacity: 0.7;
+  }
+
+  /* ── 터치 피드백 ── */
+  .press {
+    transition:
+      transform 0.08s ease,
+      background 0.15s ease;
+    touch-action: manipulation;
+  }
+  .press:active {
+    transform: scale(0.97);
+  }
+
+  /* ── 모션 ── */
+
+  /* 받은 기념 표시가 하나씩 올라온다 */
+  @keyframes badgePop {
+    from {
+      transform: scale(0.6);
+      opacity: 0;
+    }
+    60% {
+      transform: scale(1.06);
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  .badge-pop {
+    animation: badgePop 380ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+  }
+
+  /* 기다리는 자리 — 토큰 색 한 면이 숨 쉬듯 옅어진다. 그라데이션을 흘리지 않는다(쓰지 않는 것 — 그라데이션).
+     투명도만 바꿔 매 장면 다시 칠하지 않는다(배경 위치를 움직이면 매 장면 다시 칠했다) */
+  @keyframes breathe {
+    50% {
+      opacity: 0.5;
+    }
+  }
+  .skeleton {
+    border-radius: 8px;
+    background: var(--color-line);
+    animation: breathe 1.4s ease-in-out infinite;
+  }
+
+  /* 육각형이 가운데서 자기 자리까지 차오른다. 한 화면에 움직이는 것은 이것 하나 */
+  @keyframes radarGrow {
+    from {
+      transform: scale(0.2);
+      opacity: 0;
+    }
+    to {
+      transform: none;
+      opacity: 1;
+    }
+  }
+  .radar-grow {
+    animation: radarGrow 0.7s cubic-bezier(0.16, 0.84, 0.3, 1) both;
+  }
+
+  /* 기록이 왼쪽에서 차오른다 */
+  /* 기록 막대가 왼쪽에서 자란다 — 너비가 아니라 크기(transform)로. 너비를 바꾸면 매 장면 자리를 다시 셌다 */
+  @keyframes fill {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  .fill {
+    transform-origin: left;
+    animation: fill 0.7s cubic-bezier(0.16, 0.84, 0.3, 1) both;
+  }
 }
 
 @layer base {
@@ -355,153 +411,48 @@ body {
   }
 }
 
-/* 입력 한 줄. 온보딩에서 같은 모양이 여러 번 나온다 */
-.field {
-  height: 3rem;
-  width: 100%;
-  border-radius: 0.75rem;
-  border: 1px solid var(--color-line);
-  background: transparent;
-  padding-inline: 1rem;
-  font-size: 1rem;
-}
-.field::placeholder {
-  color: var(--color-faint);
-}
-/*
-  입력칸의 초점 표시.
+@layer components {
+  /*
+    칩을 가로로 미는 줄.
 
-  테두리 색만 1px 바뀌는 건 밝은 곳에서도 색각이상이 있는 사람에게도 잘 안 보인다.
-  둘레에 연한 고리를 하나 더 둘러 준다 — box-shadow 라 자리를 밀지 않는다.
+    음수 여백으로 화면 끝까지 늘리면 페이지 자체가 가로로 스크롤된다.
+    칸 안에서만 밀고, 스크롤 막대는 숨긴다.
+  */
+  .scroll-row {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scroll-row::-webkit-scrollbar {
+    display: none;
+  }
 
-  이 규칙을 쓰는 곳에서는 outline 을 따로 끄지 않는다.
-*/
-.field:focus,
-.field-focus:focus {
-  outline: none;
-  border-color: var(--color-signal);
-  box-shadow: 0 0 0 3px var(--color-signal-soft);
-}
+  /* 입력 한 줄. 온보딩에서 같은 모양이 여러 번 나온다 */
+  .field {
+    height: 3rem;
+    width: 100%;
+    border-radius: 0.875rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-paper);
+    padding-inline: 1rem;
+    font-size: 1rem;
+  }
+  .field::placeholder {
+    color: var(--color-faint);
+  }
+  /*
+    입력칸의 초점 표시.
 
-/* 점수 링이 0에서 차오른다. 숫자만 바뀌면 아무 일도 안 일어난 것 같다 */
-@keyframes dial-fill {
-  from {
-    stroke-dasharray: 0 var(--dial-gap);
-  }
-  to {
-    stroke-dasharray: var(--dial-to) var(--dial-gap);
-  }
-}
-.dial-fill {
-  stroke-dasharray: var(--dial-to) var(--dial-gap);
-  animation: dial-fill 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-@media (prefers-reduced-motion: reduce) {
-  .dial-fill {
-    animation: none;
-  }
-}
+    테두리 색만 1px 바뀌는 건 밝은 곳에서도 색각이상이 있는 사람에게도 잘 안 보인다.
+    둘레에 연한 고리를 하나 더 둘러 준다 — box-shadow 라 자리를 밀지 않는다.
 
-/* ── 캐릭터 프레임 애니메이션 ──
-   프레임이 3장뿐이라 그냥 갈아 끼우면 뚝뚝 끊긴다.
-   두 가지를 겹쳐서 이어 붙인다.
-     1) 프레임끼리 겹쳐 두고 서서히 바꾼다(크로스페이드)
-     2) 몸 전체를 CSS 로 움직인다 — 이건 60fps 라 끊기지 않는다
-   결과는 3장으로 만든 것처럼 보이지 않는다. */
-/*
-  프레임끼리는 CSS 전환으로 겹쳐 넘긴다.
-  키프레임 위치에는 변수를 못 쓰기 때문에, 보이는 프레임만 불투명도를 1로 두고
-  나머지를 0으로 둔 뒤 transition 에 맡긴다 — 프레임이 3장이든 8장이든 같다.
-*/
-.char-frame {
-  transition: opacity var(--char-cross) linear;
-}
-
-/* 뛰어오르는 몸짓. 가운데 프레임이 공중이라 그때 가장 높이 뜬다 */
-@keyframes char-jump {
-  0%,
-  30% {
-    transform: translateY(0) scaleY(1);
-  }
-  50% {
-    transform: translateY(-13%) scaleY(1.03);
-  }
-  70%,
-  100% {
-    transform: translateY(0) scaleY(1);
-  }
-}
-
-/* 숨 쉬는 정도. 가만히 있을 때 완전히 멈춰 있으면 그림처럼 보인다 */
-@keyframes char-breathe {
-  0%,
-  100% {
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    transform: translateY(-1.5%) scale(1.012);
-  }
-}
-
-/* 앉았다 일어서기 */
-@keyframes char-squat {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  55% {
-    transform: translateY(4%);
-  }
-}
-
-/* 달릴 때 위아래로 조금 튄다 */
-@keyframes char-run {
-  0%,
-  100% {
-    transform: translateY(0) rotate(-1deg);
-  }
-  50% {
-    transform: translateY(-4%) rotate(1deg);
-  }
-}
-
-/* 만세. 기뻐서 통통 */
-@keyframes char-cheer {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  40% {
-    transform: translateY(-8%);
-  }
-}
-
-.char-move-jump {
-  animation: char-jump var(--char-dur) ease-in-out infinite both;
-}
-.char-move-breathe {
-  animation: char-breathe calc(var(--char-dur) * 1.4) ease-in-out infinite both;
-}
-.char-move-squat {
-  animation: char-squat var(--char-dur) ease-in-out infinite both;
-}
-.char-move-run {
-  animation: char-run calc(var(--char-dur) / 1.5) ease-in-out infinite both;
-}
-.char-move-cheer {
-  animation: char-cheer var(--char-dur) ease-in-out infinite both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .char-move-jump,
-  .char-move-breathe,
-  .char-move-squat,
-  .char-move-run,
-  .char-move-cheer {
-    animation: none;
-  }
-  .char-frame {
-    transition: none;
+    이 규칙을 쓰는 곳에서는 outline 을 따로 끄지 않는다.
+  */
+  .field:focus,
+  .field-focus:focus {
+    outline: none;
+    border-color: var(--color-signal);
+    box-shadow: 0 0 0 3px var(--color-signal-soft);
   }
 }
 
@@ -605,4 +556,12 @@ body {
     animation-duration: 0s !important;
     animation-delay: 0s !important;
   }
+}
+
+/*
+  아래에 단추가 붙은 화면(`Dock`). 스크롤로 불러온 칸 · 키보드로 옮겨 간 칸이
+  단추 밑에 숨지 않게 그만큼 비워 두고 스크롤한다 — 가려진 칸은 눌러도 단추가 눌린다.
+*/
+html:has(.dock) {
+  scroll-padding-bottom: 8rem;
 }

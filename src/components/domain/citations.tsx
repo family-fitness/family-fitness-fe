@@ -4,7 +4,6 @@ import { ExternalLink } from "lucide-react";
 
 import { safeUrl } from "@/lib/safe-url";
 
-/** AI 가 답한 근거. */
 /** 인용의 라벨 이름이 두 곳에서 다르다. */
 interface CitationLike {
   index?: number;
@@ -14,6 +13,7 @@ interface CitationLike {
   url?: string | null;
 }
 
+/** AI 편성 제안의 근거. 제안마다 늘 붙는다(규칙 6) */
 export function Citations({
   items,
   className,
@@ -24,9 +24,7 @@ export function Citations({
   if (!items || items.length === 0) {
     return (
       <p className={className}>
-        <span className="text-faint text-caption">
-          근거를 불러오지 못했어요. 이 답변은 참고만 해 주세요.
-        </span>
+        <span className="text-faint text-caption">근거를 불러오지 못했어요.</span>
       </p>
     );
   }
@@ -38,7 +36,7 @@ export function Citations({
         const href = safeUrl(c.url);
         return (
           <li key={c.index ?? i} className="flex gap-1.5 py-1">
-            <span className="text-signal text-caption shrink-0 font-extrabold tabular-nums">
+            <span className="text-signal-strong text-caption shrink-0 font-extrabold tabular-nums">
               [{c.index ?? i + 1}]
             </span>
             <span className="min-w-0">
@@ -47,7 +45,7 @@ export function Citations({
                   href={href}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="text-ink-soft text-caption inline-flex items-start gap-1 leading-relaxed underline underline-offset-2"
+                  className="text-ink-soft text-caption inline-flex min-h-11 items-start gap-1 py-1.5 leading-relaxed underline underline-offset-2"
                 >
                   {label}
                   <ExternalLink className="mt-0.5 size-2.5 shrink-0" aria-hidden />

@@ -2,9 +2,9 @@
 
 import type { UseFormRegisterReturn } from "react-hook-form";
 
+import { FactorIcon } from "@/components/domain/factor-icon";
 import type { FitnessItem } from "@/lib/api/types";
-import { equipmentArt, itemPose } from "@/lib/fitness-items";
-import { Illustration } from "@/components/ui/illustration";
+import { isFactor } from "@/lib/fitness-factors";
 import { cn } from "@/lib/utils";
 
 /** 측정 항목 하나. */
@@ -17,30 +17,28 @@ export function MeasureField({
   register: UseFormRegisterReturn;
   error?: string;
 }) {
-  const equipment = equipmentArt(item.itemCode);
   const range = item.range;
 
   return (
-    <div className="flex items-start gap-3 py-4">
-      <Illustration name={itemPose(item)} size={72} className="mt-0.5" />
+    <div className="flex items-start gap-3 py-3.5">
+      {/* 무엇을 키우는 항목인지 요인 그림으로. 육각형 밖의 요인(협응력 · 평형성)은 그림이 없어 자리만 둔다 —
+          선 아이콘으로 대신 세우지 않는다(내용 자리는 주문한 그림만) */}
+      <span aria-hidden className="mt-0.5 grid size-10 shrink-0 place-items-center">
+        {isFactor(item.factor) && <FactorIcon factor={item.factor} className="size-8" />}
+      </span>
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-1.5">
           <label htmlFor={item.itemCode} className="text-body font-bold">
             {item.itemLabel ?? item.itemName}
           </label>
-          {item.equipment && (
-            <span className="text-faint text-caption inline-flex items-center gap-1">
-              {equipment && <Illustration name={equipment} size={16} />}
-              {item.equipment}
-            </span>
-          )}
+          {item.equipment && <span className="text-ink-soft text-caption">{item.equipment}</span>}
         </div>
 
         <p className="text-ink-soft mt-0.5 text-xs">
           {item.factor}
           {range && (
-            <span className="text-faint">
+            <span className="text-ink-soft">
               {" · "}
               {range.min}~{range.max}
               {item.unit}
@@ -57,11 +55,7 @@ export function MeasureField({
             placeholder="숫자만"
             aria-describedby={error ? `${item.itemCode}-error` : undefined}
             aria-invalid={error ? true : undefined}
-            className={cn(
-              "border-line h-12 w-full rounded-xl border bg-transparent pr-14 pl-4 text-base",
-              "placeholder:text-faint focus:border-signal field-focus",
-              error && "border-signal-deep",
-            )}
+            className={cn("field pr-14", error && "border-signal-deep")}
             {...register}
           />
           <span className="text-ink-soft absolute top-1/2 right-4 -translate-y-1/2 text-sm font-semibold">

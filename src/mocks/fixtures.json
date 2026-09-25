@@ -33,7 +33,8 @@
         "supportMode": "FULL",
         "measurable": true,
         "consentRequired": false,
-        "consentGiven": true
+        "consentGiven": true,
+        "sex": "F"
       },
       {
         "profileId": "00000000-0000-4000-8000-000000000012",
@@ -46,7 +47,8 @@
         "supportMode": null,
         "measurable": true,
         "consentRequired": true,
-        "consentGiven": true
+        "consentGiven": true,
+        "sex": "M"
       },
       {
         "profileId": "00000000-0000-4000-8000-000000000013",
@@ -59,7 +61,8 @@
         "supportMode": null,
         "measurable": true,
         "consentRequired": false,
-        "consentGiven": true
+        "consentGiven": true,
+        "sex": "M"
       }
     ]
   },
@@ -77,8 +80,24 @@
         "measurable": true,
         "consentRequired": false,
         "consentGiven": true,
-        "headline": null,
-        "latest": null
+        "headline": "성인 상위 38%",
+        "latest": {
+          "fitnessTestId": "00000000-0000-4000-8000-000000000031",
+          "testedOn": "2026-09-10",
+          "overallPercentile": 62,
+          "weakest": {
+            "factor": "유연성",
+            "itemCode": "012",
+            "percentile": 41
+          },
+          "strongest": {
+            "factor": "근력",
+            "itemCode": "028",
+            "percentile": 78
+          },
+          "coachDirection": "GROWTH"
+        },
+        "sex": "F"
       },
       {
         "profileId": "00000000-0000-4000-8000-000000000012",
@@ -106,7 +125,8 @@
             "percentile": 79
           },
           "coachDirection": "GROWTH"
-        }
+        },
+        "sex": "M"
       },
       {
         "profileId": "00000000-0000-4000-8000-000000000013",
@@ -118,8 +138,24 @@
         "measurable": true,
         "consentRequired": false,
         "consentGiven": true,
-        "headline": null,
-        "latest": null
+        "headline": "성인 상위 71%",
+        "latest": {
+          "fitnessTestId": "00000000-0000-4000-8000-000000000032",
+          "testedOn": "2026-08-30",
+          "overallPercentile": 29,
+          "weakest": {
+            "factor": "심폐지구력",
+            "itemCode": "020",
+            "percentile": 18
+          },
+          "strongest": {
+            "factor": "유연성",
+            "itemCode": "012",
+            "percentile": 44
+          },
+          "coachDirection": "GROWTH"
+        },
+        "sex": "M"
       }
     ],
     "disclaimer": "국민체력100 측정 데이터를 바탕으로 한 참고 정보입니다. 질병의 진단·치료를 위한 것이 아니며, 건강에 관한 판단은 전문가와 상담하세요."
@@ -668,193 +704,6 @@
     "canApprove": true,
     "missionCount": 0,
     "rejectedReason": null
-  },
-  "coachApprove": {
-    "coachRunId": "0271ff7b-6e8f-4685-986a-a3a881352cd2",
-    "status": "APPROVED",
-    "approvedBy": "00000000-0000-4000-8000-000000000011",
-    "approvedAt": "2026-09-14T04:00:23.876609Z",
-    "createdMissions": [
-      {
-        "missionId": "cbdfa07d-64b3-4b5b-9eba-7c23b7dfa65e",
-        "title": "같이 늘이는 한 주",
-        "origin": "COACH"
-      }
-    ]
-  },
-  "missionsAfterApproval": {
-    "missions": [
-      {
-        "missionId": "cbdfa07d-64b3-4b5b-9eba-7c23b7dfa65e",
-        "title": "같이 늘이는 한 주",
-        "origin": "COACH",
-        "coachRunId": "0271ff7b-6e8f-4685-986a-a3a881352cd2",
-        "targetMetric": "TIMER_MINUTES",
-        "targetValue": 45,
-        "serverVerifiable": true,
-        "startDate": "2026-09-14",
-        "endDate": "2026-09-20",
-        "rationale": "유연성은 매일 조금씩 늘려 가는 영역입니다. 한 주 3회, 회당 15분이면 충분합니다.",
-        "video": {
-          "videoId": "IdpXx2gm90o",
-          "title": "초등학생의 기초체력향상과 운동능력발달을 위한 운동",
-          "url": "https://www.youtube.com/watch?v=IdpXx2gm90o",
-          "durationSec": 600,
-          "startSec": 96
-        },
-        "participants": [
-          {
-            "profileId": "00000000-0000-4000-8000-000000000012",
-            "name": "서준",
-            "progress": 0,
-            "completed": false,
-            "verifiedBy": null,
-            "needsGuardianCheck": false
-          },
-          {
-            "profileId": "00000000-0000-4000-8000-000000000011",
-            "name": "은영",
-            "progress": 0,
-            "completed": false,
-            "verifiedBy": null,
-            "needsGuardianCheck": false
-          }
-        ]
-      }
-    ]
-  },
-  "videos": {
-    "videos": [
-      {
-        "videoId": "IdpXx2gm90o",
-        "title": "초등학생의 기초체력향상과 운동능력발달을 위한 운동",
-        "url": "https://www.youtube.com/watch?v=IdpXx2gm90o",
-        "thumbnailUrl": "https://i.ytimg.com/vi/IdpXx2gm90o/hqdefault.jpg",
-        "durationSec": 600,
-        "label": {
-          "ageFrom": 7,
-          "ageTo": 12,
-          "factors": ["유연성", "근지구력"],
-          "intensity": "LOW",
-          "space": "SMALL_ROOM",
-          "noise": "QUIET",
-          "model": null
-        },
-        "badges": ["조용함", "좁은 공간 OK", "준비물 없음"],
-        "favorited": false,
-        "maxProgress": null
-      },
-      {
-        "videoId": "sample00002",
-        "title": "가족이 함께하는 거실 5분 스트레칭",
-        "url": "https://www.youtube.com/watch?v=sample00002",
-        "thumbnailUrl": "https://i.ytimg.com/vi/sample00002/hqdefault.jpg",
-        "durationSec": 300,
-        "label": {
-          "ageFrom": 4,
-          "ageTo": 64,
-          "factors": ["유연성"],
-          "intensity": "LOW",
-          "space": "SMALL_ROOM",
-          "noise": "QUIET",
-          "model": null
-        },
-        "badges": ["조용함", "좁은 공간 OK", "준비물 없음"],
-        "favorited": false,
-        "maxProgress": null
-      },
-      {
-        "videoId": "sample00003",
-        "title": "유소년 심폐지구력 키우기 — 제자리 달리기 루틴",
-        "url": "https://www.youtube.com/watch?v=sample00003",
-        "thumbnailUrl": "https://i.ytimg.com/vi/sample00003/hqdefault.jpg",
-        "durationSec": 480,
-        "label": {
-          "ageFrom": 7,
-          "ageTo": 12,
-          "factors": ["심폐지구력", "순발력"],
-          "intensity": "MID",
-          "space": "SMALL_ROOM",
-          "noise": "NORMAL",
-          "model": null
-        },
-        "badges": ["좁은 공간 OK", "준비물 없음"],
-        "favorited": false,
-        "maxProgress": null
-      },
-      {
-        "videoId": "sample00004",
-        "title": "성인 근력 운동 — 맨몸 스쿼트와 플랭크",
-        "url": "https://www.youtube.com/watch?v=sample00004",
-        "thumbnailUrl": "https://i.ytimg.com/vi/sample00004/hqdefault.jpg",
-        "durationSec": 720,
-        "label": {
-          "ageFrom": 19,
-          "ageTo": 64,
-          "factors": ["근력", "근지구력"],
-          "intensity": "MID",
-          "space": "SMALL_ROOM",
-          "noise": "QUIET",
-          "model": null
-        },
-        "badges": ["조용함", "좁은 공간 OK", "준비물 없음"],
-        "favorited": false,
-        "maxProgress": null
-      },
-      {
-        "videoId": "sample00005",
-        "title": "유아 놀이 체육 — 균형 잡기와 점프",
-        "url": "https://www.youtube.com/watch?v=sample00005",
-        "thumbnailUrl": "https://i.ytimg.com/vi/sample00005/hqdefault.jpg",
-        "durationSec": 420,
-        "label": {
-          "ageFrom": 4,
-          "ageTo": 6,
-          "factors": ["평형성", "순발력"],
-          "intensity": "LOW",
-          "space": "SMALL_ROOM",
-          "noise": "NORMAL",
-          "model": null
-        },
-        "badges": ["좁은 공간 OK", "준비물 없음"],
-        "favorited": false,
-        "maxProgress": null
-      }
-    ],
-    "nextCursor": null
-  },
-  "report": {
-    "weekStart": "2026-09-14",
-    "weekEnd": "2026-09-20",
-    "summary": null,
-    "missionStats": {
-      "total": 0,
-      "completed": 0
-    },
-    "members": [
-      {
-        "profileId": "00000000-0000-4000-8000-000000000011",
-        "name": "은영",
-        "activeMinutes": 0,
-        "verifiedMinutes": 0,
-        "completedMissions": 0
-      },
-      {
-        "profileId": "00000000-0000-4000-8000-000000000012",
-        "name": "서준",
-        "activeMinutes": 0,
-        "verifiedMinutes": 0,
-        "completedMissions": 0
-      },
-      {
-        "profileId": "00000000-0000-4000-8000-000000000013",
-        "name": "도현",
-        "activeMinutes": 0,
-        "verifiedMinutes": 0,
-        "completedMissions": 0
-      }
-    ],
-    "cheerCount": 0
   },
   "prediction": {
     "predictionId": "7c4c4af9-d640-4286-88fa-420a164bf9cf",

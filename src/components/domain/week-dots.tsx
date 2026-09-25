@@ -1,84 +1,45 @@
-"use client";
-
-import type { CheerLog } from "@/lib/api/types";
-import { Illustration } from "@/components/ui/illustration";
+import type { DayLog } from "@/lib/api/types";
 import { today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 
 /**
- * 이번 주 움직인 날.
- * ▲ 서버에 날짜별 활동 요약이 생기면 그걸로 바꾼다.
+ * 이번 주 월~일 점 일곱 — 움직인 날만 채운다. 부모 홈의 아이 줄과 가족 대시보드의 사람 줄이 같이 쓴다.
+ *
+ * 쉬는 날 카드를 쓴 날은 노랑 테 — 빠진 날처럼 칠하지 않는다(규칙 15). 캘린더의 쉬는 날과 같은 노랑이다.
+ * 기록이 없으면 빈 점 일곱을 세우지 않는다 — 한 주를 통째로 쉰 것처럼 읽혔다. 받는 중(undefined)이면 뼈대,
+ * 못 받았으면(null) 점을 두지 않는다 — 뼈대가 영영 숨 쉬면 기다리는 것처럼 보인다
  */
-const DAY_LABEL = ["일", "월", "화", "수", "목", "금", "토"];
-
-export function WeekDots({
-  cheers,
-  fromProfileId,
-  className,
-}: {
-  cheers: CheerLog[] | undefined;
-  /** 이 사람이 보낸 것만 센다 */
-  fromProfileId: string;
-  className?: string;
-}) {
-  // 이번 주 일요일부터 7일
-  const now = new Date();
-  const sunday = new Date(now);
-  sunday.setDate(now.getDate() - now.getDay());
-
-  const days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(sunday);
-    d.setDate(sunday.getDate() + i);
-    return d.toISOString().slice(0, 10);
-  });
-
-  const moved = new Set(
-    (cheers ?? [])
-      .filter((c) => c.fromProfileId === fromProfileId)
-      .map((c) => c.createdAt.slice(0, 10)),
-  );
-  const count = days.filter((d) => moved.has(d)).length;
-  const todayKey = today();
-
+export function WeekDots({ days, logs }: { days: string[]; logs: DayLog[] | null | undefined }) {
+  if (logs === null) return null;
+  if (!logs) {
+    return (
+      <span className="mt-1.5 flex gap-1" aria-hidden>
+        {days.map((d) => (
+          <span key={d} className="skeleton size-2.5 rounded-full" />
+        ))}
+      </span>
+    );
+  }
+  const now = today();
+  const byDate = new Map(logs.map((l) => [l.date, l]));
+  const moved = days.filter((d) => (byDate.get(d)?.minutes ?? 0) > 0).length;
   return (
-    <section className={className}>
-      {/*
-        0일일 때 "0일 움직였어요" 라고 쓰지 않는다. 첫 화면에 늘 0이 뜨는데
-        그건 시작하기도 전에 기죽이는 말이다.
-      */}
-      <p className="flex items-center gap-1.5 text-sm font-bold">
-        <Illustration name="item/item-streak" size={22} />
-        {count === 0 ? (
-          "움직인 날을 여기 칠해요"
-        ) : (
-          <>
-            이번 주 <span className="text-signal-deep">{count}일</span> 움직였어요
-          </>
-        )}
-      </p>
-      <ul className="mt-2 flex justify-between gap-1.5">
-        {days.map((day, i) => {
-          const on = moved.has(day);
-          const isToday = day === todayKey;
-          const future = day > todayKey;
-          return (
-            <li key={day} className="flex flex-1 flex-col items-center gap-1">
-              <span
-                className={cn(
-                  "grid aspect-square w-full place-items-center rounded-xl text-xs font-extrabold",
-                  on && "bg-signal text-white",
-                  !on && isToday && "border-signal text-signal border-2",
-                  !on && !isToday && "bg-sub text-faint",
-                  future && "opacity-45",
-                )}
-                aria-label={`${DAY_LABEL[i]}요일 ${on ? "움직였어요" : "아직이에요"}`}
-              >
-                {DAY_LABEL[i]}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
+    <span className="mt-1.5 flex gap-1" role="img" aria-label={`이번 주 ${moved}일 움직였어요`}>
+      {days.map((d) => {
+        const log = byDate.get(d);
+        const on = (log?.minutes ?? 0) > 0;
+        const rest = !on && Boolean(log?.rest);
+        return (
+          <span
+            key={d}
+            className={cn(
+              "size-2.5 rounded-full",
+              on ? "bg-signal" : rest ? "bg-mark-soft ring-mark ring-1 ring-inset" : "bg-sub",
+              d === now && !on && !rest && "ring-signal ring-1",
+            )}
+          />
+        );
+      })}
+    </span>
   );
 }

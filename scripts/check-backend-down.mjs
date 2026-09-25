@@ -20,28 +20,37 @@ const ME = JSON.stringify(
   JSON.parse(readFileSync(new URL("../src/mocks/fixtures.json", import.meta.url), "utf8")).me,
 );
 /**
- * 실패를 말하지 않아도 되는 화면.
- * 처음부터 불러올 게 없거나(코치 대화), 서버 없이도 쓸 수 있는 메뉴다.
+ * 실패를 말하지 않아도 되는 화면 — /me 로 이미 받은 값만 그린다.
+ * 참여 방식은 **고른 순간** 저장에 실패하면 그때 말해 준다 — 열자마자 경고를 띄울 이유가 없다.
  */
-const SILENT_OK = new Set(["/coach/weekly", "/coach/chat", "/settings"]);
+const SILENT_OK = new Set(["/settings", "/settings/support-mode"]);
+
+/** 실패를 말하는 말 — 화면마다 쓰는 오류 문구 */
+const SAYS = /불러오지 못했|못 불러왔|연결이 어려워|점검/;
+/** 못 받은 것을 없는 것으로 그리는 말 — 서버가 죽었는데 이렇게 말하면 거짓말이다 */
+const LIES =
+  /아직 오늘 운동이 없어요|오늘 운동이 아직 없어요|찾을 수 없는|동의가 필요한 가족이 없어요|조건에 맞는 동작이 없어요|아직 재지 않았어요|오늘 운동 없어요/;
 
 const ROUTES = [
   "/parent",
-  "/parent/history",
   "/parent/family",
+  "/parent/dashboard",
+  "/parent/league",
   `/parent/child/${KID}`,
   "/kid",
-  "/kid/pick",
-  "/kid/done",
-  "/kid/praise",
-  "/coach/weekly",
-  "/coach/chat",
+  "/kid/m/seed-today",
+  "/kid/badges",
+  "/calendar",
+  "/calendar/2026-09-23",
+  "/notifications",
+  "/plan",
+  "/plan/custom",
+  `/parent/sticker/${KID}`,
   "/videos",
-  "/family/cheer",
-  "/family/report",
   "/settings",
   "/settings/support-mode",
   "/settings/consent",
+  "/settings/schedule",
   `/p/${KID}/measure`,
   `/p/${KID}/result`,
   `/p/${KID}/future`,
@@ -70,6 +79,33 @@ await ctx.addInitScript(
       "ff-auth",
       JSON.stringify({ state: { accessToken: "t", refreshToken: "r" }, version: 0 }),
     );
+    // 직접 짜기에 동작 하나를 담아 둔다 — 비어 있으면 이 기기의 쟁반만 그려 서버를 부를 일이 없다.
+    // 담은 뒤에야 「누가 할까요」 가 가족을 부른다
+    sessionStorage.setItem(
+      "ff-routine",
+      JSON.stringify({
+        state: {
+          moves: [
+            {
+              clip: {
+                clipId: "down-1",
+                videoId: "A1CDVFUc_oU",
+                startSec: 0,
+                endSec: 60,
+                title: "스쿼트",
+                factor: "근력",
+                phase: "MAIN",
+                homeOk: true,
+                quiet: true,
+                props: false,
+              },
+              minutes: 2,
+            },
+          ],
+        },
+        version: 0,
+      }),
+    );
   },
   [KID],
 );
@@ -93,15 +129,19 @@ for (const r of ROUTES) {
   await page.goto(B + r, { waitUntil: "load" });
   await page.waitForTimeout(16000); // 재시도가 끝날 때까지
   const text = (await page.locator("body").innerText()).replace(/\n+/g, " | ").trim();
-  const stuck = text.length < 6;
-  const says = /못했|안 돼|다시|점검|없어요|끊|쉬고|어려|아직/.test(text);
-  const crashed = [];
-  const verdict = stuck ? "빈 화면인 채로 멈춤" : says ? null : "말 없음: " + text.slice(0, 70);
-  if (!SILENT_OK.has(r) && verdict) bad.push(`${r} — ${verdict}`);
+  const lie = text.match(LIES)?.[0];
+  const verdict =
+    text.length < 6
+      ? "빈 화면인 채로 멈춤"
+      : lie
+        ? `없는 것으로 그림: 「${lie}」`
+        : SAYS.test(text)
+          ? null
+          : "말 없음: " + text.slice(0, 70);
+  if (verdict && (lie || !SILENT_OK.has(r))) bad.push(`${r} — ${verdict}`);
   console.log(
-    `${r.padEnd(44)} ${verdict ?? "말해 줌"}${SILENT_OK.has(r) && verdict ? " (봐줌)" : ""}`,
+    `${r.padEnd(44)} ${verdict ?? "말해 줌"}${SILENT_OK.has(r) && verdict && !lie ? " (봐줌)" : ""}`,
   );
-  void crashed;
   await page.close();
 }
 await browser.close();

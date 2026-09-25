@@ -1,168 +1,45 @@
 /** MSW 목 서버 — 백엔드가 안 떠 있을 때 쓴다. */
 import { HttpResponse, http, type PathParams } from "msw";
 
-import type {
-  AgeGroup,
-  CheerLog,
-  FitnessTestResult,
-  ItemResult,
-  ApiErrorBody,
-  Band,
-  CoachApproveResult,
-  CoachRun,
-  FamilyProfiles,
-  FitnessItems,
-  FitnessMap,
-  LatestFitnessTest,
-  MeResponse,
-  Mission,
-  MissionList,
-  PredictionResult,
-  ProfileSummary,
-  VideoList,
-  WeeklyReport,
-} from "@/lib/api/types";
+import type { AgeGroup, FitnessTestResult, LatestFitnessTest } from "@/lib/api/types";
 
-import { isVideoDone } from "@/lib/mission";
-import { ageOf } from "@/lib/today";
+import { ageOf, toDateString } from "@/lib/today";
 
-import fixturesJson from "./fixtures.json";
+import {
+  BASE,
+  DEMO,
+  acting,
+  bandOf,
+  gradeOf,
+  db,
+  fail,
+  fixtures,
+  resetToDemo,
+  saveCheers,
+  saveExtra,
+  saveFamily,
+  saveMissions,
+  setActingProfile,
+  setStage,
+  uuid,
+  type Concrete,
+  type MapMember,
+  type MissionRow,
+  type ParticipantRow,
+  type Profile,
+  participantOf,
+  saveRestDays,
+  sessionsOfRow,
+} from "./db";
 
-/** 픽스처의 모양. */
-/** 선택 표시(`?`)만 걷어낸다. */
-type Concrete<T> = T extends (infer U)[]
-  ? Concrete<U>[]
-  : T extends object
-    ? { [K in keyof T]-?: Concrete<T[K]> }
-    : T;
+import { clips } from "./clips";
+import { coaching } from "./coach";
+import { history } from "./history";
+import { league } from "./league";
+import { notifications } from "./notifications";
+import { progress, progressOf } from "./progress";
 
-interface Fixtures {
-  me: MeResponse;
-  profiles: FamilyProfiles;
-  fitnessMap: FitnessMap;
-  itemsByAgeGroup: Record<string, FitnessItems>;
-  latestByProfile: Record<string, LatestFitnessTest>;
-  coachRun: CoachRun;
-  coachApprove: CoachApproveResult;
-  missionsAfterApproval: MissionList;
-  videos: VideoList;
-  report: WeeklyReport;
-  prediction: PredictionResult;
-}
-
-const fixtures = fixturesJson as unknown as Concrete<Fixtures>;
-
-/** 목 서버가 만들고 고치는 값들. 응답과 같은 모양이어야 화면이 진짜처럼 돈다 */
-type Profile = Concrete<ProfileSummary>;
-type MapMember = Concrete<FitnessMap>["members"][number];
-type MissionRow = Concrete<Mission>;
-
-const BASE = "/api/v1";
-const CHEER_KEY = "ff-mock-cheers";
-const ACTING_KEY = "ff-mock-acting";
-const NEWCOMER_KEY = "ff-mock-newcomer";
-
-export const DEMO = {
-  familyId: "00000000-0000-4000-8000-000000000010",
-  mom: "00000000-0000-4000-8000-000000000011",
-  kid: "00000000-0000-4000-8000-000000000012",
-  dad: "00000000-0000-4000-8000-000000000013",
-} as const;
-
-/* ─── 서버 상태 ────────────────────────────────────────────── */
-
-/** 새로고침하면 초기 상태로 돌아간다. 시연 중 되돌리기 쉽게 하려는 의도다 */
-const db = {
-  profiles: structuredClone(fixtures.profiles),
-  fitnessMap: structuredClone(fixtures.fitnessMap),
-  latest: structuredClone(fixtures.latestByProfile),
-  coachRun: structuredClone(fixtures.coachRun),
-  /** 승인 전에는 비어 있다. 승인 핸들러가 채운다 */
-  missions: [] as MissionRow[],
-  videos: structuredClone(fixtures.videos.videos),
-  /** 주고받은 칭찬 · 알림. */
-  cheers: loadCheers(),
-  /**
-   * 지금 로그인해서 보고 있는 사람.
-   * 새로고침해도 남아야 한다 — 바꾸자마자 되돌아가면 자녀 계정 화면을 볼 수 없다.
-   */
-  actingProfileId: loadActing(),
-  /**
-   * 아직 가족에 붙지 않은 계정으로 들어와 있나.
-   * 초대 수락 흐름은 이 상태가 있어야만 걸어 볼 수 있다.
-   */
-  newcomer: loadNewcomer(),
-};
-
-function loadNewcomer(): boolean {
-  try {
-    return sessionStorage.getItem(NEWCOMER_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function setNewcomer(value: boolean) {
-  db.newcomer = value;
-  try {
-    sessionStorage.setItem(NEWCOMER_KEY, value ? "1" : "0");
-  } catch {
-    // 브라우저가 아니면 그냥 넘어간다
-  }
-}
-
-function loadActing(): string {
-  try {
-    return sessionStorage.getItem(ACTING_KEY) ?? DEMO.mom;
-  } catch {
-    return DEMO.mom;
-  }
-}
-
-/** 탭 저장소에서 되살린다. 브라우저가 아닌 곳(검사 스크립트)에서는 빈 배열이다 */
-function loadCheers(): CheerLog[] {
-  try {
-    return JSON.parse(sessionStorage.getItem(CHEER_KEY) ?? "[]") as CheerLog[];
-  } catch {
-    return [];
-  }
-}
-
-function saveCheers(cheers: CheerLog[]) {
-  try {
-    sessionStorage.setItem(CHEER_KEY, JSON.stringify(cheers));
-  } catch {
-    // 저장이 안 돼도 화면은 돌아야 한다
-  }
-}
-
-export function setActingProfile(profileId: string) {
-  db.actingProfileId = profileId;
-  try {
-    sessionStorage.setItem(ACTING_KEY, profileId);
-  } catch {
-    // 브라우저가 아니면 그냥 넘어간다
-  }
-}
-
-function acting(): Profile | undefined {
-  return db.profiles.profiles.find((p) => p.profileId === db.actingProfileId);
-}
-
-/** 서버와 같은 봉투 모양으로 실패를 돌려준다 */
-function fail(status: number, code: string, message: string) {
-  return HttpResponse.json<ApiErrorBody>({ error: { code, message } }, { status });
-}
-
-function uuid() {
-  return crypto.randomUUID();
-}
-
-function bandOf(percentile: number): Band {
-  if (percentile >= 75) return "strength";
-  if (percentile >= 25) return "steady";
-  return "growth";
-}
+export { DEMO, setActingProfile } from "./db";
 
 /* ─── 인증 · 가족 ──────────────────────────────────────────── */
 
@@ -182,20 +59,109 @@ const authGate = [
   }),
 ];
 
-/** 아직 가족이 없는 개발용 계정 */
-const NEWCOMER_ID = "demo-newcomer";
-const NEWCOMER_ME = {
+/** 개발용 계정 셋. 로그인 화면에서 고르는 것과 같은 순서다 */
+const CLAIM_ID = "demo-newcomer";
+const FRESH_ID = "demo-fresh";
+
+/** 초대를 기다리는 계정 — 부모가 낸 자리에 붙는다 */
+const CLAIM_ME = {
   userId: "00000000-0000-4000-8000-000000000002",
   nextStep: "CLAIM",
   profiles: [],
 };
 
+/** 가족이 아예 없는 계정 — 여기서 `POST /families` 로 간다 */
+const FRESH_ME = {
+  userId: "00000000-0000-4000-8000-000000000003",
+  nextStep: "CREATE_FAMILY",
+  profiles: [],
+};
+
+/**
+ * 어떤 계정으로 들어왔나에 따라 단계를 정하고 토큰을 준다.
+ *
+ * 로그인 응답에 `/me` 와 같은 모양을 얹어 준다 — 화면이 들어오자마자
+ * 어디로 갈지 알아야 스플래시에서 한 번 더 왕복하지 않는다.
+ */
+function signIn(providerUserId: string | undefined) {
+  const token = { accessToken: "mock-access-token", refreshToken: "mock-refresh-token" };
+
+  // 새 계정으로 만든 가족이 탭에 남아 있으면 서준이네로 되돌린다 — 시연 계정이 남의 집을 보지 않게
+  if (providerUserId !== FRESH_ID && db.profiles.familyId !== DEMO.familyId) resetToDemo();
+  if (providerUserId === CLAIM_ID) {
+    setStage("claim");
+    return { ...token, ...CLAIM_ME };
+  }
+  if (providerUserId === FRESH_ID) {
+    setStage("fresh");
+    return { ...token, ...FRESH_ME };
+  }
+  setStage("home");
+  setActingProfile(DEMO.mom);
+  return { ...token, ...fixtures.me };
+}
+
+/**
+ * 가족을 새로 만든다.
+ *
+ * **서준이네 데이터를 갈아 끼운다.** 안 그러면 방금 가입한 사람이 남의 집
+ * 기록·미션·칭찬을 자기 것으로 본다. 새 가족은 말 그대로 빈 집이어야 한다.
+ */
+function startFamily(familyName: string, owner: Profile) {
+  db.profiles = {
+    familyId: owner.familyId,
+    familyName,
+    profiles: [owner],
+  } as typeof db.profiles;
+  db.fitnessMap = {
+    familyId: owner.familyId,
+    familyName,
+    disclaimer: fixtures.fitnessMap.disclaimer,
+    members: [mapMemberOf(owner)],
+  } as typeof db.fitnessMap;
+  db.missions = [];
+  db.cheers = [];
+  db.latest = {};
+  db.tests = {};
+  db.availability = {};
+  db.body = {};
+  db.hasCoachRun = false;
+  // 새 가족은 쉬는 날도 리그도 처음부터 — 브론즈에서 시작한다
+  db.restDays = [];
+  db.leagueTier = "BRONZE";
+  saveMissions();
+  saveCheers(db.cheers);
+  saveFamily();
+  saveRestDays();
+  saveExtra("latest", "tests", "availability", "body", "hasCoachRun", "leagueTier");
+}
+
+/** 프로필 하나를 체력 지도의 한 줄로 */
+function mapMemberOf(profile: Profile): MapMember {
+  return {
+    profileId: profile.profileId,
+    name: profile.name,
+    role: profile.role,
+    ageGroup: profile.ageGroup,
+    sex: profile.sex,
+    hasAccount: profile.hasAccount,
+    supportMode: profile.supportMode,
+    measurable: profile.measurable,
+    consentRequired: profile.consentRequired,
+    consentGiven: profile.consentGiven,
+    headline: null,
+    latest: null,
+  } as MapMember;
+}
+
 const identity = [
   /** 지금 로그인한 계정이 관리하는 프로필. */
   http.get(`${BASE}/me`, () => {
-    if (db.newcomer) return HttpResponse.json(NEWCOMER_ME);
+    if (db.stage === "claim") return HttpResponse.json(CLAIM_ME);
+    if (db.stage === "fresh") return HttpResponse.json(FRESH_ME);
     const me = acting();
-    if (!me || me.profileId === DEMO.mom) return HttpResponse.json(fixtures.me);
+    if (!me) return HttpResponse.json(fixtures.me);
+    // 지금 가족에서 — 픽스처를 돌려주면 참여 방식을 바꿔도 `/me` 는 옛 값을 말한다
     return HttpResponse.json({
       userId: fixtures.me.userId,
       nextStep: "HOME",
@@ -203,25 +169,87 @@ const identity = [
     });
   }),
 
+  /** 액세스 토큰 새로 받기. 목은 토큰을 따지지 않으니 같은 모양으로 돌려준다 */
+  http.post(`${BASE}/auth/refresh`, async ({ request }) => {
+    const body = (await request.json().catch(() => ({}))) as { refreshToken?: string };
+    if (!body.refreshToken) return fail(401, "UNAUTHORIZED", "리프레시 토큰이 없습니다");
+    return HttpResponse.json({ accessToken: "mock-access-token", refreshToken: body.refreshToken });
+  }),
+
   http.post(`${BASE}/auth/dev-login`, async ({ request }) => {
     const body = (await request.json().catch(() => ({}))) as { providerUserId?: string };
-    // 프로필이 아직 없는 계정. 초대코드를 넣어야 가족에 붙는다
-    const newcomer = body.providerUserId === NEWCOMER_ID;
-    setNewcomer(newcomer);
-    if (!newcomer) setActingProfile(DEMO.mom);
-    return HttpResponse.json({
-      accessToken: "mock-access-token",
-      refreshToken: "mock-refresh-token",
-      ...(newcomer ? NEWCOMER_ME : fixtures.me),
-    });
+    return HttpResponse.json(signIn(body.providerUserId));
+  }),
+
+  /**
+   * 구글에서 받은 인가코드를 토큰으로 바꾼다.
+   *
+   * 목에 이게 없어서 요청이 브라우저를 빠져나가 `localhost:8080` 으로 나갔다.
+   * 시연에서는 **가족이 없는 새 계정**으로 본다 — 구글로 처음 들어온 사람이
+   * 실제로 겪는 상태가 그거다.
+   */
+  http.post(`${BASE}/auth/google`, async ({ request }) => {
+    const body = (await request.json().catch(() => ({}))) as { authorizationCode?: string };
+    if (!body.authorizationCode) {
+      return fail(400, "INVALID_CODE", "인가코드가 없습니다");
+    }
+    return HttpResponse.json(signIn(FRESH_ID));
+  }),
+
+  /**
+   * ★ 가족이 생기는 유일한 지점.
+   *
+   * 목에 이 길이 없어서 요청이 브라우저를 빠져나가 `localhost:8080` 으로 나갔다.
+   * 그래서 지금까지 **처음 쓰는 사람의 경로가 한 번도 안 돌았다** — 시연 계정으로만
+   * 앱이 돌고 있었다.
+   */
+  http.post(`${BASE}/families`, async ({ request }) => {
+    const body = (await request.json()) as {
+      familyName?: string;
+      owner?: { name?: string; birthDate?: string; sex?: "M" | "F" };
+    };
+    const familyName = (body.familyName ?? "").trim();
+    const name = (body.owner?.name ?? "").trim();
+    if (!familyName || !name) {
+      return fail(400, "INVALID_INPUT", "가족 이름과 내 이름이 필요합니다");
+    }
+    if (db.stage === "home") {
+      return fail(409, "ALREADY_IN_FAMILY", "이미 가족에 속해 있습니다");
+    }
+
+    const age = ageOf(body.owner?.birthDate) ?? 30;
+    const familyId = uuid();
+    const owner: Profile = {
+      profileId: uuid(),
+      familyId,
+      name,
+      role: "PARENT",
+      ageGroup: ageGroupOf(age),
+      sex: body.owner?.sex ?? "F",
+      hasAccount: true,
+      inviteStatus: "NONE",
+      // 참여 방식은 다음 화면에서 고른다. 서버가 미리 정하지 않는다
+      supportMode: null,
+      measurable: age >= 4,
+      consentRequired: false,
+      consentGiven: true,
+    } as Profile;
+
+    startFamily(familyName, owner);
+    setStage("home");
+    setActingProfile(owner.profileId);
+
+    return HttpResponse.json({ familyId, familyName, ownerProfile: owner }, { status: 201 });
   }),
 
   http.get(`${BASE}/families/:familyId/profiles`, () => HttpResponse.json(db.profiles)),
 
   http.post(`${BASE}/families/:familyId/profiles`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>;
-    const birthDate = String(body.birthDate ?? "2020-01-01");
-    const age = ageOf(birthDate) ?? 0;
+    const name = String(body.name ?? "").trim();
+    const birthDate = String(body.birthDate ?? "");
+    const age = ageOf(birthDate);
+    if (!name || age == null) return fail(400, "INVALID_INPUT", "이름과 생일이 필요합니다");
     const consentRequired = age < 14;
 
     const consent = body.guardianConsent as
@@ -233,17 +261,20 @@ const identity = [
 
     const profile: Profile = {
       profileId: uuid(),
-      familyId: DEMO.familyId,
-      name: String(body.name ?? ""),
+      familyId: db.profiles.familyId ?? DEMO.familyId,
+      name,
       role: body.role === "PARENT" ? "PARENT" : "CHILD",
       ageGroup: ageGroupOf(age),
+      ...(body.sex === "M" || body.sex === "F" ? { sex: body.sex } : {}),
+      birthDate,
       hasAccount: false,
       inviteStatus: "NONE",
       supportMode: body.role === "PARENT" ? "CHEER_ONLY" : null,
       // 만 4세 미만은 규준 자체가 없다
       measurable: age >= 4,
       consentRequired,
-      consentGiven: consentRequired ? true : true,
+      // 14세 미만은 위에서 동의를 받아야 여기까지 온다
+      consentGiven: true,
     };
     db.profiles.profiles.push(profile);
     const mapMember: MapMember = {
@@ -251,6 +282,7 @@ const identity = [
       name: profile.name,
       role: profile.role,
       ageGroup: profile.ageGroup,
+      ...(profile.sex ? { sex: profile.sex } : {}),
       hasAccount: false,
       supportMode: profile.supportMode,
       measurable: profile.measurable,
@@ -260,6 +292,7 @@ const identity = [
       latest: null,
     };
     db.fitnessMap.members.push(mapMember);
+    saveFamily();
     return HttpResponse.json(profile, { status: 201 });
   }),
 
@@ -268,11 +301,34 @@ const identity = [
       {
         claimCode: "K7M2QT",
         expiresAt: new Date(Date.now() + 7 * 864e5).toISOString(),
-        shareUrl: "http://localhost:3000/claim?code=K7M2QT",
+        // 목은 지금 연 주소로 — 3000 에 박아 두면 다른 포트로 띄운 개발 서버에서 링크가 남의 곳으로 간다
+        shareUrl: `${location.origin}/claim?code=K7M2QT`,
       },
       { status: 201 },
     ),
   ),
+
+  /**
+   * ▲ 서버에 아직 없다. 제안 모양으로 답한다.
+   * 코드가 어느 **자리**인지 넣기 전에 보여 줘야, 받는 사람이 역할을 고를 수
+   * 없다는 것이 화면에서 사실이 된다.
+   */
+  http.get<PathParams>(`${BASE}/invites/:claimCode`, ({ params }) => {
+    if (String(params.claimCode).toUpperCase() !== "K7M2QT") {
+      return fail(404, "CODE_NOT_FOUND", "코드를 찾을 수 없습니다");
+    }
+    const seat = db.profiles.profiles.find((p) => p.profileId === DEMO.dad);
+    const inviter = db.profiles.profiles.find((p) => p.profileId === DEMO.mom);
+    if (!seat) return fail(404, "CODE_NOT_FOUND", "코드를 찾을 수 없습니다");
+    return HttpResponse.json({
+      familyName: db.profiles.familyName,
+      profileName: seat.name,
+      role: seat.role,
+      ageGroup: seat.ageGroup,
+      invitedByName: inviter?.name ?? null,
+      expiresAt: new Date(Date.now() + 7 * 864e5).toISOString(),
+    });
+  }),
 
   http.post(`${BASE}/profiles/claim`, async ({ request }) => {
     const { claimCode } = (await request.json()) as { claimCode: string };
@@ -285,7 +341,7 @@ const identity = [
       dad.hasAccount = true;
       dad.inviteStatus = "CLAIMED";
     }
-    setNewcomer(false);
+    setStage("home");
     setActingProfile(DEMO.dad);
     return HttpResponse.json({
       profileId: DEMO.dad,
@@ -307,6 +363,7 @@ const identity = [
 
       profile.supportMode = supportMode as Profile["supportMode"];
       syncMapMember(profile);
+      saveFamily();
       return HttpResponse.json(profile);
     },
   ),
@@ -318,9 +375,12 @@ const identity = [
 
     const given = body.personalData && body.healthData;
     profile.consentGiven = given;
-    // 철회하면 그 순간부터 측정이 막힌다
-    profile.measurable = given && profile.ageGroup !== "유아기";
+    // 철회하면 그 순간부터 측정이 막힌다. 다시 주면 만 4세가 넘었는지로 — 연령대(유아기 0~6세)로 보면
+    // 동의를 한 번 거둔 5살은 영영 못 잰다. 생일을 모르면 유아기만 막아 둔다(만 4세 미만일 수 있다)
+    const age = ageOf((profile as Profile).birthDate);
+    profile.measurable = given && (age != null ? age >= 4 : profile.ageGroup !== "유아기");
     syncMapMember(profile);
+    saveFamily();
 
     return HttpResponse.json({
       consentGiven: given,
@@ -345,6 +405,8 @@ const identity = [
       toProfileId: body.toProfileId,
       message: body.message ?? null,
       missionId: body.missionId ?? null,
+      // ▲ 계약에 칸이 없어 `emoji` 로 온다
+      stickerId: body.stickerId ?? body.emoji ?? null,
       createdAt: cheer.createdAt,
     });
     saveCheers(db.cheers);
@@ -357,7 +419,9 @@ const identity = [
    */
   http.get(`${BASE}/families/:familyId/cheers`, ({ request }) => {
     const to = new URL(request.url).searchParams.get("toProfileId");
-    const cheers = to ? db.cheers.filter((c) => c.toProfileId === to) : db.cheers;
+    const cheers = (to ? db.cheers.filter((c) => c.toProfileId === to) : db.cheers)
+      .slice()
+      .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
     return HttpResponse.json({ cheers });
   }),
 ];
@@ -370,14 +434,6 @@ function ageGroupOf(age: number): AgeGroup {
   return "어르신";
 }
 
-/** 백분위 → 등급. 서버가 주는 값은 1·2·3등급과 「참가」뿐이다 */
-function gradeOf(percentile: number): NonNullable<Concrete<ItemResult>["grade"]> {
-  if (percentile >= 90) return "1등급";
-  if (percentile >= 75) return "2등급";
-  if (percentile >= 50) return "3등급";
-  return "참가";
-}
-
 function syncMapMember(profile: Profile) {
   const member = db.fitnessMap.members.find((m) => m.profileId === profile.profileId);
   if (!member) return;
@@ -385,15 +441,6 @@ function syncMapMember(profile: Profile) {
   member.measurable = profile.measurable;
   member.consentGiven = profile.consentGiven;
 }
-
-/** 연령대 → 만 나이 범위. 영상 연령 필터가 이 범위와 겹치는지 본다 */
-const AGE_RANGE: Record<string, [number, number]> = {
-  유아기: [0, 6],
-  유소년: [7, 12],
-  청소년: [13, 18],
-  성인: [19, 64],
-  어르신: [65, 99],
-};
 
 /* ─── 측정 ─────────────────────────────────────────────────── */
 
@@ -404,10 +451,50 @@ const fitness = [
     return HttpResponse.json(table[ageGroup ?? "유소년"] ?? table["유소년"]);
   }),
 
+  /** ▲ 서버에 아직 없다. 운동할 수 있는 시간 */
+  http.get<PathParams>(`${BASE}/profiles/:profileId/availability`, ({ params }) =>
+    HttpResponse.json({
+      profileId: String(params.profileId),
+      slots: db.availability[String(params.profileId)] ?? [],
+    }),
+  ),
+
+  http.put<PathParams>(`${BASE}/profiles/:profileId/availability`, async ({ params, request }) => {
+    const me = acting();
+    if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자만 바꿀 수 있습니다");
+    const body = (await request.json()) as {
+      slots?: { day: string; start: string; minutes: number }[];
+    };
+    const days = new Set(["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]);
+    const slots = (body.slots ?? []).filter(
+      (s) =>
+        days.has(s.day) &&
+        /^([01]\d|2[0-3]):[0-5]\d$/.test(s.start) &&
+        s.minutes >= 5 &&
+        s.minutes <= 120,
+    );
+    if (slots.length !== (body.slots ?? []).length) {
+      return fail(400, "INVALID_SLOT", "요일 · 시각 · 시간 중 맞지 않는 값이 있습니다");
+    }
+    db.availability[String(params.profileId)] = slots;
+    saveExtra("availability");
+    return HttpResponse.json({ profileId: String(params.profileId), slots });
+  }),
+
+  /** ▲ 서버에 아직 없다. 최근 회차가 먼저 온다 */
+  http.get<PathParams>(`${BASE}/profiles/:profileId/fitness-tests`, ({ params }) =>
+    HttpResponse.json({ tests: db.tests[String(params.profileId)] ?? [] }),
+  ),
+
   http.get<PathParams>(`${BASE}/profiles/:profileId/fitness-tests/latest`, ({ params }) => {
-    const found = db.latest[String(params.profileId)];
+    const profileId = String(params.profileId);
+    const found = db.latest[profileId];
     // 이력이 없어도 404 가 아니다. 빈 모양을 돌려준다
-    return HttpResponse.json(found ?? fixtures.latestByProfile[DEMO.mom]);
+    return HttpResponse.json({
+      ...(found ?? fixtures.latestByProfile[DEMO.mom]),
+      // ▲ 서버가 아직 안 돌려주는 값. 있으면 화면이 "지금 몸" 을 그린다
+      ...(db.body[profileId] ?? {}),
+    });
   }),
 
   http.post<PathParams>(
@@ -428,13 +515,22 @@ const fitness = [
       const body = (await request.json()) as {
         testedOn: string;
         source: string;
+        heightCm?: number;
+        weightKg?: number;
         items: { itemCode: string; value: number }[];
       };
+      // 지난 날짜로 적은 회차는 이력에만 들어간다 — 가장 최근 회차가 「지금」 이다
+      const newest = !((db.latest[profileId]?.testedOn ?? "") > body.testedOn);
       const measured = (body.items ?? []).filter((i) => Number.isFinite(i.value));
       if (measured.length === 0) return fail(400, "NO_ITEMS", "항목이 없습니다");
       // 혈압은 입력으로 받지 않는다
       if (measured.some((i) => i.itemCode === "005" || i.itemCode === "006")) {
         return fail(400, "ITEM_NOT_ALLOWED", "허용되지 않는 항목입니다");
+      }
+      // 같이 적어 온 키 · 몸무게는 들고 있다가 latest 로 돌려준다 — 검사를 다 지난 뒤에.
+      // 전에는 거절한 회차의 키 · 몸무게가 먼저 남아 저장 안 된 값이 「지금 몸」 으로 떴다
+      if (newest && body.heightCm && body.weightKg) {
+        db.body[profileId] = { heightCm: body.heightCm, weightKg: body.weightKg };
       }
 
       const catalogue =
@@ -478,14 +574,32 @@ const fitness = [
       };
 
       const overall = Math.round(items.reduce((s, i) => s + i.percentile, 0) / items.length);
-      db.latest[profileId] = {
-        ...result,
-        radar: fixtures.latestByProfile[DEMO.kid].radar,
-        coachDirection: sorted[0].percentile > 75 ? "STRENGTHEN" : "GROWTH",
-      };
+      // 레이더는 요인마다 그 요인을 잰 항목의 백분위. 안 잰 요인은 null 이다
+      const radar = [...new Set((catalogue?.items ?? []).map((i) => i.factor))].map((factor) => ({
+        factor,
+        percentile: items.find((i) => factorOf(i.itemCode) === factor)?.percentile ?? null,
+      }));
+      if (newest) {
+        db.latest[profileId] = {
+          ...result,
+          radar: radar as Concrete<LatestFitnessTest>["radar"],
+          coachDirection: sorted[0].percentile > 75 ? "STRENGTHEN" : "GROWTH",
+        };
+      }
+      // 다시 재기는 덮어쓰기가 아니라 추가다(규칙 11). 최근 회차가 먼저
+      db.tests[profileId] = [
+        {
+          fitnessTestId: result.fitnessTestId,
+          testedOn: body.testedOn,
+          overallPercentile: overall,
+          heightCm: body.heightCm ?? null,
+          weightKg: body.weightKg ?? null,
+        },
+        ...(db.tests[profileId] ?? []),
+      ].sort((a, b) => b.testedOn.localeCompare(a.testedOn));
 
       const member = db.fitnessMap.members.find((m) => m.profileId === profileId);
-      if (member) {
+      if (member && newest) {
         member.headline = `${profile.ageGroup} 상위 ${100 - overall}%`;
         member.latest = {
           fitnessTestId: result.fitnessTestId,
@@ -496,6 +610,9 @@ const fitness = [
           coachDirection: sorted[0].percentile > 75 ? "STRENGTHEN" : "GROWTH",
         };
       }
+      // 새로고침해도 방금 잰 것이 남아야 한다
+      saveExtra("latest", "tests", "body");
+      saveFamily();
 
       return HttpResponse.json(result, { status: 201 });
     },
@@ -510,84 +627,7 @@ const fitness = [
 
 /* ─── 코치 — 승인 게이트 ───────────────────────────────────── */
 
-const coaching = [
-  http.post(`${BASE}/families/:familyId/coach/runs`, async () => {
-    db.coachRun = structuredClone(fixtures.coachRun);
-    // 실행은 비동기다. 접수만 하고 202 를 준다
-    return HttpResponse.json(
-      { coachRunId: db.coachRun.coachRunId, status: "RUNNING", pollAfterMs: 1500 },
-      { status: 202 },
-    );
-  }),
-
-  http.get<PathParams>(`${BASE}/coach/runs/:runId`, () => HttpResponse.json(db.coachRun)),
-
-  /**
-   * ★ 미션이 만들어지는 유일한 지점.
-   * 승인 전까지 db.missions 는 0건이고, 그게 이 서비스의 핵심 주장이다.
-   */
-  http.post(`${BASE}/coach/runs/:runId/approve`, () => {
-    const me = acting();
-    if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자가 아닙니다");
-    if (db.coachRun.status === "APPROVED")
-      return fail(409, "ALREADY_APPROVED", "이미 승인했습니다");
-    if (db.coachRun.status !== "AWAITING_APPROVAL") {
-      return fail(409, "INVALID_STATE", "승인할 수 없는 상태입니다");
-    }
-
-    db.coachRun.status = "APPROVED";
-    db.missions = structuredClone(fixtures.missionsAfterApproval.missions);
-    db.coachRun.missionCount = db.missions.length;
-    return HttpResponse.json(fixtures.coachApprove);
-  }),
-
-  http.post(`${BASE}/coach/runs/:runId/reject`, async ({ request }) => {
-    const me = acting();
-    if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자가 아닙니다");
-    if (db.coachRun.status !== "AWAITING_APPROVAL") {
-      return fail(409, "INVALID_STATE", "처리할 수 없는 상태입니다");
-    }
-
-    const { reason } = (await request.json()) as { reason?: string };
-    db.coachRun.status = "REJECTED";
-    db.coachRun.rejectedReason = reason ?? null;
-    // 거절해도 미션은 0건 유지
-    return HttpResponse.json({
-      coachRunId: db.coachRun.coachRunId,
-      status: "REJECTED",
-      rejectedReason: reason ?? null,
-      missionCount: 0,
-    });
-  }),
-
-  http.post(`${BASE}/coach/chat`, async ({ request }) => {
-    const { question, conversationId } = (await request.json()) as {
-      question: string;
-      conversationId?: string;
-    };
-    // RAG 검색과 생성에 걸리는 시간. 스켈레톤이 실제로 보이게 하려고 넣었다
-    await new Promise((r) => setTimeout(r, 900));
-    return HttpResponse.json({
-      // 이어지는 대화는 같은 id 를 돌려준다. 매번 새로 주면 대화가 끊긴다
-      conversationId: conversationId ?? uuid(),
-      messageId: uuid(),
-      answer: `${question.slice(0, 20)}… 에 대해, 아이 연령대에 맞춰 정적 스트레칭부터 시작하는 편이 좋습니다. 하루 5분, 주 4회 정도가 적당합니다.`,
-      // 근거 없는 답변은 버그로 본다. 목에서도 항상 채운다
-      citations: [
-        {
-          index: 1,
-          sourceLabel: "유소년 유연성 운동처방",
-          excerpt: "정적 스트레칭은 1회 15~30초 유지, 주 4회 이상 반복 시 개선 폭이 큽니다.",
-          url: null,
-        },
-      ],
-      refused: false,
-      refusalReason: null,
-    });
-  }),
-];
-
-/* ─── 미션 · 활동 · 영상 · 리포트 ──────────────────────────── */
+/* ─── 미션 · 한 칸 끝 · 보호자 확인 ────────────────────────── */
 
 const missions = [
   /**
@@ -598,7 +638,7 @@ const missions = [
     const params = new URL(request.url).searchParams;
     const scope = params.get("scope") ?? "ALL";
     const status = params.get("status");
-    const today = new Date().toISOString().slice(0, 10);
+    const today = toDateString(new Date());
 
     const missions = db.missions.filter((m) => {
       const parts = m.participants ?? [];
@@ -628,7 +668,12 @@ const missions = [
       targetValue: number;
       videoId?: string;
       participantProfileIds: string[];
+      /** ▲ 서버에 아직 없다. 직접 짠 루틴의 칸들 */
+      sessions?: unknown[];
     };
+    if (!body.title || !(body.participantProfileIds ?? []).length) {
+      return fail(400, "BAD_REQUEST", "이름과 하는 사람이 필요합니다");
+    }
     const mission: MissionRow = {
       missionId: uuid(),
       title: body.title,
@@ -649,106 +694,130 @@ const missions = [
         completed: false,
         verifiedBy: null,
         needsGuardianCheck: false,
+        doneSessions: [],
       })),
-    };
+      // 칸의 끝냄은 사람마다 따로 든다 — 보낸 쪽이 칸에 적어 온 끝냄은 믿지 않는다
+      ...(body.sessions?.length
+        ? {
+            sessions: body.sessions.map((s) => {
+              const { completed: _c, verifiedBy: _v, ...rest } = s as Record<string, unknown>;
+              return rest;
+            }),
+          }
+        : {}),
+    } as MissionRow;
     db.missions.push(mission);
+    saveMissions();
     return HttpResponse.json(mission, { status: 201 });
   }),
 
-  http.post(`${BASE}/missions/:missionId/activity/timer`, async ({ request }) => {
-    const body = (await request.json()) as { activeMinutes: number };
-    // 서버가 진짜로 아는 값이다
-    return HttpResponse.json({
-      activityDate: new Date().toISOString().slice(0, 10),
-      source: "TIMER",
-      serverVerified: true,
-      totalActiveMinutes: body.activeMinutes,
-      missionProgress: Math.min(1, body.activeMinutes / 45),
-      missionCompleted: body.activeMinutes >= 45,
-    });
-  }),
+  /**
+   * 한 칸 끝냈다. ▲ 서버에 아직 없다 — `POST /missions/{id}/sessions/{position}/done`.
+   *
+   * 앱 안 타이머로 잰 시간이라 서버가 아는 값이다(`TIMER`). 영상을 끝까지 봤는지가
+   * 아니라 **잡힌 시간 동안 따라 했는지**로 판정한다 — 영상은 동작 시범일 뿐이다(9/23 회의).
+   */
+  http.post<PathParams>(
+    `${BASE}/missions/:missionId/sessions/:position/done`,
+    async ({ params, request }) => {
+      const body = (await request.json()) as { profileId: string; activeSeconds: number };
+      const mission = db.missions.find((m) => m.missionId === String(params.missionId));
+      if (!mission) return fail(404, "MISSION_NOT_FOUND", "미션이 없습니다");
+      const sessions = sessionsOfRow(mission);
+      const session = sessions.find((s) => s.position === Number(params.position));
+      if (!session) return fail(404, "SESSION_NOT_FOUND", "그 칸이 없습니다");
+      const me = participantOf(mission, body.profileId);
+      if (!me) return fail(403, "NOT_A_PARTICIPANT", "이 운동을 하는 사람이 아닙니다");
+      // 잡힌 시간의 절반도 안 했으면 끝낸 것으로 치지 않는다
+      const planned = (session.minutes ?? 1) * 60;
+      // 동의를 거두면 측정뿐 아니라 활동 저장도 막힌다(규칙 4)
+      const person = db.profiles.profiles.find((p) => p.profileId === body.profileId);
+      if (person && !person.consentGiven) {
+        return fail(422, "CONSENT_REQUIRED", "보호자 동의가 필요합니다");
+      }
+      if ((body.activeSeconds ?? 0) < planned * 0.5) {
+        return fail(422, "TOO_SHORT", "잡힌 시간의 절반도 하지 않았습니다");
+      }
 
-  http.post(`${BASE}/missions/:missionId/activity/steps`, async ({ request }) => {
-    const body = (await request.json()) as { steps: number };
-    // 자기 신고다. 목표를 넘겨도 보호자 확인 전에는 완료가 아니다
-    return HttpResponse.json({
-      source: "MANUAL",
-      serverVerified: false,
-      verifiedBy: "SELF_REPORT",
-      missionProgress: Math.min(1, body.steps / 8000),
-      missionCompleted: false,
-      needsGuardianCheck: body.steps >= 8000,
-    });
-  }),
+      // 경험치는 레벨이 세는 것과 같은 셈으로 — 끝내기 전과 뒤의 차이. 두 번 눌러도 두 번 쌓이지 않는다
+      const before = progressOf(body.profileId).xp;
+      // 끝낸 사람이 이 칸을 끝낸다. 아이가 끝냈으면 같이 하기로 한 보호자도 — 아이 폰 하나로 같이 한다.
+      // 보호자가 끝낸 칸은 그 보호자 것뿐이다(다른 보호자 · 아이에게 번지지 않는다).
+      // 형제는 저마다 한다: 한 아이가 끝낸 칸이 다른 아이 것이 되지 않는다
+      const roleOf = (id: string | undefined) =>
+        db.profiles.profiles.find((p) => p.profileId === id)?.role;
+      const withGuardians = roleOf(me.profileId) === "CHILD";
+      const total = sessions.reduce((sum, s) => sum + (s.minutes ?? 0), 0) || 1;
+      for (const p of (mission.participants ?? []) as ParticipantRow[]) {
+        if (p !== me && !(withGuardians && roleOf(p.profileId) === "PARENT")) continue;
+        p.doneSessions = [...new Set([...(p.doneSessions ?? []), session.position])];
+        // 처음 끝낸 날 — 같은 칸을 다음 날 또 끝내도 옮기지 않는다
+        p.doneOn = { [session.position]: toDateString(new Date()), ...(p.doneOn ?? {}) };
+        const done = sessions.filter((s) => p.doneSessions.includes(s.position));
+        p.progress = done.reduce((sum, s) => sum + (s.minutes ?? 0), 0) / total;
+        p.verifiedBy = "TIMER";
+        p.completed = done.length === sessions.length;
+      }
+      saveMissions();
 
-  http.post(`${BASE}/missions/:missionId/participants/:profileId/confirm`, ({ params }) => {
-    const me = acting();
-    if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자가 아닙니다");
-    return HttpResponse.json({
-      missionId: String(params.missionId),
-      profileId: String(params.profileId),
-      completed: true,
-      verifiedBy: "SELF_REPORT",
-      confirmedBy: db.actingProfileId,
-      verifiedAt: new Date().toISOString(),
-    });
-  }),
-
-  http.get(`${BASE}/families/:familyId/report/weekly`, () => HttpResponse.json(fixtures.report)),
-];
-
-const videos = [
-  http.get(`${BASE}/videos`, ({ request }) => {
-    const params = new URL(request.url).searchParams;
-    const list = params.get("list") ?? "ALL";
-    const ageGroup = params.get("ageGroup");
-
-    let result = db.videos;
-    if (list === "FAVORITES") result = result.filter((v) => v.favorited);
-    if (list === "RECENT") result = result.filter((v) => v.maxProgress !== null);
-    // 연령 안전 필터. 라벨 연령 범위와 겹치는 영상만 나간다.
-    // 라벨이 없는 영상은 아이 연령대에 아예 나가지 않는다 — 무엇이 나올지 모르기 때문이다
-    if (ageGroup) {
-      const [from, to] = AGE_RANGE[ageGroup] ?? [0, 99];
-      result = result.filter((v) => {
-        const label = v.label;
-        if (label?.ageFrom == null && label?.ageTo == null) return false;
-        return (label.ageFrom ?? 0) <= to && (label.ageTo ?? 99) >= from;
+      return HttpResponse.json({
+        position: session.position,
+        verifiedBy: "TIMER",
+        missionProgress: me.progress,
+        missionCompleted: me.completed,
+        xpGained: progressOf(body.profileId).xp - before,
       });
-    }
-    return HttpResponse.json({ videos: result, nextCursor: null });
-  }),
+    },
+  ),
 
-  http.post<PathParams>(`${BASE}/videos/:videoId/favorite`, async ({ params, request }) => {
-    const { favorited } = (await request.json()) as { favorited: boolean };
-    const video = db.videos.find((v) => v.videoId === params.videoId);
-    if (!video) return fail(404, "VIDEO_NOT_FOUND", "영상이 없습니다");
-    video.favorited = favorited;
-    return HttpResponse.json({
-      videoId: video.videoId,
-      profileId: db.actingProfileId,
-      favorited,
-      favoritedAt: favorited ? new Date().toISOString() : null,
-    });
-  }),
-
-  http.post<PathParams>(`${BASE}/videos/:videoId/progress`, async ({ params, request }) => {
-    const body = (await request.json()) as { progress: number };
-    const video = db.videos.find((v) => v.videoId === params.videoId);
-    const previous = video?.maxProgress ?? 0;
-    const maxProgress = Math.max(previous, body.progress);
-    if (video) video.maxProgress = maxProgress;
-
-    // 처음 기준을 넘을 때만 적립한다. 두 번 적립되지 않는다
-    const justCompleted = !isVideoDone(previous) && isVideoDone(maxProgress);
-    return HttpResponse.json({
-      maxProgress,
-      completed: isVideoDone(maxProgress),
-      creditedMinutes: justCompleted ? Math.ceil((video?.durationSec ?? 0) / 60) : 0,
-      verifiedBy: isVideoDone(maxProgress) ? "VIDEO_PROGRESS" : null,
-      missionProgress: null,
-    });
-  }),
+  /** 직접 적은 기록을 보호자가 확인한다 — 확인해야 완료가 된다(규칙 2) */
+  http.post<PathParams>(
+    `${BASE}/missions/:missionId/participants/:profileId/confirm`,
+    ({ params }) => {
+      const me = acting();
+      if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자가 아닙니다");
+      const mission = db.missions.find((m) => m.missionId === String(params.missionId));
+      if (!mission) return fail(404, "MISSION_NOT_FOUND", "미션이 없습니다");
+      const who = participantOf(mission, String(params.profileId));
+      if (!who) return fail(404, "PARTICIPANT_NOT_FOUND", "참여자가 아닙니다");
+      // 확인할 것이 없으면(타이머 · 영상으로 이미 확인됐거나 벌써 확인했다) 바꾸지 않는다 —
+      // 타이머로 확인된 것을 「직접 입력함」 으로 고쳐 적으면 서버가 아는 값이 사람이 적은 값이 된다(규칙 2)
+      if (!who.needsGuardianCheck) {
+        return HttpResponse.json({
+          missionId: mission.missionId,
+          profileId: who.profileId,
+          completed: Boolean(who.completed),
+          verifiedBy: who.verifiedBy ?? null,
+        });
+      }
+      if ((who.progress ?? 0) < 1) {
+        return fail(422, "TARGET_NOT_REACHED", "목표에 닿지 않았습니다");
+      }
+      who.completed = true;
+      who.needsGuardianCheck = false;
+      who.verifiedBy = "SELF_REPORT";
+      saveMissions();
+      return HttpResponse.json({
+        missionId: mission.missionId,
+        profileId: who.profileId,
+        completed: true,
+        verifiedBy: "SELF_REPORT",
+        confirmedBy: db.actingProfileId,
+        verifiedAt: new Date().toISOString(),
+      });
+    },
+  ),
 ];
 
-export const handlers = [...authGate, ...identity, ...fitness, ...coaching, ...missions, ...videos];
+export const handlers = [
+  ...authGate,
+  ...identity,
+  ...fitness,
+  ...coaching,
+  ...missions,
+  ...history,
+  ...league,
+  ...progress,
+  ...clips,
+  ...notifications,
+];

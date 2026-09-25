@@ -7,7 +7,7 @@
  *
  *   node scripts/check-assets.mjs
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,7 +19,8 @@ const SPEC = join(ROOT, "ASSET_PROMPTS.md");
 
 /** public/assets 에 실제로 있는 이름들 ("move/move-situp" 꼴) */
 const have = new Set();
-for (const category of readdirSync(ASSET_DIR)) {
+// 새 그림을 기다리는 동안에는 폴더째 없을 수 있다
+for (const category of existsSync(ASSET_DIR) ? readdirSync(ASSET_DIR) : []) {
   const dir = join(ASSET_DIR, category);
   if (!statSync(dir).isDirectory()) continue;
   for (const file of readdirSync(dir)) {
@@ -54,19 +55,6 @@ const missing = [];
 const pending = new Set();
 const used = new Set();
 
-// 캐릭터 프레임은 `anim/${motion}-${n}` 으로 합쳐 만든다. 글자만 훑어서는 안 보인다
-try {
-  const src = readFileSync(join(ROOT, "src/lib/anim-frames.ts"), "utf8");
-  for (const [, motion, list] of src.matchAll(/(\w+):\s*\[([^\]]*)\]/g)) {
-    for (const n of list.split(",")) {
-      const frame = n.trim();
-      if (frame) used.add(`anim/${motion}-${frame}`);
-    }
-  }
-} catch {
-  // 아직 에셋을 넣지 않았다
-}
-
 /** 쓰고 있는데 파일이 없다 — 주문했으면 대기, 아니면 오타다 */
 function note(file, name) {
   used.add(name);
@@ -75,30 +63,72 @@ function note(file, name) {
   else missing.push([file, name]);
 }
 
+/** 만들어 낸 그림 목록 — 여기 적힌 이름은 쓴 것이 아니다. 세면 모든 그림이 쓰인 것이 되어 「안 쓴 것」 이 늘 비었다 */
+const LIST_FILE = join(SRC_DIR, "lib/asset-list.ts");
+
+/** 틀로 만드는 이름 — 따옴표 안에 이름이 통째로 없다. 그 머리로 시작하는 그림을 다 쓰는 것으로 본다 */
+const FAMILIES = [
+  ["level/level-${", "level/level-"],
+  ["badge/badge-${", "badge/badge-"],
+];
+
 for (const file of walk(SRC_DIR)) {
+  if (file === LIST_FILE) continue;
   const text = readFileSync(file, "utf8");
+  for (const [pattern, prefix] of FAMILIES) {
+    if (!text.includes(pattern)) continue;
+    for (const name of have) if (name.startsWith(prefix)) note(relative(ROOT, file), name);
+  }
 
   // <Illustration name="move/move-situp" fallback="..." />
   for (const [, name] of text.matchAll(/(?:name|fallback)=["']([a-z0-9-]+\/[a-z0-9-]+)["']/g)) {
     note(relative(ROOT, file), name);
   }
-  // EmptyState 의 scene="no-record" → scene/scene-no-record
+  // EmptyState 의 scene="no-record" → scene/kiumi-no-record (키움이 장면)
   for (const [, scene] of text.matchAll(/scene=["']([a-z0-9-]+)["']/g)) {
-    note(relative(ROOT, file), `scene/scene-${scene}`);
+    note(relative(ROOT, file), `scene/kiumi-${scene}`);
   }
   // "move/move-x" 처럼 따옴표 안에 직접 적힌 것 (fitness-items.ts 의 매핑표)
   for (const [, name] of text.matchAll(
-    /["']((?:anim|bg|char|deco|item|move|scene|stamp)\/[a-z0-9-]+)["']/g,
+    /["']((?:deco|item|scene|level|sticker|badge|icon|stamp|league)\/[a-z0-9-]+)["']/g,
   )) {
     note(relative(ROOT, file), name);
   }
+  // 리그 메달은 틀로 만든다(`league/tier-${tier}`) — 따옴표 안에 이름이 없어 위에서 못 본다
+  if (text.includes("league/tier-${")) {
+    for (const tier of ["bronze", "silver", "gold", "platinum", "diamond"]) {
+      note(relative(ROOT, file), `league/tier-${tier}`);
+    }
+  }
 }
 
-const unused = [...have].filter((n) => !used.has(n) && !n.startsWith("char/")).sort();
+const unused = [...have].filter((n) => !used.has(n)).sort();
 
 if (missing.length > 0) {
   console.error("명세에도 없고 파일도 없다 — 이름이 틀렸다:");
   for (const [file, name] of missing) console.error(`  ${file} → ${name}`);
+}
+
+/*
+  있는 그림 목록(src/lib/asset-list.ts)이 파일과 맞나.
+
+  화면은 목록에 있는 그림만 부른다. 그림을 넣고 목록을 안 고치면 파일은 있는데
+  아이콘이 그대로 서 있고, 그림을 지우고 목록을 안 고치면 빈 상자가 뜬다.
+*/
+const listed = new Set(
+  [
+    ...readFileSync(join(ROOT, "src/lib/asset-list.ts"), "utf8").matchAll(
+      /"([a-z0-9-]+\/[a-z0-9-]+)"/g,
+    ),
+  ].map((m) => m[1]),
+);
+const notListed = [...have].filter((n) => !listed.has(n));
+const gone = [...listed].filter((n) => !have.has(n));
+if (notListed.length > 0 || gone.length > 0) {
+  console.error("그림 목록이 낡았다 — npm run assets:list 를 돌려 주세요");
+  if (notListed.length) console.error(`  목록에 없는 파일: ${notListed.join(", ")}`);
+  if (gone.length) console.error(`  파일이 없는 목록: ${gone.join(", ")}`);
+  process.exit(1);
 }
 
 const usedOnDisk = [...used].filter((n) => have.has(n)).length;

@@ -1,81 +1,118 @@
 "use client";
 
 import { Play, Settings } from "lucide-react";
-import { NavLink } from "@/components/ui/nav-link";
 import { useRouter } from "next/navigation";
 
 import { AppBar } from "@/components/app-shell/app-bar";
-import { SectionTitle, Stage } from "@/components/app-shell/stage";
+import { Stage } from "@/components/app-shell/stage";
+import { ArtIcon } from "@/components/ui/art-icon";
 import { ErrorState } from "@/components/ui/error-state";
-import { Backdrop } from "@/components/ui/backdrop";
+import { IconLink } from "@/components/ui/icon-link";
 import { Illustration } from "@/components/ui/illustration";
+import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { KidCharacter } from "@/components/domain/kid-character";
-import { ScoreDial } from "@/components/domain/score-dial";
-import { WeekDots } from "@/components/domain/week-dots";
+import { StickerArt } from "@/components/domain/sticker-art";
+import { StreakChip } from "@/components/domain/streak-chip";
+import { PanelCell, PanelCells, WeekPanel } from "@/components/domain/week-panel";
+import { KiumIsland } from "@/components/scene/kium-island";
+import { NotificationBell } from "@/components/domain/notification-bell";
+import { XpGauge } from "@/components/domain/xp-gauge";
+import type { Mission } from "@/lib/api/types";
+import type { ProfileWithSex } from "@/lib/api/types";
 import {
+  useCalendar,
   useCheers,
   useFamilyProfiles,
   useFitnessMap,
-  useMissions,
-  useVideos,
+  useCurrentMissions,
+  useProgress,
 } from "@/lib/api/queries";
+import { missionsOn } from "@/lib/day";
+import { callName } from "@/lib/family";
+import { badgeArt, stageOf } from "@/lib/levels";
+import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
-import { isVideoDone } from "@/lib/mission";
+import { dayOf, longDate, today, weekOf } from "@/lib/today";
+import { stickerOf } from "@/lib/stickers";
 import { useRoleStore } from "@/stores/role-store";
 
-/** 아이 홈. */
+/**
+ * 아이 홈.
+ *
+ * 맨 위는 **키움 섬**이다 — 운동한 날마다 나무가 하나씩 자라고, 가운데 선 캐릭터는
+ * 경험치가 차면 레벨 둘마다 모습이 자란다. 섬은 손으로 돌리고 누르면 캐릭터가 뛴다.
+ * 해야 할 일은 오늘 운동 카드의 큰 버튼 하나다. 나머지는 보는 것이다.
+ *
+ * 여기에 없는 것: 등급, 약한 요인, 형제 비교, 체력 육각형(규칙 10).
+ */
 export default function KidHomePage() {
   const router = useRouter();
-  const { familyId, isPending, error: sessionError } = useSession();
+  const { familyId, isPending, error: sessionError, refetch: refetchMe } = useSession();
   const childProfileId = useRoleStore((s) => s.childProfileId);
 
   const {
     data: map,
-    isPending: mapPending,
+    isLoading: mapLoading,
     error: mapError,
     refetch: refetchMap,
     isRefetching,
   } = useFitnessMap(familyId);
+  const {
+    data: missions,
+    isPending: missionsPending,
+    error: missionsError,
+    refetch: refetchMissions,
+  } = useCurrentMissions(familyId);
+  const { data: progress } = useProgress(childProfileId ?? undefined);
+  const week = weekOf();
+  const {
+    data: calendar,
+    isPending: calendarPending,
+    error: calendarError,
+    refetch: refetchCalendar,
+  } = useCalendar(familyId, childProfileId ?? undefined, week);
+  const { data: cheers } = useCheers(familyId, childProfileId ?? undefined);
   const { data: family } = useFamilyProfiles(familyId);
-  const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
-  /** 가족의 칭찬·알림을 한 번에 받아 두 갈래로 쓴다. */
-  const { data: cheerLog } = useCheers(familyId);
+  // 아이에게 부모는 엄마 · 아빠다
+  const nameOf = (profileId: string, fallback: string) =>
+    callName(
+      family?.profiles?.find((p) => p.profileId === profileId) as ProfileWithSex | undefined,
+      fallback,
+      true,
+    );
 
   const me = map?.members?.find((m) => m.profileId === childProfileId);
-  const profile = family?.profiles?.find((p) => p.profileId === childProfileId);
-
-  // 미션이 없어도 할 게 있어야 한다. 연령대에 맞는 영상을 하나 권한다
-  const { data: videos } = useVideos({ list: "ALL", ageGroup: profile?.ageGroup });
-  // 몇 개를 해냈는지. 서버가 아는 값이라 기기를 바꿔도 따라온다
-  const { data: watched } = useVideos({ list: "RECENT", profileId: childProfileId ?? undefined });
 
   // /me 가 실패하면 가족 지도는 시작도 못 한다. 실패를 기다림보다 먼저 본다
-  const failure = sessionError ?? mapError;
+  const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
     return (
       <>
         <AppBar title="오늘" />
         <Stage wide>
-          <ErrorState error={failure} onRetry={() => void refetchMap()} retrying={isRefetching} />
+          <ErrorState
+            error={failure}
+            onRetry={() => void (sessionError ? refetchMe() : refetchMap())}
+            retrying={isRefetching}
+          />
         </Stage>
       </>
     );
   }
 
-  if (isPending || mapPending) return <KidHomeSkeleton />;
+  if (isPending || mapLoading) return <KidHomeSkeleton />;
 
   if (!me) {
     return (
       <>
         <AppBar title="안녕!" />
         <Stage wide className="flex flex-col items-center pt-10 text-center">
-          <Illustration name="scene/scene-pick-role" fallback="scene/scene-invite" size={150} />
+          <Illustration name="scene/kiumi-waiting" size={150} />
           <p className="mt-4 text-xl font-extrabold">누구인지 골라 주세요</p>
           <button
             type="button"
             onClick={() => router.push("/start")}
-            className="press bg-signal mt-5 rounded-2xl px-6 py-4 text-lg font-extrabold text-white"
+            className="press bg-signal-strong mt-5 rounded-2xl px-6 py-4 text-lg font-extrabold text-white"
           >
             고르러 가기
           </button>
@@ -84,158 +121,202 @@ export default function KidHomePage() {
     );
   }
 
-  const score = me.latest?.overallPercentile ?? null;
-  const todo = (missions?.missions ?? []).find((m) =>
-    m.participants?.some((p) => p.profileId === childProfileId && !p.completed),
+  const now = today();
+  const mine = missionsOn(missions?.missions, childProfileId, now).filter(
+    (m) => m.targetMetric !== "STEPS",
   );
-  const suggestion = videos?.videos?.[0];
-  const doneCount = (watched?.videos ?? []).filter((v) => isVideoDone(v.maxProgress)).length;
-  const allCheers = cheerLog?.cheers ?? [];
-  const praises = allCheers.filter((c) => c.toProfileId === childProfileId && c.message);
+  const todo = mine.find(
+    (m) => !m.participants?.find((p) => p.profileId === childProfileId)?.completed,
+  );
+  const stage = stageOf(progress?.level);
+  // 운동한 날만큼 섬에 나무가 선다. 줄지 않는다
+  const trees = progress?.activeDays ?? 0;
+  const score = me.latest?.overallPercentile ?? null;
+  // 쉬는 날 카드(부모가 쓴다) — 이번 주 기록에 같이 온다. 쓴 날이면 오늘 운동 대신 「쉬는 날」
+  const restToday = Boolean(calendar?.days.find((d) => d.date === now)?.rest);
+  // 쉬는 날에도 「그래도 할래요」 로 시작했으면 이어서 하게 둔다
+  const started = todo ? sessionsOf(todo, childProfileId).some((s) => s.completed) : false;
+  // 가장 최근에 받은 스티커 · 업적 하나씩. 개수를 세지 않는다 — 모아야 할 것이 되면 못 받은 날이 실패가 된다
+  const sticker = (cheers?.cheers ?? [])
+    .filter((c) => c.stickerId && stickerOf(c.stickerId))
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0];
+  const badge = (progress?.achievements ?? [])
+    .filter((x) => x.earnedAt)
+    .sort((a, b) => Date.parse(b.earnedAt ?? "") - Date.parse(a.earnedAt ?? ""))[0];
 
   return (
     <>
-      <AppBar
-        right={
-          <NavLink
-            href="/settings"
-            aria-label="설정"
-            className="press text-faint grid size-10 place-items-center rounded-full"
-          >
-            <Settings className="size-5" />
-          </NavLink>
-        }
-      />
-
-      <Stage wide className="relative space-y-7">
-        {/* 조각을 흩뿌리는 대신 하늘 한 장을 깐다. 없으면 조용히 사라진다 */}
-        <Backdrop name="bg/bg-sky" height={230} />
-        {/* 이름을 크게. 아이는 자기 이름을 먼저 찾는다.
-            막대에 또 적지 않는다 — 한 화면에 같은 이름이 두 번 뜬다 */}
-        <div className="flex items-center gap-2">
-          <KidCharacter motion="wave" size={84} />
-          <h1 className="text-[1.7rem] leading-tight font-extrabold">
-            {me.name}
-            <span className="text-ink-soft block text-lg font-bold">오늘도 만나서 반가워!</span>
-          </h1>
+      <div className="flex items-center justify-between px-5 pt-4">
+        <p className="text-caption text-ink-soft font-semibold">{longDate()}</p>
+        <div className="-mr-2 flex items-center">
+          <NotificationBell profileId={childProfileId ?? undefined} />
+          <IconLink href="/settings" label="설정">
+            <Settings className="size-6" strokeWidth={1.8} />
+          </IconLink>
         </div>
+      </div>
 
-        {/* 내 점수 */}
-        <ScoreDial score={score} size={210} tone="kid" label="또래 100명 중 내 자리" />
-
-        {/* 이번 주에 한 날. 연속 기록으로 세지 않는다 — 빠진 날이 벌이 되면 안 된다 */}
-        <WeekDots cheers={allCheers} fromProfileId={childProfileId ?? ""} />
-
-        {/* 오늘 할 일 하나. 여러 개를 늘어놓지 않는다 */}
-        <section>
-          <SectionTitle>오늘 할 운동</SectionTitle>
-          {todo ? (
-            <BigAction
-              href={`/kid/play/${todo.missionId}`}
-              title={todo.title ?? "오늘의 운동"}
-              hint={todo.video?.title ?? "영상 보고 따라 하기"}
-              motion="jump"
-            />
-          ) : suggestion ? (
-            <BigAction
-              href={`/kid/play/video-${suggestion.videoId}`}
-              title={suggestion.title ?? "오늘의 운동"}
-              hint={suggestion.badges?.join(" · ") ?? "영상 보고 따라 하기"}
-              motion="stretch"
-            />
+      <Stage wide className="space-y-3">
+        {/* 나 — 내 섬과 이름. 아이는 자기 이름을 먼저 찾는다 */}
+        <section className="flex flex-col items-center pb-2 text-center">
+          <KiumIsland
+            stage={stage.stage}
+            level={progress?.level}
+            plants={progress ? trees : null}
+            seed={childProfileId ?? "kid"}
+            label={`${me.name}의 섬. 운동한 날마다 나무가 하나씩 자라요. 지금 ${trees}그루`}
+            className="-mt-3"
+          />
+          <h1 className="page-title -mt-2 max-w-full break-words">{me.name}</h1>
+          {progress ? (
+            <>
+              <p className="text-caption text-ink-soft mt-1 font-bold">
+                Lv.{progress.level} · {stage.name}
+                {trees > 0 ? ` · 나무 ${trees}그루` : ""}
+              </p>
+              {/* 다음 레벨까지 · 경험치 — 아래에 두꺼운 게이지(9/25) */}
+              <XpGauge progress={progress} className="mt-3 max-w-64 text-left" />
+            </>
           ) : (
-            <div className="border-line rounded-3xl border-2 border-dashed p-6 text-center">
-              <KidCharacter motion="tired" size={110} className="mx-auto" />
-              <p className="mt-3 text-xl font-extrabold">오늘은 쉬는 날이에요</p>
-              <p className="text-ink-soft mt-1 text-sm">쉬는 것도 하는 일이에요</p>
-            </div>
+            <Skeleton className="mt-2 h-4 w-40" />
           )}
-
-          {/* 권한 것 하나만 걸려 있으면, 그게 하기 싫은 날은 그냥 안 한다 */}
-          <NavLink
-            href="/kid/pick"
-            className="press border-line mt-3 flex items-center justify-center gap-2 rounded-2xl border py-3.5 text-base font-extrabold"
-          >
-            <Illustration name="item/item-dice" fallback="item/item-target" size={24} />
-            다른 운동 고르기
-          </NavLink>
         </section>
 
-        {/* 아이가 다시 열어 볼 것 둘. 이게 없으면 운동 한 번 하고 닫는 앱이 된다 */}
-        <section className="grid grid-cols-2 gap-3">
-          <KidTile
-            href="/kid/done"
-            art="item/item-check-big"
-            fallback="item/item-medal"
-            label="본 영상"
-            count={doneCount}
-          />
-          <KidTile
-            href="/kid/praise"
-            art="item/item-book"
-            fallback="item/item-clipboard"
-            label="칭찬"
-            count={praises.length}
-          />
-        </section>
+        {/* 오늘 할 일 하나. 이 화면에서 누를 큰 것은 이것뿐이다.
+            쉬는 날인지는 이번 주 기록에 같이 온다 — 오기 전에는 자리만 잡는다(운동 카드가 떴다 쉬는 날로 바뀌지 않게) */}
+        {calendarPending || (missionsPending && !missions) ? (
+          <Skeleton className="h-32 w-full rounded-3xl" />
+        ) : missionsError && !missions ? (
+          // 못 받은 것을 「오늘 운동이 아직 없어요」 로 그리지 않는다
+          <div className="card-hero flex flex-col items-center text-center">
+            <p className="text-lead font-extrabold">오늘 운동을 못 불러왔어요</p>
+            <button
+              type="button"
+              onClick={refetchMissions}
+              className="press bg-signal-strong mt-3 min-h-12 rounded-2xl px-6 text-base font-extrabold text-white"
+            >
+              다시 해 볼래요
+            </button>
+          </div>
+        ) : mine.length > 0 && !todo ? (
+          // 다 했으면 쉬는 날이어도 다 했다고 — 「그래도 할래요」 로 한 것을 덮지 않는다
+          <div className="card-hero text-center">
+            <p className="text-lead font-extrabold">오늘 거 다 했어요!</p>
+          </div>
+        ) : restToday && !started ? (
+          // 쉬는 날 카드를 쓴 날 — 「안 한 날」 이 아니라 「쉬기로 한 날」. 그래도 하고 싶으면 한다
+          <div className="card-hero flex flex-col items-center text-center">
+            <Illustration name="scene/kiumi-rest" size={112} />
+            <p className="text-lead font-extrabold">오늘은 쉬는 날이에요</p>
+            {todo && (
+              <NavLink
+                href={`/kid/m/${todo.missionId}`}
+                className="press text-signal-deep mt-2 inline-flex min-h-11 items-center text-sm font-extrabold"
+              >
+                그래도 할래요
+              </NavLink>
+            )}
+          </div>
+        ) : todo ? (
+          <TodayHero mission={todo} profileId={childProfileId} />
+        ) : (
+          <div className="card-hero text-center">
+            <p className="text-lead font-extrabold">오늘 운동이 아직 없어요</p>
+          </div>
+        )}
+
+        {/* 오늘 한 만큼 — 부모 홈과 같은 링. 비어 있어도 탓하지 않는다 */}
+        {/* 둘째 묶음 — 이번 주. 링 · 요일 탑 · 받은 스티커 · 업적 · 신체 점수를 한 덩어리로(9/25 「큰 묶음 둘」) */}
+        <WeekPanel
+          profileId={childProfileId ?? undefined}
+          missions={missions?.missions}
+          days={week.days}
+          logs={calendar?.days}
+          loading={calendarPending}
+          failed={Boolean(calendarError)}
+          onRetry={() => void refetchCalendar()}
+          href={`/calendar/${now}`}
+          meta={
+            // 이어서 한 날은 이번 주와 다른 수다(지난주부터 이어질 수 있다) — 머리 곁에 따로. 끊긴 날은 말하지 않는다
+            progress && progress.streakDays > 1 ? (
+              <StreakChip days={progress.streakDays} />
+            ) : undefined
+          }
+        >
+          <PanelCells>
+            {/* 받은 스티커는 받았을 때만 — 「아직 없어요」 칸은 아이가 스스로 채울 수 없는 자리다(규칙 12) */}
+            {sticker && (
+              <PanelCell
+                href={`/calendar/${dayOf(sticker.createdAt)}`}
+                label="받은 스티커"
+                // 누가 붙여 줬는지 — 아이에게 부모는 엄마 · 아빠다. 스티커 말은 그림이 한다
+                note={nameOf(sticker.fromProfileId, sticker.fromName)}
+                art={<StickerArt id={sticker.stickerId} className="size-10" />}
+              />
+            )}
+            <PanelCell
+              href="/kid/badges"
+              label="업적"
+              note={badge?.title ?? "아직 없어요"}
+              art={badge ? <ArtIcon name={badgeArt(badge.code)} className="size-10" /> : null}
+            />
+            {/* 점수 하나는 아이도 본다. 등수로 바꾸지 않고 또래 평균 50 눈금과 같이(규칙 10) */}
+            <PanelCell
+              label="신체 점수"
+              note={score != null ? "또래 평균 50" : "아직 재지 않았어요"}
+              art={
+                score != null ? (
+                  <span className="flex flex-col items-center">
+                    <span className="metric-value text-2xl leading-none">
+                      {score}
+                      <span className="metric-unit">점</span>
+                    </span>
+                    <span
+                      className="record-rail mt-1.5 w-16"
+                      role="img"
+                      aria-label={`내 점수 ${score}, 또래 평균 50`}
+                    >
+                      <span className="record-fill" style={{ width: `${score}%` }} />
+                      <span className="record-avg" />
+                    </span>
+                  </span>
+                ) : null
+              }
+            />
+          </PanelCells>
+        </WeekPanel>
       </Stage>
     </>
   );
 }
 
-/**
- * 아이가 누를 가장 큰 것.
- * 화면에 이만큼 큰 것이 둘 있으면 아이는 어느 쪽도 고르지 못한다.
- */
-/** 아이가 다시 열어 보는 자리. 큰 숫자 하나와 이름만 둔다 */
-function KidTile({
-  href,
-  art,
-  fallback,
-  label,
-  count,
-}: {
-  href: string;
-  art: string;
-  fallback: string;
-  label: string;
-  count: number;
-}) {
+/** 오늘 운동 — 파랑 큰 카드. 누르면 바로 운동하기로 */
+function TodayHero({ mission, profileId }: { mission: Mission; profileId: string | null }) {
+  const sessions = sessionsOf(mission, profileId);
+  const minutes = totalMinutes(sessions);
+  const phases = (["WARMUP", "MAIN", "COOLDOWN"] as const)
+    .map((p) => [p, sessions.filter((s) => s.phase === p).length] as const)
+    .filter(([, n]) => n > 0)
+    .map(([p, n]) => `${PHASE_LABEL[p].replace("운동", "")} ${n}`)
+    .join(" · ");
+  const done = sessions.filter((s) => s.completed).length;
+
   return (
     <NavLink
-      href={href}
-      className="press border-line flex flex-col items-center gap-1 rounded-3xl border-2 py-5"
+      href={`/kid/m/${mission.missionId}`}
+      className="press bg-signal-strong shadow-lift block rounded-3xl p-5 text-white"
     >
-      <Illustration name={art} fallback={fallback} size={40} />
-      <span className="board-num text-signal-deep text-2xl leading-none">{count}</span>
-      <span className="text-sm font-extrabold">{label}</span>
-    </NavLink>
-  );
-}
-
-function BigAction({
-  href,
-  title,
-  hint,
-  motion,
-}: {
-  href: string;
-  title: string;
-  hint: string;
-  motion: "jump" | "stretch";
-}) {
-  return (
-    <NavLink href={href} className="press bg-signal block rounded-3xl p-5 text-white">
-      <div className="flex items-center gap-3">
-        <KidCharacter motion={motion} size={96} animate />
-        <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 text-[1.35rem] leading-snug font-extrabold">{title}</p>
-          <p className="mt-1 line-clamp-2 text-sm opacity-90">{hint}</p>
-        </div>
-      </div>
-      <span className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-white/20 py-3.5 text-xl font-extrabold">
-        <Play className="size-5 fill-current" aria-hidden />
-        시작하기
+      <p className="text-caption font-bold text-white">오늘 운동</p>
+      <p className="text-metric mt-1 leading-tight font-extrabold">
+        {sessions.length}개 · {minutes}분
+      </p>
+      <p className="text-caption mt-1 font-semibold text-white">
+        {phases}
+        {done > 0 && ` · ${done}개 했어요`}
+      </p>
+      <span className="text-signal-strong mt-4 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-white text-lg font-extrabold">
+        <Play aria-hidden className="size-5 fill-current" />
+        {done > 0 ? "이어서 하기" : "시작하기"}
       </span>
     </NavLink>
   );
@@ -243,15 +324,14 @@ function BigAction({
 
 function KidHomeSkeleton() {
   return (
-    <>
-      <AppBar title="오늘" />
-      <Stage wide className="space-y-7">
-        <Skeleton className="h-16 w-56" />
-        <div className="flex justify-center">
-          <Skeleton className="size-52 rounded-full" />
-        </div>
-        <Skeleton className="h-48 w-full rounded-3xl" />
-      </Stage>
-    </>
+    <Stage wide className="space-y-3 pt-12">
+      <div className="flex flex-col items-center gap-3">
+        <Skeleton className="h-60 w-64 rounded-[3rem]" />
+        <Skeleton className="h-8 w-24" />
+        <Skeleton className="h-3 w-56" />
+      </div>
+      <Skeleton className="h-44 w-full rounded-3xl" />
+      <Skeleton className="h-28 w-full rounded-3xl" />
+    </Stage>
   );
 }

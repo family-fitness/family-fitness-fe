@@ -1,96 +1,147 @@
 "use client";
 
 import { Settings } from "lucide-react";
-import { NavLink } from "@/components/ui/nav-link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
-import { SectionTitle, Stage } from "@/components/app-shell/stage";
+import { HomeHeader } from "@/components/app-shell/home-header";
+import { Stage } from "@/components/app-shell/stage";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/error-state";
-import { Backdrop } from "@/components/ui/backdrop";
+import { IconLink } from "@/components/ui/icon-link";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScoreDial } from "@/components/domain/score-dial";
-import { ChildSwitch } from "@/components/domain/child-switch";
-import { MyRow } from "@/components/domain/my-row";
-import { PeerCompare } from "@/components/domain/peer-compare";
-import { TodayBoard } from "@/components/domain/today-board";
-import { UpdateNudge } from "@/components/domain/update-nudge";
-import { useCoachRun, useFitnessMap, useLatestFitnessTest, useMissions } from "@/lib/api/queries";
-import { useCoachRunId } from "@/stores/coach-store";
+import { ArtIcon } from "@/components/ui/art-icon";
+import { ChildPanel } from "@/components/domain/child-panel";
+import { InviteSheet } from "@/components/domain/invite-sheet";
+import { KidsOverview } from "@/components/domain/kids-overview";
+import { ChildPill } from "@/components/domain/child-pill";
+import { StreakChip } from "@/components/domain/streak-chip";
+import { ClipShelf } from "@/components/domain/clip-shelf";
+import { NotificationBell } from "@/components/domain/notification-bell";
+import { PanelCell, PanelCells, WeekPanel, weekTotals } from "@/components/domain/week-panel";
+import {
+  useCalendar,
+  useFamilyLeague,
+  useFitnessMap,
+  useLatestFitnessTest,
+  useCurrentMissions,
+  useFamilyProfiles,
+  useProgress,
+} from "@/lib/api/queries";
+import { artFor } from "@/lib/art";
+import { isFactor } from "@/lib/fitness-factors";
+import { tierArt, tierName } from "@/lib/league";
 import { useSession } from "@/lib/session";
+import { longDate, monthOf, today, weekOf } from "@/lib/today";
+import type { FamilyLeague } from "@/lib/api/types";
 import { useRoleStore } from "@/stores/role-store";
-import { withJosa } from "@/lib/utils";
 
-/** 부모 홈. */
+/**
+ * 부모 홈 — 맨 위에 우리 아이 모두, 그 아래 고른 아이 자세히(9/25).
+ *
+ *   「우리 아이」  아이마다 한 줄 — 오늘 · 이어서 · 이번 주 점 · 신체 점수. 누르면 그 아이를 고른다 · 아이 등록 · 초대
+ *   고른 아이      육각형 · 그 아래 통합 신체 점수 · 오늘 운동(칭찬 · 걸음수 확인 · 기다리는 제안)
+ *   「이번 주」    고른 아이의 오늘 링 셋 · 요일 탑 · 캘린더 · 가족 리그 · 우리 가족
+ *   그 아래       아이의 키울 힘 영상이 가로로 한 줄(삼성헬스 홈처럼)
+ *
+ * 기능 하나마다 네모 카드 하나씩 쌓지 않는다 — 「ai 특유의 카드 형식」(9/25).
+ */
 export default function ParentHomePage() {
   const router = useRouter();
-  const { familyId, profile, isPending, error: sessionError } = useSession();
+  const { familyId, profile, isPending, error: sessionError, refetch: refetchMe } = useSession();
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
   const {
     data: map,
-    isPending: mapPending,
+    isLoading: mapLoading,
     error: mapError,
     refetch: refetchMap,
     isRefetching,
   } = useFitnessMap(familyId);
-  const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
-
-  // 이번 주 제안이 승인을 기다리고 있으면 여기서 먼저 말한다.
-  // 승인 전에는 미션이 0건이라 「오늘」이 영원히 비어 보인다
-  const runId = useCoachRunId(familyId);
-  const { data: run } = useCoachRun(runId);
+  const {
+    data: missions,
+    error: missionsError,
+    refetch: refetchMissions,
+  } = useCurrentMissions(familyId);
 
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
+  // 초대하기 — 가족 대시보드와 같은 시트. 홈에서 바로 연다(9/25 「초대코드 생성하는 건 어디 갔어?」)
+  const { data: family } = useFamilyProfiles(familyId);
+  const [inviting, setInviting] = useState(false);
 
-  const children = (map?.members ?? []).filter((m) => m.role === "CHILD");
-  const myMember = map?.members?.find((m) => m.profileId === profile?.profileId);
-  // 고른 적이 없으면 첫째로 본다. 기본값을 저장해 두지 않는다 —
-  // effect 안에서 상태를 쓰면 렌더가 한 번 더 돌고, 여기서는 굳이 저장할 것도 없다
+  const members = map?.members ?? [];
+  const children = members.filter((m) => m.role === "CHILD");
+  // 고른 적이 없으면 첫째로 본다. 기본값을 저장하지 않는다 — effect 에서 상태를 쓰면
+  // 렌더가 한 번 더 돈다
   const child = children.find((c) => c.profileId === childProfileId) ?? children[0];
 
-  /** 실패를 기다림보다 먼저 본다. */
-  const failure = sessionError ?? mapError;
+  const week = weekOf();
+  const {
+    data: calendar,
+    isPending: calendarPending,
+    error: calendarError,
+    refetch: refetchCalendar,
+  } = useCalendar(familyId, child?.profileId, week);
+  // 영상 줄은 아이의 키울 힘으로 — 서버가 준 가장 낮은 요인
+  const { data: latest } = useLatestFitnessTest(child?.profileId);
+  const weakest = latest?.weakest?.factor;
+
+  // 며칠 이어서 했는가 — 서버가 센 연속. 끊긴 날은 세지 않고, 끊겼다고 말하지 않는다
+  const { data: progress } = useProgress(child?.profileId);
+  const { data: league, error: leagueError } = useFamilyLeague(
+    familyId ?? undefined,
+    monthOf(today()),
+  );
+
+  const header = (
+    <HomeHeader
+      eyebrow={longDate()}
+      title={map?.familyName ?? "우리집"}
+      // 가족 이름을 누르면 가족 대시보드 — 가족 전체를 한 화면에서
+      titleHref="/parent/dashboard"
+      actions={
+        <>
+          {/* 보고 있는 아이 — 오른쪽 위 이름 알약(닥터아이처럼). 여럿이면 여기서 바로 바꾼다 */}
+          <ChildPill kids={children} selectedId={child?.profileId} onSelect={setChild} />
+          <NotificationBell profileId={profile?.profileId ?? undefined} />
+          <IconLink href="/settings" label="설정">
+            <Settings className="size-6" strokeWidth={1.8} />
+          </IconLink>
+        </>
+      }
+    />
+  );
+
+  /** 실패를 기다림보다 먼저 본다 */
+  const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
     return (
       <>
         <AppBar title="우리집" />
         <Stage>
-          <ErrorState error={failure} onRetry={() => void refetchMap()} retrying={isRefetching} />
+          <ErrorState
+            error={failure}
+            // `/me` 가 실패했으면 `/me` 를 — 지도만 다시 부르면 가족 번호 없이 `/families//…` 를 불렀다
+            onRetry={() => void (sessionError ? refetchMe() : refetchMap())}
+            retrying={isRefetching}
+          />
         </Stage>
       </>
     );
   }
 
-  if (isPending || mapPending) return <ParentHomeSkeleton />;
-
-  const bar = (
-    <AppBar
-      title={map?.familyName ?? "우리집"}
-      right={
-        <NavLink
-          href="/settings"
-          aria-label="설정"
-          className="press text-ink-soft grid size-10 place-items-center rounded-full"
-        >
-          <Settings className="size-5" />
-        </NavLink>
-      }
-    />
-  );
+  if (isPending || mapLoading) return <ParentHomeSkeleton />;
 
   // 아이를 아직 등록하지 않았다. 이 앱은 아이가 없으면 할 일이 없다
   if (!child) {
     return (
       <>
-        {bar}
+        {header}
         <Stage className="flex flex-col items-center pt-10 text-center">
-          <Illustration name="scene/scene-first-body" fallback="scene/scene-invite" size={150} />
+          <Illustration name="scene/kiumi-no-record" size={150} />
           <h2 className="mt-4 text-xl font-extrabold">아이를 등록해 주세요</h2>
-          <p className="text-ink-soft mt-2 text-sm leading-relaxed">
-            이름과 키·몸무게만 있으면 또래 중 어디쯤인지 바로 볼 수 있어요.
-          </p>
           <Button size="md" className="mt-5" onClick={() => router.push("/start/child")}>
             아이 등록하기
           </Button>
@@ -99,211 +150,121 @@ export default function ParentHomePage() {
     );
   }
 
-  const score = child.latest?.overallPercentile ?? null;
-
   return (
     <>
-      {bar}
-      <Stage className="relative space-y-8">
-        <Backdrop name="bg/bg-hill" height={210} />
-        {children.length > 1 && (
-          <ChildSwitch kids={children} selectedId={child.profileId} onSelect={setChild} />
-        )}
-
-        {/* 1. 지금 어디쯤인가 */}
-        <section className="pt-1">
-          <ScoreDial score={score} size={196} label={`${child.name} 신체 점수`} />
-          <ScoreBasis profileId={child.profileId} />
-        </section>
-
-        {/* 2. 또래와 견주면 */}
-        <PeerCompare
-          name={child.name ?? "아이"}
-          score={score}
-          headline={child.headline}
-          profileId={child.profileId}
+      {header}
+      <Stage wide className="space-y-3">
+        {/* 우리 아이 모두 한 번에 — 누르면 아래가 그 아이로(9/25) */}
+        <KidsOverview
+          kids={children}
+          selectedId={child.profileId}
+          onSelect={setChild}
+          familyId={familyId ?? undefined}
+          missions={missions?.missions}
+          missionsFailed={Boolean(missionsError)}
+          onInvite={() => setInviting(true)}
         />
 
-        {/* 3. 몸이 자랐다면 다시 재기 */}
-        <UpdateNudge child={child} />
+        <ChildPanel
+          child={child}
+          familyId={familyId ?? ""}
+          parentProfileId={profile?.profileId ?? ""}
+          missions={missions?.missions}
+          missionsFailed={Boolean(missionsError)}
+          onRetryMissions={refetchMissions}
+        />
 
-        {/* 4. 오늘 뭘 했나 — 칭찬은 여기서 보낸다 */}
-        <section>
-          <SectionTitle
-            action={
-              <NavLink
-                href="/parent/history"
-                className="text-signal -mr-2 inline-flex min-h-11 items-center px-2 text-xs font-bold"
-              >
-                지난 기록
-              </NavLink>
-            }
-          >
-            오늘
-          </SectionTitle>
-          <TodayBoard
-            familyId={familyId ?? ""}
-            childProfileId={child.profileId ?? ""}
-            childName={child.name ?? "아이"}
-            parentProfileId={profile?.profileId ?? ""}
-            missions={missions?.missions}
-          />
-        </section>
+        <WeekPanel
+          profileId={child.profileId}
+          missions={missions?.missions}
+          days={week.days}
+          logs={calendar?.days}
+          loading={calendarPending}
+          failed={Boolean(calendarError)}
+          onRetry={() => void refetchCalendar()}
+          meta={
+            progress && progress.streakDays > 1 ? (
+              <StreakChip days={progress.streakDays} />
+            ) : calendarPending ? undefined : (
+              weekMeta(week.days, calendar?.days)
+            )
+          }
+        >
+          <PanelCells>
+            <PanelCell
+              href={`/calendar?profileId=${encodeURIComponent(child.profileId ?? "")}`}
+              label="캘린더"
+              art={<ArtIcon name="icon/menu-calendar" className="size-9" />}
+            />
+            {/* 다른 가족들과 겨루는 자리. 운동 찾기는 아래 영상 줄 머리와 「직접 짜서 더하기」 에 있다.
+                리그를 못 받으면(서버에 아직 없으면) 칸을 두지 않는다 — 누르면 오류 화면이다 */}
+            {!leagueError && (
+              <PanelCell
+                href="/parent/league?from=home"
+                label="가족 리그"
+                note={leagueNote(league)}
+                art={
+                  // 메달 그림이 오기 전에는 빌린 그림 대신 티어 이름을 크게(주문한 그림만 부른다)
+                  league ? (
+                    artFor(tierArt(league.tier)) ? (
+                      <ArtIcon name={tierArt(league.tier)} className="size-9" />
+                    ) : (
+                      <span className="text-signal-deep text-lead font-extrabold">
+                        {tierName(league.tier)}
+                      </span>
+                    )
+                  ) : null
+                }
+              />
+            )}
+            <PanelCell
+              href="/parent/dashboard"
+              label="우리 가족"
+              note={`${members.length}명`}
+              art={<ArtIcon name="icon/menu-family" className="size-9" />}
+            />
+          </PanelCells>
+        </WeekPanel>
 
-        {/* 5. 이번 주 운동을 짜는 곳. 여기서 막히면 「오늘」이 영원히 빈칸이다 */}
-        <section>
-          <SectionTitle>이번 주</SectionTitle>
-          <ul className="divide-rows">
-            <HomeLink
-              href="/coach/weekly"
-              art="item/item-clipboard"
-              /* 이미 승인한 주에 "짜 드릴까요" 라고 다시 물으면
-                 방금 한 일이 없던 일이 된다 */
-              title={run?.status === "APPROVED" ? "이번 주 제안" : "이번 주 운동 짜기"}
-              description={
-                run?.status === "AWAITING_APPROVAL"
-                  ? "제안이 승인을 기다리고 있어요"
-                  : run?.status === "RUNNING"
-                    ? "코치가 만드는 중이에요"
-                    : run?.status === "APPROVED"
-                      ? "승인한 제안이 이번 주 미션으로 돌고 있어요"
-                      : run?.status === "REJECTED"
-                        ? "거절한 제안이에요. 다시 짜 볼 수 있어요"
-                        : "가족 기록을 보고 코치가 한 주를 짜요"
-              }
-              badge={run?.status === "AWAITING_APPROVAL" ? "승인 기다림" : undefined}
-            />
-            <HomeLink
-              href="/coach/chat"
-              art="item/item-whistle"
-              title="코치에게 묻기"
-              description="답에는 어디서 찾았는지가 같이 붙어요"
-            />
-          </ul>
-        </section>
-
-        {/* 6. 아이를 더 자세히 */}
-        <section>
-          <SectionTitle>{withJosa(child.name ?? "아이", "은는")} 어떤가</SectionTitle>
-          <ul className="divide-rows">
-            <HomeLink
-              href={`/parent/child/${child.profileId}`}
-              art="item/item-compare"
-              fallback="item/item-growth-up"
-              title="어떻게 자라고 있나"
-              description="점수와 키·몸무게 변화"
-            />
-            <HomeLink
-              href={`/p/${child.profileId}/result`}
-              art="item/item-clipboard"
-              title="측정 결과 자세히"
-              description="요인별로 어디가 강하고 어디를 키울지"
-            />
-            <HomeLink
-              href={`/p/${child.profileId}/future`}
-              art="deco/deco-arrow-up"
-              title="10년 뒤"
-              description="지금과 같은 조건의 10년 위 연령대"
-            />
-          </ul>
-        </section>
-
-        {/** 7. 부모 자신. */}
-        <section>
-          <SectionTitle>나도 함께</SectionTitle>
-          <ul className="divide-rows">
-            {/* 기획서 ① 가족 체력 지도 — 아이만 있고 부모가 없으면 잔소리 도구가 된다 */}
-            <li>
-              <MyRow me={myMember} />
-            </li>
-            <HomeLink
-              href="/settings/support-mode"
-              art="scene/scene-together"
-              title="얼마나 같이 뛸지"
-              description={SUPPORT_COPY[profile?.supportMode ?? "none"]}
-            />
-            <HomeLink
-              href="/family/report"
-              art="item/item-calendar"
-              title="이번 주 우리 가족"
-              description="누가 얼마나 움직였는지"
-            />
-          </ul>
-        </section>
+        <ClipShelf factor={isFactor(weakest) ? weakest : null} />
       </Stage>
+      <InviteSheet
+        open={inviting}
+        onClose={() => setInviting(false)}
+        familyName={map?.familyName ?? "우리 가족"}
+        members={family?.profiles ?? []}
+        loading={!family}
+      />
     </>
-  );
-}
-
-/** 이 점수가 몇 개 항목으로 나온 건지. */
-function ScoreBasis({ profileId }: { profileId: string | undefined }) {
-  const { data } = useLatestFitnessTest(profileId);
-  const count = data?.items?.length ?? 0;
-  if (count === 0 || count >= 3) return null;
-
-  return (
-    <p className="text-faint text-caption mt-1.5 text-center leading-relaxed">
-      지금은 {count}개 항목으로 낸 점수예요. 더 재면 또래 비교가 정확해져요.
-    </p>
-  );
-}
-
-/** 참여 방식을 한 줄로. 고르지 않았으면 고르라고 말한다 */
-const SUPPORT_COPY: Record<string, string> = {
-  CHEER_ONLY: "응원할게요",
-  WEEKEND: "주말에는 같이",
-  FULL: "매번 같이",
-  none: "아직 안 골랐어요",
-};
-
-function HomeLink({
-  href,
-  art,
-  fallback,
-  title,
-  description,
-  badge,
-}: {
-  href: string;
-  art: string;
-  fallback?: string;
-  title: string;
-  description?: string;
-  /** 지금 손봐야 할 줄에만 붙인다. 모든 줄에 배지가 있으면 아무것도 눈에 안 띈다 */
-  badge?: string;
-}) {
-  return (
-    <li>
-      <NavLink href={href} className="press flex items-center gap-3 py-3.5">
-        <Illustration name={art} fallback={fallback} size={36} />
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold">{title}</span>
-          {description && <span className="text-ink-soft mt-0.5 block text-xs">{description}</span>}
-        </span>
-        {badge && (
-          <span className="bg-signal text-micro shrink-0 rounded-full px-2.5 py-1 font-extrabold text-white">
-            {badge}
-          </span>
-        )}
-      </NavLink>
-    </li>
   );
 }
 
 function ParentHomeSkeleton() {
   return (
     <>
-      <AppBar title="우리집" />
-      <Stage className="space-y-8">
-        <div className="flex justify-center pt-2">
-          <Skeleton className="size-49 rounded-full" />
-        </div>
-        <Skeleton className="h-20 w-full rounded-2xl" />
-        <div className="space-y-3">
-          <Skeleton className="h-5 w-20" />
-          <Skeleton className="h-24 w-full rounded-2xl" />
-        </div>
+      <div className="px-5 pt-4 pb-3">
+        <Skeleton className="h-4 w-28" />
+        <Skeleton className="mt-2 h-8 w-36" />
+      </div>
+      <Stage wide className="space-y-3">
+        <Skeleton className="h-112 w-full rounded-3xl" />
+        <Skeleton className="h-36 w-full rounded-3xl" />
+        <Skeleton className="h-32 w-full rounded-3xl" />
       </Stage>
     </>
   );
+}
+
+/** 「이번 주」 머리 곁말 — 합친 분 · 운동한 날 */
+function weekMeta(days: string[], logs: Parameters<typeof weekTotals>[1]) {
+  const t = weekTotals(days, logs);
+  return `${t.minutes}분 · ${t.active}일 운동`;
+}
+
+/** 「가족 리그」 칸 곁말 — 메달 그림이 있으면 티어 · 등수, 없으면(이름이 그림 자리에 선다) 등수만. 셀 날이 없으면 비운다 */
+function leagueNote(league: FamilyLeague | undefined) {
+  if (!league || league.rank == null) return undefined;
+  return artFor(tierArt(league.tier))
+    ? `${tierName(league.tier)} · ${league.rank}등`
+    : `${league.rank}등`;
 }

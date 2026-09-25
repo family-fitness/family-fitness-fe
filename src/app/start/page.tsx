@@ -4,18 +4,26 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { Stage } from "@/components/app-shell/stage";
-import { Avatar } from "@/components/ui/illustration";
-import { KidCharacter } from "@/components/domain/kid-character";
+
+import { LevelBuddy } from "@/components/domain/level-buddy";
+import { SessionError } from "@/components/app-shell/session-error";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFamilyProfiles } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
+import { ArtIcon } from "@/components/ui/art-icon";
 
 /** 부모인가 아이인가. */
 export default function StartPage() {
   const router = useRouter();
-  const { profile, familyId, nextStep, isPending } = useSession();
-  const { data: family } = useFamilyProfiles(familyId);
+  const { profile, familyId, nextStep, isPending, error, refetch } = useSession();
+  // 아이가 몇인지 알아야 「아이」 가 갈 곳을 안다 — 오기 전에 누르면 있는 아이를 두고 아이 등록으로 갔다
+  const {
+    data: family,
+    isLoading: familyLoading,
+    error: familyError,
+    refetch: refetchFamily,
+  } = useFamilyProfiles(familyId);
 
   const setMode = useRoleStore((s) => s.setMode);
   const setChild = useRoleStore((s) => s.setChild);
@@ -29,11 +37,12 @@ export default function StartPage() {
   const goParent = () => {
     setMode("parent");
     // 가족이 아직 없으면 만드는 것부터
-    router.push(hasFamily ? "/parent" : "/start/parent");
+    router.push(hasFamily ? "/parent" : "/start/family");
   };
 
+  // 아이 모드는 아이 홈에 들어갈 때 정해진다(아이 구역이 정한다). 아이 등록 · 초대코드로 가는 길에서 미리 정하면
+  // 그 길을 그만둔 뒤 다음에 열 때 아이 없는 아이 홈이 떴다
   const goKid = () => {
-    setMode("kid");
     // 자녀 계정은 자기 프로필로 고정된다. 형제를 고르게 하지 않는다
     if (childAccount && profile?.profileId) {
       setChild(profile.profileId);
@@ -54,7 +63,16 @@ export default function StartPage() {
     router.push(children.length === 0 ? "/start/child" : "/start/who");
   };
 
-  if (isPending) {
+  // 누구인지 못 받으면 고를 수 없다 — 모르는 채 「부모」 를 누르면 가족 만들기로 갔다.
+  // 가족을 못 받아도 같다 — 아이가 없는 줄 알고 「아이」 가 아이 등록으로 갔다
+  const failure = error ?? (family ? null : familyError);
+  if (failure) {
+    return (
+      <SessionError error={failure} onRetry={() => void (error ? refetch() : refetchFamily())} />
+    );
+  }
+
+  if (isPending || familyLoading) {
     return (
       <Stage className="flex min-h-dvh flex-col justify-center gap-6">
         <Skeleton className="h-8 w-56" />
@@ -68,56 +86,32 @@ export default function StartPage() {
     <Stage className="flex min-h-dvh flex-col justify-center gap-5 py-8">
       <div>
         <h1 className="text-[1.6rem] leading-tight font-extrabold">누가 쓰고 있나요?</h1>
-        <p className="text-ink-soft mt-1.5 text-sm">언제든 바꿀 수 있어요.</p>
       </div>
 
-      <RoleCard
-        title="아이"
-        description="오늘 할 운동 바로 시작하기"
-        tone="kid"
-        onClick={goKid}
-        art={<KidCharacter motion="wave" size={96} />}
-      />
+      <RoleCard title="아이" tone="kid" onClick={goKid} art={<LevelBuddy stage={2} size={92} />} />
 
-      {childAccount ? (
-        <p className="text-faint text-center text-xs leading-relaxed">
-          이 계정은 아이 계정이에요. 부모 화면은 보호자 계정에서 볼 수 있어요.
-        </p>
-      ) : (
+      {/* 자녀 계정에는 부모 칸을 내지 않는다 */}
+      {!childAccount && (
         <RoleCard
           title="부모"
-          description="아이 체력 보고 칭찬 보내기"
           tone="parent"
           onClick={goParent}
-          /* 어른 아바타를 조립해 쓴다. 1차 에셋의 move/* 는 다 아이 체형이라
-             그대로 쓰면 「부모」 칸에 아이가 앉아 있다 */
-          art={<Avatar parts={PARENT_AVATAR} size={68} />}
+          art={<ArtIcon name="icon/role-parent" className="size-16 shrink-0" />}
         />
       )}
     </Stage>
   );
 }
 
-/** 부모 칸에 세울 어른. 2차 에셋의 부모 얼굴이 오면 그걸로 바꾼다 */
-const PARENT_AVATAR = {
-  // Avatar 가 "char/" 를 스스로 붙인다. 여기서 또 붙이면 char/char/… 이 되어 사라진다
-  body: "body-adult-f",
-  hair: "hair-bob",
-  face: "face-calm",
-  top: "top-tshirt-yellow",
-};
-
 /** 고르는 칸. */
 function RoleCard({
   art,
   title,
-  description,
   tone,
   onClick,
 }: {
   art: ReactNode;
   title: string;
-  description: string;
   tone: "kid" | "parent";
   onClick: () => void;
 }) {
@@ -126,18 +120,16 @@ function RoleCard({
     <button
       type="button"
       onClick={onClick}
+      /* 아이 칸이 더 크다(주인공). 파랑 테를 두르면 이미 고른 것처럼 보여 테는 없다 */
       className={
         kid
-          ? "press border-signal bg-signal-soft flex items-center gap-4 rounded-3xl border-2 p-6 text-left"
-          : "press border-line flex items-center gap-4 rounded-3xl border p-5 text-left"
+          ? "press card-hero flex items-center gap-4 text-left"
+          : "press card flex items-center gap-4 text-left"
       }
     >
       {art}
-      <span className="min-w-0">
-        <span className={kid ? "block text-2xl font-extrabold" : "block text-xl font-extrabold"}>
-          {title}
-        </span>
-        <span className="text-ink-soft mt-1 block text-sm leading-relaxed">{description}</span>
+      <span className={kid ? "min-w-0 text-2xl font-extrabold" : "min-w-0 text-xl font-extrabold"}>
+        {title}
       </span>
     </button>
   );
