@@ -136,7 +136,7 @@ export function InviteSheet({
           <p className="text-body font-bold">모두 들어와 있어요</p>
           <NavLink
             href="/parent/family"
-            onClick={close}
+            onClick={onClose}
             className="press bg-sub mt-3 flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold"
           >
             가족 더하기
