@@ -82,6 +82,29 @@ check(
   (await fetch(`${BASE}/auth/dev-login`, { method: "POST" })).ok,
 );
 
+/* ─── 0-1. 두 화면이 같은 말을 한다 ─────────────────────────── */
+
+// 가족 지도(대시보드)와 최근 측정(측정 결과)이 같은 가장 낮은 · 높은 요인을 말한다
+const map = (await (await get(`/families/${DEMO.familyId}/fitness-map`)).json()) as {
+  members: {
+    name: string;
+    profileId: string;
+    latest: { weakest?: { factor?: string }; strongest?: { factor?: string } } | null;
+  }[];
+};
+for (const m of map.members.filter((x) => x.latest)) {
+  const latest = (await (await get(`/profiles/${m.profileId}/fitness-tests/latest`)).json()) as {
+    weakest?: { factor?: string };
+    strongest?: { factor?: string };
+  };
+  check(
+    `${m.name} — 지도와 최근 측정의 가장 낮은 · 높은 요인이 같다`,
+    m.latest?.weakest?.factor === latest.weakest?.factor &&
+      m.latest?.strongest?.factor === latest.strongest?.factor,
+    `${m.latest?.weakest?.factor}/${latest.weakest?.factor} · ${m.latest?.strongest?.factor}/${latest.strongest?.factor}`,
+  );
+}
+
 /* ─── 1. 코치 제안은 미션이 아니다 ─────────────────────────── */
 
 check("승인 전 미션 0건", (await missionCount()) === 0, `${await missionCount()}건`);

@@ -237,6 +237,13 @@ function demoMap() {
       m.latest.overallPercentile = 55;
       m.headline = "유소년 상위 45%";
     }
+    // 부모는 심어 둔 측정과 같은 가장 낮은 · 높은 요인으로 — 대시보드와 측정 결과가 다른 요인을 말했다
+    const test = PARENT_TESTS[m.profileId ?? ""];
+    if (test && m.latest) {
+      const latest = parentLatest(m.profileId ?? "", test);
+      m.latest.weakest = latest.weakest;
+      m.latest.strongest = latest.strongest;
+    }
   }
   return map;
 }
