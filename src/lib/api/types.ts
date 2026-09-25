@@ -79,6 +79,7 @@ export type PredictionPoint = S["Point"];
 export type CoachRun = S["CoachRunView"];
 export type CoachProposal = S["ProposalView"];
 export type CoachApproveResult = S["ApproveCoachRunView"];
+export type CoachRejectResult = S["RejectCoachRunView"];
 
 export type MissionList = S["MissionListView"];
 export type Mission = S["MissionView"];
