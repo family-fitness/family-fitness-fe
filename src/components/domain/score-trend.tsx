@@ -107,10 +107,14 @@ export function ScoreTrend({ tests }: { tests: FitnessTestSummary[] }) {
               tabIndex={0}
               aria-label={`${month(p.testedOn)} ${p.overallPercentile}점`}
               onClick={() => setActive((cur) => (cur === i ? null : i))}
+              // 단추라면 엔터 · 스페이스로도 눌린다. 마우스를 올려 바뀌는 모양은 두지 않는다(폰에서는 누른 뒤에도 남는다)
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                e.preventDefault();
+                setActive((cur) => (cur === i ? null : i));
+              }}
               onFocus={() => setActive(i)}
               onBlur={() => setActive(null)}
-              onPointerEnter={(e) => e.pointerType === "mouse" && setActive(i)}
-              onPointerLeave={(e) => e.pointerType === "mouse" && setActive(null)}
               className="cursor-pointer"
             >
               {/* 누르는 자리는 점보다 넓게 */}

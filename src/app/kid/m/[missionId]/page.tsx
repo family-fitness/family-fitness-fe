@@ -88,7 +88,7 @@ export default function PlayPage() {
     error: missionsError,
     refetch,
   } = useMissions(familyId, { scope: "ALL" });
-  const { data: progress } = useProgress(kidId || undefined);
+  const { data: progress, isLoading: progressLoading } = useProgress(kidId || undefined);
   const complete = useCompleteSession(missionId, familyId ?? "");
 
   const mission = missions?.missions?.find((m) => m.missionId === missionId);
@@ -342,15 +342,20 @@ export default function PlayPage() {
       <Confetti fire={burst} pieces={allDone ? 120 : 50} from={allDone ? "top" : "bottom"} />
 
       {/* 위에 붙는 징검다리. 몇 칸째인지 늘 보이고, 한 칸 끝내면 키움이가 건너간다 */}
-      <div className="bg-ground/95 sticky top-14 z-20 px-4 pb-2 backdrop-blur-sm">
-        <StoneTrail
-          count={sessions.length}
-          done={sessions.flatMap((s, i) => (s.completed ? [i] : []))}
-          current={activeIndex >= 0 ? activeIndex : null}
-          stage={stageOf(progress?.level).stage}
-          height={72}
-          label={`${sessions.length}칸 중 ${doneCount}칸 건넜어요`}
-        />
+      <div className="bg-ground sticky top-14 z-20 px-4 pb-2">
+        {/* 레벨을 받은 뒤에 짓는다 — 1단계로 지었다가 받고 나서 다시 지으면 깜빡이고 WebGL 이 하나 더 든다 */}
+        {progressLoading ? (
+          <Skeleton className="h-[72px] w-full rounded-2xl" />
+        ) : (
+          <StoneTrail
+            count={sessions.length}
+            done={sessions.flatMap((s, i) => (s.completed ? [i] : []))}
+            current={activeIndex >= 0 ? activeIndex : null}
+            stage={stageOf(progress?.level).stage}
+            height={72}
+            label={`${sessions.length}칸 중 ${doneCount}칸 건넜어요`}
+          />
+        )}
         <div className="relative flex items-center justify-center">
           <p className="text-caption text-ink-soft text-center font-bold">
             {doneCount} / {sessions.length}칸 · {totalMin}분 중 {doneMin}분

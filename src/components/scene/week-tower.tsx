@@ -143,7 +143,7 @@ export function WeekTower({
             `${WEEKDAY[new Date(`${d}T00:00:00`).getDay()]} ${minutes[i] ? `${minutes[i]}분` : "쉼"}`,
         )
         .join(", ")}
-      className={cn("relative w-full touch-pan-y select-none", className)}
+      className={cn("relative w-full select-none", className)}
       style={{ aspectRatio: `${REF_WIDTH} / ${height}` }}
     >
       {/* 입체가 오기 전 · 없을 때 — 기둥 자리에 같은 높이의 납작한 막대 */}

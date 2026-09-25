@@ -253,19 +253,29 @@ export function KiumMedal({
       canvas.classList.replace("opacity-0", "opacity-100");
       stand.style.opacity = "0";
 
-      const observer = new IntersectionObserver(([entry]) => {
-        visible = entry.isIntersecting;
+      // 한 번에 여러 개가 오면 마지막이 지금이다
+      const observer = new IntersectionObserver((entries) => {
+        visible = entries[entries.length - 1].isIntersecting;
         if (visible && !document.hidden) start();
         else stop();
       });
       observer.observe(el);
       const onVisibility = () => (document.hidden || !visible ? stop() : start());
       document.addEventListener("visibilitychange", onVisibility);
+      // 컨텍스트를 잃으면(폰은 컨텍스트 수가 적다) 비키고 그림을 다시 세운다 — 빈 네모가 남지 않게
+      const lost = (e: Event) => {
+        e.preventDefault();
+        stop();
+        canvas.style.opacity = "0";
+        stand.style.opacity = "";
+      };
+      canvas.addEventListener("webglcontextlost", lost);
 
       teardown = () => {
         stop();
         observer.disconnect();
         document.removeEventListener("visibilitychange", onVisibility);
+        canvas.removeEventListener("webglcontextlost", lost);
         el.removeEventListener("pointerdown", down);
         el.removeEventListener("pointermove", move);
         el.removeEventListener("pointerup", up);
@@ -289,7 +299,7 @@ export function KiumMedal({
       ref={host}
       role="img"
       aria-label={label}
-      className={cn("relative touch-pan-y select-none", className)}
+      className={cn("relative touch-pan-y touch-pinch-zoom select-none", className)}
       style={{ width: size, height: size }}
     >
       {/* 입체가 오기 전 — 그림만 먼저 */}

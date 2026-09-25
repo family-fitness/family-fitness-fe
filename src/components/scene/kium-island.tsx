@@ -278,8 +278,9 @@ export function KiumIsland({
       canvas.classList.replace("opacity-0", "opacity-100");
       stand.style.opacity = "0";
 
-      const observer = new IntersectionObserver(([entry]) => {
-        visible = entry.isIntersecting;
+      // 한 번에 여러 개가 오면 마지막이 지금이다
+      const observer = new IntersectionObserver((entries) => {
+        visible = entries[entries.length - 1].isIntersecting;
         if (visible && !document.hidden) start();
         else stop();
       });
@@ -330,7 +331,7 @@ export function KiumIsland({
       ref={host}
       role="img"
       aria-label={label}
-      className={cn("relative w-full touch-pan-y select-none", className)}
+      className={cn("relative w-full touch-pan-y touch-pinch-zoom select-none", className)}
       style={{ height }}
     >
       {/* 섬이 오기 전의 캐릭터. 섬 위에 설 자리와 똑같은 곳에 선다 */}

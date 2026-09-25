@@ -297,7 +297,7 @@ export function StoneTrail({
       ref={host}
       role="img"
       aria-label={label}
-      className={cn("relative w-full touch-pan-y select-none", className)}
+      className={cn("relative w-full select-none", className)}
       style={{ height }}
     >
       {/* 입체가 오기 전 · 없을 때 — 끝낸 칸 파랑, 지금 칸 노랑 점줄(넓은 판에는 키움이도) */}
