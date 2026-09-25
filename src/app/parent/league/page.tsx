@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment } from "react";
+import { useSearchParams } from "next/navigation";
+import { Fragment, Suspense } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -25,16 +26,20 @@ import { cn, withJosa } from "@/lib/utils";
  * 어디에도 나오지 않는다(규칙 10). 흐름 시연판(9/17)의 리그는 흐름만 참고했다.
  */
 export default function LeaguePage() {
-  const { familyId, isPending: sessionPending } = useSession();
+  return (
+    <Suspense fallback={<LeagueSkeleton backHref="/parent/dashboard" />}>
+      <League />
+    </Suspense>
+  );
+}
+
+function League() {
+  // 부모 홈 칸에서 왔으면 홈으로, 대시보드 줄에서 왔으면 대시보드로
+  const backHref = useSearchParams().get("from") === "home" ? "/parent" : "/parent/dashboard";
+  const { familyId, isPending: sessionPending, error: sessionError } = useSession();
   const now = today();
   const month = monthOf(now);
-  const {
-    data: league,
-    isPending,
-    error,
-    refetch,
-    isRefetching,
-  } = useFamilyLeague(familyId, month);
+  const { data: league, error, refetch, isRefetching } = useFamilyLeague(familyId, month);
   // 오늘 이미 움직인 아이가 있으면 오늘은 쉬는 날로 못 고른다
   const { data: map } = useFitnessMap(familyId);
   const kidIds = (map?.members ?? [])
@@ -44,19 +49,24 @@ export default function LeaguePage() {
   const todays = useFamilyCalendars(familyId, kidIds, { from: now, to: now });
   const movedToday = todays.some((q) => (q.data?.days ?? []).some((d) => d.minutes > 0));
 
-  if (error) {
+  // 로그인(/me)이 깨져도 여기서 말한다 — 가족을 모르면 리그 요청이 꺼진 채 뼈대만 돈다
+  const failure = sessionError ?? error;
+  if (failure) {
     return (
       <>
-        <AppBar backHref="/parent/dashboard" title="가족 리그" />
+        <AppBar backHref={backHref} title="가족 리그" />
         <Stage wide>
-          <ErrorState error={error} onRetry={() => void refetch()} retrying={isRefetching} />
+          <ErrorState error={failure} onRetry={() => void refetch()} retrying={isRefetching} />
         </Stage>
       </>
     );
   }
-  if (sessionPending || isPending || !league) return <LeagueSkeleton />;
+  if (sessionPending || !league) return <LeagueSkeleton backHref={backHref} />;
 
-  const zone = zoneOf(league.rank, league.groupSize, league.promote, league.demote);
+  // 셀 날이 아직 없으면 달성률 · 순위가 비어 온다 — 0% · 꼴찌로 그리지 않는다
+  const { rate, rank } = league;
+  const zone =
+    rank != null ? zoneOf(rank, league.groupSize, league.promote, league.demote) : "stay";
   const up = nextTier(league.tier);
   const down = prevTier(league.tier);
   const outlook =
@@ -70,7 +80,7 @@ export default function LeaguePage() {
 
   return (
     <>
-      <AppBar backHref="/parent/dashboard" title="가족 리그" />
+      <AppBar backHref={backHref} title="가족 리그" />
       <Stage wide className="space-y-3">
         {/* 첫 묶음 — 이번 달 우리 가족의 자리 */}
         <section className="card-hero" aria-label="이번 달 우리 가족">
@@ -82,28 +92,30 @@ export default function LeaguePage() {
               </p>
               <p className="text-metric mt-0.5 font-extrabold">{tierName(league.tier)} 리그</p>
               <p className="text-caption text-ink-soft mt-0.5 font-bold">
-                {league.groupSize}가족 중 {league.rank}등
+                {rank != null
+                  ? `${league.groupSize}가족 중 ${rank}등`
+                  : "첫 운동을 하면 순위에 들어가요"}
               </p>
             </div>
           </div>
 
-          <div className="mt-4">
-            <div className="flex items-end justify-between">
-              <p className="metric-label">이번 달 달성률</p>
-              <p className="metric-value text-metric">
-                {league.rate}
-                <span className="metric-unit">%</span>
+          {rate != null && (
+            <div className="mt-4">
+              <div className="flex items-end justify-between">
+                <p className="metric-label">이번 달 달성률</p>
+                <p className="metric-value text-metric">
+                  {rate}
+                  <span className="metric-unit">%</span>
+                </p>
+              </div>
+              <div className="record-rail mt-2" role="img" aria-label={`이번 달 달성률 ${rate}%`}>
+                <span className="record-fill" style={{ width: `${rate}%` }} />
+              </div>
+              <p className="text-signal-deep text-body mt-3 text-center font-extrabold">
+                {outlook}
               </p>
             </div>
-            <div
-              className="record-rail mt-2"
-              role="img"
-              aria-label={`이번 달 달성률 ${league.rate}%`}
-            >
-              <span className="record-fill" style={{ width: `${league.rate}%` }} />
-            </div>
-            <p className="text-signal-deep text-body mt-3 text-center font-extrabold">{outlook}</p>
-          </div>
+          )}
 
           {/* 티어 사다리 — 지금 자리만 채운다. 지나온 칸은 옅게 */}
           <ol className="mt-4 grid grid-cols-5 gap-1.5" aria-label="티어">
@@ -126,9 +138,11 @@ export default function LeaguePage() {
           </ol>
 
           {/* 쉬는 날 카드 — 쓴 날은 달성률에서 빠진다. 리그 곁에 같은 묶음으로 */}
-          <div className="border-line mt-4 border-t pt-2">
-            <RestCardRow familyId={familyId ?? undefined} movedToday={movedToday} />
-          </div>
+          <RestCardRow
+            familyId={familyId ?? undefined}
+            movedToday={movedToday}
+            className="border-line mt-4 border-t pt-2"
+          />
         </section>
 
         {/* 둘째 묶음 — 이번 달 순위. 올라가는 자리 · 내려가는 자리를 선으로 가른다 */}
@@ -136,12 +150,12 @@ export default function LeaguePage() {
           <CardHead title="이번 달 순위" meta={`${league.groupSize}가족`} />
           <ol className="mt-1">
             {league.standings.map((s, i) => {
-              const rank = i + 1;
-              const z = zoneOf(rank, league.groupSize, league.promote, league.demote);
+              const place = i + 1;
+              const z = zoneOf(place, league.groupSize, league.promote, league.demote);
               const zonePrev =
-                i === 0 ? null : zoneOf(rank - 1, league.groupSize, league.promote, league.demote);
+                i === 0 ? null : zoneOf(place - 1, league.groupSize, league.promote, league.demote);
               return (
-                <Fragment key={`${s.familyName}-${rank}`}>
+                <Fragment key={`${s.familyName}-${place}`}>
                   {z !== zonePrev && z !== "stay" && (
                     <li
                       aria-hidden
@@ -161,7 +175,7 @@ export default function LeaguePage() {
                     aria-current={s.me ? "true" : undefined}
                   >
                     <span className="text-ink-soft w-5 shrink-0 text-right text-sm font-extrabold tabular-nums">
-                      {rank}
+                      {s.rate != null ? place : ""}
                     </span>
                     <span
                       className={cn(
@@ -172,13 +186,15 @@ export default function LeaguePage() {
                       {s.familyName}
                     </span>
                     <span className="bg-sub h-2 min-w-0 flex-1 overflow-hidden rounded-full">
-                      <span
-                        className={cn(
-                          "block h-full rounded-full",
-                          s.me ? "bg-signal" : "bg-baseline",
-                        )}
-                        style={{ width: `${s.rate}%` }}
-                      />
+                      {s.rate != null && (
+                        <span
+                          className={cn(
+                            "block h-full rounded-full",
+                            s.me ? "bg-signal" : "bg-baseline",
+                          )}
+                          style={{ width: `${s.rate}%` }}
+                        />
+                      )}
                     </span>
                     <span
                       className={cn(
@@ -186,7 +202,7 @@ export default function LeaguePage() {
                         s.me ? "text-signal-deep" : "text-ink-soft",
                       )}
                     >
-                      {s.rate}%
+                      {s.rate != null ? `${s.rate}%` : "아직"}
                     </span>
                   </li>
                 </Fragment>
@@ -194,7 +210,7 @@ export default function LeaguePage() {
             })}
           </ol>
           <p className="text-caption text-ink-soft border-line mt-3 border-t pt-3">
-            달성률 — 잡힌 운동 날 중 해낸 날 · 쉬는 날은 빼요 · 아이들 평균. 가족 단위로만 겨뤄요.
+            달성률 — 잡힌 운동 날 중 해낸 날 · 쉬는 날 빼고 · 아이들 평균
           </p>
         </section>
       </Stage>
@@ -202,10 +218,10 @@ export default function LeaguePage() {
   );
 }
 
-function LeagueSkeleton() {
+function LeagueSkeleton({ backHref }: { backHref: string }) {
   return (
     <>
-      <AppBar backHref="/parent/dashboard" title="가족 리그" />
+      <AppBar backHref={backHref} title="가족 리그" />
       <Stage wide className="space-y-3">
         <Skeleton className="h-72 w-full rounded-3xl" />
         <Skeleton className="h-96 w-full rounded-3xl" />

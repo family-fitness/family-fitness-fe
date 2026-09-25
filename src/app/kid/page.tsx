@@ -23,15 +23,14 @@ import {
   useCheers,
   useFamilyProfiles,
   useFitnessMap,
-  useMissions,
+  useCurrentMissions,
   useProgress,
-  useRestDays,
 } from "@/lib/api/queries";
 import { callName } from "@/lib/family";
 import { badgeArt, levelProgress, stageOf } from "@/lib/levels";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
-import { dayOf, longDate, monthOf, today, weekOf } from "@/lib/today";
+import { dayOf, longDate, today, weekOf } from "@/lib/today";
 import { stickerOf } from "@/lib/stickers";
 import { useRoleStore } from "@/stores/role-store";
 
@@ -56,7 +55,7 @@ export default function KidHomePage() {
     refetch: refetchMap,
     isRefetching,
   } = useFitnessMap(familyId);
-  const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
+  const { data: missions } = useCurrentMissions(familyId);
   const { data: progress } = useProgress(childProfileId ?? undefined);
   const week = weekOf();
   const { data: calendar, isPending: calendarPending } = useCalendar(
@@ -65,8 +64,6 @@ export default function KidHomePage() {
     week,
   );
   const { data: cheers } = useCheers(familyId, childProfileId ?? undefined);
-  // 쉬는 날 카드 — 부모가 쓴다. 쓴 날이면 오늘 운동 대신 「쉬는 날」
-  const { data: rest } = useRestDays(familyId ?? undefined, monthOf(today()));
   const { data: family } = useFamilyProfiles(familyId);
   // 아이에게 부모는 엄마 · 아빠다
   const nameOf = (profileId: string, fallback: string) =>
@@ -128,7 +125,10 @@ export default function KidHomePage() {
   const trees = progress?.activeDays ?? 0;
   const bar = progress ? levelProgress(progress) : null;
   const score = me.latest?.overallPercentile ?? null;
-  const restToday = Boolean(rest?.days.includes(now));
+  // 쉬는 날 카드(부모가 쓴다) — 이번 주 기록에 같이 온다. 쓴 날이면 오늘 운동 대신 「쉬는 날」
+  const restToday = Boolean(calendar?.days.find((d) => d.date === now)?.rest);
+  // 쉬는 날에도 「그래도 할래요」 로 시작했으면 이어서 하게 둔다
+  const started = todo ? sessionsOf(todo).some((s) => s.completed) : false;
   // 가장 최근에 받은 스티커 · 업적 하나씩. 개수를 세지 않는다 — 모아야 할 것이 되면 못 받은 날이 실패가 된다
   const sticker = (cheers?.cheers ?? [])
     .filter((c) => c.stickerId && stickerOf(c.stickerId))
@@ -191,10 +191,19 @@ export default function KidHomePage() {
           )}
         </section>
 
-        {/* 오늘 할 일 하나. 이 화면에서 누를 큰 것은 이것뿐이다 */}
-        {restToday ? (
-          // 쉬는 날 카드를 쓴 날 — 「안 한 날」 이 아니라 「쉬기로 한 날」. 그래도 하고 싶으면 한다
+        {/* 오늘 할 일 하나. 이 화면에서 누를 큰 것은 이것뿐이다.
+            쉬는 날인지는 이번 주 기록에 같이 온다 — 오기 전에는 자리만 잡는다(운동 카드가 떴다 쉬는 날로 바뀌지 않게) */}
+        {calendarPending ? (
+          <Skeleton className="h-32 w-full rounded-3xl" />
+        ) : mine.length > 0 && !todo ? (
+          // 다 했으면 쉬는 날이어도 다 했다고 — 「그래도 할래요」 로 한 것을 덮지 않는다
           <div className="card-hero text-center">
+            <p className="text-lead font-extrabold">오늘 거 다 했어요!</p>
+          </div>
+        ) : restToday && !started ? (
+          // 쉬는 날 카드를 쓴 날 — 「안 한 날」 이 아니라 「쉬기로 한 날」. 그래도 하고 싶으면 한다
+          <div className="card-hero flex flex-col items-center text-center">
+            <Illustration name="scene/kiumi-rest" size={112} />
             <p className="text-lead font-extrabold">오늘은 쉬는 날이에요</p>
             {todo && (
               <NavLink
@@ -207,10 +216,6 @@ export default function KidHomePage() {
           </div>
         ) : todo ? (
           <TodayHero mission={todo} />
-        ) : mine.length > 0 ? (
-          <div className="card-hero text-center">
-            <p className="text-lead font-extrabold">오늘 거 다 했어요!</p>
-          </div>
         ) : (
           <div className="card-hero text-center">
             <p className="text-lead font-extrabold">오늘 운동이 아직 없어요</p>
@@ -234,13 +239,16 @@ export default function KidHomePage() {
           }
         >
           <PanelCells>
-            <PanelCell
-              href={sticker ? `/calendar/${dayOf(sticker.createdAt)}` : "/calendar"}
-              label="받은 스티커"
-              // 누가 붙여 줬는지 — 아이에게 부모는 엄마 · 아빠다. 스티커 말은 그림이 한다
-              note={sticker ? nameOf(sticker.fromProfileId, sticker.fromName) : "아직 없어요"}
-              art={sticker ? <StickerArt id={sticker.stickerId} className="size-10" /> : null}
-            />
+            {/* 받은 스티커는 받았을 때만 — 「아직 없어요」 칸은 아이가 스스로 채울 수 없는 자리다(규칙 12) */}
+            {sticker && (
+              <PanelCell
+                href={`/calendar/${dayOf(sticker.createdAt)}`}
+                label="받은 스티커"
+                // 누가 붙여 줬는지 — 아이에게 부모는 엄마 · 아빠다. 스티커 말은 그림이 한다
+                note={nameOf(sticker.fromProfileId, sticker.fromName)}
+                art={<StickerArt id={sticker.stickerId} className="size-10" />}
+              />
+            )}
             <PanelCell
               href="/kid/badges"
               label="업적"

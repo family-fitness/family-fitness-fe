@@ -203,7 +203,7 @@ export function ClipPlayer({
             alt=""
             className="size-full object-cover opacity-70"
           />
-          <span className="text-caption absolute right-3 bottom-3 rounded-full bg-black/60 px-2.5 py-1 font-bold text-white">
+          <span className="text-caption bg-ink/60 absolute right-3 bottom-3 rounded-full px-2.5 py-1 font-bold text-white">
             영상을 불러오는 중
           </span>
         </div>
@@ -216,7 +216,7 @@ export function ClipPlayer({
             player.current?.unMute();
             setMuted(false);
           }}
-          className="press absolute top-2 right-2 flex min-h-11 items-center gap-1.5 rounded-full bg-black/65 px-3.5 text-sm font-bold text-white"
+          className="press bg-ink/65 absolute top-2 right-2 flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-sm font-bold text-white"
         >
           <Volume2 aria-hidden className="size-4" />
           소리 켜기

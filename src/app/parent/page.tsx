@@ -23,7 +23,7 @@ import {
   useFamilyLeague,
   useFitnessMap,
   useLatestFitnessTest,
-  useMissions,
+  useCurrentMissions,
   useProgress,
 } from "@/lib/api/queries";
 import { artFor } from "@/lib/art";
@@ -31,6 +31,7 @@ import { isFactor } from "@/lib/fitness-factors";
 import { tierArt, tierName } from "@/lib/league";
 import { useSession } from "@/lib/session";
 import { longDate, monthOf, today, weekOf } from "@/lib/today";
+import type { FamilyLeague } from "@/lib/api/types";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
@@ -52,7 +53,7 @@ export default function ParentHomePage() {
     refetch: refetchMap,
     isRefetching,
   } = useFitnessMap(familyId);
-  const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
+  const { data: missions } = useCurrentMissions(familyId);
 
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
@@ -75,7 +76,10 @@ export default function ParentHomePage() {
 
   // 며칠 이어서 했는가 — 서버가 센 연속. 끊긴 날은 세지 않고, 끊겼다고 말하지 않는다
   const { data: progress } = useProgress(child?.profileId);
-  const { data: league } = useFamilyLeague(familyId ?? undefined, monthOf(today()));
+  const { data: league, error: leagueError } = useFamilyLeague(
+    familyId ?? undefined,
+    monthOf(today()),
+  );
 
   const header = (
     <HomeHeader
@@ -158,19 +162,27 @@ export default function ParentHomePage() {
               label="캘린더"
               art={<ArtIcon name="icon/menu-calendar" className="size-9" />}
             />
-            {/* 다른 가족들과 겨루는 자리. 운동 찾기는 아래 영상 줄 머리와 「직접 짜서 더하기」 에 있다 */}
-            <PanelCell
-              href="/parent/league"
-              label="가족 리그"
-              note={league ? `${tierName(league.tier)} · ${league.rank}등` : undefined}
-              art={
-                league && artFor(tierArt(league.tier)) ? (
-                  <ArtIcon name={tierArt(league.tier)} className="size-9" />
-                ) : (
-                  <ArtIcon name="icon/menu-trophy" className="size-9" />
-                )
-              }
-            />
+            {/* 다른 가족들과 겨루는 자리. 운동 찾기는 아래 영상 줄 머리와 「직접 짜서 더하기」 에 있다.
+                리그를 못 받으면(서버에 아직 없으면) 칸을 두지 않는다 — 누르면 오류 화면이다 */}
+            {!leagueError && (
+              <PanelCell
+                href="/parent/league?from=home"
+                label="가족 리그"
+                note={leagueNote(league)}
+                art={
+                  // 메달 그림이 오기 전에는 빌린 그림 대신 티어 이름을 크게(주문한 그림만 부른다)
+                  league ? (
+                    artFor(tierArt(league.tier)) ? (
+                      <ArtIcon name={tierArt(league.tier)} className="size-9" />
+                    ) : (
+                      <span className="text-signal-deep text-lead font-extrabold">
+                        {tierName(league.tier)}
+                      </span>
+                    )
+                  ) : null
+                }
+              />
+            )}
             <PanelCell
               href="/parent/dashboard"
               label="우리 가족"
@@ -206,4 +218,12 @@ function ParentHomeSkeleton() {
 function weekMeta(days: string[], logs: Parameters<typeof weekTotals>[1]) {
   const t = weekTotals(days, logs);
   return `${t.minutes}분 · ${t.active}일 운동`;
+}
+
+/** 「가족 리그」 칸 곁말 — 메달 그림이 있으면 티어 · 등수, 없으면(이름이 그림 자리에 선다) 등수만. 셀 날이 없으면 비운다 */
+function leagueNote(league: FamilyLeague | undefined) {
+  if (!league || league.rank == null) return undefined;
+  return artFor(tierArt(league.tier))
+    ? `${tierName(league.tier)} · ${league.rank}등`
+    : `${league.rank}등`;
 }

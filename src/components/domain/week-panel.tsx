@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
  * 홈의 둘째 묶음 — 「이번 주」. 오늘 링 셋 · 요일 탑 · 그 아래 한 줄(바로가기 · 받은 것).
  *
  * 부모 홈과 아이 홈이 같은 틀을 쓴다. 링 · 탑은 같은 날을 같은 셈으로 그리고,
- * 아랫줄만 다르다 — 부모는 캘린더 · 운동 찾기 · 가족, 아이는 받은 스티커 · 업적 · 신체 점수.
+ * 아랫줄만 다르다 — 부모는 캘린더 · 가족 리그 · 우리 가족, 아이는 받은 스티커(받았을 때만) · 업적 · 신체 점수.
  * 카드 하나에 기능 하나씩 쌓던 것(이번 주 · 운동 찾기 · 가족)을 한 덩어리로 합쳤다(9/25).
  */
 export function WeekPanel({
@@ -105,7 +105,7 @@ export function PanelCell({
   );
 }
 
-/** 칸 셋을 한 줄로 — 사이는 선으로 나눈다 */
+/** 칸들을 한 줄로 — 사이는 선으로 나눈다. 칸 수만큼 고르게(받은 스티커처럼 있을 때만 서는 칸이 있다) */
 export function PanelCells({ children }: { children: ReactNode }) {
-  return <div className="divide-line grid grid-cols-3 divide-x">{children}</div>;
+  return <div className="divide-line grid auto-cols-fr grid-flow-col divide-x">{children}</div>;
 }

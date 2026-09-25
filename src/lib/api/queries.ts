@@ -160,8 +160,9 @@ export function useCreateProfile(familyId: Uuid) {
       guardianConsent?: { personalData: boolean; healthData: boolean };
     }) => api.post<ProfileSummary>(path`/families/${familyId}/profiles`, body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: qk.family.profiles(familyId) });
-      qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId) });
+      // 지금 안 떠 있는 홈의 것까지 다시 받는다 — 안 그러면 홈에 옛 가족이 먼저 뜨고 새 아이 대신 첫째가 잠깐 선다
+      qc.invalidateQueries({ queryKey: qk.family.profiles(familyId), refetchType: "all" });
+      qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId), refetchType: "all" });
     },
   });
 }
@@ -426,6 +427,47 @@ export function useMissions(
   });
 }
 
+/**
+ * 지금 걸려 있는 운동 — 아직인 것과 다 한 것 둘 다.
+ *
+ * 서버의 `ACTIVE` 는 「아직 다 안 한 것」 이다. 그것만 받으면 아이가 다 하는 순간 오늘 운동이 목록에서
+ * 빠져, 아이 홈은 「오늘 운동이 아직 없어요」, 부모 홈은 「아직 오늘 운동이 없어요」 가 된다(9/25 한 바퀴).
+ * `DONE` 을 같이 받아 합친다. 오늘 것만 고르는 건 화면이 날짜로 한다. 키가 `useMissions` 와 같아 캐시를 나눠 쓴다.
+ */
+export function useCurrentMissions(familyId: Uuid | undefined) {
+  return useQueries({
+    queries: (["ACTIVE", "DONE"] as const).map((status) => ({
+      queryKey: qk.family.missions(familyId ?? "", "ALL", status),
+      queryFn: () =>
+        api.get<MissionList>(
+          path`/families/${familyId}/missions${query({ scope: "ALL", status })}`,
+        ),
+      enabled: Boolean(familyId),
+    })),
+    combine: mergeMissions,
+  });
+}
+
+/** 컴포넌트 밖에 둔다 — 렌더마다 새 함수면 합친 결과도 매번 새것이 된다 */
+function mergeMissions(results: { data?: MissionList; isPending: boolean; error: unknown }[]) {
+  const [active, done] = results;
+  // 다 한 것을 못 받아도 아직인 것은 보인다 — 오늘 할 운동이 가려지지 않게
+  const seen = new Set<string>();
+  const missions = [...(active.data?.missions ?? []), ...(done.data?.missions ?? [])].filter(
+    (m) => {
+      const id = m.missionId ?? "";
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    },
+  );
+  return {
+    data: active.data ? { ...active.data, missions } : undefined,
+    isPending: active.isPending,
+    error: active.error,
+  };
+}
+
 /** STEPS 미션의 마지막 관문. 보호자만 누를 수 있다 */
 export function useConfirmParticipant(missionId: Uuid, familyId: Uuid) {
   const qc = useQueryClient();
@@ -435,6 +477,7 @@ export function useConfirmParticipant(missionId: Uuid, familyId: Uuid) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "league"] });
       refreshProgress(qc);
     },
   });
@@ -575,6 +618,7 @@ export function useCompleteSession(missionId: Uuid, familyId: Uuid) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "league"] });
       refreshProgress(qc);
     },
   });
@@ -707,7 +751,9 @@ export function useRestDay(familyId: Uuid) {
       cancel
         ? api.delete<RestDays>(path`/families/${familyId}/rest-days/${date}`)
         : api.post<RestDays>(path`/families/${familyId}/rest-days`, { date }),
-    onSuccess: () => {
+    onSuccess: (rest) => {
+      // 돌려받은 카드를 바로 넣는다 — 다시 받기 전까지 되돌리기 줄이 남아 한 번 더 누르면 404 였다
+      if (rest?.month) qc.setQueryData(qk.family.restDays(familyId, rest.month), rest);
       void qc.invalidateQueries({ queryKey: ["family", familyId] });
       void qc.invalidateQueries({ queryKey: ["profile"] });
     },

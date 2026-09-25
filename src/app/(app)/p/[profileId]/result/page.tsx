@@ -2,7 +2,7 @@
 
 import { Activity } from "lucide-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 
 import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
@@ -26,6 +26,8 @@ import { formatDate } from "@/lib/utils";
 /** 측정 결과. */
 export default function ResultPage() {
   const { profileId } = useParams<{ profileId: string }>();
+  // 첫 시작 → 측정 → 결과는 전부 바꿔치기다. 뒤로는 홈으로(앱을 나가지 않게)
+  const nav = useSearchParams().get("from") === "start" ? { backHref: "/parent" } : { back: true };
   const { familyId } = useSession();
   // 부모 폰을 아이가 쓰는 동안에도 서열은 감춘다
   const kidView = useIsKidView();
@@ -43,7 +45,7 @@ export default function ResultPage() {
   if (error) {
     return (
       <>
-        <PageHeader title="측정 결과" back />
+        <PageHeader title="측정 결과" {...nav} />
         <Screen>
           <ErrorState error={error} onRetry={() => void refetch()} retrying={isRefetching} />
         </Screen>
@@ -55,7 +57,7 @@ export default function ResultPage() {
   if (!test || test.fitnessTestId == null) {
     return (
       <>
-        <PageHeader title="측정 결과" back />
+        <PageHeader title="측정 결과" {...nav} />
         <Screen>
           <EmptyState
             scene="no-record"
@@ -85,7 +87,7 @@ export default function ResultPage() {
     <>
       <PageHeader
         title={profile ? `${profile.name} 결과` : "측정 결과"}
-        back
+        {...nav}
         meta={
           <>
             {test.testedOn && <span>{formatDate(test.testedOn)} 측정</span>}

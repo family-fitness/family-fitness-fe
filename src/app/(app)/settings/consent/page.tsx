@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import type { ProfileSummary } from "@/lib/api/types";
 import { useFamilyProfiles, useUpdateConsent } from "@/lib/api/queries";
+import { usePhotoStore } from "@/stores/photo-store";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
@@ -68,6 +69,7 @@ function ConsentPageContent() {
 
 function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: string }) {
   const update = useUpdateConsent(child.profileId ?? "", familyId);
+  const removePhoto = usePhotoStore((s) => s.remove);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,6 +79,8 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
     setError(null);
     try {
       await update.mutateAsync({ personalData, healthData });
+      // 동의를 거두면 이 기기에 둔 아이 사진도 지운다 — 건강정보와 함께 거둔 것이다
+      if (!personalData && child.profileId) removePhoto(child.profileId);
       setConfirming(false);
     } catch (e) {
       setError(

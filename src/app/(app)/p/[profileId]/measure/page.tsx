@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
@@ -32,6 +32,9 @@ const field = (itemCode: string) => `item_${itemCode}`;
 export default function MeasurePage() {
   const router = useRouter();
   const { profileId } = useParams<{ profileId: string }>();
+  // 첫 시작에서 왔다 — 여기까지 전부 바꿔치기라 뒤로 갈 곳이 없다(홈 화면 앱이면 앱을 나간다). 뒤로는 홈으로
+  const fromStart = useSearchParams().get("from") === "start";
+  const nav = fromStart ? { backHref: "/parent" } : { back: true };
   const { familyId, isPending: sessionPending } = useSession();
 
   /** 측정은 **주소의 프로필**에 저장한다. 로그인한 사람이 아니다. */
@@ -98,7 +101,7 @@ export default function MeasurePage() {
   if (failure) {
     return (
       <>
-        <PageHeader title="체력 측정" back />
+        <PageHeader title="체력 측정" {...nav} />
         <Screen>
           <ErrorState error={failure} onRetry={() => void refetchFamily()} />
         </Screen>
@@ -109,7 +112,7 @@ export default function MeasurePage() {
   if (!profile) {
     return (
       <>
-        <PageHeader title="체력 측정" back />
+        <PageHeader title="체력 측정" {...nav} />
         <Screen>
           <EmptyState scene="waiting" title="찾을 수 없는 프로필이에요" />
         </Screen>
@@ -121,7 +124,7 @@ export default function MeasurePage() {
   if (!profile.measurable) {
     return (
       <>
-        <PageHeader title="체력 측정" back />
+        <PageHeader title="체력 측정" {...nav} />
         <Screen>
           <EmptyState
             scene="rest"
@@ -141,7 +144,7 @@ export default function MeasurePage() {
   if (profile.consentRequired && !profile.consentGiven) {
     return (
       <>
-        <PageHeader title="체력 측정" back />
+        <PageHeader title="체력 측정" {...nav} />
         <Screen>
           <EmptyState
             scene="waiting"
@@ -161,7 +164,7 @@ export default function MeasurePage() {
   if (easy.length === 0 && equipment.length === 0) {
     return (
       <>
-        <PageHeader title="체력 측정" back />
+        <PageHeader title="체력 측정" {...nav} />
         <Screen>
           <EmptyState
             scene="no-record"
@@ -202,7 +205,7 @@ export default function MeasurePage() {
       } else {
         forgetBody(profileId);
       }
-      router.replace(`/p/${profileId}/result`);
+      router.replace(`/p/${profileId}/result${fromStart ? "?from=start" : ""}`);
     } catch (error) {
       // 코드마다 고쳐야 할 게 다르다. 한 문구로 뭉뚱그리면 뭘 바꿔야 할지 알 수 없다
       setServerError(messageFor(error));
@@ -213,7 +216,7 @@ export default function MeasurePage() {
     <>
       <PageHeader
         title={`${profile.name} 측정`}
-        back
+        {...nav}
         meta={
           <span>
             국민체력100 {profile.ageGroup ?? ""} 항목 · {filledCount}개 입력함

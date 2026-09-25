@@ -8,9 +8,11 @@
  * 결과가 다음 화면을 만드는 길**은 못 잡는다. 실제로 `POST /families` 에 목 응답이
  * 없어서 새 사용자가 첫 관문을 못 넘고 있었는데 아무 검사도 빨갛지 않았다.
  *
- * 두 길을 걷는다.
+ * 세 길을 걷는다.
  *   1. 가족 없는 계정 → 첫 시작(키움이 인사 · 가족 · 보호자 · 아이 · 동의 · 참여 방식 · 운동 시간 · 첫 측정) → 부모 홈
  *   2. 초대받은 계정 → 자리 확인 → 참여 방식 → 역할 고르기
+ *   3. 첫 시작 중간에 새로고침 — 가족을 만든 뒤 · 아이를 만든 뒤. 두 번 만들지 않고 이어 간다.
+ *      아이 등록 첫 칸의 뒤로 · 「지금 잴래요」 측정 화면의 뒤로가 홈으로 가는지
  */
 import { chromium } from "playwright";
 
@@ -97,7 +99,7 @@ await walk("새 가족 만들기", async (h) => {
     await next();
   });
   await h.step("보호자 사진은 건너뛴다 → 가족이 생긴다", async () => {
-    await next();
+    await next("건너뛰기");
     await page.getByLabel("아이 이름").waitFor({ timeout: 8000 });
     // 가족을 만든 뒤에는 뒤로 가지 않는다 — 두 번 만들지 않게
     if (await page.getByRole("button", { name: "뒤로" }).count()) {
@@ -114,7 +116,7 @@ await walk("새 가족 만들기", async (h) => {
     await page.getByLabel("키").fill("125");
     await page.getByLabel("몸무게").fill("26");
     await next();
-    await next(); // 아이 사진은 건너뛴다
+    await next("건너뛰기"); // 아이 사진
   });
   await h.step("보호자 동의 둘", async () => {
     // 동의를 안 누르면 다음이 잠겨 있어야 한다
@@ -185,10 +187,84 @@ await walk("초대 수락", async (h) => {
   });
 });
 
+/* ─── 3. 첫 시작 중간에 새로고침 ──────────────────────────── */
+
+await walk("새로고침에도 두 번 만들지 않는다", async (h) => {
+  const { page } = h;
+  const next = async (name = "다음") => {
+    await page.getByRole("button", { name, exact: true }).click();
+    await h.settle(700);
+  };
+  await h.step("가족까지 만든다", async () => {
+    await page.goto(`${BASE}/login`, { waitUntil: "load", timeout: 30000 });
+    await h.settle(2400);
+    await page.getByRole("button", { name: /새 계정/ }).click();
+    await h.until(/\/start\/family/);
+    await next("좋아요");
+    await page.getByLabel("가족 이름").fill("하늘네");
+    await next();
+    await page.getByLabel("보호자 이름").fill("도현");
+    await next();
+    await page.getByRole("radio", { name: /남성/ }).click();
+    await next();
+    await page.getByLabel("보호자 생년월일").fill("1984-02-20");
+    await next();
+    await next("건너뛰기"); // 사진
+    await page.getByLabel("아이 이름").waitFor({ timeout: 8000 });
+  });
+  await h.step("새로고침하면 아이 등록으로 — 가족을 다시 만들지 않는다", async () => {
+    await page.reload({ waitUntil: "load" });
+    await h.until(/\/start\/child/);
+    await page.getByLabel("아이 이름").waitFor({ timeout: 10000 });
+  });
+  await h.step("아이 등록 첫 칸에 뒤로가 있다", async () => {
+    if ((await page.getByRole("button", { name: "뒤로" }).count()) === 0) {
+      problems.push("새로고침에도 두 번 만들지 않는다\n    아이 등록 첫 칸에 나가는 길이 없다");
+    }
+  });
+  await h.step("아이를 만든다", async () => {
+    await page.getByLabel("아이 이름").fill("하늘");
+    await next();
+    await page.getByLabel("아이 생일").fill("2016-05-01");
+    await next();
+    await page.getByRole("radio", { name: "남자아이" }).click();
+    await next();
+    await page.getByLabel("키").fill("132");
+    await page.getByLabel("몸무게").fill("30");
+    await next();
+    await next("건너뛰기"); // 사진
+    await page.getByRole("checkbox", { name: /개인정보 처리에 동의/ }).click();
+    await page.getByRole("checkbox", { name: /건강정보 처리에 동의/ }).click();
+    await next();
+    await page.getByRole("heading", { name: /언제 운동할 수 있어요/ }).waitFor({ timeout: 8000 });
+  });
+  await h.step("새로고침하면 그 아이로 이어 간다 — 아이 이름부터 다시 묻지 않는다", async () => {
+    await page.reload({ waitUntil: "load" });
+    await h.settle(2000);
+    await page
+      .getByRole("heading", { name: /하늘은 언제 운동할 수 있어요/ })
+      .waitFor({ timeout: 10000 });
+    await next();
+  });
+  await h.step("지금 잴래요 → 측정 화면 뒤로는 홈", async () => {
+    await page.getByRole("radio", { name: /지금 잴래요/ }).click();
+    await next();
+    await h.until(/\/measure\?from=start/);
+    await page.getByRole("link", { name: "뒤로" }).click();
+    await h.until(/\/parent$/);
+  });
+  await h.step("아이는 한 명이다", async () => {
+    await page.goto(`${BASE}/parent/family`, { waitUntil: "load" });
+    await h.settle(2000);
+    const kids = await page.getByText(/· 자녀/).count();
+    if (kids !== 1) problems.push(`새로고침에도 두 번 만들지 않는다\n    아이가 ${kids}명`);
+  });
+});
+
 await browser.close();
 
 if (problems.length > 0) {
   console.error("가입 경로 문제:\n  " + problems.join("\n  "));
   process.exit(1);
 }
-console.log(`가입 경로 두 갈래 · 단계 ${steps}개 이상 없음`);
+console.log(`가입 경로 세 갈래 · 단계 ${steps}개 이상 없음`);

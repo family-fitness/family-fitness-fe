@@ -67,7 +67,13 @@ function Finder() {
   const [factor, setFactor] = useState<Factor | null>(
     isFactor(initialFactor) ? initialFactor : null,
   );
-  const [phase, setPhase] = useState<SessionPhase | null>(null);
+  // 홈의 영상 줄에서 오면 본운동으로 걸러 연다 — 그 줄과 같은 목록이라야 누른 클립이 들어 있다
+  const initialPhase = params.get("phase");
+  const [phase, setPhase] = useState<SessionPhase | null>(
+    initialPhase === "WARMUP" || initialPhase === "MAIN" || initialPhase === "COOLDOWN"
+      ? initialPhase
+      : null,
+  );
   const [quiet, setQuiet] = useState(false);
   const [q, setQ] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(params.get("list") === "favorites");
@@ -255,11 +261,11 @@ function ClipRow({
         className="press relative shrink-0 overflow-hidden rounded-xl"
       >
         <VideoThumb videoId={c.videoId} className="aspect-video w-24" />
-        <span className="text-micro absolute right-1 bottom-1 rounded-md bg-black/70 px-1.5 py-0.5 font-bold text-white">
+        <span className="text-micro bg-ink/70 absolute right-1 bottom-1 rounded-md px-1.5 py-0.5 font-bold text-white">
           {clock(length)}
         </span>
         <span className="absolute inset-0 grid place-items-center">
-          <span className="grid size-8 place-items-center rounded-full bg-black/45 text-white">
+          <span className="bg-ink/45 grid size-8 place-items-center rounded-full text-white">
             <Play aria-hidden className="size-4 fill-current" />
           </span>
         </span>

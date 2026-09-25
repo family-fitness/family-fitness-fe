@@ -81,13 +81,17 @@ export function PhotoPicker({
 
 /** 가운데를 정사각으로 잘라 한 변 `size` 의 JPEG data URL 로 */
 async function squareJpeg(file: File, size = 320): Promise<string> {
-  const bitmap = await createImageBitmap(file);
+  // 폰 사진의 돌림 정보대로 세운다 — 옆으로 누운 얼굴이 되지 않게
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
   const side = Math.min(bitmap.width, bitmap.height);
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("canvas");
+  // 투명한 PNG 는 JPEG 로 바꾸면 바탕이 검게 된다 — 흰 바탕을 먼저 깐다
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, size, size);
   ctx.drawImage(
     bitmap,
     (bitmap.width - side) / 2,

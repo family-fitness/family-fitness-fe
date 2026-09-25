@@ -22,6 +22,8 @@ Object.defineProperty(globalThis, "location", {
 import { setupServer } from "msw/node";
 
 import { DEMO, handlers, setActingProfile } from "@/mocks/handlers";
+import { streakOf } from "@/mocks/progress";
+import { daysBefore } from "@/lib/today";
 
 const server = setupServer(...handlers);
 server.listen({ onUnhandledRequest: "warn" });
@@ -231,6 +233,45 @@ res = await post(`/profiles/${DEMO.kid}/fitness-tests`, {
   items: [{ itemCode: "012", value: 8 }],
 });
 check("동의 철회 후 측정 차단", res.status === 422 && (await codeOf(res)) === "CONSENT_REQUIRED");
+
+/* ─── 6. 쉬는 날 · 이어서 한 날 · 리그 ─────────────────────── */
+
+// 쉬는 날은 건너서 잇는다 — 끊지도 않고 더하지도 않는다(규칙 15)
+const [d0, d1, d2, d3] = [0, 1, 2, 3].map((n) => daysBefore(n));
+check("오늘 아직이면 어제부터 센다", streakOf(new Set([d1, d2]), new Set()) === 2);
+check(
+  "쉬는 날은 사이를 잇고 수에 더하지 않는다",
+  streakOf(new Set([d1, d3]), new Set([d2])) === 2,
+  `${streakOf(new Set([d1, d3]), new Set([d2]))}`,
+);
+check("쉬는 날만으로는 이어서 한 날이 생기지 않는다", streakOf(new Set(), new Set([d0, d1])) === 0);
+
+type League = { tier: string; rate: number | null; rank: number | null };
+const demoLeague = (await (await get(`/families/${DEMO.familyId}/league`)).json()) as League;
+check(
+  "시연 가족 리그 — 달성률 · 순위가 있다",
+  demoLeague.rate != null &&
+    demoLeague.rate >= 0 &&
+    demoLeague.rate <= 100 &&
+    demoLeague.rank != null,
+  `${demoLeague.tier} ${demoLeague.rate}% ${demoLeague.rank}등`,
+);
+
+// 새 가족 — 브론즈에서, 셀 날이 없으면 달성률 · 순위가 비어 있다(0% · 꼴찌가 아니다)
+await post("/auth/dev-login", { providerUserId: "demo-fresh" });
+const freshFamily = (await (
+  await post("/families", {
+    familyName: "검사네",
+    owner: { name: "검사", birthDate: "1988-01-01", sex: "F" },
+  })
+).json()) as { familyId?: string };
+const fresh = (await (await get(`/families/${freshFamily.familyId}/league`)).json()) as League;
+check("새 가족은 브론즈에서 시작한다", fresh.tier === "BRONZE", fresh.tier);
+check(
+  "셀 날이 없으면 달성률 · 순위가 비어 있다",
+  fresh.rate === null && fresh.rank === null,
+  `${fresh.rate} · ${fresh.rank}`,
+);
 
 server.close();
 console.log(failed === 0 ? "\n전부 통과" : `\n${failed}건 실패`);

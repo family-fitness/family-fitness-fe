@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { NavLink } from "@/components/ui/nav-link";
 import { Sheet } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { ProfileSummary } from "@/lib/api/types";
 import { useOpenInvite } from "@/lib/api/queries";
 import { errorMessage } from "@/lib/errors";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 /**
  * 부모가 초대코드를 만드는 곳(9/25 「부모가 초대코드 만드는 거」).
@@ -24,12 +25,15 @@ export function InviteSheet({
   onClose,
   familyName,
   members,
+  loading = false,
   initialId,
 }: {
   open: boolean;
   onClose: () => void;
   familyName: string;
   members: ProfileSummary[];
+  /** 가족 목록을 받는 중 — 「모두 들어와 있어요」 로 그리지 않는다 */
+  loading?: boolean;
   /** 이 사람 자리로 바로 — 구성원 줄의 「초대하기」 에서 열 때 */
   initialId?: string | null;
 }) {
@@ -41,7 +45,12 @@ export function InviteSheet({
   const seat = seats.find((m) => m.profileId === picked) ?? seats[0];
 
   const invite = useOpenInvite();
-  const [code, setCode] = useState<{ code: string; link: string; for: string } | null>(null);
+  const [code, setCode] = useState<{
+    code: string;
+    link: string;
+    for: string;
+    until: string | null;
+  } | null>(null);
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,6 +71,8 @@ export function InviteSheet({
         // 서버가 준 주소가 먼저다. 없으면 이 앱의 초대코드 화면으로
         link: res.shareUrl ?? `${window.location.origin}/claim?code=${encodeURIComponent(c)}`,
         for: seat.name ?? "",
+        // 언제까지 쓰는지는 서버가 정한다
+        until: res.expiresAt ? formatDate(res.expiresAt) : null,
       });
     } catch (e) {
       setError(
@@ -75,8 +86,13 @@ export function InviteSheet({
   };
 
   const copy = (what: "code" | "link", text: string) => {
+    // 복사가 안 되는 브라우저(주소가 https 가 아닐 때 등) — 조용히 넘어가면 복사된 줄 안다
+    if (!navigator.clipboard) {
+      setError("복사하지 못했어요. 길게 눌러 직접 골라 주세요.");
+      return;
+    }
     navigator.clipboard
-      ?.writeText(text)
+      .writeText(text)
       .then(() => {
         setCopied(what);
         setTimeout(() => setCopied(null), 1500);
@@ -94,14 +110,21 @@ export function InviteSheet({
         text: `${familyName}에 ${code.for} 자리로 들어와요. 초대코드 ${code.code}`,
         url: code.link,
       });
-    } catch {
-      // 사람이 공유 창을 닫았다 — 실패가 아니다
+    } catch (e) {
+      // 사람이 공유 창을 닫았다 — 실패가 아니다. 그 밖에는 링크 복사로 돌린다
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      setError("보내지 못했어요. 링크를 복사해 보내 주세요.");
     }
   };
 
   return (
     <Sheet open={open} onClose={close} title="초대하기">
-      {seats.length === 0 ? (
+      {loading ? (
+        <div className="space-y-3 pb-2" aria-hidden>
+          <Skeleton className="h-14 w-full" />
+          <Skeleton className="h-14 w-full" />
+        </div>
+      ) : seats.length === 0 ? (
         <div className="pb-2 text-center">
           <p className="text-body font-bold">모두 들어와 있어요</p>
           <NavLink
@@ -124,7 +147,8 @@ export function InviteSheet({
             {code.code}
           </p>
           <p className="text-caption text-ink-soft mt-2 text-center">
-            7일 동안 쓸 수 있어요 · {code.for} 자리로만 들어와요
+            {code.until ? `${code.until}까지 · ` : ""}
+            {code.for} 자리로만 들어와요
           </p>
           <div className="mt-5 grid grid-cols-2 gap-2">
             <button

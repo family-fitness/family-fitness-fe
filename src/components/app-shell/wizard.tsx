@@ -4,6 +4,7 @@ import { Check, ChevronLeft } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { Dock } from "@/components/ui/dock";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 /**
@@ -11,6 +12,9 @@ import { cn } from "@/lib/utils";
  *
  * 다른 앱의 첫 로그인처럼 한 번에 한 가지만 묻는다. 게이지가 있어 끝이 보인다 — 끝이 안 보이는 폼은 중간에 닫힌다.
  * 이 화면의 `<h1>` 은 질문이다.
+ *
+ * 한 칸이 폼 하나다 — 자판의 엔터(다음)로 넘어간다. 자판이 올라오면 아래 단추가 가려져서, 엔터가 없으면
+ * 칸마다 자판을 내려야 했다. 칸이 바뀌면 질문 · 입력을 새로 세운다(자동 포커스가 다시 걸리고 한글 조합이 넘어오지 않게).
  */
 export function WizardShell({
   step,
@@ -21,6 +25,7 @@ export function WizardShell({
   reason,
   children,
   action,
+  onSubmit,
 }: {
   /** 0 부터 */
   step: number;
@@ -33,12 +38,21 @@ export function WizardShell({
   /** 왜 묻는지 한 줄 */
   reason?: ReactNode;
   children?: ReactNode;
-  /** 아래 붙는 단추 */
+  /** 아래 붙는 단추 — `type="submit"` 으로 준다 */
   action?: ReactNode;
+  /** 엔터 · 아래 단추 */
+  onSubmit?: () => void;
 }) {
   const pct = total > 1 ? Math.round((step / (total - 1)) * 100) : 100;
   return (
-    <div className="flex min-h-dvh flex-col pb-36">
+    <form
+      className="flex min-h-dvh flex-col pb-36"
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit?.();
+      }}
+    >
       <div className="flex items-center gap-1 px-2 pt-[calc(env(safe-area-inset-top)+0.5rem)]">
         {onBack ? (
           <button
@@ -67,15 +81,29 @@ export function WizardShell({
         </div>
       </div>
 
-      <div className="px-6 pt-6">
-        {art && <div className="mb-4 flex justify-center">{art}</div>}
-        <h1 className="page-title leading-snug">{title}</h1>
-        {reason && <p className="text-ink-soft text-body mt-2 leading-relaxed">{reason}</p>}
+      <div key={step} className="flex flex-1 flex-col">
+        <div className="px-6 pt-6">
+          {art && <div className="mb-4 flex justify-center">{art}</div>}
+          <h1 className="page-title leading-snug">{title}</h1>
+          {reason && <p className="text-ink-soft text-body mt-2 leading-relaxed">{reason}</p>}
+        </div>
+
+        <div className="mt-7 flex-1 px-6">{children}</div>
       </div>
 
-      <div className="mt-7 flex-1 px-6">{children}</div>
-
       {action && <Dock>{action}</Dock>}
+    </form>
+  );
+}
+
+/** 첫 시작 뼈대 — 세션을 기다리거나 이미 가족이 있어 다른 곳으로 보내는 동안 */
+export function WizardSkeleton() {
+  return (
+    <div className="flex min-h-dvh flex-col px-6 pt-[calc(env(safe-area-inset-top)+1.25rem)]">
+      <Skeleton className="ml-10 h-2 w-auto rounded-full" />
+      <Skeleton className="mt-10 h-8 w-3/4" />
+      <Skeleton className="mt-3 h-4 w-1/2" />
+      <Skeleton className="mt-8 h-14 w-full rounded-2xl" />
     </div>
   );
 }

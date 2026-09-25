@@ -473,18 +473,21 @@ export type LeagueTier = "BRONZE" | "SILVER" | "GOLD" | "PLATINUM" | "DIAMOND";
 export interface FamilyLeague {
   month: string;
   tier: LeagueTier;
-  /** 이번 달 목표 달성률(%) */
-  rate: number;
-  /** 이 리그 묶음에서 우리 가족 자리(1부터) */
-  rank: number;
+  /**
+   * 이번 달 목표 달성률(%). **셀 날이 아직 없으면 null** — 달의 첫날 아침, 막 들어온 가족.
+   * 0 으로 주면 「0% · 꼴찌 · 내려가요」 가 된다. 비어 있음은 비어 있게(규칙 8)
+   */
+  rate: number | null;
+  /** 이 리그 묶음에서 우리 가족 자리(1부터). 달성률이 없으면 null */
+  rank: number | null;
   groupSize: number;
   /** 달이 바뀌면 올라가는 · 내려가는 자리 수. 맨 위 · 맨 아래 티어는 0 */
   promote: number;
   demote: number;
   /** 이 달이 끝나기까지 남은 날 */
   daysLeft: number;
-  /** 달성률 순. 이름은 가족 이름만 */
-  standings: { familyName: string; rate: number; me: boolean }[];
+  /** 달성률 순. 이름은 가족 이름만. 달성률이 아직 없는 집은 맨 아래 */
+  standings: { familyName: string; rate: number | null; me: boolean }[];
 }
 
 /**
