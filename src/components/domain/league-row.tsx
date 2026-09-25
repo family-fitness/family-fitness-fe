@@ -28,20 +28,24 @@ export function LeagueRow({
   if (isPending || !league) return <Skeleton className={cn("h-14 w-full", className)} />;
 
   const art = tierArt(league.tier);
+  const place = league.rank != null ? ` · ${league.groupSize}가족 중 ${league.rank}등` : "";
+  // 셀 날이 아직 없으면 0% 가 아니라 비어 있다
+  const note =
+    league.rate != null
+      ? `이번 달 달성률 ${league.rate}% · ${league.daysLeft}일 남음`
+      : "첫 운동을 하면 순위에 들어가요";
   return (
     <NavLink
       href="/parent/league"
       className={cn("press flex min-h-14 items-center gap-3", className)}
-      aria-label={`${tierName(league.tier)} 리그 · ${league.groupSize}가족 중 ${league.rank}등 · 달성률 ${league.rate}%`}
+      aria-label={`${tierName(league.tier)} 리그${place} · ${note}`}
     >
       {artFor(art) && <ArtIcon name={art} className="size-10" />}
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-extrabold">
-          {tierName(league.tier)} 리그 · {league.groupSize}가족 중 {league.rank}등
+          {tierName(league.tier)} 리그{place}
         </span>
-        <span className="text-caption text-ink-soft block">
-          이번 달 달성률 {league.rate}% · {league.daysLeft}일 남음
-        </span>
+        <span className="text-caption text-ink-soft block">{note}</span>
       </span>
       <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
     </NavLink>

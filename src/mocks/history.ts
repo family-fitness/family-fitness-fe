@@ -18,7 +18,7 @@ import type {
   StickerLog,
   VerifiedBy,
 } from "@/lib/api/types";
-import { dayOf, daysBefore, today } from "@/lib/today";
+import { dayOf, daysBefore, today, weekdayCode } from "@/lib/today";
 
 import { BASE, DEMO, db, fail, type MissionRow } from "./db";
 
@@ -50,7 +50,7 @@ const MOVES: Record<SessionPhase, string[]> = {
 };
 
 /** 시연 가족의 지난 기록이 있는 사람. 새로 만든 가족은 빈 달력에서 시작한다 */
-function hasHistory(profileId: string) {
+export function hasHistory(profileId: string) {
   if (db.profiles.familyId !== DEMO.familyId) return false;
   return profileId === DEMO.kid || profileId === DEMO.mom;
 }
@@ -58,8 +58,10 @@ function hasHistory(profileId: string) {
 /** 지난 하루. 쉰 날이면 null — 빈 날은 목록에 넣지 않는다 */
 function pastDay(profileId: string, date: string): DayLog | null {
   const r = roll(`${profileId}:${date}`);
+  // 아이는 운동할 수 있는 요일(월 · 수 · 금 · 토)에 주로 한다 — 리그는 잡힌 날로 센다.
   // 엄마는 아이보다 덜 한다. 응원만 하는 날이 많다
-  const rate = profileId === DEMO.kid ? 0.68 : 0.38;
+  const planned = (db.availability[profileId] ?? []).some((s) => s.day === weekdayCode(date));
+  const rate = profileId === DEMO.kid ? (planned ? 0.84 : 0.4) : 0.38;
   // 아이는 어제 · 그제는 늘 했다. 시연을 여는 날 이번 주가 텅 비어 있으면
   // 이어서 하는 모습을 보여 줄 수 없다
   const recent = profileId === DEMO.kid && (date === daysBefore(1) || date === daysBefore(2));

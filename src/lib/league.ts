@@ -41,6 +41,7 @@ export function tierArt(tier: LeagueTier): string {
 /**
  * 순위(1부터)가 달이 바뀔 때 어디로 가는 자리인가.
  * 위 `promote` 자리는 올라가고, 아래 `demote` 자리는 내려가고, 나머지는 그대로.
+ * 묶음이 작으면 둘 다 절반까지만 — 다섯 집에 셋 · 셋이면 3등이 올라가면서 내려간다.
  */
 export function zoneOf(
   rank: number,
@@ -48,7 +49,10 @@ export function zoneOf(
   promote: number,
   demote: number,
 ): "up" | "down" | "stay" {
-  if (rank >= 1 && rank <= promote) return "up";
-  if (demote > 0 && rank > groupSize - demote) return "down";
+  const half = Math.floor(groupSize / 2);
+  const up = Math.min(promote, half);
+  const down = Math.min(demote, half);
+  if (rank >= 1 && rank <= up) return "up";
+  if (down > 0 && rank > groupSize - down) return "down";
   return "stay";
 }
