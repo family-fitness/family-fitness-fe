@@ -60,8 +60,7 @@ function CustomPlan() {
   const router = useRouter();
   const { familyId } = useSession();
   const childProfileId = useRoleStore((s) => s.childProfileId);
-  const { data: family } = useFamilyProfiles(familyId);
-  const { data: availability } = useAvailability(childProfileId ?? undefined);
+  const { data: family, isLoading: familyLoading } = useFamilyProfiles(familyId);
   const moves = useRoutineStore((s) => s.moves);
   const ready = useRoutineReady();
   const { shift, setMinutes, remove, tidy, clear } = useRoutineStore();
@@ -72,6 +71,8 @@ function CustomPlan() {
   const firstKid = kids.find((k) => k.profileId === childProfileId) ?? kids[0];
   const [who, setWho] = useState<Uuid[] | null>(null);
   const chosen = who ?? (firstKid?.profileId ? [firstKid.profileId] : []);
+  // 「운동할 수 있는 날」 점은 지금 짜는 첫 아이의 시간표로 — 기기에 고른 아이가 아니라
+  const { data: availability } = useAvailability(chosen[0]);
   const now = today();
   const [days, setDays] = useState<string[]>([now]);
   const [weeks, setWeeks] = useState<(typeof WEEKS)[number]["value"]>("1");
@@ -384,10 +385,13 @@ function CustomPlan() {
         <div className="card-hero py-3">
           <p className="text-caption text-ink-soft text-center font-semibold">
             {moves.length}개 · {minutes}분 ·{" "}
-            {people
-              .filter((p) => chosen.includes(p.profileId ?? ""))
-              .map((p) => p.name)
-              .join(" · ") || "아무도 안 골랐어요"}
+            {/* 가족을 받는 동안은 「아무도 안 골랐어요」 가 아니다 */}
+            {familyLoading
+              ? "…"
+              : people
+                  .filter((p) => chosen.includes(p.profileId ?? ""))
+                  .map((p) => p.name)
+                  .join(" · ") || "아무도 안 골랐어요"}
           </p>
           {problem && (
             <p role="alert" className="text-signal-deep mt-1 text-center text-sm font-semibold">
