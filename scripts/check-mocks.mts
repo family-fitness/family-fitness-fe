@@ -295,6 +295,9 @@ res = await post(`/profiles/${DEMO.kid}/fitness-tests`, {
 });
 check("동의 철회 후 측정 차단", res.status === 422 && (await codeOf(res)) === "CONSENT_REQUIRED");
 
+res = await post(`/missions/${shared.missionId}/sessions/1/done`, done);
+check("동의 철회 후 운동 기록도 차단", (await codeOf(res)) === "CONSENT_REQUIRED");
+
 /* ─── 6. 쉬는 날 · 이어서 한 날 · 리그 ─────────────────────── */
 
 // 쉬는 날은 건너서 잇는다 — 끊지도 않고 더하지도 않는다(규칙 15)

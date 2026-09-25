@@ -735,6 +735,11 @@ const missions = [
       if (!me) return fail(403, "NOT_A_PARTICIPANT", "이 운동을 하는 사람이 아닙니다");
       // 잡힌 시간의 절반도 안 했으면 끝낸 것으로 치지 않는다
       const planned = (session.minutes ?? 1) * 60;
+      // 동의를 거두면 측정뿐 아니라 활동 저장도 막힌다(규칙 4)
+      const person = db.profiles.profiles.find((p) => p.profileId === body.profileId);
+      if (person && !person.consentGiven) {
+        return fail(422, "CONSENT_REQUIRED", "보호자 동의가 필요합니다");
+      }
       if ((body.activeSeconds ?? 0) < planned * 0.5) {
         return fail(422, "TOO_SHORT", "잡힌 시간의 절반도 하지 않았습니다");
       }
