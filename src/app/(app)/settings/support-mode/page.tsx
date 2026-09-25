@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/app-shell/page-header";
 import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Screen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
+import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import type { SupportMode } from "@/lib/api/types";
@@ -43,7 +44,7 @@ const MODES: {
 function SupportModePageContent() {
   const router = useRouter();
   const params = useSearchParams();
-  const { profile, familyId, isPending } = useSession();
+  const { profile, familyId, isPending, error: sessionError, refetch } = useSession();
   const update = useUpdateSupportMode(profile?.profileId ?? "", familyId ?? "");
   const [error, setError] = useState<string | null>(null);
 
@@ -55,6 +56,17 @@ function SupportModePageContent() {
 
   // 자녀에게는 없는 설정이다 — 부모 화면(ParentOnly)이라 자녀는 여기까지 오지 않는다
   if (isPending) return <SupportSkeleton />;
+  // 누구의 참여 방식인지 못 받으면 셋 다 안 고른 채로 그리지 않는다 — 누르면 엉뚱한 곳에 저장하려 했다
+  if (sessionError) {
+    return (
+      <>
+        <PageHeader title="참여 방식" back={!joining} />
+        <Screen>
+          <ErrorState error={sessionError} onRetry={() => void refetch()} />
+        </Screen>
+      </>
+    );
+  }
 
   const current = profile?.supportMode ?? null;
 

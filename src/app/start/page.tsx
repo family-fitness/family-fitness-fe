@@ -18,7 +18,12 @@ export default function StartPage() {
   const router = useRouter();
   const { profile, familyId, nextStep, isPending, error, refetch } = useSession();
   // 아이가 몇인지 알아야 「아이」 가 갈 곳을 안다 — 오기 전에 누르면 있는 아이를 두고 아이 등록으로 갔다
-  const { data: family, isLoading: familyLoading } = useFamilyProfiles(familyId);
+  const {
+    data: family,
+    isLoading: familyLoading,
+    error: familyError,
+    refetch: refetchFamily,
+  } = useFamilyProfiles(familyId);
 
   const setMode = useRoleStore((s) => s.setMode);
   const setChild = useRoleStore((s) => s.setChild);
@@ -58,11 +63,13 @@ export default function StartPage() {
     router.push(children.length === 0 ? "/start/child" : "/start/who");
   };
 
-  // 누구인지 못 받으면 고를 수 없다 — 모르는 채 「부모」 를 누르면 가족 만들기로 갔다
-  if (error) {
+  // 누구인지 못 받으면 고를 수 없다 — 모르는 채 「부모」 를 누르면 가족 만들기로 갔다.
+  // 가족을 못 받아도 같다 — 아이가 없는 줄 알고 「아이」 가 아이 등록으로 갔다
+  const failure = error ?? (family ? null : familyError);
+  if (failure) {
     return (
       <Stage className="flex min-h-dvh flex-col justify-center">
-        <ErrorState error={error} onRetry={() => void refetch()} />
+        <ErrorState error={failure} onRetry={() => void (error ? refetch() : refetchFamily())} />
       </Stage>
     );
   }

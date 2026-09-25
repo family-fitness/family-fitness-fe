@@ -7,6 +7,7 @@ import { ChoiceButton, WizardShell, WizardSkeleton } from "@/components/app-shel
 import { ArtIcon } from "@/components/ui/art-icon";
 import { Illustration } from "@/components/ui/illustration";
 import { Button } from "@/components/ui/button";
+import { ErrorState } from "@/components/ui/error-state";
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { PhotoPicker } from "@/components/domain/photo-picker";
 import type { SupportMode, Weekday } from "@/lib/api/types";
@@ -99,7 +100,14 @@ const SUPPORT: { value: SupportMode; title: string; art: string }[] = [
 
 export function Onboarding({ mode }: { mode: "family" | "child" }) {
   const router = useRouter();
-  const { familyId, profile, nextStep, isPending: sessionPending } = useSession();
+  const {
+    familyId,
+    profile,
+    nextStep,
+    isPending: sessionPending,
+    error: sessionError,
+    refetch: refetchMe,
+  } = useSession();
   const setBody = useBodyStore((s) => s.set);
   const setPhoto = usePhotoStore((s) => s.set);
   const roleMode = useRoleStore((s) => s.mode);
@@ -399,6 +407,14 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
 
   const common = { step: at, total: steps.length, onBack: back, action, onSubmit: submit };
 
+  // 누구인지 못 받으면 가족이 있는지 모른다 — 모르는 채 만들기 시작하면 끝에서 막힌다
+  if (sessionError) {
+    return (
+      <div className="flex min-h-dvh flex-col justify-center px-5">
+        <ErrorState error={sessionError} onRetry={() => void refetchMe()} />
+      </div>
+    );
+  }
   // 세션을 기다리는 동안 · 이미 가족이 있어 다른 곳으로 보내는 동안
   if (mode === "family" && (sessionPending || hadFamily)) return <WizardSkeleton />;
 
