@@ -15,6 +15,7 @@ import { ClipPlayer } from "@/components/domain/clip-player";
 import { Confetti } from "@/components/scene/confetti";
 import { KiumIsland } from "@/components/scene/kium-island";
 import { StoneTrail } from "@/components/scene/stone-trail";
+import { XpGauge } from "@/components/domain/xp-gauge";
 import type { MissionSession } from "@/lib/api/types";
 import {
   useCompleteSession,
@@ -24,7 +25,7 @@ import {
   useSendCheer,
 } from "@/lib/api/queries";
 import { errorMessage } from "@/lib/errors";
-import { levelProgress, stageOf } from "@/lib/levels";
+import { stageOf } from "@/lib/levels";
 import { newlyUnlocked } from "@/lib/unlocks";
 import { PHASE_LABEL, clock, sessionsOf } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
@@ -585,7 +586,6 @@ function Finish({
   const [feel, setFeel] = useState<Feel | null>(null);
 
   const stage = stageOf(progress?.level);
-  const bar = progress ? levelProgress(progress) : null;
   const leveledUp = progress != null && levelBefore != null && progress.level > levelBefore;
   const opened = newlyUnlocked(levelBefore, progress?.level);
   // 섬에 새로 선 장식이 있으면 나무 다음에 튀어나온다
@@ -640,16 +640,7 @@ function Finish({
             </p>
             {xp > 0 && <p className="text-signal-deep text-sm font-extrabold">+{xp} 경험치</p>}
           </div>
-          <div className="bg-paper mt-2 h-2.5 overflow-hidden rounded-full">
-            <span
-              className="bg-signal block h-full rounded-full transition-[width] duration-700"
-              style={{ width: `${Math.round((bar?.ratio ?? 0) * 100)}%` }}
-            />
-          </div>
-          <p className="text-micro text-ink-soft mt-1.5 font-bold">
-            {stage.name}
-            {bar?.left != null && ` · 다음 레벨까지 ${bar.left}`}
-          </p>
+          <XpGauge progress={progress} track="bg-paper" className="mt-2" />
           {/* 레벨이 올라 새로 열린 것 — 위 섬에 방금 섰다 */}
           {opened.map((u) => (
             <p key={u.id} className="border-line mt-3 border-t pt-3 text-sm">

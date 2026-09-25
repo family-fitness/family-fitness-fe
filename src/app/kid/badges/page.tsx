@@ -8,8 +8,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { AchievementGrid } from "@/components/domain/achievement-grid";
 import { UnlockLadder } from "@/components/domain/unlock-ladder";
+import { XpGauge } from "@/components/domain/xp-gauge";
 import { useProgress } from "@/lib/api/queries";
-import { STAGES, levelProgress, stageOf } from "@/lib/levels";
+import { STAGES, stageOf } from "@/lib/levels";
 import { whenOf } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 import { useRoleStore } from "@/stores/role-store";
@@ -41,7 +42,6 @@ export default function BadgesPage() {
   }
 
   const stage = stageOf(progress.level);
-  const bar = levelProgress(progress);
   const achievements = progress.achievements;
 
   return (
@@ -54,23 +54,7 @@ export default function BadgesPage() {
             Lv.{progress.level}
             <span className="metric-unit">{stage.name}</span>
           </p>
-          <div
-            className="bg-signal-soft mt-3 h-3 overflow-hidden rounded-full"
-            role="progressbar"
-            aria-label="다음 레벨까지"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(bar.ratio * 100)}
-          >
-            <span
-              className="bg-signal block h-full rounded-full"
-              style={{ width: `${Math.round(bar.ratio * 100)}%` }}
-            />
-          </div>
-          <p className="text-caption text-ink-soft mt-1.5 font-bold">
-            경험치 {progress.xp}
-            {bar.left == null ? " · 가장 높은 레벨이에요" : ` · 다음 레벨까지 ${bar.left}`}
-          </p>
+          <XpGauge progress={progress} className="mt-3" />
 
           {/* 다섯 모습 — 지금 모습만 진하게. 앞으로 될 모습은 흐리게 미리 보인다 */}
           <ol className="mt-4 grid grid-cols-5 gap-1" aria-label="키움이가 자라는 모습">
