@@ -9,7 +9,6 @@ import { KiumIsland } from "@/components/scene/kium-island";
 import { errorMessage } from "@/lib/errors";
 import { useDevLogin, useGoogleLogin } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
-import { cn } from "@/lib/utils";
 
 /** 로그인. */
 /**
@@ -19,9 +18,9 @@ import { cn } from "@/lib/utils";
  * 앱이 돌고 있었고, 처음 쓰는 사람이 겪는 화면은 아무도 안 봤다.
  */
 const DEV_ACCOUNTS = [
-  { id: "demo-fresh", label: "새 계정 · 가족 없음", hint: "가족 만들기부터" },
-  { id: "demo-parent", label: "은영 · 가족 3명", hint: "쓰던 가족" },
-  { id: "demo-newcomer", label: "초대받은 계정", hint: "코드를 넣어야 붙는다" },
+  { id: "demo-fresh", label: "새 계정 · 가족 없음" },
+  { id: "demo-parent", label: "은영 · 가족 3명" },
+  { id: "demo-newcomer", label: "초대받은 계정" },
 ];
 
 /** 구글이 돌아올 자리. 인가코드는 이 주소로 붙어서 온다 */
@@ -140,18 +139,7 @@ function LoginContent() {
                   loading={devLogin.isPending}
                   onClick={() => enter(account.id)}
                 >
-                  <span className="min-w-0 flex-1 text-left">
-                    {account.label}
-                    {/* 파랑 단추 위에서 회색 글자는 1:1 로 사라졌다 */}
-                    <span
-                      className={cn(
-                        "ml-1.5 text-xs font-bold",
-                        primary ? "text-white" : "text-ink-soft",
-                      )}
-                    >
-                      {account.hint}
-                    </span>
-                  </span>
+                  <span className="min-w-0 flex-1 text-left">{account.label}</span>
                 </Button>
               );
             })}

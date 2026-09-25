@@ -15,7 +15,7 @@ import { VideoThumb } from "@/components/ui/video-thumb";
 import { ChildSwitch } from "@/components/domain/child-switch";
 import { DayRings } from "@/components/domain/day-rings";
 import { StickerArt } from "@/components/domain/sticker-art";
-import type { DayLog, Mission, MissionSession, ProfileWithSex } from "@/lib/api/types";
+import type { DayLog, Mission, ProfileWithSex } from "@/lib/api/types";
 import { useCalendar, useFamilyProfiles, useFitnessMap, useMissions } from "@/lib/api/queries";
 import { daySummary, didSomething, isRealDate, plannedDay, plannedOn } from "@/lib/day";
 import { callName } from "@/lib/family";
@@ -419,22 +419,13 @@ function Leader({ label, value }: { label: string; value: string }) {
 }
 
 /**
- * 칸 하나의 그림 — 영상이 있으면 썸네일, 없으면 준비 · 본 · 정리 조각.
- * 조각은 셋 다 같은 회색이다. 「본」 만 파랑으로 채웠더니 고른 칸처럼 보였다.
+ * 칸 하나의 그림 — 영상이 있으면 썸네일. 없으면 두지 않는다 — 회색 칸에 「준비 · 본 · 정리」 를 적으면
+ * 둥근 바탕 안의 글자가 되고(9/25), 바로 아래 줄(「준비운동 · 1분」)과 같은 말을 한 번 더 한다.
+ * 한 운동의 칸은 모두 영상이 있거나 모두 없어서 줄이 어긋나지 않는다.
  */
-function Thumb({ videoId, phase }: { videoId?: string | null; phase: MissionSession["phase"] }) {
-  if (videoId)
-    return <VideoThumb videoId={videoId} className="aspect-video w-20 shrink-0 rounded-xl" />;
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "text-caption bg-sub text-ink-soft grid aspect-video w-20 shrink-0 place-items-center rounded-xl font-extrabold",
-      )}
-    >
-      {PHASE_LABEL[phase].replace("운동", "")}
-    </span>
-  );
+function Thumb({ videoId }: { videoId?: string | null }) {
+  if (!videoId) return null;
+  return <VideoThumb videoId={videoId} className="aspect-video w-20 shrink-0 rounded-xl" />;
 }
 
 /** 그날 한 운동 한 개 — 칸마다 한 줄. 칸 없이 직접 적은 것(걷기 등)은 무엇으로 확인했는지만 */
@@ -462,7 +453,7 @@ function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; missi
           const clip = clips.find((c) => c.title === s.title)?.clip ?? clips[i]?.clip;
           return (
             <li key={`${s.title}-${i}`} className="flex items-center gap-3">
-              <Thumb videoId={mission ? clip?.videoId : null} phase={s.phase} />
+              <Thumb videoId={mission ? clip?.videoId : null} />
               <span className={cn("min-w-0 flex-1", !s.done && "opacity-50")}>
                 <span className="block truncate text-sm font-bold">{s.title}</span>
                 <span className="text-caption text-ink-soft block">
@@ -514,7 +505,7 @@ function PlannedRows({
       <ul className="mt-2 space-y-2">
         {sessions.map((s) => (
           <li key={s.position} className="flex items-center gap-3">
-            <Thumb videoId={s.clip?.videoId} phase={s.phase} />
+            <Thumb videoId={s.clip?.videoId} />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-bold">{s.title}</span>
               <span className="text-caption text-ink-soft block">
