@@ -51,11 +51,18 @@ function dayXp(log: DayLog): number {
   return done * XP.SESSION + (allDone ? XP.DAY_DONE : 0);
 }
 
-/** 오늘부터 거꾸로, 움직인 날이 며칠 이어지나. 오늘 아직이면 어제부터 센다 */
-function streakOf(active: Set<string>): number {
-  const start = active.has(today()) ? 0 : 1;
+/**
+ * 오늘부터 거꾸로, 움직인 날이 며칠 이어지나. 오늘 아직이면 어제부터 센다.
+ * 쉬는 날 카드를 쓴 날은 **건너서 잇는다** — 끊지도 않고 더하지도 않는다(규칙 15). 더하면 카드를 쓸수록
+ * 「N일째 이어서」 가 늘고, 한 번도 안 움직인 사람도 이어서 한 사람이 된다.
+ */
+export function streakOf(active: Set<string>, rest: Set<string>): number {
   let n = 0;
-  while (active.has(daysBefore(start + n))) n += 1;
+  for (let back = 0; back < 400; back++) {
+    const d = daysBefore(back);
+    if (active.has(d)) n += 1;
+    else if (!rest.has(d) && back > 0) break;
+  }
   return n;
 }
 
@@ -93,7 +100,7 @@ export function progressOf(profileId: string): ProgressView {
   ].filter((e) => e.amount > 0);
 
   // 목의 기록은 지난 3주뿐이라 그 전에 한 운동이 경험치에서 빠진다. 시연 가족의 아이는 그 몫을 한 줄로
-  // 더해, 오늘 것을 빼고 셌을 때 Lv.6(연못) 이상 다음 레벨에 딱 30 모자라게 선다
+  // 더해, 오늘 것을 빼고 셌을 때 Lv.6(풍차) 이상 다음 레벨에 딱 30 모자라게 선다
   if (profileId === DEMO.kid && db.profiles.familyId === DEMO.familyId) {
     // 어제까지 받은 것만 센다 — 오늘 받은 것(운동 · 스티커 · 다시 재기)은 시연 몫에 먹히지 않고 그대로 는다
     const base = events.filter((e) => dayOf(e.at) < today()).reduce((sum, e) => sum + e.amount, 0);
@@ -116,8 +123,8 @@ export function progressOf(profileId: string): ProgressView {
     xp,
     levelFloorXp: LEVEL_FLOOR[level - 1],
     nextLevelXp: level < LEVEL_FLOOR.length ? LEVEL_FLOOR[level] : null,
-    // 쉬는 날 카드를 쓴 날은 이어 붙인다 — 쉬기로 한 날에 끊기면 카드가 뜻이 없다
-    streakDays: streakOf(new Set([...active, ...db.restDays])),
+    // 쉬는 날 카드를 쓴 날은 건너서 잇는다 — 쉬기로 한 날에 끊기면 카드가 뜻이 없다
+    streakDays: streakOf(active, new Set(db.restDays)),
     activeDays: active.size,
     achievements: achievementsOf(
       profileId,
@@ -154,12 +161,15 @@ function achievementsOf(
     }
     return undefined;
   };
-  // 이어서 n 일이 처음 된 날
+  // 이어서 n 일이 처음 된 날. 사이가 쉬는 날뿐이면 잇는다 — 「N일째 이어서」 칩과 같은 셈
+  const rest = new Set(db.restDays);
   const streakReached = (n: number) => {
     let run = 0;
     let prev: string | null = null;
     for (const l of sorted) {
-      run = prev && daysBefore(1, l.date) === prev ? run + 1 : 1;
+      let gap = daysBefore(1, l.date);
+      while (prev && gap > prev && rest.has(gap)) gap = daysBefore(1, gap);
+      run = prev && gap === prev ? run + 1 : 1;
       prev = l.date;
       if (run >= n) return l.date;
     }
