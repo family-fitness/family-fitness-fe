@@ -93,11 +93,18 @@ export default function FuturePage() {
     );
   }
 
-  // 한 항목 · 지금대로(MAINTAIN)의 점만 — 여러 항목 · 여러 갈래가 섞이면 한 선에 이어 그려진다
+  // 한 항목 · 지금대로(MAINTAIN)의 점만 — 여러 항목 · 여러 갈래가 섞이면 한 선에 이어 그려진다.
+  // 띠(p10~p90)가 없는 점은 쓰지 않는다 — 그림이 서지 않는데 아래 줄에 가운데 값만 남으면 정해진 앞날처럼 읽힌다(규칙 3)
   const code = result?.points?.[0]?.itemCode;
   const points = (result?.points ?? []).filter(
-    (p) => (p.scenario ?? "MAINTAIN") === "MAINTAIN" && p.itemCode === code,
+    (p) =>
+      (p.scenario ?? "MAINTAIN") === "MAINTAIN" &&
+      p.itemCode === code &&
+      p.p10 != null &&
+      p.p50 != null &&
+      p.p90 != null,
   );
+  const drawn = points.length >= 2;
   const first = points.find((p) => p.yearsFromNow === 0);
   const last = [...points].sort((a, b) => (b.yearsFromNow ?? 0) - (a.yearsFromNow ?? 0))[0];
 
@@ -123,14 +130,17 @@ export default function FuturePage() {
           )}
 
           {create.isPending && !result && <Skeleton className="mt-4 h-50 w-full rounded-xl" />}
-          {result && points.length > 0 && (
+          {result && drawn && (
             <div className="mt-3">
               <TrajectoryChart points={points} unit={unit} />
             </div>
           )}
+          {result && !drawn && (
+            <p className="text-ink-soft mt-4 text-sm font-semibold">지금은 계산할 수 없어요</p>
+          )}
         </section>
 
-        {result && points.length > 0 && (
+        {result && drawn && (
           <>
             {first && last && (
               <dl className="card divide-rows py-1">
@@ -148,12 +158,10 @@ export default function FuturePage() {
                       {last.p50}
                       <span className="text-ink-soft ml-0.5 text-sm font-bold">{unit}</span>
                     </span>
-                    {last.p10 != null && last.p90 != null && (
-                      <span className="text-faint text-caption block">
-                        열에 여덟은 {last.p10}~{last.p90}
-                        {unit}
-                      </span>
-                    )}
+                    <span className="text-faint text-caption block">
+                      열에 여덟은 {last.p10}~{last.p90}
+                      {unit}
+                    </span>
                   </dd>
                 </div>
               </dl>
