@@ -20,6 +20,7 @@ import { XpGauge } from "@/components/domain/xp-gauge";
 import { ApiError } from "@/lib/api/client";
 import type { MissionSession } from "@/lib/api/types";
 import {
+  useCheers,
   useCompleteSession,
   useFamilyProfiles,
   useMissions,
@@ -31,6 +32,7 @@ import { stageOf } from "@/lib/levels";
 import { newlyUnlocked } from "@/lib/unlocks";
 import { PHASE_LABEL, clock, sessionsOf } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
+import { dayOf, today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useVoice } from "@/lib/voice";
 import { usePrefsStore } from "@/stores/prefs-store";
@@ -709,7 +711,16 @@ function Finish({
   const { data: progress, isFetching } = useProgress(kidId || undefined);
   const { data: family } = useFamilyProfiles(familyId);
   const send = useSendCheer(familyId);
-  const [told, setTold] = useState(false);
+  // 다 한 운동을 다시 열었으면 오늘 벌써 알렸는지 본다 — 또 알리면 부모에게 같은 말이 두 번 간다
+  const { data: sent } = useCheers(fresh ? undefined : familyId);
+  const toldBefore =
+    !fresh &&
+    (sent?.cheers ?? []).some(
+      (c) =>
+        c.fromProfileId === kidId && c.missionId === missionId && dayOf(c.createdAt) === today(),
+    );
+  const [toldNow, setToldNow] = useState(false);
+  const told = toldNow || toldBefore;
   const [error, setError] = useState<string | null>(null);
   /** 어땠어요 — 고르면 엄마 · 아빠한테 가는 말에 붙는다. 안 골라도 된다 */
   const [feel, setFeel] = useState<Feel | null>(null);
@@ -736,7 +747,7 @@ function Finish({
           }),
         ),
       );
-      setTold(true);
+      setToldNow(true);
     } catch (e) {
       setError(errorMessage(e, "알리지 못했어요. 다시 해 볼까요?"));
     }
