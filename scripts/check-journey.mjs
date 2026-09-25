@@ -321,7 +321,11 @@ await step("대시보드 → 초대 코드 만들기", async () => {
   if (await make.count()) {
     await make.click();
     // 만든 코드 여섯 자리가 크게 뜬다
-    await page.getByRole("dialog").getByText(/^[A-Z0-9]{6}$/).first().waitFor({ timeout: 8000 });
+    await page
+      .getByRole("dialog")
+      .getByText(/^[A-Z0-9]{6}$/)
+      .first()
+      .waitFor({ timeout: 8000 });
   }
 });
 await shot("invite-code");
