@@ -43,7 +43,12 @@ export function AppBar({
   ) : (
     <button
       type="button"
-      onClick={() => (onBack ? onBack() : router.back())}
+      onClick={() => {
+        if (onBack) onBack();
+        // 알림 · 링크로 곧장 열어 되돌아갈 기록이 없으면 첫 화면으로 — 눌러도 아무 일이 없으면 갇힌 것 같다
+        else if (window.history.length > 1) router.back();
+        else router.replace("/");
+      }}
       aria-label="뒤로"
       className="press text-ink-soft grid size-10 shrink-0 place-items-center rounded-full"
     >

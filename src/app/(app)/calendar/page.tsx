@@ -50,8 +50,9 @@ function Calendar() {
   const router = useRouter();
   const params = useSearchParams();
   const kidView = useIsKidView();
-  const { familyId, isPending, error: sessionError } = useSession();
-  const { data: map, isPending: mapPending, error: mapError, refetch } = useFitnessMap(familyId);
+  const { familyId, isPending, error: sessionError, refetch: refetchMe } = useSession();
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
+  const { data: map, isLoading: mapLoading, error: mapError, refetch } = useFitnessMap(familyId);
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
 
@@ -65,17 +66,10 @@ function Calendar() {
   const suffix = asked && asked === who?.profileId ? `?profileId=${encodeURIComponent(asked)}` : "";
 
   const now = today();
-  // 주소창 값은 믿지 않는다 — 모양이 틀리면 이번 달로.
-  // 예전 알림은 날짜만 싣고 온다(`?date=`). 그 날짜가 든 달을 연다
+  // 주소창 값은 믿지 않는다 — 모양이 틀리면 이번 달로
   const askedMonth = params.get("month");
-  const askedDate = params.get("date");
-  const validDate = askedDate && /^\d{4}-\d{2}-\d{2}$/.test(askedDate) ? askedDate : null;
   const month =
-    askedMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(askedMonth)
-      ? askedMonth
-      : validDate
-        ? monthOf(validDate)
-        : monthOf(now);
+    askedMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(askedMonth) ? askedMonth : monthOf(now);
   const grid = monthGrid(month);
 
   const {
@@ -85,10 +79,10 @@ function Calendar() {
     refetch: refetchCalendar,
   } = useCalendar(familyId, who?.profileId ?? undefined, { from: grid.from, to: grid.to });
   const logs = new Map((calendar?.days ?? []).map((d) => [d.date, d]));
-  // 앞으로 잡힌 운동 — 이 아이가 하는 것만. 걸음수는 넣지 않는다(규칙 2)
-  const { data: active } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
+  // 앞으로 잡힌 운동 — 이 아이가 하는 것만. 걸음수는 넣지 않는다(규칙 2). 하루 기록과 같은 목록(ALL)을 쓴다
+  const { data: missions } = useMissions(familyId, { scope: "ALL" });
   const planned = new Set(
-    (active?.missions ?? [])
+    (missions?.missions ?? [])
       .filter((m) => m.participants?.some((p) => p.profileId === who?.profileId))
       .map((m) => plannedDay(m, now))
       .filter((d): d is string => Boolean(d)),
@@ -106,12 +100,15 @@ function Calendar() {
       <>
         <AppBar backHref={back} title="캘린더" />
         <Stage wide>
-          <ErrorState error={failure} onRetry={() => void refetch()} />
+          <ErrorState
+            error={failure}
+            onRetry={() => void (sessionError ? refetchMe() : refetch())}
+          />
         </Stage>
       </>
     );
   }
-  if (isPending || mapPending) return <CalendarSkeleton />;
+  if (isPending || mapLoading) return <CalendarSkeleton />;
 
   // 볼 아이가 없다 — 빈 달력을 기다리게 두지 않는다
   if (!who) {
@@ -197,7 +194,8 @@ function Calendar() {
                   <DayCell
                     date={date}
                     log={logs.get(date)}
-                    planned={planned.has(date)}
+                    // 쉬기로 한 날에는 운동이 잡혀 있어도 점선 고리를 두지 않는다(규칙 15)
+                    planned={planned.has(date) && !logs.get(date)?.rest}
                     future={date > now}
                     isToday={date === now}
                     loading={calendarPending}

@@ -55,8 +55,9 @@ function Day() {
   const date = isRealDate(params.date) ? params.date : now;
 
   const kidView = useIsKidView();
-  const { familyId, isPending, error: sessionError } = useSession();
-  const { data: map, isPending: mapPending, error: mapError, refetch } = useFitnessMap(familyId);
+  const { familyId, isPending, error: sessionError, refetch: refetchMe } = useSession();
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
+  const { data: map, isLoading: mapLoading, error: mapError, refetch } = useFitnessMap(familyId);
   const { data: family } = useFamilyProfiles(familyId);
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
@@ -75,7 +76,7 @@ function Day() {
     refetch: refetchCalendar,
     isRefetching,
   } = useCalendar(familyId, who?.profileId ?? undefined, { from: week.from, to: week.to });
-  const { data: active } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
+  // 한 번만 받는다 — 앞으로 할 것도 이 목록에서 날짜로 고른다(전에는 ACTIVE 와 ALL 을 둘 다 받았다)
   const { data: all } = useMissions(familyId, { scope: "ALL" });
 
   const back = kidView ? "/kid" : "/parent";
@@ -85,12 +86,15 @@ function Day() {
       <>
         <AppBar backHref={back} title="하루 기록" />
         <Stage wide>
-          <ErrorState error={failure} onRetry={() => void refetch()} />
+          <ErrorState
+            error={failure}
+            onRetry={() => void (sessionError ? refetchMe() : refetch())}
+          />
         </Stage>
       </>
     );
   }
-  if (isPending || mapPending) return <DaySkeleton back={back} />;
+  if (isPending || mapLoading) return <DaySkeleton back={back} />;
   // 볼 아이가 없다 — 아이가 아직 누구인지 안 골랐거나, 가족에 아이가 없다. 빈 칸을 기다리게 두지 않는다
   if (!who) {
     return (
@@ -119,11 +123,14 @@ function Day() {
   const summary = daySummary(log);
   // 한 칸이라도 한 것만 「한 운동」. 아직 시작 안 한 오늘 운동은 「할 운동」 이다
   const doneEntries = (log?.entries ?? []).filter(didSomething);
-  const planned = plannedOn(active?.missions ?? [], who.profileId ?? undefined, date, now).filter(
-    (m) => !doneEntries.some((e) => e.missionId === m.missionId),
-  );
+  // 쉬기로 한 날에는 할 운동을 늘어놓지 않는다 — 쉬는 날에 운동을 권하지 않는다(규칙 15)
+  const planned = log?.rest
+    ? []
+    : plannedOn(all?.missions ?? [], who.profileId ?? undefined, date, now).filter(
+        (m) => !doneEntries.some((e) => e.missionId === m.missionId),
+      );
   const plannedDays = new Set(
-    (active?.missions ?? [])
+    (all?.missions ?? [])
       .filter((m) => m.participants?.some((p) => p.profileId === who.profileId))
       .map((m) => plannedDay(m, now))
       .filter((d): d is string => Boolean(d)),
@@ -217,7 +224,7 @@ function Day() {
                   type="button"
                   onClick={() => go(d)}
                   disabled={!open(d)}
-                  aria-pressed={d === date}
+                  aria-current={d === date ? "date" : undefined}
                   aria-label={`${longDate(d)}${day && day.minutes > 0 ? ` · ${day.minutes}분` : ""}${got ? ` · ${got.label} 스티커` : ""}`}
                   className="press flex w-full flex-col items-center gap-1 disabled:opacity-40"
                 >
@@ -255,10 +262,10 @@ function Day() {
           <Skeleton className="h-[26rem] w-full rounded-3xl" />
         ) : (
           <section className="card-hero">
-            {/* 쉬는 날 카드를 쓴 날 — 빈 날이 아니라 쉬기로 한 날이다 */}
-            {log?.rest && (
+            {/* 쉬는 날 카드를 쓴 날 — 빈 날이 아니라 쉬기로 한 날이다. 그날 움직였으면 한 것이 먼저다(달력 칸과 같게) */}
+            {log?.rest && summary.moved === 0 && (
               <p className="text-caption text-ink-soft mb-2 text-center font-extrabold">
-                쉬기로 한 날 · 쉬는 날 카드
+                쉬기로 한 날
               </p>
             )}
             <div className="grid place-items-center pt-2">
@@ -343,9 +350,9 @@ function Day() {
         {log && log.stickers.length > 0 && (
           <Card>
             <CardHead title="받은 칭찬" />
-            <ul className="mt-2 space-y-2">
+            <ul className="divide-rows mt-1">
               {log.stickers.map((st) => (
-                <li key={st.cheerId} className="bg-sub flex items-center gap-4 rounded-2xl p-3">
+                <li key={st.cheerId} className="flex items-center gap-4 py-3">
                   <StickerArt id={st.stickerId} className="size-20 shrink-0" />
                   <div className="min-w-0">
                     <p className="text-lead font-extrabold">
@@ -438,8 +445,12 @@ function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; missi
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-extrabold">{entry.title}</span>
           <span className="text-caption text-ink-soft block">
-            {entry.minutes > 0 && `${entry.minutes}분 · `}
-            {entry.verifiedBy ? VERIFIED_COPY[entry.verifiedBy] : ""}
+            {[
+              entry.minutes > 0 && `${entry.minutes}분`,
+              entry.verifiedBy && VERIFIED_COPY[entry.verifiedBy],
+            ]
+              .filter(Boolean)
+              .join(" · ")}
           </span>
         </span>
         {entry.completed && <Done />}
@@ -471,12 +482,10 @@ function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; missi
   );
 }
 
-/** 했다는 표시 — 초록은 해낸 자리에만 */
+/** 했다는 표시 — 초록 체크 하나. 둥근 면에 넣지 않는다. 초록은 해낸 자리에만 */
 function Done() {
   return (
-    <span className="bg-done-soft text-done grid size-7 shrink-0 place-items-center rounded-full">
-      <Check aria-label="했어요" className="size-4" strokeWidth={3} />
-    </span>
+    <Check role="img" aria-label="했어요" className="text-done size-5 shrink-0" strokeWidth={3} />
   );
 }
 
@@ -495,7 +504,9 @@ function PlannedRows({
     <li>
       <p className="text-sm font-extrabold">
         {mission.title}
-        <span className="text-ink-soft ml-1.5 font-bold">{totalMinutes(sessions)}분</span>
+        {totalMinutes(sessions) > 0 && (
+          <span className="text-ink-soft ml-1.5 font-bold">{totalMinutes(sessions)}분</span>
+        )}
       </p>
       {together && (
         <p className="text-caption text-ink-soft mt-0.5 font-semibold">

@@ -15,7 +15,7 @@ import { useAuthStore } from "@/stores/auth-store";
  * 보호자 프로필이 있으면 그것이 나다. 자녀 계정에는 자기 프로필 하나뿐이다.
  */
 export function useSession() {
-  const { data, isPending, error } = useMe();
+  const { data, isPending, error, refetch } = useMe();
 
   const profile = useMemo(() => {
     const profiles = data?.profiles ?? [];
@@ -25,6 +25,8 @@ export function useSession() {
   return {
     isPending,
     error,
+    /** `/me` 를 다시 부른다 — 이게 실패했을 때 다른 조회를 다시 불러 봐야 소용없다 */
+    refetch,
     /** 앱 진입 시 어디로 보낼지 — CREATE_FAMILY · CLAIM · SUPPORT_MODE · HOME */
     nextStep: data?.nextStep,
     profile,
