@@ -86,6 +86,11 @@ function proposalFor(p: PlanParams, focus: string, runId: string) {
   const sessions = sessionsFor(focus, p.minutes, { quiet: p.quiet, skip: runId.charCodeAt(0) % 7 });
   const kid = nameOf(p.profileId);
   const first = sessions.find((s) => s.phase === "MAIN") ?? sessions[0];
+  // 같이 하는 사람은 지금 짜는 보호자 — 새 가족에서 시연 가족 엄마가 들어가지 않게
+  const parentId = acting()?.role === "PARENT" ? acting()?.profileId : undefined;
+  // 처방 근거는 그 아이의 연령대로
+  const ageGroup =
+    db.profiles.profiles.find((x) => x.profileId === p.profileId)?.ageGroup ?? "유소년";
   return {
     position: 0,
     title: `${focus} 키우기 ${p.minutes}분`,
@@ -99,15 +104,15 @@ function proposalFor(p: PlanParams, focus: string, runId: string) {
     participants: [
       { profileId: p.profileId, role: "CHILD", coachRole: "주인공" },
       ...(p.withParent
-        ? [{ profileId: DEMO.mom, role: "PARENT", coachRole: "같이 하는 사람" }]
+        ? [{ profileId: parentId ?? DEMO.mom, role: "PARENT", coachRole: "같이 하는 사람" }]
         : []),
     ],
     video: null,
     citations: [
       {
         index: 1,
-        label: "국민체력100 운동처방 · 유소년 11세",
-        chunkId: `prescription:유소년-11-${focus}`,
+        label: `국민체력100 운동처방 · ${ageGroup}`,
+        chunkId: `prescription:${ageGroup}-${focus}`,
         url: null,
       },
       {
