@@ -24,9 +24,9 @@ import { useSession } from "@/lib/session";
 export default function FuturePage() {
   const router = useRouter();
   const { profileId } = useParams<{ profileId: string }>();
-  const { familyId } = useSession();
+  const { familyId, error: sessionError, refetch: refetchMe } = useSession();
   // 가족 전체에서 찾는다 — 연령대를 알아야 항목 이름과 단위를 붙일 수 있다
-  const { data: family } = useFamilyProfiles(familyId);
+  const { data: family, error: familyError, refetch: refetchFamily } = useFamilyProfiles(familyId);
   const profile = family?.profiles?.find((p) => p.profileId === profileId);
 
   const {
@@ -46,6 +46,9 @@ export default function FuturePage() {
   const hasTest = Boolean(latest?.fitnessTestId);
   // 누구인지 받기 전에는 모른다 — 모르는 채 「첫 측정 하기」 를 먼저 세우면 만 4세 미만에게 번쩍 뜬다(규칙 4)
   const measurable = profile != null && profile.measurable !== false;
+  // 누구인지 못 받았으면 단추를 세울지 모른다 — 말없이 비우지 않고 다시 불러오기
+  const unknownWho = profile == null && Boolean(sessionError ?? familyError);
+  const retryWho = () => void (sessionError ? refetchMe() : refetchFamily());
 
   /** 조회 엔드포인트가 없어서 들어오면 만든다(POST). **한 번만 만들어야 한다.** */
   const requested = useRef(false);
@@ -82,10 +85,20 @@ export default function FuturePage() {
             title="아직 재지 않았어요"
             action={
               // 만 4세 미만은 잴 수 없다 — 단추를 끄지 않고 없앤다(규칙 4)
-              measurable && (
+              measurable ? (
                 <Button size="md" onClick={() => router.push(`/p/${profileId}/measure`)}>
                   첫 측정 하기
                 </Button>
+              ) : (
+                unknownWho && (
+                  <button
+                    type="button"
+                    onClick={retryWho}
+                    className="press text-signal-strong min-h-11 px-2 text-sm font-extrabold"
+                  >
+                    다시 불러오기
+                  </button>
+                )
               )
             }
           />

@@ -26,10 +26,10 @@ export default function ResultPage() {
   const { profileId } = useParams<{ profileId: string }>();
   // 첫 시작 → 측정 → 결과는 전부 바꿔치기다. 뒤로는 홈으로(앱을 나가지 않게)
   const nav = useSearchParams().get("from") === "start" ? { backHref: "/parent" } : { back: true };
-  const { familyId } = useSession();
+  const { familyId, error: sessionError, refetch: refetchMe } = useSession();
   // 가족 전체에서 찾는다. `/me` 는 이 계정이 관리하는 프로필만이라 자녀가 자기 계정을 가지면 거기서 빠진다
-  const { data: family } = useFamilyProfiles(familyId);
-  const { data: map } = useFitnessMap(familyId);
+  const { data: family, error: familyError, refetch: refetchFamily } = useFamilyProfiles(familyId);
+  const { data: map, error: mapError, refetch: refetchMap } = useFitnessMap(familyId);
   const member = map?.members?.find((m) => m.profileId === profileId);
   const profile = family?.profiles?.find((p) => p.profileId === profileId);
 
@@ -52,6 +52,13 @@ export default function ResultPage() {
   // 누구인지 받기 전에는 세우지 않는다 — 만 4세 미만에게 측정 단추가 번쩍 떴다
   const who = profile ?? member;
   const measurable = who != null && who.measurable !== false;
+  // 누구인지 못 받았으면(나 · 가족을 못 받음) 단추를 세울지 모른다 — 말없이 비우지 않고 다시 불러오기
+  const unknownWho = who == null && Boolean(sessionError ?? familyError ?? mapError);
+  const retryWho = () => {
+    if (sessionError) return void refetchMe();
+    void refetchFamily();
+    void refetchMap();
+  };
 
   // 이력이 없어도 404 가 아니다. fitnessTestId 가 null 로 온다
   if (!test || test.fitnessTestId == null) {
@@ -63,13 +70,23 @@ export default function ResultPage() {
             scene="no-record"
             title="아직 재지 않았어요"
             action={
-              measurable && (
+              measurable ? (
                 <Link
                   href={`/p/${profileId}/measure`}
                   className="press bg-signal-strong text-body mt-1 rounded-xl px-5 py-3 font-bold text-white"
                 >
                   첫 측정 하기
                 </Link>
+              ) : (
+                unknownWho && (
+                  <button
+                    type="button"
+                    onClick={retryWho}
+                    className="press text-signal-strong min-h-11 px-2 text-sm font-extrabold"
+                  >
+                    다시 불러오기
+                  </button>
+                )
               )
             }
           />
