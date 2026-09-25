@@ -15,7 +15,7 @@ import type { FamilyLeague, RestDays } from "@/lib/api/types";
 import { daysBefore, monthOf, today, weekdayCode } from "@/lib/today";
 
 import { BASE, DEMO_SCHEDULE, db, fail, saveRestDays } from "./db";
-import { dayLogFor, hasHistory } from "./history";
+import { dayLogFor, hasHistory, standsOn } from "./history";
 
 /** 한 달에 주는 쉬는 날 카드 */
 const REST_PER_MONTH = 2;
@@ -67,12 +67,9 @@ function daysLeftIn(date: string): number {
  * 지금 시간표로 세면 시간표를 고치는 순간 지난 달성률이 바뀐다
  */
 function planned(profileId: string, date: string): boolean {
+  // 달력과 같은 셈 — 여러 날짜리는 오늘과 한 날에만 잡힌 날이다(standsOn)
   const registered = db.missions.some(
-    (m) =>
-      m.targetMetric !== "STEPS" &&
-      (m.startDate ?? "") <= date &&
-      date <= (m.endDate ?? "") &&
-      m.participants?.some((p) => p.profileId === profileId),
+    (m) => m.targetMetric !== "STEPS" && standsOn(m, profileId, date),
   );
   if (registered) return true;
   if (!hasHistory(profileId)) return false;

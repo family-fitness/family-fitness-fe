@@ -116,17 +116,20 @@ function pastDay(profileId: string, date: string): DayLog | null {
 const spans = (m: MissionRow) => (m.endDate ?? m.startDate) !== m.startDate;
 
 /**
- * 그날 등록된 운동에서 한 것 — 오늘이든 지난날이든.
- * 여러 날짜리는 오늘(하는 중)과, 지난날이면 그날 끝낸 칸이 있는 날에만 선다 — 전에는 기간 안의 날마다
- * 같은 끝냄이 되풀이되어, 한 번 한 운동이 날마다 한 것이 되고 연속 · 나무 · 리그까지 부풀었다
+ * 이 사람의 운동이 그날에 서는가 — 달력 · 리그 · 경험치가 이 하나로 센다.
+ * 하루짜리는 그날. 여러 날짜리는 오늘(하는 중)과, 지난날이면 그날 끝낸 칸이 있는 날에만 —
+ * 기간 안의 날마다 세우면 한 번 한 운동이 날마다 한 것(또는 날마다 안 한 것)이 되어 연속 · 나무 · 리그가 틀어졌다
  */
+export function standsOn(m: MissionRow, profileId: string, date: string): boolean {
+  const me = participantOf(m, profileId);
+  if (!me || date < (m.startDate ?? "") || date > (m.endDate ?? m.startDate ?? "")) return false;
+  if (!spans(m) || date === today()) return true;
+  return Object.values(me.doneOn ?? {}).includes(date);
+}
+
+/** 그날 등록된 운동에서 한 것 — 오늘이든 지난날이든 */
 function liveDay(profileId: string, date: string): DayLog | null {
-  const live = db.missions.filter((m) => {
-    const me = participantOf(m, profileId);
-    if (!me || date < (m.startDate ?? "") || date > (m.endDate ?? m.startDate ?? "")) return false;
-    if (!spans(m) || date === today()) return true;
-    return Object.values(me.doneOn ?? {}).includes(date);
-  });
+  const live = db.missions.filter((m) => standsOn(m, profileId, date));
   if (live.length === 0) return null;
 
   const entries: DayEntry[] = live.map((m) => entryOf(m, profileId, date));
@@ -152,6 +155,11 @@ function entryOf(m: MissionRow, profileId: string, date: string): DayEntry {
     !spans(m) || !me?.doneOn?.[s.position] || me.doneOn[s.position] === date;
   const isDone = (s: MissionSession) =>
     (Boolean(me?.completed) && !spans(m)) || (done.has(s.position) && onDay(s));
+  // 여러 날짜리를 다 한 것은 마지막 칸을 끝낸 날 하루에만 — 날마다 「다 했어요」 로 세지 않는다
+  const lastDay = Object.values(me?.doneOn ?? {})
+    .sort()
+    .at(-1);
+  const completed = Boolean(me?.completed) && (!spans(m) || !lastDay || lastDay === date);
   // 칸이 있으면 끝낸 칸의 시간을 더하고, 없으면 진행률로 셈한다
   const minutes =
     sessions.length > 0
@@ -162,7 +170,7 @@ function entryOf(m: MissionRow, profileId: string, date: string): DayEntry {
     title: m.title ?? "운동",
     minutes: m.targetMetric === "STEPS" ? 0 : minutes,
     verifiedBy: me?.verifiedBy ?? null,
-    completed: Boolean(me?.completed),
+    completed,
     sessions:
       sessions.length > 0
         ? sessions.map((s) => ({

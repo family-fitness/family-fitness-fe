@@ -307,6 +307,10 @@ check(
 );
 
 // 여러 날짜리 운동 — 오늘 한 칸이 기간 안의 지난날에도 한 것으로 되풀이되지 않는다
+const rateOf = async () =>
+  ((await (await get(`/families/${DEMO.familyId}/league`)).json()) as { rate: number | null })
+    .rate ?? 0;
+const rateBefore = await rateOf();
 const span = (await (
   await post(`/families/${DEMO.familyId}/missions`, {
     title: "사흘짜리",
@@ -335,6 +339,11 @@ check(
   "여러 날짜리 운동은 끝낸 날에만 한 것이다",
   spanOn(today) && !spanOn(daysBefore(1)) && !spanOn(daysBefore(2)),
   spanDays.days.map((d) => d.date).join(" · "),
+);
+check(
+  "여러 날짜리 운동을 한 번 해냈다고 리그 달성률이 내려가지 않는다 — 기간의 날마다 잡힌 날로 세지 않는다",
+  (await rateOf()) >= rateBefore,
+  `${rateBefore}% → ${await rateOf()}%`,
 );
 
 /* ─── 4. 사람이 적은 것은 보호자가 확인한다(규칙 2) ─────────── */
