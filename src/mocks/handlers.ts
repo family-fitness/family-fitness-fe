@@ -527,15 +527,16 @@ const fitness = [
       };
       // 지난 날짜로 적은 회차는 이력에만 들어간다 — 가장 최근 회차가 「지금」 이다
       const newest = !((db.latest[profileId]?.testedOn ?? "") > body.testedOn);
-      // 같이 적어 온 키 · 몸무게는 들고 있다가 latest 로 돌려준다
-      if (newest && body.heightCm && body.weightKg) {
-        db.body[profileId] = { heightCm: body.heightCm, weightKg: body.weightKg };
-      }
       const measured = (body.items ?? []).filter((i) => Number.isFinite(i.value));
       if (measured.length === 0) return fail(400, "NO_ITEMS", "항목이 없습니다");
       // 혈압은 입력으로 받지 않는다
       if (measured.some((i) => i.itemCode === "005" || i.itemCode === "006")) {
         return fail(400, "ITEM_NOT_ALLOWED", "허용되지 않는 항목입니다");
+      }
+      // 같이 적어 온 키 · 몸무게는 들고 있다가 latest 로 돌려준다 — 검사를 다 지난 뒤에.
+      // 전에는 거절한 회차의 키 · 몸무게가 먼저 남아 저장 안 된 값이 「지금 몸」 으로 떴다
+      if (newest && body.heightCm && body.weightKg) {
+        db.body[profileId] = { heightCm: body.heightCm, weightKg: body.weightKg };
       }
 
       const catalogue =
