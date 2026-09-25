@@ -118,7 +118,6 @@
   /parent/dashboard        가족 대시보드 — 이번 달 우리 가족 · 구성원                  ＋
   /parent/league           가족 리그 — 매달 브론즈~다이아 · 쉬는 날 카드                ＋
   /parent/child/[id]       아이 기록 — 프로필 머리 · 육각형 · 이번 달 칸 · 최근 기록 · 요인 표 · 점수 흐름 · 키 · 업적
-  /parent/update/[id]      신체정보 다시 재기
   /parent/family           가족 관리 · 초대 · 사진 · 아이 등록하기 · 보호자 더하기
   /parent/sticker/[id]     칭찬 스티커 붙이기                      ＋
   /p/[id]/measure|result|future   측정 · 결과 · 10년 위 연령대

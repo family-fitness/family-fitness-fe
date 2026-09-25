@@ -148,7 +148,7 @@ export default function ChildDetailPage() {
         <RecentDays familyId={familyId ?? undefined} profileId={profileId} />
 
         <Card>
-          <CardHead title="요인별" meta="눈금 · 또래 평균 50" />
+          <CardHead title="요인별" meta="또래 평균 50" />
           <FactorTable radar={latest?.radar} results={latest?.items} catalog={catalog?.items} />
         </Card>
 
@@ -285,7 +285,7 @@ function BodyGrowth({
         </p>
       )}
       <NavLink
-        href={`/parent/update/${profileId}`}
+        href={`/p/${profileId}/measure`}
         className={
           due
             ? "press bg-signal-strong mt-3 flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"

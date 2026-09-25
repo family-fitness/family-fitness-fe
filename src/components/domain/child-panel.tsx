@@ -66,7 +66,7 @@ export function ChildPanel({
       {/* 한 달이 지나면 다시 재자고 말한다. 막지 않고, 오래됐다고 탓하지 않는다(규칙 11) */}
       {since != null && since >= REMEASURE_DAYS && (
         <PanelRow
-          href={`/parent/update/${child.profileId}`}
+          href={`/p/${child.profileId}/measure`}
           art="icon/menu-measure"
           title="키 · 몸무게를 새로 잴 때예요"
           note={`지난번에 잰 지 ${since}일`}
