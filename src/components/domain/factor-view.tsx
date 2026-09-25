@@ -66,7 +66,6 @@ export function FactorView({
   pending,
   score,
   headline,
-  focus,
   className,
 }: {
   points: Parameters<typeof FactorRadar>[0]["points"];
@@ -76,8 +75,6 @@ export function FactorView({
   score?: number | null;
   /** 서버가 준 한 줄(「유소년 상위 45%」) — 점수 바로 아래에 그대로(규칙 9) */
   headline?: string | null;
-  /** AI 편성이 키우려는 요인 */
-  focus?: Parameters<typeof FactorRadar>[0]["focus"];
   className?: string;
 }) {
   return (
@@ -85,7 +82,7 @@ export function FactorView({
       {pending ? (
         <Skeleton className="mx-auto aspect-[320/290] w-full rounded-3xl" />
       ) : (
-        <FactorRadar points={points} name={name} focus={focus} />
+        <FactorRadar points={points} name={name} />
       )}
       {score != null && <ScoreLine score={score} />}
       {headline && (

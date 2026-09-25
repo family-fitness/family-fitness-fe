@@ -169,8 +169,14 @@ function KidLine({
                     : "신체 점수 없음, 또래 평균 50"
                 }
               >
-                {score != null && <span className="record-fill" style={{ width: `${score}%` }} />}
-                <span className="record-avg" />
+                {score != null ? (
+                  <>
+                    <span className="record-fill" style={{ width: `${score}%` }} />
+                    <span className="record-avg" />
+                  </>
+                ) : (
+                  <span className="record-dash" />
+                )}
               </span>
             </>
           ) : (

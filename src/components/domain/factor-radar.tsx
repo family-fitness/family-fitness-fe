@@ -202,8 +202,10 @@ export function FactorRadar({
                   {p.factor}
                 </span>
               </span>
+              {/* 값이 없으면 「—」 — 안 잰 것일 수도, 잰 나이에 비교 기준이 없는 것일 수도 있다(규칙 8).
+                  어느 쪽인지는 요인 표가 항목과 같이 말한다 */}
               {missing ? (
-                <span className="text-micro text-faint mt-0.5 font-semibold">안 잼</span>
+                <span className="text-micro text-faint mt-0.5 font-semibold">—</span>
               ) : (
                 <span className="text-ink text-base font-extrabold tabular-nums">
                   {p.percentile}

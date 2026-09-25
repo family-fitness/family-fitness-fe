@@ -28,40 +28,42 @@ export function FactorTable({
       {hex.map((p) => {
         const item = byFactor.get(p.factor);
         const howTo = (catalog ?? []).find((c) => c.factor === p.factor);
-        const missing = p.percentile == null;
+        // 셋으로 가른다 — 잰 것 · 쟀는데 이 나이에 비교 기준이 없는 것(만 7~10세, 규칙 8) · 안 잰 것.
+        // 잰 값을 「안 잼」 으로 적으면 적어 넣은 기록이 사라진 것처럼 보인다
+        const scored = p.percentile != null;
+        const measured = scored || item != null;
         return (
           <li key={p.factor} className="flex items-start gap-3 py-3.5">
-            <span
-              aria-hidden
-              className={cn(
-                "grid size-9 shrink-0 place-items-center rounded-xl",
-                missing ? "bg-sub text-faint" : "bg-signal-soft text-signal-strong",
-              )}
-            >
-              <FactorIcon factor={p.factor} className="size-5.5" />
-            </span>
+            <FactorIcon
+              factor={p.factor}
+              className={cn("mt-0.5 size-8 shrink-0", !measured && "opacity-40")}
+            />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between gap-2">
                 <p className="text-sm font-extrabold">{p.factor}</p>
                 <p className="text-caption shrink-0 font-bold">
-                  {missing ? (
-                    <span className="text-faint">안 잼</span>
-                  ) : (
+                  {scored ? (
                     (item?.topPercentText ?? `백분위 ${p.percentile}`)
+                  ) : (
+                    <span className="text-faint">{measured ? "—" : "안 잼"}</span>
                   )}
                 </p>
               </div>
               <p className="text-micro text-ink-soft mt-0.5">
-                {missing
-                  ? (howTo?.itemLabel ?? "")
-                  : item
-                    ? `${item.itemLabel} ${item.value}${item.unit ?? ""}${item.band ? ` · ${BAND_COPY[item.band]}` : ""}`
-                    : ""}
+                {item
+                  ? `${item.itemLabel} ${item.value}${item.unit ?? ""}${item.band ? ` · ${BAND_COPY[item.band]}` : ""}`
+                  : (howTo?.itemLabel ?? "")}
               </p>
-              {!missing && (
+              {measured && (
                 <div className="record-rail mt-2 h-1.5" aria-hidden>
-                  <span className="record-fill" style={{ width: `${p.percentile}%` }} />
-                  <span className="record-avg" />
+                  {scored ? (
+                    <>
+                      <span className="record-fill" style={{ width: `${p.percentile}%` }} />
+                      <span className="record-avg" />
+                    </>
+                  ) : (
+                    <span className="record-dash" />
+                  )}
                 </div>
               )}
             </div>
