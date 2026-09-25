@@ -23,7 +23,7 @@ import { setupServer } from "msw/node";
 
 import { DEMO, handlers, setActingProfile } from "@/mocks/handlers";
 import { streakOf } from "@/mocks/progress";
-import { daysBefore } from "@/lib/today";
+import { daysBefore, toDateString } from "@/lib/today";
 
 const server = setupServer(...handlers);
 server.listen({ onUnhandledRequest: "warn" });
@@ -104,7 +104,8 @@ check("중복 승인 차단", res.status === 409, `${res.status} ${await codeOf(
 
 /* ─── 2. 측정 거절 규칙 ────────────────────────────────────── */
 
-const today = new Date().toISOString().slice(0, 10);
+// 기기 시간대의 오늘 — toISOString 은 UTC 라 한국 자정~오전 9시에 어제가 되어 「오늘」 검사가 엇나갔다
+const today = toDateString(new Date());
 
 res = await post(`/profiles/${DEMO.kid}/fitness-tests`, {
   testedOn: today,
