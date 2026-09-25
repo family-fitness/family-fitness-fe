@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
-import { useIsKidView } from "@/lib/view-role";
+import { useHydrated, useIsKidView } from "@/lib/view-role";
 
 /**
  * 부모만 보는 화면.
@@ -15,11 +15,14 @@ import { useIsKidView } from "@/lib/view-role";
 export function ParentOnly({ children }: { children: ReactNode }) {
   const router = useRouter();
   const kidView = useIsKidView();
+  // 역할은 이 기기에만 있다 — 서버와 브라우저의 첫 화면을 같게(비워) 두고, 그다음에 가른다.
+  // 먼저 그려 버리면 아이 모드에서 부모 화면이 잠깐 비친다
+  const hydrated = useHydrated();
 
   useEffect(() => {
-    if (kidView) router.replace("/kid");
-  }, [kidView, router]);
+    if (hydrated && kidView) router.replace("/kid");
+  }, [hydrated, kidView, router]);
 
-  if (kidView) return null;
+  if (!hydrated || kidView) return null;
   return <>{children}</>;
 }
