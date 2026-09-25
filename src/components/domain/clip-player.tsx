@@ -138,10 +138,11 @@ export function ClipPlayer({
     };
   }, [videoId, startSec]);
 
-  // 켜고 끄기 · 되풀이
+  // 켜고 끄기 · 되풀이. 못 불러온 영상은 건드리지 않는다 — 준비된 뒤에 막히면(비공개 · 임베드 금지)
+  // 보는 고리가 막힌 재생으로 읽어 아이의 타이머를 세웠다
   useEffect(() => {
     const p = player.current;
-    if (!ready || !p) return;
+    if (!ready || !p || failed) return;
     if (!playing) {
       p.pauseVideo();
       return;
@@ -186,7 +187,7 @@ export function ClipPlayer({
       clearTimeout(check);
       clearInterval(loop);
     };
-  }, [ready, playing, startSec, endSec]);
+  }, [ready, playing, startSec, endSec, failed]);
 
   // 못 불러오면 한 줄로 — 동작 이름은 위(칸 · 시트 제목)에 있다. 영상 크기의 빈 상자를 세워 두지 않는다
   if (failed) {
