@@ -73,7 +73,13 @@ export default function SchedulePage() {
 function Schedule() {
   const { familyId } = useSession();
   // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
-  const { data: family, isLoading: familyPending } = useFamilyProfiles(familyId);
+  const {
+    data: family,
+    isLoading: familyPending,
+    error: familyError,
+    refetch: refetchFamily,
+    isRefetching,
+  } = useFamilyProfiles(familyId);
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const people = family?.profiles ?? [];
   const [picked, setPicked] = useState<string | null>(null);
@@ -89,7 +95,14 @@ function Schedule() {
       {/* 들어온 곳(짜기 · 직접 짜기 · 가족)으로 돌아간다 — 설정으로 박아 두면 설정의 뒤로와 서로 오갔다 */}
       <AppBar back title="운동할 수 있는 시간" />
       <Stage wide className="space-y-3 pb-28">
-        {familyPending ? (
+        {familyError ? (
+          // 누구의 시간인지 못 받으면 빈 화면이었다
+          <ErrorState
+            error={familyError}
+            onRetry={() => void refetchFamily()}
+            retrying={isRefetching}
+          />
+        ) : familyPending ? (
           <Skeleton className="h-11 w-56 rounded-full" />
         ) : (
           <div className="scroll-row -mx-4 px-4">

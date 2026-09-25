@@ -60,7 +60,12 @@ function CustomPlan() {
   const router = useRouter();
   const { familyId } = useSession();
   const childProfileId = useRoleStore((s) => s.childProfileId);
-  const { data: family, isLoading: familyLoading } = useFamilyProfiles(familyId);
+  const {
+    data: family,
+    isLoading: familyLoading,
+    error: familyError,
+    refetch: refetchFamily,
+  } = useFamilyProfiles(familyId);
   const moves = useRoutineStore((s) => s.moves);
   const ready = useRoutineReady();
   const { shift, setMinutes, remove, tidy, clear } = useRoutineStore();
@@ -302,6 +307,19 @@ function CustomPlan() {
         {/* 2. 누가 — 아이 혼자 · 엄마랑 같이 */}
         <Card>
           <CardHead title="누가 할까요" meta={`${chosen.length}명`} />
+          {/* 가족을 못 받으면 고를 사람이 비어 보인다 — 비었다고 두지 않고 못 불러왔다고 */}
+          {familyError && (
+            <p className="text-ink-soft mt-2 flex items-center justify-between gap-3 text-sm">
+              가족을 불러오지 못했어요
+              <button
+                type="button"
+                onClick={() => void refetchFamily()}
+                className="press text-signal-strong min-h-11 shrink-0 px-1 font-extrabold"
+              >
+                다시 불러오기
+              </button>
+            </p>
+          )}
           <ul className="mt-3 flex flex-wrap gap-2">
             {people.map((p) => {
               const on = chosen.includes(p.profileId ?? "");
