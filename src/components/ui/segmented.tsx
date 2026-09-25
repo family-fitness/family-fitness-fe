@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 /**
- * 둘 · 셋 중 하나 고르기. 같은 것을 다르게 보는 자리(입체 / 평면)에 쓴다.
+ * 둘 · 셋 중 하나 고르기 — 직접 짜기의 「몇 주 되풀이」 처럼.
  * 누르는 칸은 40px 아래로 내려가지 않는다(check:screens 가 잰다).
  */
 export function Segmented<T extends string>({

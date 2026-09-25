@@ -58,7 +58,7 @@ export function ChildPanel({
         <FirstMeasure child={child} />
       ) : (
         <>
-          {/* 육각형 · 그 아래 통합 신체 점수 · 출처. 아이 기록 · 측정 결과와 같은 한 부품이다 */}
+          {/* 육각형 · 그 아래 통합 신체 점수. 아이 기록 · 측정 결과와 같은 한 부품이다 */}
           <FactorView
             points={latest?.radar}
             name={name}

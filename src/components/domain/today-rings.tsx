@@ -6,6 +6,14 @@ import { todayActivity } from "@/lib/activity";
 import { useAvailability } from "@/lib/api/queries";
 
 /**
+ * 링 옆 숫자. 목표를 **넘기면** 「35 / 20분」 이 아니라 「35분」 — 한 바퀴는 이미 찼다.
+ * 딱 맞으면 「4 / 4일」 그대로 둔다(채웠다는 말이다). 세 링이 같은 셈을 쓴다.
+ */
+function over(value: number, max: number, unit: string) {
+  return value > max ? `${value}${unit}` : `${value} / ${max}${unit}`;
+}
+
+/**
  * 오늘 한 만큼 — 세 겹 링(애플 피트니스처럼).
  *
  *   바깥 파랑   움직인 시간 / 오늘 목표
@@ -14,14 +22,6 @@ import { useAvailability } from "@/lib/api/queries";
  *
  * 비어 있어도 탓하는 말을 붙이지 않는다. 링은 채워질 자리를 보여 줄 뿐이다.
  */
-/**
- * 링 옆 숫자. 목표를 **넘기면** 「35 / 20분」 이 아니라 「35분」 — 한 바퀴는 이미 찼다.
- * 딱 맞으면 「4 / 4일」 그대로 둔다(채웠다는 말이다). 세 링이 같은 셈을 쓴다.
- */
-function over(value: number, max: number, unit: string) {
-  return value > max ? `${value}${unit}` : `${value} / ${max}${unit}`;
-}
-
 export function TodayRings({
   profileId,
   missions,

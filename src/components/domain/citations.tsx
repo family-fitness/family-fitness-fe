@@ -4,7 +4,6 @@ import { ExternalLink } from "lucide-react";
 
 import { safeUrl } from "@/lib/safe-url";
 
-/** AI 편성 제안의 근거. 제안마다 늘 붙는다(규칙 6) */
 /** 인용의 라벨 이름이 두 곳에서 다르다. */
 interface CitationLike {
   index?: number;
@@ -14,6 +13,7 @@ interface CitationLike {
   url?: string | null;
 }
 
+/** AI 편성 제안의 근거. 제안마다 늘 붙는다(규칙 6) */
 export function Citations({
   items,
   className,

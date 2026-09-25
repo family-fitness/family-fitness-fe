@@ -36,7 +36,7 @@ export const AUTH_STORAGE_KEY = "ff-auth";
 
 let accessToken: string | null = null;
 
-/** 로그인 후 받은 토큰을 메모리에 둔다. 새로고침하면 refresh 로 다시 받는다 */
+/** 로그인 후 받은 토큰을 메모리에 둔다. 새로고침하면 저장소(ff-auth)에서 다시 읽는다(currentToken) */
 export function setAccessToken(token: string | null) {
   accessToken = token;
 }
