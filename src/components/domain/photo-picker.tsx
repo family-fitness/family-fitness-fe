@@ -24,10 +24,18 @@ export function PhotoPicker({
   const pick = async (file: File | undefined) => {
     if (!file) return;
     setProblem(null);
+    let dataUrl: string;
     try {
-      onChange(await squareJpeg(file));
+      dataUrl = await squareJpeg(file);
     } catch {
-      setProblem("이 사진은 열 수 없어요. 다른 사진을 골라 주세요.");
+      setProblem("이 사진은 열 수 없어요.");
+      return;
+    }
+    // 여는 것과 담는 것은 다른 실패다 — 기기 저장소가 차면 담다가 실패한다. 「열 수 없어요」 로 말하면 틀린 말이다
+    try {
+      onChange(dataUrl);
+    } catch {
+      setProblem("이 기기에 사진을 더 둘 자리가 없어요.");
     }
   };
 
@@ -81,8 +89,10 @@ export function PhotoPicker({
 
 /** 가운데를 정사각으로 잘라 한 변 `size` 의 JPEG data URL 로 */
 async function squareJpeg(file: File, size = 320): Promise<string> {
-  // 폰 사진의 돌림 정보대로 세운다 — 옆으로 누운 얼굴이 되지 않게
-  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+  // 폰 사진의 돌림 정보대로 세운다 — 옆으로 누운 얼굴이 되지 않게. 이 설정을 모르는 브라우저는 그냥 연다
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" }).catch(() =>
+    createImageBitmap(file),
+  );
   const side = Math.min(bitmap.width, bitmap.height);
   const canvas = document.createElement("canvas");
   canvas.width = size;
