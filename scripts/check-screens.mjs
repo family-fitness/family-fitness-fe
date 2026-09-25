@@ -13,6 +13,8 @@ import { chromium } from "playwright";
 const PORT = process.argv[2] ?? "3001";
 const BASE = `http://localhost:${PORT}`;
 const KID = "00000000-0000-4000-8000-000000000012";
+/** 시연 가족에게 와 있는 AI 편성 회차(`src/mocks/fixtures.json` 의 coachRun) */
+const RUN = "0271ff7b-6e8f-4685-986a-a3a881352cd2";
 
 const ROUTES = [
   "/",
@@ -36,9 +38,11 @@ const ROUTES = [
   "/notifications",
   "/plan",
   "/plan/custom",
+  // 시연 가족에게 와 있는 제안(목의 회차) — 짜는 과정 · 제안
+  `/plan/run/${RUN}`,
+  `/plan/${RUN}`,
   "/videos",
   "/videos?list=favorites",
-  "/videos?list=recent",
   "/settings",
   "/settings/support-mode",
   "/settings/consent",
@@ -46,12 +50,16 @@ const ROUTES = [
   `/p/${KID}/measure`,
   `/p/${KID}/result`,
   `/p/${KID}/future`,
+  "/offline",
 ];
 
 /** 손가락이 닿는 최소 크기 */
 const MIN_TAP = 40;
-/** 무시할 콘솔 잡음 — 목 데이터의 가짜 영상 id 때문에 나는 것들 */
-const NOISE = /favicon|ytimg|_next\/image|400 |404 /;
+/**
+ * 무시할 콘솔 잡음 — 남의 것(유튜브 · 썸네일 · 파비콘 · next/image)을 못 받은 것만. 우리 API 의 400 · 404 는
+ * 잡음이 아니다 — 전에는 400 · 404 를 통째로 넘겨 우리 요청이 틀려도 몰랐다
+ */
+const NOISE = /favicon|ytimg|youtube|_next\/image/;
 
 /**
  * 아이 화면에 나오면 안 되는 말.
@@ -87,8 +95,10 @@ const KID_ROUTES = [
   "/notifications",
   "/videos",
   "/settings",
-  `/p/${KID}/result`,
 ];
+
+/** 부모 화면 — 아이 모드로 열면 아이 홈으로 돌아가야 한다(백분위 · 등급 · 약한 요인은 부모의 것, 규칙 10) */
+const PARENT_ONLY = [`/p/${KID}/result`, `/p/${KID}/future`, `/p/${KID}/measure`, "/parent"];
 
 const browser = await chromium.launch({ channel: "chrome" });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
@@ -122,8 +132,11 @@ for (const route of ROUTES) {
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e).split("\n")[0]));
   page.on("console", (m) => {
+    if (m.type() !== "error") return;
     const text = m.text();
-    if (m.type() === "error" && !NOISE.test(text)) errors.push(text.split("\n")[0]);
+    const where = m.location()?.url ?? "";
+    if (NOISE.test(text) || NOISE.test(where)) return;
+    errors.push(`${text.split("\n")[0]}${where ? ` — ${where}` : ""}`);
   });
 
   try {
@@ -266,6 +279,17 @@ for (const route of KID_ROUTES) {
   await page.close();
 }
 
+for (const route of PARENT_ONLY) {
+  const page = await kidContext.newPage();
+  try {
+    await page.goto(`${BASE}${route}`, { waitUntil: "load", timeout: 30000 });
+    await page.waitForURL((url) => url.pathname === "/kid", { timeout: 8000 });
+  } catch {
+    problems.push(`${route} (아이 모드)\n    아이 홈으로 돌아가지 않음: ${page.url()}`);
+  }
+  await page.close();
+}
+
 /* ─── 좁은 폰에서 한 번 더 ─────────────────────────────────── */
 
 /**
@@ -300,5 +324,5 @@ if (problems.length > 0) {
   process.exit(1);
 }
 console.log(
-  `화면 ${ROUTES.length}개 · 아이 모드 ${KID_ROUTES.length}개 · 좁은 폰 ${ROUTES.length}개 이상 없음`,
+  `화면 ${ROUTES.length}개 · 아이 모드 ${KID_ROUTES.length + PARENT_ONLY.length}개 · 좁은 폰 ${ROUTES.length}개 이상 없음`,
 );
