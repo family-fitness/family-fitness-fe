@@ -493,8 +493,9 @@ function mergeMissions(
     },
   );
   return {
-    data: active.data ? { ...active.data, missions } : undefined,
-    isPending: active.isPending,
+    // 다 한 것이 오기 전에는 합치지 않는다 — 아이가 다 한 날 「오늘 운동이 아직 없어요」 가 먼저 번쩍였다
+    data: active.data && !done.isPending ? { ...active.data, missions } : undefined,
+    isPending: active.isPending || done.isPending,
     error: active.error,
     refetch: () => results.forEach((r) => void r.refetch()),
   };
