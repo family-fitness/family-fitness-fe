@@ -125,14 +125,7 @@ function parentLatest(
       unit: meta?.unit ?? "",
       value,
       percentile,
-      grade:
-        percentile >= 90
-          ? "1등급"
-          : percentile >= 75
-            ? "2등급"
-            : percentile >= 50
-              ? "3등급"
-              : "참가",
+      grade: gradeOf(percentile),
       band: bandOf(percentile),
       topPercentText: `상위 ${100 - percentile}%`,
     };
@@ -809,6 +802,17 @@ export function fail(status: number, code: string, message: string) {
 
 export function uuid() {
   return crypto.randomUUID();
+}
+
+/**
+ * 백분위 → 등급. 서버가 주는 값은 1·2·3등급과 「참가」뿐이다.
+ * 기준은 백엔드 명세 v2 ⑪ — 1등급 ≥ 85 · 2등급 ≥ 65 · 3등급 ≥ 40 · 그 외 참가(90 · 75 · 50 이면 절반이 참가로 묶인다)
+ */
+export function gradeOf(percentile: number): "1등급" | "2등급" | "3등급" | "참가" {
+  if (percentile >= 85) return "1등급";
+  if (percentile >= 65) return "2등급";
+  if (percentile >= 40) return "3등급";
+  return "참가";
 }
 
 export function bandOf(percentile: number): Band {

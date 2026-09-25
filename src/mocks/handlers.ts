@@ -1,7 +1,7 @@
 /** MSW 목 서버 — 백엔드가 안 떠 있을 때 쓴다. */
 import { HttpResponse, http, type PathParams } from "msw";
 
-import type { AgeGroup, FitnessTestResult, ItemResult, LatestFitnessTest } from "@/lib/api/types";
+import type { AgeGroup, FitnessTestResult, LatestFitnessTest } from "@/lib/api/types";
 
 import { ageOf, toDateString } from "@/lib/today";
 
@@ -10,6 +10,7 @@ import {
   DEMO,
   acting,
   bandOf,
+  gradeOf,
   db,
   fail,
   fixtures,
@@ -431,14 +432,6 @@ function ageGroupOf(age: number): AgeGroup {
   if (age <= 18) return "청소년";
   if (age <= 64) return "성인";
   return "어르신";
-}
-
-/** 백분위 → 등급. 서버가 주는 값은 1·2·3등급과 「참가」뿐이다 */
-function gradeOf(percentile: number): NonNullable<Concrete<ItemResult>["grade"]> {
-  if (percentile >= 90) return "1등급";
-  if (percentile >= 75) return "2등급";
-  if (percentile >= 50) return "3등급";
-  return "참가";
 }
 
 function syncMapMember(profile: Profile) {
