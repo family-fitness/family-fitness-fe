@@ -61,21 +61,33 @@ function weakestOf(profileId: string): string {
   return measured[0]?.factor ?? "유연성";
 }
 
+/** 짜는 칸들 — 단계 줄과 제안이 같은 칸을 말하게 한 곳에서 */
+function planOf(p: PlanParams, focus: string, runId: string) {
+  return sessionsFor(focus, p.minutes, { quiet: p.quiet, skip: runId.charCodeAt(0) % 7 });
+}
+
 /** 단계마다 남기는 한 줄. 「왜 이 운동이지?」 를 나중에 되짚는 근거다 */
-function stepSummary(name: (typeof STEP_NAMES)[number], p: PlanParams, focus: string) {
+function stepSummary(
+  name: (typeof STEP_NAMES)[number],
+  p: PlanParams,
+  focus: string,
+  plan: ReturnType<typeof planOf>,
+) {
   const who = nameOf(p.profileId);
   const latest = db.latest[p.profileId];
   const pool = catalog.filter(
     (c) =>
       c.homeOk && !c.props && (!p.quiet || c.quiet) && (c.phase !== "MAIN" || c.factor === focus),
   );
+  const count = (phase: string) => plan.filter((s) => s.phase === phase).length;
+  const minutes = plan.reduce((sum, s) => sum + s.minutes, 0);
   switch (name) {
     case "assess":
       return `${who} · 측정 ${latest?.items?.length ?? 0}항목 · ${p.focusFactor ? `키울 힘 ${focus}(부모가 고름)` : `대상 요인 = ${focus}`}`;
     case "retrieve":
-      return `국민체력100 운동처방 ${focus} 12건 · 클립 ${catalog.length}개 중 ${pool.length}개${p.quiet ? " · 조용한 것만" : ""}`;
+      return `국민체력100 운동처방 ${focus} 12건 · 클립 ${catalog.length}개 중 ${pool.length}개${p.quiet ? " · 조용한 것 먼저" : ""}`;
     case "compose":
-      return `준비 2 · 본 2 · 정리 2 · ${p.minutes}분`;
+      return `준비 ${count("WARMUP")} · 본 ${count("MAIN")} · 정리 ${count("COOLDOWN")} · ${minutes}분`;
     case "verify":
       return "인용 2건 · 금지 어휘 0건";
   }
@@ -83,7 +95,8 @@ function stepSummary(name: (typeof STEP_NAMES)[number], p: PlanParams, focus: st
 
 /** 다 짠 제안 하나 */
 function proposalFor(p: PlanParams, focus: string, runId: string) {
-  const sessions = sessionsFor(focus, p.minutes, { quiet: p.quiet, skip: runId.charCodeAt(0) % 7 });
+  const sessions = planOf(p, focus, runId);
+  const minutes = sessions.reduce((sum, s) => sum + s.minutes, 0);
   const kid = nameOf(p.profileId);
   const first = sessions.find((s) => s.phase === "MAIN") ?? sessions[0];
   // 같이 하는 사람은 지금 짜는 보호자 — 새 가족에서 시연 가족 엄마가 들어가지 않게
@@ -93,12 +106,12 @@ function proposalFor(p: PlanParams, focus: string, runId: string) {
     db.profiles.profiles.find((x) => x.profileId === p.profileId)?.ageGroup ?? "유소년";
   return {
     position: 0,
-    title: `${focus} 키우기 ${p.minutes}분`,
+    title: `${focus} 키우기 ${minutes}분`,
     rationale: p.focusFactor
       ? `고르신 ${focus}을 본운동에 넣고, 몸을 푸는 동작을 앞뒤에 붙였어요.`
       : `${kid}의 ${focus}이 또래보다 가장 낮아요. ${focus}을 기르는 동작을 본운동에 넣고, 늘이는 동작으로 시작과 끝을 잡았어요.`,
     targetMetric: "TIMER_MINUTES",
-    targetValue: p.minutes,
+    targetValue: minutes,
     startDate: p.date,
     endDate: p.date,
     participants: [
@@ -134,11 +147,12 @@ function advance(run: Run) {
   const elapsed = Date.now() - (run.startedAt ?? Date.now());
   const done = Math.min(STEP_NAMES.length, Math.floor(elapsed / STEP_MS));
   const focus = run.params.focusFactor ?? weakestOf(run.params.profileId);
+  const plan = planOf(run.params, focus, run.coachRunId ?? "x");
   run.steps = STEP_NAMES.slice(0, Math.min(STEP_NAMES.length, done + 1)).map((name, i) => ({
     seq: i + 1,
     name,
     status: i < done ? "ok" : "running",
-    summary: i < done ? stepSummary(name, run.params!, focus) : "",
+    summary: i < done ? stepSummary(name, run.params!, focus, plan) : "",
   }));
   if (done >= STEP_NAMES.length) {
     const proposal = proposalFor(run.params, focus, run.coachRunId ?? "x");
