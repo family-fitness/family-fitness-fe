@@ -6,6 +6,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { PlainScreen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
 import { KiumIsland } from "@/components/scene/kium-island";
+import type { AuthResponse } from "@/lib/api/types";
 import { errorMessage } from "@/lib/errors";
 import { useDevLogin, useGoogleLogin } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
@@ -81,9 +82,15 @@ function LoginContent() {
   const state = params.get("state");
   // 초대 링크로 들어왔다가 로그인하는 경우. 코드를 같이 넘겨야 바로 프로필에 붙는다
   const claimCode = params.get("claimCode") ?? undefined;
-  /** 로그인하고 갈 곳 — 초대코드를 들고 왔으면 그 코드를 넣는 화면으로 */
-  const after = (claim: string | undefined) =>
-    claim ? `/claim?code=${encodeURIComponent(claim)}` : "/";
+  /**
+   * 로그인하고 갈 곳 — 초대코드를 들고 왔고 아직 가족에 붙지 않았으면 그 코드를 넣는 화면으로.
+   * 로그인하며 서버가 코드로 붙여 줬으면(참여 방식 · 홈) 스플래시가 단계대로 보낸다 — 코드 화면으로 가면
+   * 방금 쓴 코드라며 막혔다
+   */
+  const after = (auth: AuthResponse, claim: string | undefined) =>
+    claim && auth.nextStep !== "SUPPORT_MODE" && auth.nextStep !== "HOME"
+      ? `/claim?code=${encodeURIComponent(claim)}`
+      : "/";
   /** 인가코드는 한 번만 쓸 수 있다 — 개발 모드에서 effect 가 두 번 돌아도 한 번만 바꾼다 */
   const exchanged = useRef<string | null>(null);
 
@@ -103,7 +110,7 @@ function LoginContent() {
     exchange
       .then((auth) => {
         signIn(auth);
-        router.replace(after(saved?.claimCode));
+        router.replace(after(auth, saved?.claimCode));
       })
       .catch((e) => setError(errorMessage(e, "로그인하지 못했어요. 다시 시도해 주세요.")));
     // googleLogin 은 매 렌더 새 객체다. 코드가 바뀔 때만 돈다
@@ -115,7 +122,7 @@ function LoginContent() {
     try {
       const auth = await devLogin.mutateAsync(providerUserId);
       signIn(auth);
-      router.replace(after(claimCode));
+      router.replace(after(auth, claimCode));
     } catch (e) {
       setError(errorMessage(e, "들어가지 못했어요. 잠시 후 다시 시도해 주세요."));
     }
