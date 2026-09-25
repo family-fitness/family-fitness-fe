@@ -47,10 +47,12 @@ export function WeekPanel({
   /** 맨 아랫줄 */
   children: ReactNode;
 }) {
+  // 받아 둔 기록이 있으면 다시 받다 실패해도 그대로 그린다
+  const broken = failed && !logs;
   return (
     <section className="card" aria-label="이번 주">
-      <CardHead title="이번 주" meta={failed ? undefined : meta} href={href} />
-      {failed ? (
+      <CardHead title="이번 주" meta={broken ? undefined : meta} href={href} />
+      {broken ? (
         <p className="text-ink-soft mt-1 flex items-center justify-between gap-3 text-sm">
           이번 주 기록을 불러오지 못했어요
           {onRetry && (
