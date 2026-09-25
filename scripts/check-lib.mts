@@ -23,7 +23,16 @@ import {
   toggleMove,
   upcomingDays,
 } from "@/lib/routine";
-import { dayRings, daySummary, didSomething, isRealDate, plannedDay } from "@/lib/day";
+import {
+  dayRings,
+  daySummary,
+  dayWork,
+  didSomething,
+  isRealDate,
+  missionsOn,
+  plannedDay,
+  todayLine,
+} from "@/lib/day";
 import { UNLOCKS, decorationsAt, newlyUnlocked, nextUnlock } from "@/lib/unlocks";
 import { josa } from "@/lib/utils";
 
@@ -296,6 +305,44 @@ check(
   "걸음수는 잡아 둔 운동이 아니다",
   plannedDay(mission("2026-09-26", "2026-09-26", "STEPS"), "2026-09-24") === null,
 );
+
+/* ─── 한 사람의 오늘 — 끝낸 칸은 사람마다 ─────────────────── */
+
+{
+  const shared = {
+    missionId: "m",
+    startDate: "2026-09-24",
+    endDate: "2026-09-24",
+    targetMetric: "TIMER_MINUTES",
+    sessions: [
+      { position: 1, phase: "WARMUP", title: "a", minutes: 1 },
+      { position: 2, phase: "MAIN", title: "b", minutes: 4 },
+    ],
+    participants: [
+      { profileId: "A", completed: false, doneSessions: [1, 2] },
+      { profileId: "B", completed: false, doneSessions: [] },
+    ],
+  } as unknown as Parameters<typeof plannedDay>[0];
+  const a = dayWork([shared], "A", "2026-09-24");
+  const b = dayWork([shared], "B", "2026-09-24");
+  check("형제가 같은 운동을 받아도 끝낸 칸은 저마다", a.done === 2 && b.done === 0);
+  check(
+    "한마디 — 다 했어요 · 운동 있어요",
+    todayLine(a, false) === "오늘 다 했어요" && todayLine(b, false) === "오늘 운동 있어요",
+  );
+  check("쉬는 날이어도 한 만큼이 먼저", todayLine(a, true) === "오늘 다 했어요");
+  check("아직이면 쉬는 날", todayLine(b, true) === "오늘 쉬는 날");
+  check("참여자가 아니면 오늘 운동이 없다", dayWork([shared], "C", "2026-09-24").total === 0);
+  check(
+    "끝나는 날이 없는 운동은 하루짜리",
+    missionsOn([{ ...shared, endDate: undefined }], "A", "2026-09-24").length === 1 &&
+      missionsOn([{ ...shared, endDate: undefined }], "A", "2026-09-25").length === 0,
+  );
+  check(
+    "걸음수는 오늘 칸에 넣지 않는다",
+    dayWork([{ ...shared, targetMetric: "STEPS" }], "A", "2026-09-24").total === 0,
+  );
+}
 
 /* ─── 토큰 새로 받기(401 → /auth/refresh → 다시 부르기) ───────────── */
 

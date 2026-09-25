@@ -1,5 +1,5 @@
 import type { Availability, DayLog, Mission } from "./api/types";
-import { sessionsOf } from "./session-plan";
+import { dayWork } from "./day";
 import { today, weekdayCode } from "./today";
 
 /**
@@ -44,14 +44,7 @@ export function todayActivity({
   availability: Availability | undefined;
   now?: string;
 }): TodayActivity {
-  const mine = (missions ?? []).filter(
-    (m) =>
-      (m.startDate ?? "") <= now &&
-      now <= (m.endDate ?? "") &&
-      m.targetMetric !== "STEPS" &&
-      m.participants?.some((p) => p.profileId === profileId),
-  );
-  const sessions = mine.flatMap((m) => sessionsOf(m, profileId));
+  const { sessions, done, total } = dayWork(missions, profileId, now);
   const log = weekLogs?.find((d) => d.date === now);
   const slots = availability?.slots ?? [];
   const planned = sessions.reduce((sum, s) => sum + (s.minutes ?? 0), 0);
@@ -60,8 +53,8 @@ export function todayActivity({
   return {
     moved: log?.minutes ?? 0,
     goal: log?.plannedMinutes || planned || written || DEFAULT_GOAL,
-    done: sessions.filter((s) => s.completed).length,
-    total: sessions.length,
+    done,
+    total,
     days: (weekLogs ?? []).filter((d) => d.minutes > 0).length,
     target: slots.length || DEFAULT_DAYS,
     rest: Boolean(log?.rest),
