@@ -8,7 +8,6 @@ import { PageHeader } from "@/components/app-shell/page-header";
 import { ParentOnly } from "@/components/app-shell/parent-only";
 import { Screen } from "@/components/app-shell/screen";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import type { SupportMode } from "@/lib/api/types";
@@ -17,13 +16,7 @@ import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { ArtIcon } from "@/components/ui/art-icon";
 
-/**
- * 참여 방식.
- *
- * 설명은 **고르는 데 필요한 것만** 남긴다. 앞 문장("같이 뛰기는 어려워요")은
- * 제목이 이미 하는 말이고, 뒤 문장이 실제로 달라지는 것 — 코치가 나를 미션에
- * 넣느냐 마느냐 — 을 말한다.
- */
+/** 참여 방식 — 셋 중 하나. 이름과 그림만 둔다(풀이 줄을 달지 않는다) */
 const MODES: {
   value: SupportMode;
   title: string;
@@ -60,19 +53,8 @@ function SupportModePageContent() {
   */
   const joining = params.get("from") === "claim";
 
+  // 자녀에게는 없는 설정이다 — 부모 화면(ParentOnly)이라 자녀는 여기까지 오지 않는다
   if (isPending) return <SupportSkeleton />;
-
-  // 자녀에게는 없는 설정이다. 서버도 422 로 막는다
-  if (profile?.role === "CHILD") {
-    return (
-      <>
-        <PageHeader title="참여 방식" back />
-        <Screen>
-          <EmptyState scene="no-mission" title="이 설정은 보호자만 있어요" />
-        </Screen>
-      </>
-    );
-  }
 
   const current = profile?.supportMode ?? null;
 
@@ -109,12 +91,7 @@ function SupportModePageContent() {
                     on && "ring-signal ring-2",
                   )}
                 >
-                  <span
-                    aria-hidden
-                    className="bg-signal-soft text-signal-strong grid size-11 shrink-0 place-items-center rounded-2xl"
-                  >
-                    <ArtIcon name={mode.art} className="size-6" />
-                  </span>
+                  <ArtIcon name={mode.art} className="size-10 shrink-0" />
                   <span className="min-w-0 flex-1">
                     <span className="text-body block font-bold">{mode.title}</span>
                   </span>
@@ -134,10 +111,7 @@ function SupportModePageContent() {
         </ul>
 
         {error && (
-          <p
-            role="alert"
-            className="bg-signal-soft text-signal-deep rounded-xl px-4 py-3 text-sm font-semibold"
-          >
+          <p role="alert" className="text-signal-deep text-center text-sm font-semibold">
             {error}
           </p>
         )}
@@ -159,12 +133,9 @@ function SupportSkeleton() {
       <Screen className="space-y-5">
         <Skeleton className="h-10 w-full" />
         {[0, 1, 2].map((i) => (
-          <div key={i} className="flex gap-3 py-2">
-            <Skeleton className="size-11 rounded-xl" />
-            <div className="flex-1 space-y-2">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-3 w-full" />
-            </div>
+          <div key={i} className="flex items-center gap-3 py-2">
+            <Skeleton className="size-10 rounded-xl" />
+            <Skeleton className="h-4 w-32" />
           </div>
         ))}
       </Screen>

@@ -19,7 +19,7 @@ import { errorMessage } from "@/lib/errors";
 import type { ProfileSummary } from "@/lib/api/types";
 import { useCreateProfile, useFamilyProfiles } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
-import { ageOf, today } from "@/lib/today";
+import { today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useRoleStore } from "@/stores/role-store";
 import { PhotoSheet } from "@/components/domain/photo-sheet";
@@ -163,7 +163,6 @@ function MemberRow({ profile, onInvite }: { profile: ProfileSummary; onInvite: (
           <p className="text-body font-bold">{profile.name}</p>
           <p className="text-faint mt-0.5 text-xs">
             {profile.ageGroup} · {profile.role === "PARENT" ? "부모" : "자녀"}
-            {profile.measurable === false && " · 측정은 만 4세부터"}
           </p>
         </div>
 
@@ -203,20 +202,10 @@ function AddMemberSheet({
   const [birthDate, setBirthDate] = useState("");
   // 미리 켜 두지 않는다. 기본값이 여성이면 고르지 않은 아빠가 여성으로 저장된다
   const [sex, setSex] = useState<"M" | "F" | null>(null);
-  // 아이는 「아이 등록하기」(첫 시작과 같은 흐름)로 — 여기서는 보호자 자리만
+  // 아이는 「아이 등록하기」(첫 시작과 같은 흐름)로 — 여기서는 보호자 자리만. 아이 동의 칸이 없다
   const role = "PARENT" as const;
-  // 두 가지를 따로 받는다. 한 칸으로 묶으면 무엇에 동의했는지 흐려진다
-  const [personal, setPersonal] = useState(false);
-  const [health, setHealth] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // 만 14세 미만이면 보호자 동의가 있어야 저장된다
-  const age = ageOf(birthDate);
-  const needsConsent = age != null && age < 14;
-  const valid =
-    name.trim() !== "" &&
-    birthDate !== "" &&
-    sex != null &&
-    (!needsConsent || (personal && health));
+  const valid = name.trim() !== "" && birthDate !== "" && sex != null;
 
   return (
     <Sheet open={open} onClose={onClose} title="보호자 더하기">
@@ -227,27 +216,17 @@ function AddMemberSheet({
           setError(null);
           try {
             if (!sex) return;
-            await create.mutateAsync({
-              name: name.trim(),
-              birthDate,
-              sex,
-              role,
-              ...(needsConsent
-                ? { guardianConsent: { personalData: true, healthData: true } }
-                : {}),
-            });
+            await create.mutateAsync({ name: name.trim(), birthDate, sex, role });
             setName("");
             setBirthDate("");
             setSex(null);
-            setPersonal(false);
-            setHealth(false);
             onClose();
           } catch (err) {
             setError(
               errorMessage(
                 err,
-                { CONSENT_REQUIRED: "만 14세 미만은 보호자 동의가 있어야 해요." },
-                "더하지 못했어요. 잠시 후 다시 시도해 주세요.",
+                { CONSENT_REQUIRED: "보호자는 만 14세부터 더할 수 있어요." },
+                "더하지 못했어요.",
               ),
             );
           }
@@ -257,7 +236,6 @@ function AddMemberSheet({
           <input
             value={name}
             onChange={(e) => setName(e.target.value.slice(0, 20))}
-            placeholder="첫째"
             className="field"
           />
         </Field>
@@ -292,28 +270,6 @@ function AddMemberSheet({
             ))}
           </div>
         </Field>
-
-        {/* 서버가 동의를 자동으로 찍지 않는다. 보호자가 두 가지를 각각 직접 켠다 */}
-        {needsConsent && (
-          <div role="group" aria-label="보호자 동의" className="space-y-2">
-            {(
-              [
-                [personal, setPersonal, "개인정보 처리에 동의해요"],
-                [health, setHealth, "건강정보 처리에 동의해요"],
-              ] as const
-            ).map(([on, set, title]) => (
-              <label key={title} className="bg-sub flex items-start gap-3 rounded-2xl p-3.5">
-                <input
-                  type="checkbox"
-                  checked={on}
-                  onChange={(e) => set(e.target.checked)}
-                  className="accent-signal mt-0.5 size-4.5"
-                />
-                <span className="text-sm leading-relaxed font-bold">{title}</span>
-              </label>
-            ))}
-          </div>
-        )}
 
         {error && (
           <p role="alert" className="text-signal-deep text-sm font-semibold">
