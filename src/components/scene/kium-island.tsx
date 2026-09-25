@@ -131,7 +131,9 @@ export function KiumIsland({
             .normalize(),
         });
       } catch {
+        // 못 지었어도 컨텍스트는 바로 돌려준다 — 폰은 WebGL 컨텍스트 수가 적다
         renderer.dispose();
+        renderer.forceContextLoss();
         canvas.remove();
         return;
       }
