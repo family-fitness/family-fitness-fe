@@ -138,6 +138,27 @@ export default function MeasurePage() {
     );
   }
 
+  // 동의가 없으면 저장이 422 다. 다 채우고 나서 막으면 그동안 적은 게 전부 헛수고가 된다.
+  // 나이보다 먼저 본다 — 동의를 거두면 서버가 measurable 도 false 로 주어, 열 살에게 「만 4세부터」 가 떴다
+  if (profile.consentRequired && !profile.consentGiven) {
+    return (
+      <>
+        <PageHeader title="체력 측정" {...nav} />
+        <Screen>
+          <EmptyState
+            scene="waiting"
+            title="보호자 동의가 필요해요"
+            action={
+              <Button size="md" onClick={() => router.push("/settings/consent")}>
+                동의 관리로 가기
+              </Button>
+            }
+          />
+        </Screen>
+      </>
+    );
+  }
+
   // 만 4세 미만은 국민체력100 규준 자체가 없다. 비활성화가 아니라 폼을 띄우지 않는다
   if (profile.measurable === false) {
     return (
@@ -150,26 +171,6 @@ export default function MeasurePage() {
             action={
               <Button size="md" variant="soft" onClick={() => router.push("/parent")}>
                 홈으로
-              </Button>
-            }
-          />
-        </Screen>
-      </>
-    );
-  }
-
-  // 동의가 없으면 저장이 422 다. 다 채우고 나서 막으면 그동안 적은 게 전부 헛수고가 된다
-  if (profile.consentRequired && !profile.consentGiven) {
-    return (
-      <>
-        <PageHeader title="체력 측정" {...nav} />
-        <Screen>
-          <EmptyState
-            scene="waiting"
-            title="보호자 동의가 필요해요"
-            action={
-              <Button size="md" onClick={() => router.push("/settings/consent")}>
-                동의 관리로 가기
               </Button>
             }
           />
