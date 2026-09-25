@@ -9,10 +9,7 @@ import { PhotoSheet } from "@/components/domain/photo-sheet";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { ListRow } from "@/components/ui/list-row";
 import { useFamilyProfiles } from "@/lib/api/queries";
-import { useSession } from "@/lib/session";
-import { useAuthStore } from "@/stores/auth-store";
-import { useBodyStore } from "@/stores/body-store";
-import { usePhotoStore } from "@/stores/photo-store";
+import { useSession, useSignOut } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
@@ -27,10 +24,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const { profile, familyId } = useSession();
   const { data: family } = useFamilyProfiles(familyId);
-  const signOut = useAuthStore((s) => s.signOut);
-  const resetRole = useRoleStore((s) => s.reset);
-  const resetPhotos = usePhotoStore((s) => s.reset);
-  const resetBody = useBodyStore((s) => s.reset);
+  const signOut = useSignOut();
   const mode = useRoleStore((s) => s.mode);
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const parentView = profile?.role === "PARENT" && mode !== "kid";
@@ -76,17 +70,14 @@ export default function SettingsPage() {
           )}
         </ul>
 
-        {/* 아이 화면에서는 로그아웃을 내지 않는다. 부모 폰을 빌려 쓰다 눌러 버리면 곤란하다 */}
-        {parentView && (
+        {/* 부모 폰을 빌려 쓰는 아이 화면에서는 로그아웃을 내지 않는다 — 눌러 버리면 곤란하다.
+            자기 계정으로 들어온 아이는 나갈 수 있어야 한다 */}
+        {!kidOnParentPhone && (
           <button
             type="button"
             onClick={() => {
-              signOut();
-              resetRole();
-              // 이 기기에만 둔 아이 사진 · 키 몸무게도 — 다음에 이 기기를 쓰는 사람이 보지 않게
-              resetPhotos();
-              resetBody();
               router.replace("/login");
+              signOut();
             }}
             className="card press text-ink-soft block w-full text-center text-sm font-bold"
           >

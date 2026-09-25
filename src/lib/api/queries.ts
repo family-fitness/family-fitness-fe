@@ -99,13 +99,28 @@ export function useMe() {
   });
 }
 
+/**
+ * 들어오자마자 받아 둔 값을 비우고, 로그인 응답에 얹혀 온 `/me` 로 채운다 — 스플래시가 한 번 더 묻지 않고,
+ * 앞 계정의 `/me` 로 길을 정하지 않는다(로그아웃하고 5분 안에 다른 계정으로 들어오면 앞 계정의 단계로 갔다).
+ */
+function seedAccount(qc: ReturnType<typeof useQueryClient>, auth: AuthResponse) {
+  qc.removeQueries();
+  if (auth.nextStep && Array.isArray(auth.profiles)) {
+    qc.setQueryData<MeResponse>(qk.me(), {
+      userId: auth.userId,
+      nextStep: auth.nextStep,
+      profiles: auth.profiles,
+    });
+  }
+}
+
 /** 로컬 전용. 구글 없이 시드 계정으로 들어간다 */
 export function useDevLogin() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (providerUserId: string) =>
       api.post<AuthResponse>("/auth/dev-login", { providerUserId }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.me() }),
+    onSuccess: (auth) => seedAccount(qc, auth),
   });
 }
 
@@ -114,7 +129,7 @@ export function useGoogleLogin() {
   return useMutation({
     mutationFn: (body: { authorizationCode: string; redirectUri: string; claimCode?: string }) =>
       api.post<AuthResponse>("/auth/google", body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.me() }),
+    onSuccess: (auth) => seedAccount(qc, auth),
   });
 }
 
@@ -201,7 +216,8 @@ export function useClaimProfile() {
         "/profiles/claim",
         { claimCode },
       ),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.me() }),
+    // 이 계정의 세상이 바뀐다(가족이 생긴다) — 받아 둔 옛 `/me` 로 다음 화면이 길을 정하지 않게 비운다
+    onSuccess: () => qc.removeQueries(),
   });
 }
 
