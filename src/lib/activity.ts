@@ -1,6 +1,5 @@
 import type { Availability, DayLog, Mission } from "./api/types";
 import { dayWork } from "./day";
-import { totalMinutes } from "./session-plan";
 import { today, weekdayCode } from "./today";
 
 /**
@@ -48,7 +47,9 @@ export function todayActivity({
   const { sessions, done, total } = dayWork(missions, profileId, now);
   const log = weekLogs?.find((d) => d.date === now);
   const slots = availability?.slots ?? [];
-  const planned = totalMinutes(sessions);
+  // 목표는 잡힌 시간이 적힌 칸만 센다 — 시간 없이 온 칸(영상 완주 운동)을 1분으로 치면 목표가 1분이 됐다.
+  // 모르면 적어 둔 운동 시간 · 기본값으로 물러선다
+  const planned = sessions.reduce((sum, s) => sum + (s.minutes ?? 0), 0);
   const written = slots.find((s) => s.day === weekdayCode(now))?.minutes;
 
   return {

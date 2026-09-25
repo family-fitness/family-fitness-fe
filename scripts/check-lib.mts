@@ -35,6 +35,7 @@ import {
 } from "@/lib/day";
 import { UNLOCKS, decorationsAt, newlyUnlocked, nextUnlock } from "@/lib/unlocks";
 import { orderSessions, totalMinutes } from "@/lib/session-plan";
+import { todayActivity } from "@/lib/activity";
 import { josa } from "@/lib/utils";
 
 let failed = 0;
@@ -227,6 +228,26 @@ check(
   "시간이 없거나 0분인 칸은 1분 — 운동하기 타이머와 같은 셈",
   totalMinutes([{ minutes: 5 }, { minutes: null }, { minutes: 0 }]) === 7,
 );
+{
+  // 영상 완주 운동은 칸도 시간도 없이 온다 — 오늘 목표가 1분이 되지 않고 적어 둔 시간으로 물러선다
+  const video = {
+    missionId: "v",
+    startDate: "2026-09-24",
+    endDate: "2026-09-24",
+    targetMetric: "VIDEO_DONE",
+    participants: [{ profileId: "A", completed: false }],
+  } as unknown as NonNullable<Parameters<typeof todayActivity>[0]["missions"]>[number];
+  const goal = todayActivity({
+    profileId: "A",
+    missions: [video],
+    weekLogs: [],
+    availability: { slots: [{ day: "THU", start: "18:00", minutes: 30 }] } as unknown as Parameters<
+      typeof todayActivity
+    >[0]["availability"],
+    now: "2026-09-24",
+  }).goal;
+  check("시간 없는 영상 운동의 날 목표는 적어 둔 운동 시간", goal === 30, `${goal}분`);
+}
 
 /* ─── 하루 기록 ─────────────────────────────────────────── */
 
