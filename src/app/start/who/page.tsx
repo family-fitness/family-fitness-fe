@@ -16,13 +16,14 @@ import { ProfileAvatar } from "@/components/domain/profile-avatar";
 /** 형제 중 누구인지. */
 export default function WhoPage() {
   const router = useRouter();
-  const { familyId } = useSession();
-  const { data: family, isPending } = useFamilyProfiles(familyId);
+  const { familyId, isPending: sessionPending } = useSession();
+  // 꺼진 조회의 isPending 은 영영 true 다 — 가족이 없으면 뼈대만 남지 않게 isLoading 으로
+  const { data: family, isLoading } = useFamilyProfiles(familyId);
   const setChild = useRoleStore((s) => s.setChild);
 
   const kids = (family?.profiles ?? []).filter((p) => p.role === "CHILD");
 
-  if (isPending) {
+  if (sessionPending || isLoading) {
     return (
       <>
         <AppBar back title="누구야?" />
