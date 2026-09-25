@@ -350,6 +350,31 @@ check(
   check("쉬는 날이어도 한 만큼이 먼저", todayLine(a, true) === "오늘 다 했어요");
   check("아직이면 쉬는 날", todayLine(b, true) === "오늘 쉬는 날");
   check("참여자가 아니면 오늘 운동이 없다", dayWork([shared], "C", "2026-09-24").total === 0);
+  const older = {
+    ...shared,
+    sessions: [
+      { position: 1, phase: "WARMUP", title: "a", minutes: 1, completed: true },
+      { position: 2, phase: "MAIN", title: "b", minutes: 4 },
+    ],
+    participants: [{ profileId: "A", completed: false }],
+  } as unknown as Parameters<typeof plannedDay>[0];
+  check(
+    "사람마다의 기록이 아직 안 오면 칸의 끝냄으로 물러선다",
+    dayWork([older], "A", "2026-09-24").done === 1,
+  );
+  check(
+    "사람마다의 기록이 오면 칸에 적힌 끝냄은 믿지 않는다",
+    dayWork(
+      [
+        {
+          ...older,
+          participants: [{ profileId: "A", completed: false, doneSessions: [] }],
+        } as unknown as Parameters<typeof plannedDay>[0],
+      ],
+      "A",
+      "2026-09-24",
+    ).done === 0,
+  );
   check(
     "끝나는 날이 없는 운동은 하루짜리",
     missionsOn([{ ...shared, endDate: undefined }], "A", "2026-09-24").length === 1 &&

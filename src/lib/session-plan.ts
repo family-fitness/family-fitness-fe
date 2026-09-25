@@ -43,9 +43,15 @@ export function sessionsOf(
     MissionParticipant | undefined;
   const given = (mission as MissionWithSessions).sessions;
   if (given && given.length > 0) {
-    const done = new Set(me?.doneSessions ?? []);
+    /*
+      사람마다의 기록(doneSessions)이 오면 그것만 믿는다. 서버가 아직 싣지 않으면(▲ 요청) 칸의 completed 로 물러선다 —
+      안 그러면 한 칸 끝내고 다시 받을 때마다 끝낸 칸이 사라져 아이가 첫 칸부터 다시 했다.
+      참여자가 아니면 끝낸 칸이 없다
+    */
+    const done = me ? (me.doneSessions != null ? new Set(me.doneSessions) : null) : new Set();
     return orderSessions(given).map((s) => {
-      const completed = Boolean(me?.completed) || done.has(s.position);
+      const completed =
+        Boolean(me?.completed) || (done ? done.has(s.position) : Boolean(s.completed));
       return { ...s, completed, verifiedBy: completed ? (me?.verifiedBy ?? null) : null };
     });
   }
