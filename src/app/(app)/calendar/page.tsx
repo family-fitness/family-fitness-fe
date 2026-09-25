@@ -138,7 +138,9 @@ function Calendar() {
   const stickers = [...logs.values()]
     .filter((d) => monthOf(d.date) === month)
     .reduce((sum, d) => sum + d.stickers.length, 0);
-  const tileState = calendarError ? "error" : calendarPending ? "pending" : "ready";
+  // 받아 둔 기록이 있으면 다시 받다 실패해도 그대로 — 칸은 그려져 있는데 합만 「—」 가 됐다
+  const failedCalendar = Boolean(calendarError) && !calendar;
+  const tileState = failedCalendar ? "error" : calendarPending ? "pending" : "ready";
 
   return (
     <>
@@ -237,7 +239,7 @@ function Calendar() {
               <MonthTile label="받은 칭찬" value={stickers} unit="장" state={tileState} />
             )}
           </div>
-          {calendarError && (
+          {failedCalendar && (
             <button
               type="button"
               onClick={() => void refetchCalendar()}

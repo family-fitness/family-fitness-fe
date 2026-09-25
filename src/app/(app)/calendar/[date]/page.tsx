@@ -252,7 +252,8 @@ function Day() {
           })}
         </ol>
 
-        {calendarError ? (
+        {/* 받아 둔 기록이 있으면 다시 받다 실패해도 그대로 — 위 요일 링 줄은 그대로인데 가운데만 오류가 됐다 */}
+        {calendarError && !calendar ? (
           <section className="card">
             <ErrorState
               error={calendarError}
