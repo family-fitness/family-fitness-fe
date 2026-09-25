@@ -1,6 +1,7 @@
 # 백엔드 API 요약 — 프론트가 부르는 주소 전부
 
-> 2026-09-25 · 프론트 `feature/FE-104-audit` 기준 · 서버 계약은 `src/lib/api/schema.ts`(백엔드 `/v3/api-docs` 에서 생성, 29개 주소)와 맞대 봤습니다.
+> 2026-09-25 · 프론트 `feature/FE-104-audit` 기준 · 서버 계약은 `src/lib/api/schema.ts`(백엔드 `/v3/api-docs` 에서 생성, 29개 주소)와,
+> 노션 백엔드 「API 명세서」(9/17)와 맞대 봤습니다(0장).
 > 자세한 까닭과 예시는 `BACKEND_ASKS.md` 에 있습니다. 이 문서는 **무엇이 필요한지 한 장으로** 보는 용도입니다.
 > 모든 주소 앞에는 `/api/v1` 이 붙고, 로그인 뒤의 요청은 `Authorization: Bearer <accessToken>` 입니다.
 
@@ -11,20 +12,70 @@
 | **그대로 씀**          | 15      | 서버에 있고 지금 모양으로 쓴다(아래 6장)                                                        |
 | **있지만 바뀌어야 함** | 9       | 주소는 있는데 칸이 모자라거나 뜻이 다르다(아래 2장)                                             |
 | **새로 필요함**        | 17 (+2) | 서버에 없어 지금은 목(MSW)이 대신 답한다(아래 3장). +2 는 아직 부르지 않는 사진 올리기 · 지우기 |
-| 서버에만 있음          | 7       | 프론트가 부르지 않는다(아래 5장)                                                                |
+| 서버에만 있음          | 7 (+9)  | 프론트가 부르지 않는다(아래 5장). +9 는 백엔드 명세의 설계안                                    |
+| **노션 명세와 어긋남** | 5 · 5   | 이름이 다른 주소 5 · 규칙이 다른 것 5 — 정하고 맞출 것(아래 0장)                                |
+
+## 0. 노션 백엔드 명세와 맞대 본 것
+
+노션 「API 명세서」(백엔드 · 2026-09-17 · 백엔드 `develop` 기준, 엔드포인트 54행)와 이 문서를 한 줄씩 맞대 봤다.
+
+### 이름만 다르다 — 백엔드 설계안 이름으로 맞추자
+
+같은 일을 하는 주소를 양쪽이 다른 이름으로 적었다. 백엔드 설계안 이름으로 맞추면 프론트가 경로만 바꾼다.
+
+| 무엇          | 프론트가 부르는 것(3장)                                                 | 백엔드 명세(설계안)                                                       | 맞출 것                                                                                                                           |
+| ------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| 운동 한 칸 끝 | `POST /missions/{id}/sessions/{position}/done`                          | `POST /missions/{id}/sessions/{seq}/complete`                             | 백엔드 이름. `seq` = `position`(칸 번호). 요청 · 응답은 3장 모양으로                                                              |
+| 쉬는 날 카드  | `GET · POST /families/{id}/rest-days` · `DELETE …/rest-days/{date}`     | `GET · POST /families/{id}/rest-cards` · `DELETE …/rest-cards/{restDate}` | 백엔드 이름. 다만 **부모만**(명세는 「로그인 필요」), 되돌리기는 **오늘도**(명세는 「그날 전까지」)                               |
+| 운동 클립     | `GET /clips?factor=&phase=&quiet=&q=&list=&profileId=`                  | `GET /exercises` · `GET /videos/{videoId}/exercises`                      | 백엔드 이름(구간 = exercise). 3장의 필터 · 응답 칸이 필요하다                                                                     |
+| 클립 찜       | `POST /clips/{clipId}/favorite`                                         | 영상 단위 찜만(`POST /videos/{videoId}/favorite` 구현됨)                  | **구간 단위 찜**이 필요 — 직접 짜기는 영상이 아니라 구간을 담는다                                                                 |
+| 편성 조건     | `profileId · date · minutes · quiet · place · focusFactor · withParent` | v2 `constraints: noise · space · place · intensity · parentMode`          | `quiet` → `noise`, `withParent` → `parentMode`, `place` 같음. `profileId · date · minutes · focusFactor` 를 더 받아야 한다(1장 ②) |
+
+### 이미 맞는 것
+
+- `GET /families/{id}/cheers`(받은 칭찬) · `GET /profiles/{id}/fitness-tests`(측정 이력) · `GET /families/{id}/league` — 설계안에 같은 주소로 있다
+- `mission_sessions` · `mission_session_completions`(참여자 한 명의 칸 하나 · `completed_at`) — 4장의 「끝낸 칸은 사람마다 · 끝낸 날을 서버가 든다」 와 같다.
+  응답에는 `participants[].doneSessions: [seq…]` 로 실어 달라
+- 승인은 제안을 복사만 하고 `mission_sessions` 도 같이 복사 · 코치 제안의 `sessions[]` 에 `phase` — 1장 ③ 과 같다
+- 띠(`band`) 기준 75 · 25 — 목과 같다
+
+### 규칙이 서로 다르다 — 정해야 한다
+
+1. **리그** — 프론트(9/25 회의): **한 달이 한 판 · 다섯 티어(브론즈~다이아)** · 달성률 = 잡힌 운동 날 중 해낸 날(쉬는 날 뺌), 아이들 평균.
+   백엔드 v2(9/17): 주 단위(일요일 마감) · 여섯 티어(+마스터) · 방 20가족 · 달성률 = 「기운」 획득 ÷ 목표(지난 4주 중앙값 × 1.1).
+   → 9/25 결정(한 달 · 다섯 티어)으로 맞춰 달라. 승급 · 강등이 없는 방(명세의 8가족 미만)은 `promote · demote` 를 0 으로 주면 프론트는
+   「다음 달도 ○○」 로 읽는다
+2. **레벨 · 경험치 · 업적**(`GET /profiles/{id}/progress`) — 프론트는 아이마다 레벨 · 경험치 · 업적 · 이어서 한 날을 그린다(아이 홈 · 레벨과 업적 ·
+   리그 프로필). 백엔드 v2 에는 가족 단위 「기운」(`GET /families/{id}/points`)만 있고 아이별 레벨이 없다 → `progress` 가 필요하다
+3. **10년 후 예측** — 백엔드는 9/17 에 제품에서 뺐다(범위 밖, 측정 이력 추이로 대신). 프론트는 아직 「10년 위 연령대」 화면(`/p/{id}/future`)이
+   `POST /profiles/{id}/predictions` 를 부른다 → 화면을 걷을지 정해야 한다. 걷으면 이 주소는 필요 없다
+4. **알림** — 프론트는 알림함(`GET /notifications` · `POST /notifications/read`)을 그린다. 백엔드는 보낼지 판단(`GET /profiles/{id}/nudge`)만 있다
+   → 알림함이 따로 필요하다
+5. **아이 화면의 신체 점수** — 명세 문구 규칙 「아이 화면에서 `parent_scope`(백분위 · 점수 · 체중)를 읽지 않는다」 와 프론트 규칙(9/25)
+   「아이에게 신체 점수(또래 백분위) 하나는 보여 준다 · 서열로만 바꾸지 않는다」 가 다르다. 아이 홈은 `fitness-map` 의 `overallPercentile` 을 읽는다 → 확인 필요
+
+### 백엔드 명세에 아예 없는 것 — 명세 목록에 더해 달라
+
+`GET /families/{id}/calendar` · `GET /profiles/{id}/progress` · `GET · PUT /profiles/{id}/availability` · `GET /notifications` ·
+`POST /notifications/read` · `GET /families/{id}/coach/runs/latest` · `GET /invites/{claimCode}` · 구간 단위 찜 · `PUT · DELETE /profiles/{id}/photo`
+
+### 프론트가 맞춘 것
+
+- 동의 없음 · 측정 대상 아님은 **422**(명세 공통 규칙 — 도메인 규칙 위반). 목 · 프론트 규칙을 422 로 고쳤다(화면은 코드로 가르므로 문구는 같다)
+- 등급 기준 **1등급 ≥ 85 · 2등급 ≥ 65 · 3등급 ≥ 40 · 그 외 참가**(명세 ⑪). 목을 맞췄다 — 화면은 서버가 준 `grade` 를 그대로 쓴다
 
 ## 1. 가장 급한 것 — 목을 끄면 바로 깨지는 것
 
-| #   | 무엇이 깨지나                                                          | 부탁                                                                                                                                                  |
-| --- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ①   | 아이가 보내는 것이 전부 403(「엄마 · 아빠한테 알리기」 · 「고마워요」) | 부모 계정이 **계정 없는 자녀 프로필 이름으로** `POST /families/{id}/cheers` 를 보낼 수 있게(한 기기를 아이가 빌려 쓴다)                               |
-| ②   | 오늘 운동 짜기가 한 주 가족 편성을 짜고, 같은 주 두 번이면 409         | `POST /families/{id}/coach/runs` 가 `profileId · date · minutes · quiet · place · focusFactor · withParent` 를 받고, 잠금은 **(프로필, 날짜)** 단위로 |
-| ③   | 준비 · 본 · 정리 칸이 사라져 모든 운동이 본운동 한 칸                  | `MissionView.sessions[]` · `ProposalView.sessions[]` · `CreateMissionRequest.sessions[]` · 끝낸 칸은 `participants[].doneSessions`(아래 4장)          |
-| ④   | 코치 운동 목표가 1분이 된다                                            | AI 9/17 클립 형식(`duration_sec · phase · order · video.end_sec`)으로 변환                                                                            |
-| ⑤   | 육각형의 민첩성이 늘 「안 잼」                                         | 레이더에 민첩성(043 반복옆뛰기)                                                                                                                       |
-| ⑥   | 짜는 과정이 끝에 한꺼번에 뜬다                                         | `CoachRun.steps` 를 단계마다 저장                                                                                                                     |
-| ⑦   | 운동 칸을 끝내도 기록이 안 남는다                                      | `POST /missions/{id}/sessions/{position}/done`(아래 3장) — 지금 서버의 `activity/timer` 는 칸을 모른다                                                |
-| ⑧   | 캘린더 · 이번 주 · 리그 · 레벨이 전부 빈다                             | `GET /families/{id}/calendar` · `GET /profiles/{id}/progress`(아래 3장)                                                                               |
+| #   | 무엇이 깨지나                                                          | 부탁                                                                                                                                                    |
+| --- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ①   | 아이가 보내는 것이 전부 403(「엄마 · 아빠한테 알리기」 · 「고마워요」) | 부모 계정이 **계정 없는 자녀 프로필 이름으로** `POST /families/{id}/cheers` 를 보낼 수 있게(한 기기를 아이가 빌려 쓴다)                                 |
+| ②   | 오늘 운동 짜기가 한 주 가족 편성을 짜고, 같은 주 두 번이면 409         | `POST /families/{id}/coach/runs` 가 `profileId · date · minutes · quiet · place · focusFactor · withParent` 를 받고, 잠금은 **(프로필, 날짜)** 단위로   |
+| ③   | 준비 · 본 · 정리 칸이 사라져 모든 운동이 본운동 한 칸                  | `MissionView.sessions[]` · `ProposalView.sessions[]` · `CreateMissionRequest.sessions[]` · 끝낸 칸은 `participants[].doneSessions`(아래 4장)            |
+| ④   | 코치 운동 목표가 1분이 된다                                            | AI 9/17 클립 형식(`duration_sec · phase · order · video.end_sec`)으로 변환                                                                              |
+| ⑤   | 육각형의 민첩성이 늘 「안 잼」                                         | 레이더에 민첩성(043 반복옆뛰기)                                                                                                                         |
+| ⑥   | 짜는 과정이 끝에 한꺼번에 뜬다                                         | `CoachRun.steps` 를 단계마다 저장 — `steps_json` 은 이미 있다(명세). 단계가 끝날 때마다 적어야 폴링 중에 하나씩 보인다                                  |
+| ⑦   | 운동 칸을 끝내도 기록이 안 남는다                                      | `POST /missions/{id}/sessions/{position}/done`(아래 3장 · 명세 설계안 이름은 `…/sessions/{seq}/complete`) — 지금 서버의 `activity/timer` 는 칸을 모른다 |
+| ⑧   | 캘린더 · 이번 주 · 리그 · 레벨이 전부 빈다                             | `GET /families/{id}/calendar` · `GET /profiles/{id}/progress`(아래 3장)                                                                                 |
 
 ## 2. 있지만 바뀌어야 하는 주소
 
@@ -92,12 +143,18 @@ participants: [
 
 ## 5. 서버에만 있고 프론트가 부르지 않는 것
 
-| 주소                                                                        | 사정                                                                             |
-| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `POST /coach/chat`                                                          | 코치 대화창은 9/23 회의에서 없앴다 — 추천은 버튼(편성)으로 받는다                |
-| `GET /families/{id}/report/weekly`                                          | 주간 리포트 화면을 뺐다. 이번 주는 캘린더 응답으로 그린다                        |
-| `GET /videos` · `POST /videos/{id}/favorite` · `POST /videos/{id}/progress` | 영상 한 편 단위라 동작을 따로 고를 수 없다 — 3장 `/clips` 로 바꾸고 싶다         |
-| `POST /missions/{id}/activity/timer` · `…/activity/steps`                   | 칸을 몰라 3장 「운동 한 칸 끝」 으로 대신한다. 걸음수 자기 신고 화면은 지금 없다 |
+| 주소                                                                        | 사정                                                                                                                                                |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /coach/chat`                                                          | 코치 대화창은 9/23 회의에서 없앴다 — 추천은 버튼(편성)으로 받는다                                                                                   |
+| `GET /families/{id}/report/weekly`                                          | 주간 리포트 화면을 뺐다. 이번 주는 캘린더 응답으로 그린다                                                                                           |
+| `GET /videos` · `POST /videos/{id}/favorite` · `POST /videos/{id}/progress` | 영상 한 편 단위라 동작을 따로 고를 수 없다 — 3장 `/clips` 로 바꾸고 싶다                                                                            |
+| `POST /missions/{id}/activity/timer` · `…/activity/steps`                   | 칸을 몰라 3장 「운동 한 칸 끝」 으로 대신한다. 걸음수 자기 신고 화면은 지금 없다                                                                    |
+| `PATCH /profiles/{id}/body`(설계안)                                         | 키 · 몸무게는 측정 등록에 같이 보낸다 — `latest` 응답에 실어 주면 된다(2장)                                                                         |
+| `GET /families/{id}/missions/today` · `GET /missions/{id}`(설계안)          | 오늘 것은 목록에서 날짜로 고른다. 단건 조회는 있으면 새로고침이 가벼워진다                                                                          |
+| `POST /missions/{id}/skip`(설계안)                                          | 쉬는 날은 가족 단위 카드(`rest-cards`)로 쓴다                                                                                                       |
+| `GET /families/{id}/points` · `PATCH …/promise`(설계안)                     | 「기운」 · 가족 약속 화면이 없다 — 0장 규칙 2                                                                                                       |
+| `GET /profiles/{id}/nudge` · `GET /meta/versions`(설계안)                   | 알림함이 따로 필요하다(0장 규칙 4) · 버전은 화면에 없다                                                                                             |
+| `POST /missions/{id}/feedback`(설계안)                                      | 운동 끝 칸의 「어땠어요」(쉬웠어요 · 딱 좋아요 · 힘들었어요)를 보낼 수 있다 — `{ profileId, feel: "EASY" \| "GOOD" \| "HARD" }` 로 받아 주면 붙인다 |
 
 `POST /auth/refresh` 는 `fetch` 로 직접 부른다(토큰 만료 때). 그대로 쓴다.
 
@@ -105,7 +162,7 @@ participants: [
 
 `POST /auth/dev-login` · `POST /auth/google` · `POST /auth/refresh` · `POST /families` · `POST /profiles/{id}/invite` ·
 `POST /profiles/claim` · `PATCH /profiles/{id}/support-mode` · `PATCH /profiles/{id}/consent` · `GET /fitness/items?ageGroup=` ·
-`POST /profiles/{id}/fitness-tests` · `POST /profiles/{id}/predictions` · `GET /coach/runs/{id}` · `POST /coach/runs/{id}/approve` ·
+`POST /profiles/{id}/fitness-tests` · `POST /profiles/{id}/predictions`(명세는 9/17 범위 밖 — 0장 규칙 3) · `GET /coach/runs/{id}` · `POST /coach/runs/{id}/approve` ·
 `POST /coach/runs/{id}/reject` · `POST /missions/{id}/participants/{profileId}/confirm`
 
 ## 7. 공통 약속
@@ -117,6 +174,7 @@ participants: [
   `RUN_IN_PROGRESS` · `ALREADY_APPROVED` · `TEMPORARILY_UNAVAILABLE` · `ALREADY_IN_FAMILY` · `CODE_NOT_FOUND` · `CODE_EXPIRED` ·
   `ALREADY_CLAIMED` · `ALREADY_MEMBER` · `NOT_APPLICABLE` · `INVALID_SLOT` · `INVALID_DATE` · `ALREADY_REST_DAY` · `NO_REST_CARD_LEFT` ·
   `ALREADY_MOVED` · `TARGET_NOT_REACHED`
+- 상태 코드는 명세 공통 규칙대로 — 403 권한 없음(대부분 보호자 아님) · 409 상태 충돌 · 422 도메인 규칙 위반(동의 없음 · 측정 대상 아님)
 - 본문 없는 성공(204 · 빈 200)도 성공으로 읽는다
 - 로그아웃 · 로그인 · 초대 수락 때 프론트가 받아 둔 값을 다 비운다 — 로그인 응답에 `/me` 와 같은 `nextStep · profiles` 를 얹어 주면
   스플래시가 한 번 더 묻지 않는다(지금 계약 그대로)
