@@ -113,7 +113,11 @@ export function ScoreTrend({ tests }: { tests: FitnessTestSummary[] }) {
                 e.preventDefault();
                 setActive((cur) => (cur === i ? null : i));
               }}
-              onFocus={() => setActive(i)}
+              // 키보드로 옮겨 왔을 때만 초점으로 연다 — 손가락으로 누르면 초점이 먼저 열고 누름이 바로 닫아
+              // 처음 누른 점은 아무것도 안 떴다
+              onFocus={(e) => {
+                if (e.currentTarget.matches(":focus-visible")) setActive(i);
+              }}
               onBlur={() => setActive(null)}
               className="cursor-pointer"
             >
