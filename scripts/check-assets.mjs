@@ -63,8 +63,22 @@ function note(file, name) {
   else missing.push([file, name]);
 }
 
+/** 만들어 낸 그림 목록 — 여기 적힌 이름은 쓴 것이 아니다. 세면 모든 그림이 쓰인 것이 되어 「안 쓴 것」 이 늘 비었다 */
+const LIST_FILE = join(SRC_DIR, "lib/asset-list.ts");
+
+/** 틀로 만드는 이름 — 따옴표 안에 이름이 통째로 없다. 그 머리로 시작하는 그림을 다 쓰는 것으로 본다 */
+const FAMILIES = [
+  ["level/level-${", "level/level-"],
+  ["badge/badge-${", "badge/badge-"],
+];
+
 for (const file of walk(SRC_DIR)) {
+  if (file === LIST_FILE) continue;
   const text = readFileSync(file, "utf8");
+  for (const [pattern, prefix] of FAMILIES) {
+    if (!text.includes(pattern)) continue;
+    for (const name of have) if (name.startsWith(prefix)) note(relative(ROOT, file), name);
+  }
 
   // <Illustration name="move/move-situp" fallback="..." />
   for (const [, name] of text.matchAll(/(?:name|fallback)=["']([a-z0-9-]+\/[a-z0-9-]+)["']/g)) {
