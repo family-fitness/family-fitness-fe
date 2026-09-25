@@ -23,7 +23,7 @@ import {
   useFamilyLeague,
   useFitnessMap,
   useLatestFitnessTest,
-  useMissions,
+  useCurrentMissions,
   useProgress,
 } from "@/lib/api/queries";
 import { artFor } from "@/lib/art";
@@ -52,7 +52,7 @@ export default function ParentHomePage() {
     refetch: refetchMap,
     isRefetching,
   } = useFitnessMap(familyId);
-  const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
+  const { data: missions } = useCurrentMissions(familyId);
 
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);

@@ -426,6 +426,47 @@ export function useMissions(
   });
 }
 
+/**
+ * 지금 걸려 있는 운동 — 아직인 것과 다 한 것 둘 다.
+ *
+ * 서버의 `ACTIVE` 는 「아직 다 안 한 것」 이다. 그것만 받으면 아이가 다 하는 순간 오늘 운동이 목록에서
+ * 빠져, 아이 홈은 「오늘 운동이 아직 없어요」, 부모 홈은 「아직 오늘 운동이 없어요」 가 된다(9/25 한 바퀴).
+ * `DONE` 을 같이 받아 합친다. 오늘 것만 고르는 건 화면이 날짜로 한다. 키가 `useMissions` 와 같아 캐시를 나눠 쓴다.
+ */
+export function useCurrentMissions(familyId: Uuid | undefined) {
+  return useQueries({
+    queries: (["ACTIVE", "DONE"] as const).map((status) => ({
+      queryKey: qk.family.missions(familyId ?? "", "ALL", status),
+      queryFn: () =>
+        api.get<MissionList>(
+          path`/families/${familyId}/missions${query({ scope: "ALL", status })}`,
+        ),
+      enabled: Boolean(familyId),
+    })),
+    combine: mergeMissions,
+  });
+}
+
+/** 컴포넌트 밖에 둔다 — 렌더마다 새 함수면 합친 결과도 매번 새것이 된다 */
+function mergeMissions(results: { data?: MissionList; isPending: boolean; error: unknown }[]) {
+  const [active, done] = results;
+  // 다 한 것을 못 받아도 아직인 것은 보인다 — 오늘 할 운동이 가려지지 않게
+  const seen = new Set<string>();
+  const missions = [...(active.data?.missions ?? []), ...(done.data?.missions ?? [])].filter(
+    (m) => {
+      const id = m.missionId ?? "";
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    },
+  );
+  return {
+    data: active.data ? { ...active.data, missions } : undefined,
+    isPending: active.isPending,
+    error: active.error,
+  };
+}
+
 /** STEPS 미션의 마지막 관문. 보호자만 누를 수 있다 */
 export function useConfirmParticipant(missionId: Uuid, familyId: Uuid) {
   const qc = useQueryClient();

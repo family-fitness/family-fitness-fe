@@ -21,7 +21,7 @@ import {
   useFamilyCalendars,
   useFamilyProfiles,
   useFitnessMap,
-  useMissions,
+  useCurrentMissions,
   useProgress,
 } from "@/lib/api/queries";
 import { daySummary } from "@/lib/day";
@@ -50,7 +50,7 @@ export default function FamilyDashboardPage() {
     isRefetching,
   } = useFitnessMap(familyId);
   const { data: family } = useFamilyProfiles(familyId);
-  const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
+  const { data: missions } = useCurrentMissions(familyId);
   // 초대 시트 — 닫힘(undefined) · 누구든(null) · 이 자리로(id)
   const [inviting, setInviting] = useState<string | null | undefined>(undefined);
 

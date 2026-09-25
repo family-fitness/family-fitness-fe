@@ -23,7 +23,7 @@ import {
   useCheers,
   useFamilyProfiles,
   useFitnessMap,
-  useMissions,
+  useCurrentMissions,
   useProgress,
   useRestDays,
 } from "@/lib/api/queries";
@@ -56,7 +56,7 @@ export default function KidHomePage() {
     refetch: refetchMap,
     isRefetching,
   } = useFitnessMap(familyId);
-  const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
+  const { data: missions } = useCurrentMissions(familyId);
   const { data: progress } = useProgress(childProfileId ?? undefined);
   const week = weekOf();
   const { data: calendar, isPending: calendarPending } = useCalendar(
