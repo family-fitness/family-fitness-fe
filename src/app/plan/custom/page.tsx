@@ -140,11 +140,7 @@ function CustomPlan() {
         { NOT_A_PARENT: "보호자만 운동을 만들 수 있어요." },
         "등록하지 못했어요.",
       );
-      setProblem(
-        made.length > 0
-          ? `${made.length}일은 등록됐어요. 남은 날은 다시 눌러 주세요 — ${reason}`
-          : reason,
-      );
+      setProblem(made.length > 0 ? `${made.length}일은 등록됐어요 · ${reason}` : reason);
     } finally {
       if (here.current) setSaving(false);
     }
