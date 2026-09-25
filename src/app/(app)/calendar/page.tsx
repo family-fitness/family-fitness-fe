@@ -194,8 +194,9 @@ function Calendar() {
                   <DayCell
                     date={date}
                     log={logs.get(date)}
-                    // 쉬기로 한 날에는 운동이 잡혀 있어도 점선 고리를 두지 않는다(규칙 15)
-                    planned={planned.has(date) && !logs.get(date)?.rest}
+                    // 쉬기로 한 날에는 운동이 잡혀 있어도 점선 고리를 두지 않는다(규칙 15).
+                    // 기록이 오기 전에도 — 벌써 한 날 · 쉬기로 한 날에 점선 고리가 먼저 번쩍였다
+                    planned={Boolean(calendar) && planned.has(date) && !logs.get(date)?.rest}
                     future={date > now}
                     isToday={date === now}
                     loading={calendarPending}

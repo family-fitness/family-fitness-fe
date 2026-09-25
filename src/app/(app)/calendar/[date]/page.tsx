@@ -123,12 +123,14 @@ function Day() {
   const summary = daySummary(log);
   // 한 칸이라도 한 것만 「한 운동」. 아직 시작 안 한 오늘 운동은 「할 운동」 이다
   const doneEntries = (log?.entries ?? []).filter(didSomething);
-  // 쉬기로 한 날에는 할 운동을 늘어놓지 않는다 — 쉬는 날에 운동을 권하지 않는다(규칙 15)
-  const planned = log?.rest
-    ? []
-    : plannedOn(all?.missions ?? [], who.profileId ?? undefined, date, now).filter(
-        (m) => !doneEntries.some((e) => e.missionId === m.missionId),
-      );
+  // 쉬기로 한 날에는 할 운동을 늘어놓지 않는다 — 쉬는 날에 운동을 권하지 않는다(규칙 15).
+  // 그날 기록이 오기 전에도 — 이미 한 운동 · 쉬기로 한 날인지 모르는 채 「할 운동」 이 먼저 번쩍였다
+  const planned =
+    !calendar || log?.rest
+      ? []
+      : plannedOn(all?.missions ?? [], who.profileId ?? undefined, date, now).filter(
+          (m) => !doneEntries.some((e) => e.missionId === m.missionId),
+        );
   const plannedDays = new Set(
     (all?.missions ?? [])
       .filter((m) => m.participants?.some((p) => p.profileId === who.profileId))
