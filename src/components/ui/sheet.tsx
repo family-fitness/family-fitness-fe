@@ -1,7 +1,15 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -79,6 +87,12 @@ export function Sheet({
     };
   }, [open, mounted]);
 
+  /*
+    닫기는 늘 지금 것을 부른다 — effect 가 onClose 에 매이면, 부르는 쪽이 렌더마다 새 함수를 넘길 때
+    글자 하나 칠 때마다 effect 가 다시 돌아 초점이 시트 밖(연 자리)으로 튀었다가 돌아왔다
+  */
+  const close = useEffectEvent(() => onClose());
+
   // 뒤 화면 잠금 · Escape · 초점
   useEffect(() => {
     if (!open) return;
@@ -89,16 +103,17 @@ export function Sheet({
     });
     const onKey = (e: globalThis.KeyboardEvent) => {
       // 한글 조합 중의 Escape 는 조합을 끝내는 것이다. 겹쳐 열렸으면 맨 위 시트만 닫는다
-      if (e.key === "Escape" && !e.isComposing && openSheets.at(-1) === id) onClose();
+      if (e.key === "Escape" && !e.isComposing && openSheets.at(-1) === id) close();
     };
     window.addEventListener("keydown", onKey);
     return () => {
       cancelAnimationFrame(focus);
       window.removeEventListener("keydown", onKey);
       unlockScroll(id);
-      before?.focus({ preventScroll: true });
+      // 연 자리가 그사이 사라졌으면(고른 뒤 목록이 바뀜) 거기로 돌리지 않는다
+      if (before?.isConnected) before.focus({ preventScroll: true });
     };
-  }, [open, onClose, id]);
+  }, [open, id]);
 
   /** Tab 이 시트 밖으로 나가지 않게 — 뒤 화면을 더듬게 되면 열린 시트가 보이지 않는다 */
   const trapTab = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -121,8 +136,15 @@ export function Sheet({
 
   if (!mounted) return null;
 
+  // 내려가는 동안은 누르지 못한다 — 닫은 시트의 단추가 한 번 더 눌리지 않고, 뒤 화면을 바로 누를 수 있게
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div
+      inert={!open}
+      className={cn(
+        "fixed inset-0 z-50 flex items-end justify-center",
+        !open && "pointer-events-none",
+      )}
+    >
       <button
         type="button"
         aria-label="닫기"
