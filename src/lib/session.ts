@@ -24,7 +24,9 @@ export function useSession() {
 
   return {
     isPending,
-    error,
+    // 받아 둔 `/me` 가 있으면 다시 받다 실패해도 그걸로 그린다 — 밤을 넘겨 다시 받다 망이 끊기면
+    // 멀쩡히 보던 화면이 오류 화면으로 바뀌었다
+    error: data ? null : error,
     /** `/me` 를 다시 부른다 — 이게 실패했을 때 다른 조회를 다시 불러 봐야 소용없다 */
     refetch,
     /** 앱 진입 시 어디로 보낼지 — CREATE_FAMILY · CLAIM · SUPPORT_MODE · HOME */
