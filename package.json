@@ -33,7 +33,6 @@
     "assets:list": "node scripts/list-assets.mjs"
   },
   "dependencies": {
-    "@hookform/resolvers": "^5.9.1",
     "@tanstack/react-query": "^5.102.8",
     "@tanstack/react-query-devtools": "^5.102.8",
     "class-variance-authority": "^0.7.1",
@@ -45,10 +44,8 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "^7.87.0",
-    "recharts": "^3.10.1",
     "tailwind-merge": "^3.6.0",
     "three": "^0.186.0",
-    "zod": "^4.5.4",
     "zustand": "^5.0.15"
   },
   "devDependencies": {
