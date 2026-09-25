@@ -117,6 +117,8 @@ export default function PlayPage() {
   const { say } = useVoice(voiceOn);
   const [burst, setBurst] = useState(0);
   const [xp, setXp] = useState(0);
+  /** 엄마 · 아빠한테 알렸나 — 끝 칸이 다시 그려져도(다시 받는 동안 뼈대로 내려갔다 올라와도) 잊지 않게 여기에 둔다 */
+  const [told, setTold] = useState(false);
   const startedAt = useRef<string | null>(null);
   /** 시작할 때의 레벨. 끝나고 올랐는지 견준다 */
   const [levelBefore, setLevelBefore] = useState<number | null>(null);
@@ -465,6 +467,8 @@ export default function PlayPage() {
                 familyId={familyId ?? ""}
                 kidId={kidId}
                 missionId={missionId}
+                toldNow={told}
+                onTold={() => setTold(true)}
               />
             ) : (
               // 한 칸이라도 끝낸 뒤에만 — 시작도 안 하고 누르면 「0개 했어요」 를 알리게 된다
@@ -692,6 +696,8 @@ function Finish({
   familyId,
   kidId,
   missionId,
+  toldNow,
+  onTold,
 }: {
   allDone: boolean;
   doneCount: number;
@@ -703,6 +709,9 @@ function Finish({
   familyId: string;
   kidId: string;
   missionId: string;
+  /** 이 화면에서 벌써 알렸나 */
+  toldNow: boolean;
+  onTold: () => void;
 }) {
   // 다 한 직후에는 서버가 나무 수를 새로 센다. 옛 값으로 섬을 지었다가 다시 지으면
   // 나무가 두 번 자란다 — 새 값이 올 때까지 캐릭터만 세워 둔다
@@ -718,7 +727,6 @@ function Finish({
   const aboutThis = (sent?.cheers ?? []).filter((c) => c.missionId === missionId);
   const toldBefore = !fresh && aboutThis.some((c) => c.fromProfileId === kidId);
   const answered = !fresh && aboutThis.some((c) => c.toProfileId === kidId && c.stickerId);
-  const [toldNow, setToldNow] = useState(false);
   const told = toldNow || toldBefore;
   const [error, setError] = useState<string | null>(null);
   /** 어땠어요 — 고르면 엄마 · 아빠한테 가는 말에 붙는다. 안 골라도 된다 */
@@ -746,7 +754,7 @@ function Finish({
           }),
         ),
       );
-      setToldNow(true);
+      onTold();
     } catch (e) {
       setError(errorMessage(e, "알리지 못했어요."));
     }
