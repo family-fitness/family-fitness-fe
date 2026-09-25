@@ -148,22 +148,33 @@ export function ClipPlayer({
     }
 
     p.playVideo();
-    // 막혔나 본다. 소리를 끄고 한 번 더, 그래도 안 되면 위에 알린다.
-    // 받는 중(BUFFERING)은 막힌 것이 아니다 — 느린 망에서 소리를 끄고 아이의 타이머를 멈추지 않게
-    const stuck = () => {
+    /*
+      막혔나 본다. 소리를 끄고 한 번 더, 그래도 안 되면 위에 알린다.
+      받는 중(BUFFERING)은 막힌 것이 아니다 — 느린 망에서 소리를 끄고 아이의 타이머를 멈추지 않게 조금 더
+      기다려 본다. 전에는 받는 중이면 거기서 보기를 그만둬, 받다가 멈춰 선 영상을 아무도 몰랐다
+    */
+    let waits = 0;
+    let quiet = false;
+    let check: ReturnType<typeof setTimeout> | undefined;
+    const look = () => {
       const state = p.getPlayerState();
-      return state !== PLAYING && state !== BUFFERING;
+      if (state === PLAYING) return;
+      if (state === BUFFERING && waits < 4) {
+        waits += 1;
+        check = setTimeout(look, 1500);
+        return;
+      }
+      if (!quiet) {
+        quiet = true;
+        p.mute();
+        setMuted(true);
+        p.playVideo();
+        check = setTimeout(look, 1500);
+        return;
+      }
+      blocked.current?.();
     };
-    let second: ReturnType<typeof setTimeout> | undefined;
-    const first = setTimeout(() => {
-      if (!stuck()) return;
-      p.mute();
-      setMuted(true);
-      p.playVideo();
-      second = setTimeout(() => {
-        if (stuck()) blocked.current?.();
-      }, 1500);
-    }, 1500);
+    check = setTimeout(look, 1500);
 
     // 클립 끝에 닿으면 처음으로. 잡힌 시간이 클립보다 길다
     const loop = setInterval(() => {
@@ -172,8 +183,7 @@ export function ClipPlayer({
     }, 300);
 
     return () => {
-      clearTimeout(first);
-      clearTimeout(second);
+      clearTimeout(check);
       clearInterval(loop);
     };
   }, [ready, playing, startSec, endSec]);
