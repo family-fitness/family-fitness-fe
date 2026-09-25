@@ -336,11 +336,16 @@ sessions: [{
   title: "팔 벌려 뛰기",
   factor: "민첩성" | null,
   minutes: 2 | null,
-  clip: { videoId, startSec, endSec, title } | null,
-  completed: false,
-  verifiedBy: "TIMER" | "VIDEO_PROGRESS" | null
+  clip: { videoId, startSec, endSec, title } | null
 }]
+
+participants: [{ profileId, …, doneSessions: [1, 2] }]   // 이 사람이 끝낸 칸의 position
 ```
+
+**끝냈는지는 칸이 아니라 사람마다 둡니다(`participants[].doneSessions`).** 칸에 `completed` 를 하나만
+두면 형제가 같은 운동을 받았을 때 한 아이가 끝낸 칸이 다른 아이에게도 끝난 칸이 됩니다(9/25 점검에서 찾음).
+같이 하기로 한 **보호자** 참여자는 아이가 끝낸 칸을 같이 끝낸 것으로 봐 주세요 — 아이 폰 하나로 같이 합니다.
+형제는 저마다 합니다.
 
 **`endSec` 이 꼭 있어야 합니다.** 끝을 모르면 구간만 틀 수도, 다 했는지 잴 수도 없습니다.
 세션이 안 오면 프론트는 미션 전체를 본운동 한 칸으로 그립니다 — 준비 · 정리를 지어내지 않습니다.
@@ -351,10 +356,13 @@ sessions: [{
 
 ```
 요청 { profileId, activeSeconds, startedAt, endedAt }
-응답 { position, missionProgress, missionCompleted, xpGained }
+응답 { position, verifiedBy, missionProgress, missionCompleted, xpGained }   // 그 사람의 진행
 ```
 
 마지막 칸이면 미션 완료 · 부모 알림까지 같이 처리해 주시면 됩니다.
+`xpGained` 는 `/progress` 의 경험치가 실제로 늘어난 만큼이어야 합니다 — 끝 화면의 「+N 경험치」 와 레벨 막대가
+다른 수를 말하면 안 됩니다. 참여자가 아니면 403 `NOT_A_PARTICIPANT`, 잡힌 시간의 절반도 안 되면 422 `TOO_SHORT`,
+동의를 거둔 아이면 `CONSENT_REQUIRED`(규칙 4 — 활동 저장도 막힙니다).
 
 ### 코치 실행에 조건 — `POST /families/{familyId}/coach/runs`
 
