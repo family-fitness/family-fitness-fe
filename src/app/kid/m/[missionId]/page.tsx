@@ -294,7 +294,8 @@ export default function PlayPage() {
   }, [finished]);
 
   if (sessionPending || isLoading) return <PlaySkeleton />;
-  const failure = sessionError ?? missionsError;
+  // 받아 둔 운동이 있으면 다시 받다 실패해도 하던 칸을 걷어 내지 않는다
+  const failure = sessionError ?? (missions ? null : missionsError);
   if (failure) {
     return (
       <>
