@@ -231,11 +231,14 @@ export default function MeasurePage() {
         ...(height != null ? { heightCm: height } : {}),
         ...(weight != null ? { weightKg: weight } : {}),
       });
-      // 서버는 받아 두고도 돌려주지 않는다. 방금 적은 값이 사라지지 않게 남긴다
-      if (height != null && weight != null) {
-        rememberBody(profileId, { heightCm: height, weightKg: weight, measuredOn: testedOn });
-      } else {
-        forgetBody(profileId);
+      // 서버는 받아 두고도 돌려주지 않는다. 방금 적은 값이 사라지지 않게 남긴다.
+      // 지난 날짜로 적은 회차는 「지금 몸」 을 바꾸지 않는다 — 더 최근에 적어 둔 값을 옛 값으로 덮거나 지웠다
+      if (testedOn >= (pendingBody?.measuredOn ?? "")) {
+        if (height != null && weight != null) {
+          rememberBody(profileId, { heightCm: height, weightKg: weight, measuredOn: testedOn });
+        } else {
+          forgetBody(profileId);
+        }
       }
       router.replace(`/p/${profileId}/result${fromStart ? "?from=start" : ""}`);
     } catch (error) {
