@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-24T11:30:42.842Z",
+  "generatedAt": "2026-09-25T02:02:35.812Z",
   "assets": [
     {
       "file": "badge/badge-first-step.png",
@@ -176,6 +176,12 @@
       "bytes": 16518
     },
     {
+      "file": "icon/menu-rest.png",
+      "width": 192,
+      "height": 153,
+      "bytes": 16585
+    },
+    {
       "file": "icon/menu-schedule.png",
       "width": 192,
       "height": 183,
@@ -228,6 +234,36 @@
       "width": 192,
       "height": 170,
       "bytes": 17815
+    },
+    {
+      "file": "league/tier-bronze.png",
+      "width": 166,
+      "height": 192,
+      "bytes": 19250
+    },
+    {
+      "file": "league/tier-diamond.png",
+      "width": 164,
+      "height": 192,
+      "bytes": 18516
+    },
+    {
+      "file": "league/tier-gold.png",
+      "width": 158,
+      "height": 192,
+      "bytes": 18528
+    },
+    {
+      "file": "league/tier-platinum.png",
+      "width": 166,
+      "height": 192,
+      "bytes": 17041
+    },
+    {
+      "file": "league/tier-silver.png",
+      "width": 163,
+      "height": 192,
+      "bytes": 19089
     },
     {
       "file": "level/level-1-cheer.png",
@@ -294,6 +330,12 @@
       "width": 317,
       "height": 384,
       "bytes": 41673
+    },
+    {
+      "file": "scene/kiumi-hello.png",
+      "width": 318,
+      "height": 384,
+      "bytes": 42944
     },
     {
       "file": "scene/kiumi-no-alarm.png",
