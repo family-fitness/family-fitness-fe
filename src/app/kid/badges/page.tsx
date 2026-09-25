@@ -83,7 +83,8 @@ export default function BadgesPage() {
           </p>
           <XpGauge progress={progress} className="mt-3" />
 
-          {/* 다섯 모습 — 지금 모습만 진하게. 앞으로 될 모습은 흐리게 미리 보인다 */}
+          {/* 다섯 모습 — 지금 모습은 이름을 진하게. 앞으로 될 모습은 흐리게 미리 보인다.
+              둥근 면을 깔지 않는다(리그의 티어 메달과 같다) */}
           <ol className="mt-4 grid grid-cols-5 gap-1" aria-label="키움이가 자라는 모습">
             {STAGES.map((s) => {
               const now = s.stage === stage.stage;
@@ -91,10 +92,7 @@ export default function BadgesPage() {
               return (
                 <li
                   key={s.stage}
-                  className={cn(
-                    "flex flex-col items-center gap-1 rounded-2xl py-2",
-                    now && "bg-signal-soft",
-                  )}
+                  className="flex flex-col items-center gap-1 py-2"
                   aria-current={now ? "step" : undefined}
                 >
                   <LevelBuddy
@@ -104,8 +102,8 @@ export default function BadgesPage() {
                   />
                   <span
                     className={cn(
-                      "text-micro leading-tight font-bold",
-                      now ? "text-signal-deep" : "text-ink-soft",
+                      "text-micro leading-tight",
+                      now ? "text-signal-deep font-extrabold" : "text-ink-soft font-bold",
                     )}
                   >
                     {s.name.replace(" 키움이", "")}
