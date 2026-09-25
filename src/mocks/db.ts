@@ -270,7 +270,7 @@ export type ParticipantRow = MissionRow["participants"][number] & {
   doneOn?: Record<number, string>;
 };
 /** 미션의 칸. ▲ 서버에 아직 없다 */
-export type SessionRow = MissionSession;
+type SessionRow = MissionSession;
 
 /** 미션에 든 칸 */
 export function sessionsOfRow(m: MissionRow): SessionRow[] {

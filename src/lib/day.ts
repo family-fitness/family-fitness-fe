@@ -135,7 +135,7 @@ export function missionsOn(
  * 한 사람의 그날 운동 — 걸음수(직접 적는 값)는 뺀다(규칙 2). 부모 홈 줄 · 아이 기록 · 가족 대시보드 ·
  * 아이 홈이 이 하나로 센다 — 같은 아이의 오늘을 화면마다 다르게 말하면 안 된다.
  */
-export interface DayWork {
+interface DayWork {
   missions: Mission[];
   /** 그 사람의 칸. 끝냈는지는 그 사람 것으로(`sessionsOf`) */
   sessions: MissionSession[];
