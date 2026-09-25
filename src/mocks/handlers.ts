@@ -516,7 +516,7 @@ const fitness = [
         return fail(422, "NOT_MEASURABLE", "만 4세 미만은 측정 대상이 아닙니다");
       }
       if (!profile.consentGiven) {
-        return fail(422, "CONSENT_REQUIRED", "보호자 동의가 필요합니다");
+        return fail(403, "CONSENT_REQUIRED", "보호자 동의가 필요합니다");
       }
 
       const body = (await request.json()) as {
@@ -740,7 +740,7 @@ const missions = [
       // 동의를 거두면 측정뿐 아니라 활동 저장도 막힌다(규칙 4)
       const person = db.profiles.profiles.find((p) => p.profileId === body.profileId);
       if (person && !person.consentGiven) {
-        return fail(422, "CONSENT_REQUIRED", "보호자 동의가 필요합니다");
+        return fail(403, "CONSENT_REQUIRED", "보호자 동의가 필요합니다");
       }
       if ((body.activeSeconds ?? 0) < planned * 0.5) {
         return fail(422, "TOO_SHORT", "잡힌 시간의 절반도 하지 않았습니다");
