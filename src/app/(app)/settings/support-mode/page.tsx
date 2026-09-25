@@ -55,11 +55,10 @@ function SupportModePageContent() {
   const [error, setError] = useState<string | null>(null);
 
   /*
-    여기가 끝이 아닌 길이 둘이다 — 초대를 받아 막 들어온 길, 가입 중인 길.
-    둘 다 고르고 나서 갈 곳이 있어야 하고, 뒤로 가기를 주면 안 된다.
+    초대를 받아 막 들어온 길이면 여기가 끝이 아니다 — 고르고 나서 갈 곳이 있어야 하고,
+    뒤로 가기를 주면 안 된다. 가입 중인 길은 첫 시작의 한 칸으로 따로 묻는다.
   */
-  const from = params.get("from");
-  const joining = from === "claim" || from === "onboarding";
+  const joining = params.get("from") === "claim";
 
   if (isPending) return <SupportSkeleton />;
 
@@ -144,11 +143,7 @@ function SupportModePageContent() {
         )}
 
         {joining && (
-          <Button
-            size="block"
-            disabled={!current}
-            onClick={() => router.replace(from === "onboarding" ? "/parent" : "/start")}
-          >
+          <Button size="block" disabled={!current} onClick={() => router.replace("/start")}>
             다 골랐어요
           </Button>
         )}
