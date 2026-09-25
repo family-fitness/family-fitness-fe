@@ -23,7 +23,7 @@ import {
  * 캔버스는 받은 자리(`host`) 안에 깔린다. 첫 장면을 그린 뒤에 나타나므로(투명 → 불투명)
  * 받기 전에 그 자리에 세워 둔 것(글 · 캐릭터)이 먼저 보인다.
  */
-export interface SceneContext {
+interface SceneContext {
   THREE: Three;
   addons: Addons;
   palette: Palette;
@@ -50,7 +50,7 @@ export interface SceneContext {
   project(point: T.Vector3): { x: number; y: number };
 }
 
-export interface SceneHandle {
+interface SceneHandle {
   /** 매 장면. 움직임 줄이기면 처음 한 번과 invalidate 때만 불린다 */
   update?(t: number, dt: number): void;
   /**

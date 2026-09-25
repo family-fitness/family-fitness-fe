@@ -31,7 +31,7 @@ import {
   type MissionRow,
 } from "./db";
 
-export interface PlanParams {
+interface PlanParams {
   profileId: string;
   date: string;
   minutes: number;
@@ -156,7 +156,7 @@ function advance(run: Run) {
  * 승인 전이라 미션은 0건이다(규칙 1 — `check:mocks` 가 이걸 센다).
  * 회차 번호는 픽스처(실제 서버 응답)와 같게 둔다.
  */
-export function seedCoachRun(): Run {
+function seedCoachRun(): Run {
   const params: PlanParams = {
     profileId: DEMO.kid,
     date: toDateString(new Date()),

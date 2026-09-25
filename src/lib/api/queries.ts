@@ -42,7 +42,7 @@ import type {
  * 쿼리 키를 한 곳에서 만든다.
  * 무효화할 때 문자열을 손으로 적으면 오타가 조용히 지나간다.
  */
-export const qk = {
+const qk = {
   me: () => ["me"] as const,
   family: {
     profiles: (familyId: Uuid) => ["family", familyId, "profiles"] as const,
@@ -301,7 +301,7 @@ export function useCreatePrediction(profileId: Uuid) {
  * 하루 단위와 조건 칸을 요청해 두었다(`BACKEND_ASKS.md`). `minutesPerSession` 은
  * 지금 서버도 알아듣게 같이 보낸다.
  */
-export interface PlanRequest {
+interface PlanRequest {
   /** 누구의 운동인지 */
   profileId: string;
   /** YYYY-MM-DD. 그날 하루 */

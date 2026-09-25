@@ -12,7 +12,7 @@ export const VERIFIED_COPY: Record<VerifiedBy, string> = {
  * 서버도 이 값으로 활동을 적립한다 — 화면이 다른 숫자를 쓰면 "완주했는데
  * 기록이 없어요" 가 된다.
  */
-export const VIDEO_DONE = 0.9;
+const VIDEO_DONE = 0.9;
 
 /** 이 영상을 완주했는가 */
 export function isVideoDone(maxProgress: number | null | undefined): boolean {

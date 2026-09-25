@@ -24,10 +24,10 @@ import { josa } from "@/lib/utils";
 import { BASE, DEMO, db, type Profile } from "./db";
 import { dayLogFor } from "./history";
 
-export const XP = { SESSION: 5, DAY_DONE: 20, STICKER: 10, MEASURE: 20 } as const;
+const XP = { SESSION: 5, DAY_DONE: 20, STICKER: 10, MEASURE: 20 } as const;
 
 /** 레벨 n 이 시작되는 경험치. 뒤로 갈수록 한 레벨이 길어진다 */
-export const LEVEL_FLOOR = [0, 80, 200, 360, 560, 800, 1080, 1400, 1760, 2160] as const;
+const LEVEL_FLOOR = [0, 80, 200, 360, 560, 800, 1080, 1400, 1760, 2160] as const;
 
 /** 경험치를 셀 날들. 목의 기록은 지난 3주까지다 */
 const WINDOW = 21;

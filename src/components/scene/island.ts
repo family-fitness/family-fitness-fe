@@ -51,7 +51,7 @@ export const ISLAND = {
 } as const;
 
 /** 나무가 설 수 있는 자리 수. 이보다 많이 운동하면 나무가 조금씩 커진다 */
-export const MAX_PLANTS = 28;
+const MAX_PLANTS = 28;
 
 /**
  * 캐릭터 발이 캔버스 위에서 몇 % 아래에 서는가.

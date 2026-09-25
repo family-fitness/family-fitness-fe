@@ -39,7 +39,7 @@ export type Concrete<T> = T extends (infer U)[]
     ? { [K in keyof T]-?: Concrete<T[K]> }
     : T;
 
-export interface Fixtures {
+interface Fixtures {
   me: MeResponse;
   profiles: FamilyProfiles;
   fitnessMap: FitnessMap;
@@ -116,7 +116,7 @@ function demoLatest() {
  * 마지막 회차는 `latest` 와 같은 날 · 같은 점수여야 한다 — 두 화면이 다른 숫자를
  * 말하면 어느 쪽도 믿을 수 없다.
  */
-export function seedTests(): Record<string, FitnessTestSummary[]> {
+function seedTests(): Record<string, FitnessTestSummary[]> {
   const row = (id: string, testedOn: string, p: number, h: number, w: number) => ({
     fitnessTestId: id,
     testedOn,
@@ -138,10 +138,7 @@ export function seedTests(): Record<string, FitnessTestSummary[]> {
 }
 
 /** 아이는 월 · 수 · 금 저녁과 토요일 오전, 엄마는 토요일 오전에 같이 */
-export function seedAvailability(): Record<
-  string,
-  { day: string; start: string; minutes: number }[]
-> {
+function seedAvailability(): Record<string, { day: string; start: string; minutes: number }[]> {
   return {
     [KID_ID]: [
       { day: "MON", start: "19:00", minutes: 20 },
@@ -177,15 +174,15 @@ export type MapMember = Concrete<FitnessMap>["members"][number];
 export type MissionRow = Concrete<Mission>;
 
 export const BASE = "/api/v1";
-export const CHEER_KEY = "ff-mock-cheers";
-export const MISSION_KEY = "ff-mock-missions";
-export const RUN_KEY = "ff-mock-run";
-export const ACTING_KEY = "ff-mock-acting";
-export const STAGE_KEY = "ff-mock-stage";
-export const FAMILY_KEY = "ff-mock-family";
-export const REST_KEY = "ff-mock-rest";
+const CHEER_KEY = "ff-mock-cheers";
+const MISSION_KEY = "ff-mock-missions";
+const RUN_KEY = "ff-mock-run";
+const ACTING_KEY = "ff-mock-acting";
+const STAGE_KEY = "ff-mock-stage";
+const FAMILY_KEY = "ff-mock-family";
+const REST_KEY = "ff-mock-rest";
 /** 측정 · 측정 이력 · 키 몸무게 · 운동 시간 · 코치를 돌렸는지 · 리그 티어 */
-export const EXTRA_KEY = "ff-mock-extra";
+const EXTRA_KEY = "ff-mock-extra";
 
 export const DEMO = {
   familyId: "00000000-0000-4000-8000-000000000010",
@@ -195,7 +192,7 @@ export const DEMO = {
 } as const;
 
 /** 지난 코치 회차. 이미 승인해서 돌아가고 있는 미션들이 여기서 나왔다 */
-export const PAST_RUN_ID = "00000000-0000-4000-8000-0000000000a0";
+const PAST_RUN_ID = "00000000-0000-4000-8000-0000000000a0";
 
 /* ─── 서버 상태 ────────────────────────────────────────────── */
 
@@ -310,9 +307,9 @@ export function resetToDemo() {
  * | `claim` | `CLAIM`                | 초대코드를 넣어야 가족에 붙는다 |
  * | `home`  | `HOME`                 | 가족이 있다                    |
  */
-export type Stage = "fresh" | "claim" | "home";
+type Stage = "fresh" | "claim" | "home";
 
-export function loadStage(): Stage {
+function loadStage(): Stage {
   try {
     const saved = sessionStorage.getItem(STAGE_KEY);
     if (saved === "fresh" || saved === "claim" || saved === "home") return saved;
@@ -331,7 +328,7 @@ export function setStage(value: Stage) {
   }
 }
 
-export function loadActing(): string {
+function loadActing(): string {
   try {
     return sessionStorage.getItem(ACTING_KEY) ?? DEMO.mom;
   } catch {
@@ -346,7 +343,7 @@ export function loadActing(): string {
  * 시연에서 처음 보는 화면이 전부 "아직 없어요" 면 이 앱이 무엇을 하는지 보여 줄
  * 기회가 없다. 첫 화면부터 며칠치 기록이 쌓여 있어야 순환이 보인다.
  */
-export function loadCheers(): CheerLog[] {
+function loadCheers(): CheerLog[] {
   try {
     const saved = sessionStorage.getItem(CHEER_KEY);
     if (saved) return JSON.parse(saved) as CheerLog[];
@@ -362,7 +359,7 @@ export function loadCheers(): CheerLog[] {
  * 오늘 것은 **지금보다 앞선 시각이 되면 안 된다** — 새벽에 열면 저녁 7시가
  * 미래가 되고, 화면이 아직 오지 않은 일을 이미 일어난 일처럼 보여 준다.
  */
-export function daysAgo(days: number, hour: number): string {
+function daysAgo(days: number, hour: number): string {
   const d = new Date();
   d.setDate(d.getDate() - days);
   d.setHours(days === 0 ? Math.min(hour, d.getHours()) : hour, 12, 0, 0);
@@ -378,7 +375,7 @@ export function daysAgo(days: number, hour: number): string {
  * **오늘 것 하나는 답이 없는 채로 둔다.** 부모가 앱을 열었을 때 할 일이
  * 하나 있어야 이 서비스가 무엇을 하는지 한 화면에서 보인다.
  */
-export function seedCheers(): CheerLog[] {
+function seedCheers(): CheerLog[] {
   type Row = {
     from: string;
     to: string;
@@ -438,7 +435,7 @@ export interface CatalogClip {
 }
 
 /** 영상 속 한 토막. ▲ `endSec` 는 계약에 없다 — 목에서는 준다 */
-export function clip(c: Pick<CatalogClip, "videoId" | "startSec" | "endSec" | "title">) {
+function clip(c: Pick<CatalogClip, "videoId" | "startSec" | "endSec" | "title">) {
   return {
     videoId: c.videoId,
     startSec: c.startSec,
@@ -454,7 +451,7 @@ export function clip(c: Pick<CatalogClip, "videoId" | "startSec" | "endSec" | "t
  * 되풀이되는데, 한 번에 두 번 시키면 짜 놓은 운동이 아니라 반복이다.
  * `skip` 만큼 건너뛰어 같은 조건이라도 날마다 다른 것을 고를 수 있게 한다.
  */
-export function pickClips(where: (c: CatalogClip) => boolean, n: number, skip = 0): CatalogClip[] {
+function pickClips(where: (c: CatalogClip) => boolean, n: number, skip = 0): CatalogClip[] {
   const seen = new Set<string>();
   const out: CatalogClip[] = [];
   const pool = catalog.filter(where);
@@ -515,7 +512,7 @@ export function sessionsFor(
  * 부모 홈에는 링이 조금 찬 모습이 뜬다. 직접 적은 걸음수 기록 하나는 보호자 확인을
  * 기다린다(규칙 2). 지난날의 기록은 `history.ts` 가 날짜별로 따로 답한다.
  */
-export function seedMissions(): MissionRow[] {
+function seedMissions(): MissionRow[] {
   const today = dayOf(daysAgo(0, 12));
   const sessions = sessionsFor("유연성", 12).map((s, i) =>
     i < 2 ? { ...s, completed: true, verifiedBy: "TIMER" } : s,
@@ -583,7 +580,7 @@ export function seedMissions(): MissionRow[] {
  * 승인하라고 내민다. 제안 기간도 이번 주로 맞춘다 — 기간이 지난 제안을
  * 승인하면 태어나자마자 끝난 미션이 된다.
  */
-export function freshCoachRun() {
+function freshCoachRun() {
   const run = structuredClone(fixtures.coachRun);
   const week = thisWeek();
   run.weekStart = week.weekStart;
@@ -602,7 +599,7 @@ export function freshCoachRun() {
  * 승인 전으로 돌아갔다. 시연 중에 그러면 방금 한 일이 없던 일이 된다.
  * 칭찬과 같은 자리(탭 저장소)에 둔다 — 새 탭을 열면 처음부터다.
  */
-export function loadMissions(): MissionRow[] {
+function loadMissions(): MissionRow[] {
   try {
     const saved = sessionStorage.getItem(MISSION_KEY);
     if (saved) return JSON.parse(saved) as MissionRow[];
@@ -620,7 +617,7 @@ export function saveMissions() {
   }
 }
 
-export function loadCoachRun() {
+function loadCoachRun() {
   try {
     const saved = sessionStorage.getItem(RUN_KEY);
     if (saved) return JSON.parse(saved) as ReturnType<typeof freshCoachRun>;
@@ -644,7 +641,7 @@ export function saveCoachRun() {
  * 안 그러면 새로고침 한 번에 방금 만든 가족이 서준이네로 되돌아간다 —
  * 가입하자마자 남의 집이 뜬다.
  */
-export function loadFamily<T>(key: "profiles" | "fitnessMap", fallback: T): T {
+function loadFamily<T>(key: "profiles" | "fitnessMap", fallback: T): T {
   try {
     const saved = sessionStorage.getItem(`${FAMILY_KEY}-${key}`);
     if (saved) return JSON.parse(saved) as T;
@@ -695,7 +692,7 @@ export function fail(status: number, code: string, message: string) {
  * 픽스처에 날짜를 박아 두면 며칠만 지나도 "이번 주 기록" 화면에 지난주가 뜬다.
  * 데모를 언제 열어도 말이 되게 오늘을 기준으로 계산한다.
  */
-export function thisWeek(): { weekStart: string; weekEnd: string } {
+function thisWeek(): { weekStart: string; weekEnd: string } {
   const now = new Date();
   const sunday = new Date(now);
   sunday.setDate(now.getDate() - now.getDay());
@@ -715,7 +712,7 @@ export function bandOf(percentile: number): Band {
 }
 
 /** 쉬는 날 카드를 쓴 날 — 탭 저장소에서. 새로고침해도 방금 쓴 카드가 되돌아오지 않게 */
-export function loadRestDays(): string[] {
+function loadRestDays(): string[] {
   try {
     const saved = sessionStorage.getItem(REST_KEY);
     if (saved) return JSON.parse(saved) as string[];

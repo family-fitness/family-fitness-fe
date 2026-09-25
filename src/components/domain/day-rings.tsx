@@ -14,7 +14,7 @@ const RING = {
   work: { color: "var(--color-mark)", track: "var(--color-mark-soft)" },
 } as const;
 
-export function ringsOf(s: DaySummary): RingValue[] {
+function ringsOf(s: DaySummary): RingValue[] {
   const [time, work] = dayRings(s);
   return [
     { label: "움직인 시간", value: time, max: 1, text: `${s.moved}분`, ...RING.time },

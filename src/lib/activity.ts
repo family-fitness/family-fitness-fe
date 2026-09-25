@@ -8,7 +8,7 @@ import { today, weekdayCode } from "./today";
  * 시간은 서버가 아는 것(영상 · 타이머)만 센다. 직접 적은 걸음수는 넣지 않는다(규칙 2).
  * 부모 홈과 아이 홈이 이 함수 하나로 센다 — 같은 날을 두 화면이 다르게 세면 안 된다.
  */
-export interface TodayActivity {
+interface TodayActivity {
   /** 오늘 확인된 운동 시간(분) */
   moved: number;
   /** 오늘 목표(분). 잡힌 운동 → 그날 적어 둔 시간 → 20 */

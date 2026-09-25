@@ -5,12 +5,12 @@
  * 두 화면이 각자 숫자를 적어 두고 있었는데, 서버가 범위를 바꾸면 한쪽만 고쳐
  * 나머지가 422 를 맞는다. 여기 한 곳에서 본다.
  */
-export const BODY_RANGE = {
+const BODY_RANGE = {
   heightCm: { min: 30, max: 230, unit: "cm" },
   weightKg: { min: 5, max: 250, unit: "kg" },
 } as const;
 
-export type BodyField = keyof typeof BODY_RANGE;
+type BodyField = keyof typeof BODY_RANGE;
 
 /** 화면에 띄울 안내. "30 ~ 230 cm" */
 export function rangeHint(field: BodyField): string {

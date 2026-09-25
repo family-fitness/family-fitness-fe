@@ -10,7 +10,7 @@
 
 export type DecorationId = "flag" | "fence" | "pond" | "tent" | "windmill" | "lighthouse";
 
-export interface Unlock {
+interface Unlock {
   id: DecorationId;
   level: number;
   name: string;
@@ -27,7 +27,7 @@ export const UNLOCKS: readonly Unlock[] = [
 ];
 
 /** 이 레벨까지 열린 것 */
-export function unlockedAt(level: number | null | undefined): Unlock[] {
+function unlockedAt(level: number | null | undefined): Unlock[] {
   const lv = Math.max(1, level ?? 1);
   return UNLOCKS.filter((u) => u.level <= lv);
 }

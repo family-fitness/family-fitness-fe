@@ -33,7 +33,6 @@ export type Band = "strength" | "steady" | "growth";
 
 /** 국민체력100 등급. **1·2·3 과 「참가」뿐이다.** 4·5등급은 없다. */
 export type Grade = NonNullable<S["ItemResult"]["grade"]>;
-export type ValueRange = S["ValueRange"];
 
 export type TargetMetric = "VIDEO_DONE" | "TIMER_MINUTES" | "STEPS";
 export type VerifiedBy = "VIDEO_PROGRESS" | "TIMER" | "SELF_REPORT";
@@ -73,23 +72,18 @@ export type FitnessTestResult = S["FitnessTestResponse"];
 export type LatestFitnessTest = S["LatestFitnessResponse"];
 export type ItemResult = S["ItemResult"];
 export type RadarPoint = S["RadarPointResponse"];
-export type FactorPoint = S["FactorPoint"];
 export type PredictionResult = S["PredictionResponse"];
 /** 한 시점의 분포. p50 만 그리면 확정된 미래처럼 보인다 — p10·p90 을 같이 쓴다 */
 export type PredictionPoint = S["Point"];
 
 export type CoachRun = S["CoachRunView"];
 export type CoachProposal = S["ProposalView"];
-export type CoachStep = S["CoachStep"];
 export type CoachApproveResult = S["ApproveCoachRunView"];
 
 export type MissionList = S["MissionListView"];
 export type Mission = S["MissionView"];
-export type MissionParticipant = S["MissionParticipantView"];
 
 export type VideoList = S["VideoListView"];
-export type Video = S["VideoView"];
-export type VideoLabel = S["VideoLabel"];
 
 /* ─── 아직 서버에 없는 것 ──────────────────────────────────── */
 

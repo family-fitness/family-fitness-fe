@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 
 /** 기록 막대. */
-export function RecordBar({
+function RecordBar({
   percentile,
   label,
   className,

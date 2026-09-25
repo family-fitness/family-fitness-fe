@@ -19,10 +19,10 @@ export interface OrthoSpec {
   view: number;
 }
 
-export type Vec3 = readonly [number, number, number];
+type Vec3 = readonly [number, number, number];
 
 /** 화면 오른쪽 · 위 방향(세계 좌표) */
-export function orthoBasis(spec: OrthoSpec): { right: Vec3; up: Vec3 } {
+function orthoBasis(spec: OrthoSpec): { right: Vec3; up: Vec3 } {
   const el = (spec.elevation * Math.PI) / 180;
   const az = (spec.azimuth * Math.PI) / 180;
   return {

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Illustration } from "./illustration";
 
 /** 빈 화면 · 그 순간의 그림. `ASSET_PROMPTS.md` 4장에 주문한 키움이 장면 여섯 가지 */
-export type Scene = "no-record" | "no-mission" | "waiting" | "rest" | "done" | "no-alarm";
+type Scene = "no-record" | "no-mission" | "waiting" | "rest" | "done" | "no-alarm";
 
 /**
  * 빈 화면.

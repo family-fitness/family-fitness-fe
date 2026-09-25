@@ -18,12 +18,12 @@ export interface RoutineMove {
 export const MAX_MOVES = 10;
 export const MOVE_MINUTES = { min: 1, max: 5 } as const;
 /** 몇 주까지 되풀이하나 */
-export const MAX_WEEKS = 4;
+const MAX_WEEKS = 4;
 
 const PHASE_ORDER: SessionPhase[] = ["WARMUP", "MAIN", "COOLDOWN"];
 
 /** 처음 담을 때 시간 — 준비 · 정리는 1분, 본운동은 3분 */
-export function defaultMinutes(phase: SessionPhase): number {
+function defaultMinutes(phase: SessionPhase): number {
   return phase === "MAIN" ? 3 : 1;
 }
 
