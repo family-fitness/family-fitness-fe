@@ -2,6 +2,7 @@
 
 import { Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { HomeHeader } from "@/components/app-shell/home-header";
@@ -13,6 +14,8 @@ import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { ChildPanel } from "@/components/domain/child-panel";
+import { InviteSheet } from "@/components/domain/invite-sheet";
+import { KidsOverview } from "@/components/domain/kids-overview";
 import { ChildPill } from "@/components/domain/child-pill";
 import { StreakChip } from "@/components/domain/streak-chip";
 import { ClipShelf } from "@/components/domain/clip-shelf";
@@ -24,6 +27,7 @@ import {
   useFitnessMap,
   useLatestFitnessTest,
   useCurrentMissions,
+  useFamilyProfiles,
   useProgress,
 } from "@/lib/api/queries";
 import { artFor } from "@/lib/art";
@@ -35,10 +39,11 @@ import type { FamilyLeague } from "@/lib/api/types";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
- * 부모 홈 — 큰 묶음 둘(9/25 사용자가 고름).
+ * 부모 홈 — 맨 위에 우리 아이 모두, 그 아래 고른 아이 자세히(9/25).
  *
- *   「우리 아이」  육각형 · 그 아래 통합 신체 점수 · 오늘 운동(칭찬 · 걸음수 확인 · 기다리는 제안)
- *   「이번 주」    오늘 링 셋 · 요일 탑 · 캘린더 · 운동 찾기 · 가족
+ *   「우리 아이」  아이마다 한 줄 — 오늘 · 이어서 · 이번 주 점 · 신체 점수. 누르면 그 아이를 고른다 · 아이 등록 · 초대
+ *   고른 아이      육각형 · 그 아래 통합 신체 점수 · 오늘 운동(칭찬 · 걸음수 확인 · 기다리는 제안)
+ *   「이번 주」    고른 아이의 오늘 링 셋 · 요일 탑 · 캘린더 · 가족 리그 · 우리 가족
  *   그 아래       아이의 키울 힘 영상이 가로로 한 줄(삼성헬스 홈처럼)
  *
  * 기능 하나마다 네모 카드 하나씩 쌓지 않는다 — 「ai 특유의 카드 형식」(9/25).
@@ -57,6 +62,9 @@ export default function ParentHomePage() {
 
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
+  // 초대하기 — 가족 대시보드와 같은 시트. 홈에서 바로 연다(9/25 「초대코드 생성하는 건 어디 갔어?」)
+  const { data: family } = useFamilyProfiles(familyId);
+  const [inviting, setInviting] = useState(false);
 
   const members = map?.members ?? [];
   const children = members.filter((m) => m.role === "CHILD");
@@ -135,6 +143,16 @@ export default function ParentHomePage() {
     <>
       {header}
       <Stage wide className="space-y-3">
+        {/* 우리 아이 모두 한 번에 — 누르면 아래가 그 아이로(9/25) */}
+        <KidsOverview
+          kids={children}
+          selectedId={child.profileId}
+          onSelect={setChild}
+          familyId={familyId ?? undefined}
+          missions={missions?.missions}
+          onInvite={() => setInviting(true)}
+        />
+
         <ChildPanel
           child={child}
           familyId={familyId ?? ""}
@@ -194,6 +212,13 @@ export default function ParentHomePage() {
 
         <ClipShelf factor={isFactor(weakest) ? weakest : null} />
       </Stage>
+      <InviteSheet
+        open={inviting}
+        onClose={() => setInviting(false)}
+        familyName={map?.familyName ?? "우리 가족"}
+        members={family?.profiles ?? []}
+        loading={!family}
+      />
     </>
   );
 }
