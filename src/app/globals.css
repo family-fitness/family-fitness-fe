@@ -119,6 +119,8 @@ html {
   /* 데스크톱 거터. 앱 화면이 기기처럼 떠 보이게 한 단계 더 어둡게 */
   background-color: #e4e7ec;
   overflow-x: hidden;
+  /* 시트가 뒤 화면을 잠그면 스크롤바가 사라진다 — 그 폭만큼 화면이 옆으로 튀지 않게 자리를 늘 둔다 */
+  scrollbar-gutter: stable;
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
 }
