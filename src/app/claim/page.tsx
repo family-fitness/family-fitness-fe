@@ -106,9 +106,9 @@ function ClaimContent() {
           className="border-line focus:border-signal placeholder:text-faint board-num field-focus h-16 w-full rounded-xl border bg-transparent text-center text-2xl tracking-[0.35em]"
         />
 
-        {/* 어느 자리인지. 코드가 맞아야 뜬다 */}
+        {/* 어느 자리인지. 코드가 맞아야 뜬다 — 둥근 면에 담지 않고 한 줄로 */}
         {seat && (
-          <div className="border-signal bg-signal-soft flex items-center gap-3 rounded-2xl border p-4">
+          <div className="flex items-center gap-3 px-1 py-2">
             <Initial
               name={seat.profileName}
               tone={seat.role === "CHILD" ? "signal" : "mark"}
