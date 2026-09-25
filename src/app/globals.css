@@ -118,7 +118,6 @@ html {
 
   /* 데스크톱 거터. 앱 화면이 기기처럼 떠 보이게 한 단계 더 어둡게 */
   background-color: #e4e7ec;
-  background-attachment: fixed;
   overflow-x: hidden;
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
@@ -246,22 +245,6 @@ body {
     margin-left: 0.15em;
   }
 
-  /* ── 섹션 제목 ──
-     카드 묶음 위에 붙는 작은 제목. 선을 긋지 않는다 — 카드가 이미 구획이다 */
-  .section-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.75rem;
-    padding-inline: 0.25rem;
-  }
-  .section-head h2 {
-    font-size: 1.05rem;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    white-space: nowrap;
-  }
-
   /* ── 칩 ── */
   /* 누르는 것은 44px 아래로 내려가지 않는다. 아이 손가락이 닿아야 한다 */
   .chip {
@@ -357,21 +340,6 @@ body {
   }
   .badge-pop {
     animation: badgePop 380ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
-  }
-
-  /* 움직인 날 칸이 아래에서 올라오며 채워진다 */
-  @keyframes dayOn {
-    from {
-      transform: scale(0.72) translateY(6px);
-      opacity: 0;
-    }
-    to {
-      transform: none;
-      opacity: 1;
-    }
-  }
-  .day-on {
-    animation: dayOn 320ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
   }
 
   @keyframes shimmer {

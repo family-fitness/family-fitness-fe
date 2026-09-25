@@ -19,7 +19,6 @@ declare global {
   interface Window {
     YT?: {
       Player: new (el: HTMLElement, options: YtOptions) => YtPlayer;
-      PlayerState: { PLAYING: number; ENDED: number };
     };
     onYouTubeIframeAPIReady?: () => void;
   }

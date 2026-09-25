@@ -46,14 +46,11 @@ export function CardHead({
   title,
   meta,
   href,
-  chevron,
   className,
 }: {
   title: ReactNode;
   meta?: ReactNode;
   href?: string;
-  /** 카드 전체가 링크일 때 머리에도 › 를 보여 준다 */
-  chevron?: boolean;
   className?: string;
 }) {
   const inner = (
@@ -61,7 +58,7 @@ export function CardHead({
       <h2 className="text-body min-w-0 truncate font-extrabold tracking-tight">{title}</h2>
       <span className="text-caption text-ink-soft flex shrink-0 items-center gap-0.5 font-semibold">
         {meta}
-        {(href || chevron) && <ChevronRight aria-hidden className="text-faint -mr-1 size-4" />}
+        {href && <ChevronRight aria-hidden className="text-faint -mr-1 size-4" />}
       </span>
     </>
   );
