@@ -1,7 +1,7 @@
 # 에셋 주문서 — v3 (헬스 앱 결)
 
 > 지난 그림들이 "중구난방" 이라는 말을 들은 이유는 **장마다 선 굵기 · 색 · 그리는 법이 달라서**였다.
-> 이번 주문은 여섯 묶음 73장이고(9/25 가족 리그 · 쉬는 날 · 첫 시작 7장 더함), 전부 **아래 공통 규칙 하나**로 뽑는다.
+> 이번 주문은 여섯 묶음 68장이고(9/25 가족 리그 · 쉬는 날 · 첫 시작 7장 더함 · 안 쓰는 5장 뺌), 전부 **아래 공통 규칙 하나**로 뽑는다.
 >
 > **화면의 아이콘도 그림으로 바꾼다** (9/23 요청 — "이모트는 쓰지 말고 이미지로").
 > 요인 · 메뉴 · 참여 방식 · 스티커 · 배지 · 빈 화면 자리는 이 주문서의 그림만 부른다.
@@ -153,7 +153,7 @@ one yellow #FFB800 emblem in the center, no ribbon, no text,
 
 ---
 
-## 4. 빈 화면 · 그 순간 — 6장
+## 4. 빈 화면 · 그 순간 — 5장
 
 글만 있는 빈 화면은 오류난 화면처럼 보인다. 키움이가 그 상황을 연기한다.
 1장의 **3단계(잎새) 키움이**로 그려 주세요.
@@ -163,13 +163,12 @@ one yellow #FFB800 emblem in the center, no ribbon, no text,
 | `scene/kiumi-no-record`  | 아직 한 번도 안 쟀을 때  | 자기 키보다 큰 세로 자 옆에 서서 올려다본다 |
 | `scene/kiumi-no-mission` | 오늘 운동이 아직 없을 때 | 운동 매트 위에 앉아 기다린다                |
 | `scene/kiumi-waiting`    | 칭찬을 기다릴 때         | 편지 봉투를 두 손으로 안고 있다             |
-| `scene/kiumi-done`       | 오늘 운동을 다 했을 때   | 두 팔 들고 폴짝 뛴다 (발이 땅에서 떨어짐)   |
 | `scene/kiumi-rest`       | 쉬는 날                  | 눈 감고 편하게 누워 있다                    |
 | `scene/kiumi-no-alarm`   | 알림이 없을 때           | 작은 종을 들고 고개를 갸웃한다              |
 
 ---
 
-## 5. 아이콘 그림 — 26장
+## 5. 아이콘 그림 — 22장
 
 화면에서 지금 비어 있는 자리다. **작게(24~40px) 줄여도 무엇인지 읽혀야 한다.**
 앱이 연한 파랑 둥근 칸 위에 올려 쓰므로 **칸(바탕 타일)은 그리지 않는다.**
@@ -195,7 +194,7 @@ readable at 24 pixels, no background tile, no circle behind it,
 | `icon/factor-agility`     | 민첩성     | 두 번 꺾인 노랑 지그재그 화살표           |
 | `icon/factor-power`       | 순발력     | 노랑 번개 + 그 아래 눌린 파랑 스프링      |
 
-### 메뉴 · 줄 — 16장
+### 메뉴 · 줄 — 12장
 
 설정 · 가족 관리 · 측정 결과 · 홈 카드의 줄 앞에 선다.
 
@@ -205,18 +204,14 @@ readable at 24 pixels, no background tile, no circle behind it,
 | `icon/menu-support`   | 참여 방식             | 마주 잡은 둥근 두 손 + 작은 노랑 하트  |
 | `icon/menu-consent`   | 보호자 동의           | 남색 방패 + 노랑 체크                  |
 | `icon/menu-switch`    | 누가 쓰는지 바꾸기    | 서로 뒤를 쫓는 두 화살표 (파랑 · 노랑) |
-| `icon/menu-favorite`  | 즐겨찾기한 영상       | 통통한 파랑 하트                       |
 | `icon/menu-cheer`     | 응원 보내기           | 둥근 말풍선 안에 노랑 하트             |
-| `icon/menu-future`    | 10년 위 연령대        | 파랑 망원경                            |
 | `icon/menu-measure`   | 키 · 몸무게 새로 재기 | 말려 있는 노랑 줄자                    |
 | `icon/menu-equipment` | 장비가 있으면         | 손잡이 달린 악력계                     |
 | `icon/menu-invite`    | 초대코드              | 한쪽이 뜯긴 노랑 티켓                  |
 | `icon/menu-schedule`  | 운동할 수 있는 시간   | 둥근 파랑 시계 + 뒤에 달력 한 장       |
-| `icon/menu-alarm`     | 알림                  | 노랑 종                                |
 | `icon/menu-calendar`  | 캘린더                | 달력 한 장 + 모서리에 동그란 스티커    |
 | `icon/menu-ai`        | AI 에게 운동 받기     | 크고 작은 반짝임 셋 (노랑)             |
 | `icon/menu-trophy`    | 레벨과 업적           | 노랑 트로피                            |
-| `icon/menu-video`     | 운동 찾기             | 재생 삼각형이 든 둥근 파랑 화면        |
 
 ### 참여 방식 · 역할 — 4장
 

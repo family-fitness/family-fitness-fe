@@ -36,7 +36,6 @@ const ROUTES = {
     "/settings/consent",
     `/p/${KID}/measure`,
     `/p/${KID}/result`,
-    `/p/${KID}/future`,
     "/start",
     "/start/child",
     "/start/who",

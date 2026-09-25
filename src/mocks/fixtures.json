@@ -704,45 +704,5 @@
     "canApprove": true,
     "missionCount": 0,
     "rejectedReason": null
-  },
-  "prediction": {
-    "predictionId": "7c4c4af9-d640-4286-88fa-420a164bf9cf",
-    "modelVersion": "ai-trajectory-v1",
-    "basis": "cross_sectional_group_distribution",
-    "points": [
-      {
-        "scenario": "MAINTAIN",
-        "itemCode": "028",
-        "yearsFromNow": 0,
-        "p10": 40,
-        "p50": 50,
-        "p90": 60
-      },
-      {
-        "scenario": "MAINTAIN",
-        "itemCode": "028",
-        "yearsFromNow": 4,
-        "p10": 43.2,
-        "p50": 54,
-        "p90": 64.8
-      },
-      {
-        "scenario": "MAINTAIN",
-        "itemCode": "028",
-        "yearsFromNow": 8,
-        "p10": 46.4,
-        "p50": 58,
-        "p90": 69.6
-      },
-      {
-        "scenario": "MAINTAIN",
-        "itemCode": "028",
-        "yearsFromNow": 10,
-        "p10": 48,
-        "p50": 60,
-        "p90": 72
-      }
-    ],
-    "notice": "집단 분포를 바탕으로 한 참고 범위입니다. 개인의 변화를 나타내지 않습니다."
   }
 }

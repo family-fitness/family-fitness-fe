@@ -53,7 +53,6 @@ const ROUTES = [
   "/settings/schedule",
   `/p/${KID}/measure`,
   `/p/${KID}/result`,
-  `/p/${KID}/future`,
 ];
 
 const reachable = await fetch(B)
