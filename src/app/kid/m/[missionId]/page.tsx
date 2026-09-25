@@ -340,6 +340,8 @@ export default function PlayPage() {
     setStatus("running");
   };
 
+  // 건너뛸 다음 칸이 없고 한 칸도 안 했으면 건너뛰기를 두지 않는다 — 끝 칸에 「0개 했어요」 가 떴다
+  const canSkip = active != null && (nextOpen(active, doneHere) != null || doneCount > 0);
   const skip = () => {
     if (active == null) return;
     const next = nextOpen(active, doneHere);
@@ -407,7 +409,7 @@ export default function PlayPage() {
               }}
               onStart={start}
               onPause={() => setStatus("paused")}
-              onSkip={skip}
+              onSkip={canSkip ? skip : undefined}
               onBlocked={() => {
                 if (blockedAt === s.position) return;
                 setBlockedAt(s.position);
@@ -507,7 +509,8 @@ function Step({
   onMoreRest: () => void;
   onStart: () => void;
   onPause: () => void;
-  onSkip: () => void;
+  /** 없으면 건너뛰기 단추를 두지 않는다 */
+  onSkip?: () => void;
   onBlocked: () => void;
   onPick: () => void;
 }) {
@@ -607,7 +610,7 @@ function Step({
               눌러서 시작
             </button>
           ) : status === "running" ? (
-            <div className="mt-4 grid grid-cols-[1fr_auto] gap-2">
+            <div className={cn("mt-4 grid gap-2", onSkip && "grid-cols-[1fr_auto]")}>
               <button
                 type="button"
                 onClick={onPause}
@@ -616,14 +619,16 @@ function Step({
                 <Pause aria-hidden className="size-5 fill-current" />
                 잠깐 멈춤
               </button>
-              <button
-                type="button"
-                onClick={onSkip}
-                aria-label="이 운동 건너뛰기"
-                className="press bg-sub grid min-h-14 min-w-14 place-items-center rounded-2xl"
-              >
-                <SkipForward aria-hidden className="size-5" />
-              </button>
+              {onSkip && (
+                <button
+                  type="button"
+                  onClick={onSkip}
+                  aria-label="이 운동 건너뛰기"
+                  className="press bg-sub grid min-h-14 min-w-14 place-items-center rounded-2xl"
+                >
+                  <SkipForward aria-hidden className="size-5" />
+                </button>
+              )}
             </div>
           ) : (
             <button
