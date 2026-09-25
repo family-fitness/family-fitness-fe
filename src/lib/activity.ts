@@ -1,5 +1,6 @@
 import type { Availability, DayLog, Mission } from "./api/types";
 import { dayWork } from "./day";
+import { totalMinutes } from "./session-plan";
 import { today, weekdayCode } from "./today";
 
 /**
@@ -47,7 +48,7 @@ export function todayActivity({
   const { sessions, done, total } = dayWork(missions, profileId, now);
   const log = weekLogs?.find((d) => d.date === now);
   const slots = availability?.slots ?? [];
-  const planned = sessions.reduce((sum, s) => sum + (s.minutes ?? 0), 0);
+  const planned = totalMinutes(sessions);
   const written = slots.find((s) => s.day === weekdayCode(now))?.minutes;
 
   return {

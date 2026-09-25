@@ -90,7 +90,15 @@ export function clock(totalSec: number | null | undefined): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
 
+/**
+ * 한 칸의 시간(분). 시간이 없거나 0으로 온 칸은 1분 — 운동하기의 타이머가 그만큼 돈다.
+ * 칸 줄 · 묶음 합 · 제목의 합이 다 이 셈이다. 전에는 제목만 0분으로 세어 칸 합과 어긋났다
+ */
+export function stepMinutes(s: { minutes?: number | null }): number {
+  return Math.max(1, s.minutes ?? 1);
+}
+
 /** 세션들의 시간을 합친다. 화면 제목에 쓰는 값 */
-export function totalMinutes(sessions: MissionSession[]): number {
-  return sessions.reduce((sum, s) => sum + (s.minutes ?? 0), 0);
+export function totalMinutes(sessions: { minutes?: number | null }[]): number {
+  return sessions.reduce((sum, s) => sum + stepMinutes(s), 0);
 }

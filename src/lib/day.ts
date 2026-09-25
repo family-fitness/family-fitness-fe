@@ -1,5 +1,5 @@
 import type { DayLog, Mission, MissionSession, SessionPhase, VerifiedBy } from "./api/types";
-import { sessionsOf } from "./session-plan";
+import { sessionsOf, stepMinutes } from "./session-plan";
 
 /**
  * 하루 기록 한 장의 셈 — 큰 링 · 칸 · 요약 줄 · 요일 줄의 작은 링이 같은 값을 쓴다.
@@ -35,7 +35,7 @@ export function daySummary(log: DayLog | null | undefined): DaySummary {
         total += 1;
         if (!s.done) continue;
         done += 1;
-        phases[s.phase] += s.minutes ?? 0;
+        phases[s.phase] += stepMinutes(s);
       }
     } else if (entry.verifiedBy !== "SELF_REPORT") {
       total += 1;

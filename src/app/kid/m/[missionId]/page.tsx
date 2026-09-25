@@ -30,7 +30,7 @@ import {
 import { errorMessage } from "@/lib/errors";
 import { stageOf } from "@/lib/levels";
 import { newlyUnlocked } from "@/lib/unlocks";
-import { PHASE_LABEL, clock, sessionsOf } from "@/lib/session-plan";
+import { PHASE_LABEL, clock, sessionsOf, stepMinutes, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { dayOf, today } from "@/lib/today";
 import { cn } from "@/lib/utils";
@@ -73,7 +73,7 @@ interface StepDone {
 }
 
 /** 칸마다 잡힌 초. 0분으로 온 칸이 첫 틱에 끝나지 않게 1분부터 */
-const plannedSecOf = (s: MissionSession | undefined) => Math.max(1, s?.minutes ?? 1) * 60;
+const plannedSecOf = (s: MissionSession | undefined) => (s ? stepMinutes(s) : 1) * 60;
 
 export default function PlayPage() {
   const { missionId } = useParams<{ missionId: string }>();
@@ -323,8 +323,8 @@ export default function PlayPage() {
     );
   }
 
-  const totalMin = sessions.reduce((sum, s) => sum + (s.minutes ?? 0), 0);
-  const doneMin = sessions.filter((s) => s.completed).reduce((sum, s) => sum + (s.minutes ?? 0), 0);
+  const totalMin = totalMinutes(sessions);
+  const doneMin = totalMinutes(sessions.filter((s) => s.completed));
 
   const start = () => {
     if (active == null) return;
@@ -585,7 +585,7 @@ function Step({
               )}
             </Ring>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold">{s.minutes ?? 1}분 동안 따라 해요</p>
+              <p className="text-sm font-bold">{stepMinutes(s)}분 동안 따라 해요</p>
               {status === "rest" && (
                 <button
                   type="button"
@@ -657,7 +657,7 @@ function Step({
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-extrabold">{s.title}</span>
             <span className="text-caption text-ink-soft mt-0.5 block">
-              {PHASE_LABEL[s.phase]} · {s.minutes ?? 1}분{s.completed && " · 했어요"}
+              {PHASE_LABEL[s.phase]} · {stepMinutes(s)}분{s.completed && " · 했어요"}
             </span>
           </span>
         </button>

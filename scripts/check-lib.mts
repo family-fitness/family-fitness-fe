@@ -34,7 +34,7 @@ import {
   todayLine,
 } from "@/lib/day";
 import { UNLOCKS, decorationsAt, newlyUnlocked, nextUnlock } from "@/lib/unlocks";
-import { orderSessions } from "@/lib/session-plan";
+import { orderSessions, totalMinutes } from "@/lib/session-plan";
 import { josa } from "@/lib/utils";
 
 let failed = 0;
@@ -219,6 +219,13 @@ check(
 );
 check("되풀이는 4주까지", repeatDates(["2026-09-23"], 9).length === 4);
 check("겹친 날은 한 번만", repeatDates(["2026-09-23", "2026-09-23"], 1).length === 1);
+
+/* ─── 칸 시간 ─────────────────────────────────────────── */
+
+check(
+  "시간이 없거나 0분인 칸은 1분 — 운동하기 타이머와 같은 셈",
+  totalMinutes([{ minutes: 5 }, { minutes: null }, { minutes: 0 }]) === 7,
+);
 
 /* ─── 하루 기록 ─────────────────────────────────────────── */
 

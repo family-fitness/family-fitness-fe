@@ -1,6 +1,6 @@
 import { VideoThumb } from "@/components/ui/video-thumb";
 import type { MissionSession } from "@/lib/api/types";
-import { PHASE_LABEL } from "@/lib/session-plan";
+import { PHASE_LABEL, stepMinutes, totalMinutes } from "@/lib/session-plan";
 
 /**
  * 칸 목록 — 준비 · 본 · 정리로 묶어서.
@@ -21,7 +21,7 @@ export function SessionList({ sessions }: { sessions: MissionSession[] }) {
             {PHASE_LABEL[g.phase]}
             <span className="text-faint ml-1 font-bold">
               {/* 칸 줄과 같은 셈 — 시간이 없는 칸은 1분(운동하기도 1분으로 돈다) */}
-              {g.rows.reduce((sum, s) => sum + (s.minutes ?? 1), 0)}분
+              {totalMinutes(g.rows)}분
             </span>
           </p>
           <ul className="mt-1.5 space-y-2">
@@ -39,7 +39,7 @@ export function SessionList({ sessions }: { sessions: MissionSession[] }) {
                   <span className="block truncate text-sm font-bold">{s.title}</span>
                   <span className="text-caption text-ink-soft block">
                     {s.factor ? `${s.factor} · ` : ""}
-                    {s.minutes ?? 1}분
+                    {stepMinutes(s)}분
                   </span>
                 </span>
               </li>
