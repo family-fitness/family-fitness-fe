@@ -37,6 +37,8 @@ export function TodayRings({
 }) {
   const { data: availability } = useAvailability(profileId);
   const a = todayActivity({ profileId, missions, weekLogs, availability });
+  // 쉬는 날에 움직이지 않은 것은 빈 목표가 아니다 — 「0 / 20분」 대신 「쉬는 날」
+  const resting = a.rest && a.moved === 0;
 
   return (
     <ActivityRings
@@ -48,7 +50,7 @@ export function TodayRings({
           label: "오늘 움직인 시간",
           value: a.moved,
           max: a.goal,
-          text: over(a.moved, a.goal, "분"),
+          text: resting ? "쉬는 날" : over(a.moved, a.goal, "분"),
           color: "var(--color-signal)",
           track: "var(--color-signal-soft)",
         },
@@ -56,7 +58,12 @@ export function TodayRings({
           label: "오늘 끝낸 운동",
           value: a.done,
           max: a.total,
-          text: a.total > 0 ? over(a.done, a.total, "개") : "아직 없어요",
+          text:
+            a.total > 0 && !(resting && a.done === 0)
+              ? over(a.done, a.total, "개")
+              : resting
+                ? "쉬는 날"
+                : "아직 없어요",
           color: "var(--color-mark)",
           track: "var(--color-mark-soft)",
         },

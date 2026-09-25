@@ -21,6 +21,8 @@ export interface TodayActivity {
   days: number;
   /** 이번 주 운동하기로 적어 둔 날. 없으면 3 */
   target: number;
+  /** 오늘은 쉬는 날 카드를 쓴 날 — 목표를 비워 두지 않는다(규칙 15) */
+  rest: boolean;
 }
 
 /** 아무것도 정해 두지 않은 날의 목표(분). 「주말 30분부터」 보다 가볍게 */
@@ -62,5 +64,6 @@ export function todayActivity({
     total: sessions.length,
     days: (weekLogs ?? []).filter((d) => d.minutes > 0).length,
     target: slots.length || DEFAULT_DAYS,
+    rest: Boolean(log?.rest),
   };
 }

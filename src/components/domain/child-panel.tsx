@@ -46,7 +46,8 @@ export function ChildPanel({
         href={`/parent/child/${child.profileId}`}
       />
 
-      {score == null ? (
+      {/* 잰 적이 있는지로 가른다 — 만 7~10세는 규준이 비어 점수가 없을 수 있다(규칙 8). 그래도 육각형은 선다 */}
+      {testedOn == null ? (
         <FirstMeasure child={child} />
       ) : (
         <>
@@ -148,10 +149,16 @@ function TodaySection({
   // 시간으로 재는 운동과 직접 적는 걸음수를 가른다. 걸음수는 서버가 모르는 값이다(규칙 2)
   const timed = mine.filter((m) => m.targetMetric !== "STEPS");
   const reported = mine.filter((m) => m.targetMetric === "STEPS");
-  // 등록을 기다리는 제안. 등록해야 운동이 된다(규칙 1) — 여기서 말하지 않으면 아이 화면이 왜 빈지 모른다
+  // 등록을 기다리는 제안. 등록해야 운동이 된다(규칙 1) — 여기서 말하지 않으면 아이 화면이 왜 빈지 모른다.
+  // 이 아이의 제안일 때만 — 아이가 둘이면 첫째 제안이 둘째 칸에 뜨고 둘째의 「AI에게 받기」 를 가렸다
+  const proposals = (run?.proposals ?? []).filter(
+    (p) =>
+      (p.participants ?? []).length === 0 ||
+      p.participants?.some((x) => x.profileId === childProfileId),
+  );
   const waiting =
-    run?.status === "AWAITING_APPROVAL" && run.coachRunId
-      ? { id: run.coachRunId, title: (run.proposals ?? [])[0]?.title }
+    run?.status === "AWAITING_APPROVAL" && run.coachRunId && proposals.length > 0
+      ? { id: run.coachRunId, title: proposals[0]?.title }
       : null;
 
   const head = (
@@ -181,8 +188,8 @@ function TodaySection({
             : `${withJosa(childName, "은는")} 아직 오늘 운동이 없어요`}
         </p>
         {proposal}
-        {/* 두 길 — AI에게 받거나, 직접 골라 짜거나 */}
-        {!waiting && (
+        {/* 두 길 — AI에게 받거나, 직접 골라 짜거나. 쉬는 날에는 운동을 권하지 않는다(규칙 15) */}
+        {!waiting && !restToday && (
           <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
             <Link
               href="/plan"
@@ -233,12 +240,13 @@ function TodaySection({
               finished ? "text-done" : "text-ink-soft",
             )}
           >
+            {/* 한 만큼이 먼저 — 쉬는 날에 「그래도 할래요」 로 한 것을 「쉬는 날」 로 덮지 않는다 */}
             {finished
               ? `${withJosa(childName, "이가")} 다 했어요`
-              : restToday
-                ? "오늘은 쉬는 날이에요"
-                : doneCount > 0
-                  ? `${doneCount}개 했어요 · ${sessions.length - doneCount}개 남음`
+              : doneCount > 0
+                ? `${doneCount}개 했어요 · ${sessions.length - doneCount}개 남음`
+                : restToday
+                  ? "오늘은 쉬는 날이에요"
                   : "아직 시작 전이에요"}
           </p>
         </div>
@@ -290,7 +298,7 @@ function TodaySection({
 
       {/* 운동 더하기 — 오늘 운동이 있어도 AI 코치에게 더 받거나 직접 짜서 더한다(9/25 「운동 미션을 추가하는」).
           코치가 짠 것은 등록해야 운동이 된다(규칙 1) */}
-      {!waiting && (
+      {!waiting && !restToday && (
         <div className="border-line mt-3 grid grid-cols-2 gap-2 border-t pt-3">
           <Link
             href="/plan"
