@@ -308,7 +308,7 @@ function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
           </p>
         )}
         {saved && !changed ? (
-          <p className="bg-done-soft text-done flex min-h-14 items-center justify-center gap-1.5 rounded-2xl text-base font-extrabold">
+          <p className="text-done flex min-h-14 items-center justify-center gap-1.5 text-base font-extrabold">
             <Check aria-hidden className="size-5" strokeWidth={3} />
             저장했어요
           </p>

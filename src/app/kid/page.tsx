@@ -258,7 +258,7 @@ export default function KidHomePage() {
             {/* 점수 하나는 아이도 본다. 등수로 바꾸지 않고 또래 평균 50 눈금과 같이(규칙 10) */}
             <PanelCell
               label="신체 점수"
-              note={score != null ? "눈금 · 또래 평균 50" : "아직 재지 않았어요"}
+              note={score != null ? "또래 평균 50" : "아직 재지 않았어요"}
               art={
                 score != null ? (
                   <span className="flex flex-col items-center">

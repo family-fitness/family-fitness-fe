@@ -13,7 +13,6 @@ import { CardHead } from "@/components/ui/card";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorIcon } from "@/components/domain/factor-icon";
-import { SourceTag } from "@/components/domain/source-tag";
 import { FactorRadar } from "@/components/domain/factor-radar";
 import { ScoreLine } from "@/components/domain/factor-view";
 import {
@@ -152,10 +151,6 @@ function PlanForm() {
               {!focus && <span className="text-ink-soft"> · 가장 낮은 요인</span>}
             </p>
           )}
-          {/* 코치는 또래에게 실제로 처방된 운동에서 고른다(AI 파트 retrieve) */}
-          <SourceTag className="mt-2.5">
-            국민체력100 · {kid?.ageGroup ?? "같은 연령대"} 또래 운동처방
-          </SourceTag>
         </section>
 
         {/* AI 말고 직접 — 운동 찾기에서 동작을 담아 짠다 */}

@@ -114,11 +114,6 @@ function LoginContent() {
           label="키움 섬 — 운동한 날마다 나무가 하나씩 자라요"
         />
         <h1 className="page-title -mt-1">우리가족 체력키움</h1>
-        <p className="text-ink-soft mt-2 text-sm leading-relaxed">
-          국민체력100 측정 기록으로 우리 아이 체력을 한눈에 보고,
-          <br />
-          오늘 할 운동을 같이 해요.
-        </p>
       </div>
 
       {/*
@@ -180,11 +175,6 @@ function LoginContent() {
           </p>
         )}
       </div>
-
-      <p className="text-faint text-caption text-center leading-relaxed">
-        국민체력100 측정 데이터를 바탕으로 한 참고 정보입니다. 질병의 진단·치료를 위한 것이
-        아닙니다.
-      </p>
     </PlainScreen>
   );
 }

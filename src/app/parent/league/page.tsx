@@ -92,9 +92,7 @@ function League() {
               </p>
               <p className="text-metric mt-0.5 font-extrabold">{tierName(league.tier)} 리그</p>
               <p className="text-caption text-ink-soft mt-0.5 font-bold">
-                {rank != null
-                  ? `${league.groupSize}가족 중 ${rank}등`
-                  : "첫 운동을 하면 순위에 들어가요"}
+                {rank != null ? `${league.groupSize}가족 중 ${rank}등` : "아직 순위가 없어요"}
               </p>
             </div>
           </div>
@@ -209,9 +207,6 @@ function League() {
               );
             })}
           </ol>
-          <p className="text-caption text-ink-soft border-line mt-3 border-t pt-3">
-            달성률 — 잡힌 운동 날 중 해낸 날 · 쉬는 날 빼고 · 아이들 평균
-          </p>
         </section>
       </Stage>
     </>

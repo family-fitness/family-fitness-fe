@@ -106,7 +106,6 @@ export default function ResultPage() {
               points={radar}
               name={profile?.name ?? "나"}
               pending={false}
-              ageGroup={profile?.ageGroup}
               score={member?.latest?.overallPercentile ?? null}
             />
           </section>
@@ -130,7 +129,7 @@ export default function ResultPage() {
           {/* 막대 가운데 눈금이 무엇인지 글로 — 아이 홈 · 요인 표와 같은 말. 몇 항목인지는 머리에 있다 */}
           <CardHead
             title="항목별"
-            meta={kidView ? "눈금 · 또래 평균 50" : "국민체력100 등급 · 눈금 · 또래 평균 50"}
+            meta={kidView ? "또래 평균 50" : "국민체력100 등급 · 또래 평균 50"}
           />
           <div className="divide-rows">
             {items.map((entry, index) => (
@@ -143,11 +142,20 @@ export default function ResultPage() {
                   caption={kidView ? undefined : entry.topPercentText}
                   delay={index * 0.08}
                 />
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {/* 자녀 화면에서는 서열(등급) 대신 상태(band) 만 보여준다 */}
-                  {!kidView && <GradeBadge grade={entry.grade} />}
+                {/* 자녀 화면에서는 서열(등급) 대신 상태(band) 만 보여준다. 딱지 대신 글자 한 줄 */}
+                <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5">
+                  {!kidView && (
+                    <>
+                      <GradeBadge grade={entry.grade} />
+                      {entry.band && (
+                        <span aria-hidden className="text-faint text-xs">
+                          ·
+                        </span>
+                      )}
+                    </>
+                  )}
                   <BandChip band={entry.band} />
-                </div>
+                </p>
               </div>
             ))}
           </div>
@@ -176,16 +184,10 @@ export default function ResultPage() {
                 href={`/p/${profileId}/future`}
                 art="icon/menu-future"
                 title="10년 위 연령대 보기"
-                description="지금과 같은 조건의 10년 위 연령대"
               />
               <ListRow href={`/p/${profileId}/measure`} art="icon/menu-measure" title="새로 재기" />
             </ul>
           </>
-        )}
-
-        {/* 서버가 준 고지 문구. 줄이거나 접지 않는다 */}
-        {test.disclaimer && (
-          <p className="text-caption text-ink-soft px-1 leading-relaxed">{test.disclaimer}</p>
         )}
       </Stage>
     </>

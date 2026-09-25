@@ -123,7 +123,7 @@ export default function ChildDetailPage() {
                 {progress ? `Lv.${progress.level} · ${stage.name}` : " "}
               </p>
               {member?.headline && (
-                <p className="bg-signal-soft text-signal-deep text-caption mt-1.5 inline-block rounded-full px-2.5 py-1 font-extrabold">
+                <p className="text-signal-deep text-caption mt-1 font-extrabold">
                   {member.headline}
                 </p>
               )}
@@ -136,13 +136,7 @@ export default function ChildDetailPage() {
             {score == null && <p className="text-lead mt-2 font-extrabold">아직 재지 않았어요</p>}
           </div>
           {/* 육각형 · 그 아래 통합 신체 점수(9/25) · 출처 */}
-          <FactorView
-            points={latest?.radar}
-            name={name}
-            pending={false}
-            ageGroup={member?.ageGroup ?? profile.ageGroup}
-            score={score}
-          />
+          <FactorView points={latest?.radar} name={name} pending={false} score={score} />
         </Card>
 
         <MonthStats

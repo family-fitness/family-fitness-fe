@@ -71,22 +71,12 @@ export default function StartPage() {
         <h1 className="text-[1.6rem] leading-tight font-extrabold">누가 쓰고 있나요?</h1>
       </div>
 
-      <RoleCard
-        title="아이"
-        description="오늘 할 운동 바로 시작하기"
-        tone="kid"
-        onClick={goKid}
-        art={<LevelBuddy stage={2} size={92} />}
-      />
+      <RoleCard title="아이" tone="kid" onClick={goKid} art={<LevelBuddy stage={2} size={92} />} />
 
-      {childAccount ? (
-        <p className="text-faint text-center text-xs leading-relaxed">
-          부모 화면은 보호자 계정에서
-        </p>
-      ) : (
+      {/* 자녀 계정에는 부모 칸을 내지 않는다 */}
+      {!childAccount && (
         <RoleCard
           title="부모"
-          description="아이 체력 보고 칭찬 보내기"
           tone="parent"
           onClick={goParent}
           art={
@@ -107,13 +97,11 @@ export default function StartPage() {
 function RoleCard({
   art,
   title,
-  description,
   tone,
   onClick,
 }: {
   art: ReactNode;
   title: string;
-  description: string;
   tone: "kid" | "parent";
   onClick: () => void;
 }) {
@@ -130,11 +118,8 @@ function RoleCard({
       }
     >
       {art}
-      <span className="min-w-0">
-        <span className={kid ? "block text-2xl font-extrabold" : "block text-xl font-extrabold"}>
-          {title}
-        </span>
-        <span className="text-ink-soft mt-1 block text-sm leading-relaxed">{description}</span>
+      <span className={kid ? "min-w-0 text-2xl font-extrabold" : "min-w-0 text-xl font-extrabold"}>
+        {title}
       </span>
     </button>
   );

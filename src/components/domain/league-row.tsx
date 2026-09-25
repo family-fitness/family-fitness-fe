@@ -33,7 +33,7 @@ export function LeagueRow({
   const note =
     league.rate != null
       ? `이번 달 달성률 ${league.rate}% · ${league.daysLeft}일 남음`
-      : "첫 운동을 하면 순위에 들어가요";
+      : "아직 순위가 없어요";
   return (
     <NavLink
       href="/parent/league"

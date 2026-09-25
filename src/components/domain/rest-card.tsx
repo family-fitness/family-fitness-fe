@@ -124,7 +124,7 @@ function RestCardSheet({
         errorMessage(
           e,
           {
-            NO_REST_CARD_LEFT: "이번 달 카드를 다 썼어요. 다음 달 1일에 두 장이 다시 생겨요.",
+            NO_REST_CARD_LEFT: "이번 달 카드를 다 썼어요.",
             ALREADY_MOVED: "그날은 이미 움직였어요.",
             ALREADY_REST_DAY: "이미 쉬는 날이에요.",
             INVALID_DATE: "오늘부터 이번 달 안의 날만 고를 수 있어요.",

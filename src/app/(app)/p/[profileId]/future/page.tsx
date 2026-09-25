@@ -113,10 +113,8 @@ export default function FuturePage() {
 
       <Stage wide className="space-y-3">
         <section className="card-hero">
-          {/* 무엇을 보는 그림인지 먼저 말한다. 그림부터 보면 예언으로 읽힌다 */}
-          <p className="text-body leading-relaxed font-extrabold">
-            지금과 같은 조건의 10년 위 연령대는 여기 있습니다.
-          </p>
+          {/* 무엇을 보는 그림인지가 먼저다 — 그림부터 보면 예언으로 읽힌다(규칙 3). 설명 문장이 아니라 제목 한 줄 */}
+          <h2 className="text-body font-extrabold">지금과 같은 조건의 10년 위 연령대</h2>
           {item && (
             <p className="text-caption text-ink-soft mt-1">
               {item.itemLabel ?? item.itemName} 기준
@@ -157,16 +155,6 @@ export default function FuturePage() {
                 </div>
               </dl>
             )}
-
-            {/*
-              고지는 한 번만 한다. 서버가 준 문구가 있으면 그걸 쓰고(도메인 규칙 9),
-              없을 때만 우리 문장을 낸다 — 둘 다 내면 같은 말이 두 번 쌓이고,
-              두 번 읽히는 경고는 한 번도 안 읽힌다.
-            */}
-            <p className="card text-ink-soft text-caption leading-relaxed">
-              {result.notice ??
-                "국민체력100은 여러 사람을 한 시점에 조사한 자료예요. 한 사람을 10년 동안 따라간 기록이 아니라서, 개인이 앞으로 어떻게 변할지는 알 수 없어요."}
-            </p>
           </>
         )}
 
