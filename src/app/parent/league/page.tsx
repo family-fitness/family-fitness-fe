@@ -100,8 +100,11 @@ function League() {
 
   // 셀 날이 아직 없으면 달성률 · 순위가 비어 온다 — 0% · 꼴찌로 그리지 않는다
   const { rate, rank } = league;
-  const zone =
-    rank != null ? zoneOf(rank, league.groupSize, league.promote, league.demote) : "stay";
+  // 올라가는 · 내려가는 자리는 달성률이 있는 집끼리만 센다 — 아직 셀 날이 없는 집(맨 아래)을
+  // 「내려가는 자리」 에 넣으면 막 들어온 가족이 첫날부터 내려가는 것처럼 보인다.
+  // 위 한 줄과 아래 순위가 같은 수로 센다 — 위는 「내려가요」 인데 아래 줄은 그 자리가 아니었다
+  const ranked = league.standings.filter((x) => x.rate != null).length;
+  const zone = rank != null ? zoneOf(rank, ranked, league.promote, league.demote) : "stay";
   const up = nextTier(league.tier);
   const down = prevTier(league.tier);
   const outlook =
@@ -187,9 +190,6 @@ function League() {
           <ol className="mt-1">
             {league.standings.map((s, i) => {
               const place = i + 1;
-              // 올라가는 · 내려가는 자리는 달성률이 있는 집끼리만 — 아직 셀 날이 없는 집(맨 아래)을
-              // 「내려가는 자리」 에 넣으면 막 들어온 가족이 첫날부터 내려가는 것처럼 보인다
-              const ranked = league.standings.filter((x) => x.rate != null).length;
               const zoneAt = (n: number) =>
                 (league.standings[n - 1]?.rate ?? null) == null
                   ? null
