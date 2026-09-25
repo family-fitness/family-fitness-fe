@@ -318,10 +318,14 @@ await shot("invite-code");
 await step("부모 홈 알약 → 아이 등록하기 → 둘째 아이 첫 시작", async () => {
   await page.goto(B + "/parent", { waitUntil: "load" });
   await page.waitForTimeout(2000);
-  await page.getByRole("button", { name: /민서/ }).first().click({ timeout: 8000 });
+  // 오른쪽 위 이름 알약 — 「우리 아이」 묶음에도 아이 줄 · 아이 등록하기가 있어 알약과 그 시트로 좁힌다
+  await page.getByRole("button", { name: /보고 있는 아이/ }).click({ timeout: 8000 });
   await page.waitForTimeout(800);
   await shot("child-pill-sheet");
-  await page.getByRole("link", { name: /아이 등록하기/ }).click({ timeout: 8000 });
+  await page
+    .getByRole("dialog")
+    .getByRole("link", { name: /아이 등록하기/ })
+    .click({ timeout: 8000 });
   await page.waitForURL(/\/start\/child/, { timeout: 10000 });
   await page.waitForTimeout(1200);
   await shot("child-wizard-first");
