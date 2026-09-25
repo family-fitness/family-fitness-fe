@@ -34,6 +34,7 @@ import {
   todayLine,
 } from "@/lib/day";
 import { UNLOCKS, decorationsAt, newlyUnlocked, nextUnlock } from "@/lib/unlocks";
+import { orderSessions } from "@/lib/session-plan";
 import { josa } from "@/lib/utils";
 
 let failed = 0;
@@ -341,6 +342,18 @@ check(
   check(
     "걸음수는 오늘 칸에 넣지 않는다",
     dayWork([{ ...shared, targetMetric: "STEPS" }], "A", "2026-09-24").total === 0,
+  );
+  const mixed = [
+    { position: 2, phase: "WARMUP", title: "준비" },
+    { position: 1, phase: "COOLDOWN", title: "정리" },
+    { position: Number.NaN, phase: "MAIN", title: "차례 없음" },
+  ] as unknown as Parameters<typeof orderSessions>[0];
+  check(
+    "부모가 짠 차례대로 한다 — 준비 · 본 · 정리로 다시 줄 세우지 않는다",
+    same(
+      orderSessions(mixed).map((s) => s.title),
+      ["정리", "준비", "차례 없음"],
+    ),
   );
 }
 

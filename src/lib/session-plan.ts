@@ -23,7 +23,7 @@ export const PHASE_LABEL: Record<SessionPhase, string> = {
   COOLDOWN: "정리운동",
 };
 
-/** 하는 차례. 서버가 position 을 안 주거나 뒤섞여 와도 이 순서로 세운다 */
+/** 차례를 모를 때(position 이 없을 때)만 쓰는 순서 */
 const PHASE_ORDER: Record<SessionPhase, number> = { WARMUP: 0, MAIN: 1, COOLDOWN: 2 };
 
 /**
@@ -72,13 +72,15 @@ export function sessionsOf(
   ];
 }
 
-/** 준비 → 본 → 정리, 같은 단계 안에서는 받은 차례대로 */
+/**
+ * 하는 차례 — 받은 `position` 그대로. 직접 짜기에서 부모가 정한 차례가 곧 하는 차례다(`routine.ts`) —
+ * 준비 · 본 · 정리로 다시 줄 세우면 부모가 짠 순서와 아이가 하는 순서가 달라진다.
+ * 차례가 없는 칸만 준비 → 본 → 정리로 뒤에 선다.
+ */
 export function orderSessions(given: MissionSession[] | null | undefined): MissionSession[] {
-  return [...(given ?? [])].sort(
-    (a, b) =>
-      (PHASE_ORDER[a.phase] ?? 9) - (PHASE_ORDER[b.phase] ?? 9) ||
-      (a.position ?? 0) - (b.position ?? 0),
-  );
+  const rank = (s: MissionSession) =>
+    Number.isFinite(s.position) ? s.position : 1000 + (PHASE_ORDER[s.phase] ?? 9);
+  return [...(given ?? [])].sort((a, b) => rank(a) - rank(b));
 }
 
 /** 0:12 처럼 */
