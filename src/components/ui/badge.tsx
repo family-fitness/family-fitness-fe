@@ -10,8 +10,9 @@ import { cn } from "@/lib/utils";
  */
 const TONE: Record<string, string> = {
   "1": "text-signal-deep",
-  "2": "text-signal-deep/80",
-  "3": "text-signal-deep/60",
+  "2": "text-signal-deep/85",
+  // 흰 바탕에서 4.5:1 을 넘는 가장 옅은 명도(60% 는 4.0 으로 모자랐다)
+  "3": "text-signal-deep/72",
 };
 
 export function GradeBadge({
