@@ -23,7 +23,8 @@ export function cn(...inputs: ClassValue[]) {
 
 /** "8월 26일" */
 export function formatDate(iso: string): string {
-  const d = new Date(iso);
+  // 날짜만 온 값(2026-09-25)은 그 나라의 그날로 읽는다 — `new Date` 는 UTC 자정으로 읽어 서쪽 시간대에서 하루 앞이 된다
+  const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? `${iso}T00:00:00` : iso);
   return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
@@ -35,6 +36,8 @@ const JOSA = {
   와과: ["과", "와"],
   /** 「플래티넘으로 · 골드로」. 받침 ㄹ 뒤는 「로」(서울로) */
   으로로: ["으로", "로"],
+  /** 「플래티넘이에요 · 골드예요」 */
+  이에요: ["이에요", "예요"],
 } as const;
 
 export function josa(word: string, kind: keyof typeof JOSA): string {

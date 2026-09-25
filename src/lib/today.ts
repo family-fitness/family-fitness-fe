@@ -18,6 +18,8 @@ export function toDateString(d: Date): string {
  * 보낸 칭찬이 전날 것으로 세어진다.
  */
 export function dayOf(timestamp: string): string {
+  // 날짜만 온 값은 이미 그날이다 — 시각으로 읽으면 UTC 자정이 되어 서쪽 시간대에서 하루 앞이 된다
+  if (/^\d{4}-\d{2}-\d{2}$/.test(timestamp)) return timestamp;
   const d = new Date(timestamp);
   return Number.isNaN(d.getTime()) ? timestamp.slice(0, 10) : toDateString(d);
 }
