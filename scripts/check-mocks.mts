@@ -252,6 +252,36 @@ check(
     !who(parts, sibling.profileId)?.completed,
 );
 
+// 아이와 같이 하는 보호자 둘 — 아이가 끝낸 칸은 같이 끝나고, 보호자가 끝낸 칸은 그 보호자 것뿐이다
+const together = (await (
+  await post(`/families/${DEMO.familyId}/missions`, {
+    title: "엄마랑 같이",
+    startDate: today,
+    endDate: today,
+    targetMetric: "TIMER_MINUTES",
+    targetValue: 2,
+    participantProfileIds: [DEMO.kid, DEMO.mom, DEMO.dad],
+    sessions: [
+      { position: 1, phase: "MAIN", title: "하나", minutes: 1 },
+      { position: 2, phase: "MAIN", title: "둘", minutes: 1 },
+    ],
+  })
+).json()) as MissionBody;
+await post(`/missions/${together.missionId}/sessions/1/done`, done);
+await post(`/missions/${together.missionId}/sessions/2/done`, { ...done, profileId: DEMO.mom });
+parts = await partsOf(together.missionId);
+check(
+  "아이가 끝낸 칸은 같이 하는 보호자에게도 끝난 칸이다",
+  (who(parts, DEMO.mom)?.doneSessions ?? []).includes(1) &&
+    (who(parts, DEMO.dad)?.doneSessions ?? []).includes(1),
+);
+check(
+  "보호자가 끝낸 칸은 아이 · 다른 보호자에게 번지지 않는다",
+  !(who(parts, DEMO.kid)?.doneSessions ?? []).includes(2) &&
+    !(who(parts, DEMO.dad)?.doneSessions ?? []).includes(2),
+  `아이 ${JSON.stringify(who(parts, DEMO.kid)?.doneSessions)} · 아빠 ${JSON.stringify(who(parts, DEMO.dad)?.doneSessions)}`,
+);
+
 /* ─── 4. 사람이 적은 것은 보호자가 확인한다(규칙 2) ─────────── */
 
 const reported = (await (

@@ -746,13 +746,15 @@ const missions = [
 
       // 경험치는 레벨이 세는 것과 같은 셈으로 — 끝내기 전과 뒤의 차이. 두 번 눌러도 두 번 쌓이지 않는다
       const before = progressOf(body.profileId).xp;
-      // 끝낸 사람과, 같이 하기로 한 보호자가 이 칸을 끝낸다 — 아이 폰 하나로 같이 한다.
+      // 끝낸 사람이 이 칸을 끝낸다. 아이가 끝냈으면 같이 하기로 한 보호자도 — 아이 폰 하나로 같이 한다.
+      // 보호자가 끝낸 칸은 그 보호자 것뿐이다(다른 보호자 · 아이에게 번지지 않는다).
       // 형제는 저마다 한다: 한 아이가 끝낸 칸이 다른 아이 것이 되지 않는다
       const roleOf = (id: string | undefined) =>
         db.profiles.profiles.find((p) => p.profileId === id)?.role;
+      const withGuardians = roleOf(me.profileId) === "CHILD";
       const total = sessions.reduce((sum, s) => sum + (s.minutes ?? 0), 0) || 1;
       for (const p of (mission.participants ?? []) as ParticipantRow[]) {
-        if (p !== me && roleOf(p.profileId) !== "PARENT") continue;
+        if (p !== me && !(withGuardians && roleOf(p.profileId) === "PARENT")) continue;
         p.doneSessions = [...new Set([...(p.doneSessions ?? []), session.position])];
         const done = sessions.filter((s) => p.doneSessions.includes(s.position));
         p.progress = done.reduce((sum, s) => sum + (s.minutes ?? 0), 0) / total;
