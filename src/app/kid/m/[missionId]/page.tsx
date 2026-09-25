@@ -102,8 +102,11 @@ export default function PlayPage() {
   const [saving, setSaving] = useState(0);
   const [unsaved, setUnsaved] = useState<StepDone[]>([]);
   const [saveError, setSaveError] = useState<string | null>(null);
-  /** 다시 보내도 같은 답이 오는 실패(동의 · 참여자 아님 · 없는 운동) — 다시 보내기를 주지 않는다 */
-  const [saveStuck, setSaveStuck] = useState(false);
+  /**
+   * 다시 보내도 같은 답이 오는 실패(동의 · 참여자 아님 · 없는 운동)면 다시 보내기 대신 갈 곳 —
+   * 로그인이 풀렸으면(401) 로그인으로, 그 밖에는 홈으로
+   */
+  const [stuckTo, setStuckTo] = useState<"/kid" | "/login" | null>(null);
   const [current, setCurrent] = useState<number | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [elapsed, setElapsed] = useState(0);
@@ -169,7 +172,7 @@ export default function PlayPage() {
         setUnsaved((list) => [...list, step]);
         // 망 · 서버 탓이 아니면(4xx) 다시 보내도 같다
         if (e instanceof ApiError && e.status < 500 && e.status !== 408 && e.status !== 429) {
-          setSaveStuck(true);
+          setStuckTo(e.status === 401 ? "/login" : "/kid");
         }
         setSaveError(
           errorMessage(
@@ -431,13 +434,13 @@ export default function PlayPage() {
               // 못 보낸 칸이 있으면 「다 했어요」 · 「알리기」 를 띄우지 않는다 — 부모가 빈 기록을 보게 된다
               <section className="card-hero text-center" role="alert">
                 <p className="text-lead font-extrabold">{saveError ?? "기록을 남기지 못했어요."}</p>
-                {saveStuck ? (
+                {stuckTo ? (
                   <NavLink
-                    href="/kid"
+                    href={stuckTo}
                     transitionTypes={["nav-back"]}
                     className="press text-ink-soft mt-2 inline-flex min-h-11 items-center px-4 text-sm font-bold"
                   >
-                    홈으로
+                    {stuckTo === "/login" ? "로그인하러 가기" : "홈으로"}
                   </NavLink>
                 ) : (
                   <button
