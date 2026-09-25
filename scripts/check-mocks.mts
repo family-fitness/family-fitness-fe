@@ -362,6 +362,14 @@ check(
 );
 res = await post(`/missions/없는-미션/participants/${DEMO.kid}/confirm`);
 check("없는 운동은 확인할 수 없다", res.status === 404);
+// 타이머로 확인된 칸을 끝낸 운동 — 보호자가 확인을 눌러도 「직접 입력함」 으로 바뀌지 않는다
+await post(`/missions/${shared.missionId}/participants/${DEMO.kid}/confirm`);
+parts = await partsOf(shared.missionId);
+check(
+  "타이머로 확인된 것은 확인을 눌러도 타이머 그대로다",
+  who(parts, DEMO.kid)?.verifiedBy === "TIMER",
+  String(who(parts, DEMO.kid)?.verifiedBy),
+);
 
 /* ─── 5. 동의 철회 ─────────────────────────────────────────── */
 

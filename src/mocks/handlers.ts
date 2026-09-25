@@ -785,6 +785,16 @@ const missions = [
       if (!mission) return fail(404, "MISSION_NOT_FOUND", "미션이 없습니다");
       const who = participantOf(mission, String(params.profileId));
       if (!who) return fail(404, "PARTICIPANT_NOT_FOUND", "참여자가 아닙니다");
+      // 확인할 것이 없으면(타이머 · 영상으로 이미 확인됐거나 벌써 확인했다) 바꾸지 않는다 —
+      // 타이머로 확인된 것을 「직접 입력함」 으로 고쳐 적으면 서버가 아는 값이 사람이 적은 값이 된다(규칙 2)
+      if (!who.needsGuardianCheck) {
+        return HttpResponse.json({
+          missionId: mission.missionId,
+          profileId: who.profileId,
+          completed: Boolean(who.completed),
+          verifiedBy: who.verifiedBy ?? null,
+        });
+      }
       if ((who.progress ?? 0) < 1) {
         return fail(422, "TARGET_NOT_REACHED", "목표에 닿지 않았습니다");
       }
