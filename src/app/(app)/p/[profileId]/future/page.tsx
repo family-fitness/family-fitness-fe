@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import { PageHeader } from "@/components/app-shell/page-header";
 import { Screen } from "@/components/app-shell/screen";
@@ -12,7 +12,6 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrajectoryChart } from "@/components/domain/trajectory-chart";
 import { errorMessage } from "@/lib/errors";
-import type { PredictionResult } from "@/lib/api/types";
 import {
   useCreatePrediction,
   useFamilyProfiles,
@@ -39,25 +38,20 @@ export default function FuturePage() {
   // 예측 응답에는 항목 코드만 있다. "50" 만 있으면 무슨 수치인지 알 수 없다
   const { data: items } = useFitnessItems(profile?.ageGroup);
   const create = useCreatePrediction(profileId);
-
-  const [result, setResult] = useState<PredictionResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // 결과와 실패는 요청이 들고 있는 것을 그대로 읽는다. 따로 상태에 옮기면 개발 모드에서 effect 가
+  // 두 번 돌 때 첫 응답을 버리고 그래프 없이 제목만 남았다
+  const result = create.data;
+  const error = create.error ? predictMessage(create.error) : null;
 
   const hasTest = Boolean(latest?.fitnessTestId);
+  const measurable = profile?.measurable !== false;
 
   /** 조회 엔드포인트가 없어서 들어오면 만든다(POST). **한 번만 만들어야 한다.** */
   const requested = useRef(false);
   useEffect(() => {
     if (!hasTest || requested.current) return;
     requested.current = true;
-    let cancelled = false;
-    create
-      .mutateAsync({})
-      .then((r) => !cancelled && setResult(r))
-      .catch((e) => !cancelled && setError(predictMessage(e)));
-    return () => {
-      cancelled = true;
-    };
+    create.mutate({});
     // create 는 매 렌더 새 객체다. 측정 유무가 바뀔 때만 다시 시도한다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasTest]);
@@ -84,11 +78,14 @@ export default function FuturePage() {
         <Screen>
           <EmptyState
             scene="no-record"
-            title="측정을 먼저 해 주세요"
+            title="아직 재지 않았어요"
             action={
-              <Button size="md" onClick={() => router.push(`/p/${profileId}/measure`)}>
-                측정 입력하기
-              </Button>
+              // 만 4세 미만은 잴 수 없다 — 단추를 끄지 않고 없앤다(규칙 4)
+              measurable && (
+                <Button size="md" onClick={() => router.push(`/p/${profileId}/measure`)}>
+                  첫 측정 하기
+                </Button>
+              )
             }
           />
         </Screen>
@@ -96,7 +93,11 @@ export default function FuturePage() {
     );
   }
 
-  const points = result?.points ?? [];
+  // 한 항목 · 지금대로(MAINTAIN)의 점만 — 여러 항목 · 여러 갈래가 섞이면 한 선에 이어 그려진다
+  const code = result?.points?.[0]?.itemCode;
+  const points = (result?.points ?? []).filter(
+    (p) => (p.scenario ?? "MAINTAIN") === "MAINTAIN" && p.itemCode === code,
+  );
   const first = points.find((p) => p.yearsFromNow === 0);
   const last = [...points].sort((a, b) => (b.yearsFromNow ?? 0) - (a.yearsFromNow ?? 0))[0];
 
@@ -147,10 +148,12 @@ export default function FuturePage() {
                       {last.p50}
                       <span className="text-ink-soft ml-0.5 text-sm font-bold">{unit}</span>
                     </span>
-                    <span className="text-faint text-caption block">
-                      열에 여덟은 {last.p10}~{last.p90}
-                      {unit}
-                    </span>
+                    {last.p10 != null && last.p90 != null && (
+                      <span className="text-faint text-caption block">
+                        열에 여덟은 {last.p10}~{last.p90}
+                        {unit}
+                      </span>
+                    )}
                   </dd>
                 </div>
               </dl>
@@ -160,23 +163,14 @@ export default function FuturePage() {
 
         {error && (
           <div className="space-y-3">
-            <p
-              role="alert"
-              className="bg-signal-soft text-signal-deep rounded-xl px-4 py-3 text-sm font-semibold"
-            >
+            <p role="alert" className="text-signal-deep text-sm font-semibold">
               {error}
             </p>
             <Button
               size="block"
               variant="outline"
               loading={create.isPending}
-              onClick={() => {
-                setError(null);
-                create
-                  .mutateAsync({})
-                  .then(setResult)
-                  .catch((e) => setError(predictMessage(e)));
-              }}
+              onClick={() => create.mutate({})}
             >
               다시 시도
             </Button>
@@ -191,11 +185,11 @@ const predictMessage = (error: unknown) =>
   errorMessage(
     error,
     {
-      NO_FITNESS_TEST: "측정 기록이 있어야 볼 수 있어요.",
-      CONSENT_REQUIRED: "보호자 동의가 필요해요. 설정에서 확인해 주세요.",
-      TEMPORARILY_UNAVAILABLE: "지금은 계산할 수 없어요. 잠시 후 다시 시도해 주세요.",
+      NO_FITNESS_TEST: "아직 재지 않았어요.",
+      CONSENT_REQUIRED: "보호자 동의가 필요해요.",
+      TEMPORARILY_UNAVAILABLE: "지금은 계산할 수 없어요.",
     },
-    "불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+    "불러오지 못했어요.",
   );
 
 function FutureSkeleton() {
