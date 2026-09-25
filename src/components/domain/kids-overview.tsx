@@ -49,9 +49,12 @@ export function KidsOverview({
     const q = profileId ? calendars[ids.indexOf(profileId)] : undefined;
     return q?.data?.days ?? (q?.error ? null : undefined);
   };
-  // 쉬는 날 카드는 가족 단위 — 달력 기록을 못 받아도 오늘이 쉬는 날인지 안다(규칙 15)
+  // 쉬는 날 카드는 가족 단위 — 달력 기록을 못 받아도 오늘이 쉬는 날인지 안다(규칙 15).
+  // 쉬는 날 목록을 못 받으면 달력 기록의 쉬는 날 표시로 — 대시보드와 같은 셈
   const { data: restDays } = useRestDays(familyId, monthOf(today()));
-  const restToday = Boolean(restDays?.days.includes(today()));
+  const restToday = restDays
+    ? restDays.days.includes(today())
+    : kids.some((k) => logsOf(k.profileId)?.find((d) => d.date === today())?.rest);
 
   return (
     <section className="card" aria-label="우리 아이">
