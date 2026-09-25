@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
+import { RouteLoading } from "@/components/app-shell/route-loading";
 import { useSession } from "@/lib/session";
 import { useHydrated } from "@/lib/view-role";
 import { useRoleStore } from "@/stores/role-store";
@@ -21,7 +22,7 @@ export default function ParentAreaLayout({ children }: { children: ReactNode }) 
     if (hydrated && !isPending && blocked) router.replace("/kid");
   }, [hydrated, isPending, blocked, router]);
 
-  // 잠깐이라도 비치면 안 된다
-  if (!hydrated || blocked) return null;
+  // 잠깐이라도 비치면 안 된다 — 그동안은 화면이 넘어갈 때와 같은 뼈대
+  if (!hydrated || blocked) return <RouteLoading />;
   return children;
 }

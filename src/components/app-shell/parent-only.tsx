@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
+import { RouteLoading } from "@/components/app-shell/route-loading";
 import { useHydrated, useIsKidView } from "@/lib/view-role";
 
 /**
@@ -23,6 +24,7 @@ export function ParentOnly({ children }: { children: ReactNode }) {
     if (hydrated && kidView) router.replace("/kid");
   }, [hydrated, kidView, router]);
 
-  if (!hydrated || kidView) return null;
+  // 가르기 전에는 화면이 넘어갈 때와 같은 뼈대 — 빈 바탕이 한 번 번쩍이지 않게. 서버와 브라우저의 첫 화면이 같다
+  if (!hydrated || kidView) return <RouteLoading />;
   return <>{children}</>;
 }
