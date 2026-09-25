@@ -24,6 +24,7 @@ import {
   fail,
   fixtures,
   saveCoachRun,
+  saveExtra,
   saveMissions,
   sessionsFor,
   uuid,
@@ -215,6 +216,7 @@ export const coaching = [
     db.coachRun = run as typeof db.coachRun;
     db.hasCoachRun = true;
     saveCoachRun();
+    saveExtra("hasCoachRun");
     return HttpResponse.json(
       { coachRunId: run.coachRunId, status: "RUNNING", pollAfterMs: 700 },
       { status: 202 },

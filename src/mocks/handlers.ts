@@ -14,7 +14,9 @@ import {
   db,
   fail,
   fixtures,
+  resetToDemo,
   saveCheers,
+  saveExtra,
   saveFamily,
   saveMissions,
   setActingProfile,
@@ -81,6 +83,8 @@ const FRESH_ME = {
 function signIn(providerUserId: string | undefined) {
   const token = { accessToken: "mock-access-token", refreshToken: "mock-refresh-token" };
 
+  // 새 계정으로 만든 가족이 탭에 남아 있으면 서준이네로 되돌린다 — 시연 계정이 남의 집을 보지 않게
+  if (providerUserId !== FRESH_ID && db.profiles.familyId !== DEMO.familyId) resetToDemo();
   if (providerUserId === CLAIM_ID) {
     setStage("claim");
     return { ...token, ...CLAIM_ME };
@@ -115,6 +119,8 @@ function startFamily(familyName: string, owner: Profile) {
   db.missions = [];
   db.cheers = [];
   db.latest = {};
+  db.tests = {};
+  db.availability = {};
   db.body = {};
   db.hasCoachRun = false;
   // 새 가족은 쉬는 날도 리그도 처음부터 — 브론즈에서 시작한다
@@ -124,6 +130,7 @@ function startFamily(familyName: string, owner: Profile) {
   saveCheers(db.cheers);
   saveFamily();
   saveRestDays();
+  saveExtra("latest", "tests", "availability", "body", "hasCoachRun", "leagueTier");
 }
 
 /** 프로필 하나를 체력 지도의 한 줄로 */
@@ -252,7 +259,7 @@ const identity = [
 
     const profile: Profile = {
       profileId: uuid(),
-      familyId: DEMO.familyId,
+      familyId: db.profiles.familyId ?? DEMO.familyId,
       name: String(body.name ?? ""),
       role: body.role === "PARENT" ? "PARENT" : "CHILD",
       ageGroup: ageGroupOf(age),
@@ -365,6 +372,7 @@ const identity = [
     // 철회하면 그 순간부터 측정이 막힌다
     profile.measurable = given && profile.ageGroup !== "유아기";
     syncMapMember(profile);
+    saveFamily();
 
     return HttpResponse.json({
       consentGiven: given,
@@ -478,6 +486,7 @@ const fitness = [
       return fail(400, "INVALID_SLOT", "요일 · 시각 · 시간 중 맞지 않는 값이 있습니다");
     }
     db.availability[String(params.profileId)] = slots;
+    saveExtra("availability");
     return HttpResponse.json({ profileId: String(params.profileId), slots });
   }),
 
@@ -605,6 +614,9 @@ const fitness = [
           coachDirection: sorted[0].percentile > 75 ? "STRENGTHEN" : "GROWTH",
         };
       }
+      // 새로고침해도 방금 잰 것이 남아야 한다
+      saveExtra("latest", "tests", "body");
+      saveFamily();
 
       return HttpResponse.json(result, { status: 201 });
     },

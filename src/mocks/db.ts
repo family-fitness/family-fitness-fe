@@ -184,6 +184,8 @@ export const ACTING_KEY = "ff-mock-acting";
 export const STAGE_KEY = "ff-mock-stage";
 export const FAMILY_KEY = "ff-mock-family";
 export const REST_KEY = "ff-mock-rest";
+/** 측정 · 측정 이력 · 키 몸무게 · 운동 시간 · 코치를 돌렸는지 · 리그 티어 */
+export const EXTRA_KEY = "ff-mock-extra";
 
 export const DEMO = {
   familyId: "00000000-0000-4000-8000-000000000010",
@@ -197,15 +199,20 @@ export const PAST_RUN_ID = "00000000-0000-4000-8000-0000000000a0";
 
 /* ─── 서버 상태 ────────────────────────────────────────────── */
 
-/** 새로고침하면 초기 상태로 돌아간다. 시연 중 되돌리기 쉽게 하려는 의도다 */
+/**
+ * 탭이 살아 있는 동안 남는다(sessionStorage) — 새 탭을 열면 서준이네부터다.
+ *
+ * 가족만 남기고 측정을 잊으면, 새 계정으로 첫 측정을 하고 새로고침한 순간 「아직 재지 않았어요」 로
+ * 돌아가고 리그가 브론즈에서 골드로 바뀌었다(9/25 한 바퀴). 바뀌는 것은 전부 남긴다.
+ */
 export const db = {
   profiles: loadFamily("profiles", fixtures.profiles),
   fitnessMap: loadFamily("fitnessMap", demoMap()),
-  latest: demoLatest(),
+  latest: loadExtra("latest", demoLatest()),
   /** 측정 이력. 점수 흐름과 키 · 몸무게가 자란 모습을 그린다 */
-  tests: seedTests(),
+  tests: loadExtra("tests", seedTests()),
   /** 운동할 수 있는 시간. 사람마다 한 주 */
-  availability: seedAvailability(),
+  availability: loadExtra("availability", seedAvailability()),
   coachRun: loadCoachRun(),
   /** 이번 주 제안은 아직 0건이다. 심어 둔 것은 지난 회차에서 승인한 미션들이다 */
   missions: loadMissions(),
@@ -216,10 +223,7 @@ export const db = {
    * 측정 회차에 같이 적은 키 · 몸무게.
    * ▲ 서버는 받아 두고도 `latest` 로 돌려주지 않는다. 목에서는 돌려준다.
    */
-  body: {
-    [DEMO.kid]: { heightCm: 139, weightKg: 34 },
-    [DEMO.mom]: { heightCm: 163, weightKg: 56 },
-  } as Record<string, { heightCm: number; weightKg: number }>,
+  body: loadExtra("body", demoBody()),
   /**
    * 지금 로그인해서 보고 있는 사람.
    * 새로고침해도 남아야 한다 — 바꾸자마자 되돌아가면 자녀 계정 화면을 볼 수 없다.
@@ -231,12 +235,67 @@ export const db = {
    * 이번 주 코치 회차를 한 번이라도 돌렸나.
    * 새로 만든 가족은 아직 안 돌렸다 — `latest` 가 404 여야 「제안 만들기」 가 뜬다.
    */
-  hasCoachRun: true,
+  hasCoachRun: loadExtra("hasCoachRun", true),
   /** 쉬는 날 카드를 쓴 날(YYYY-MM-DD). 가족 단위 — 그날은 가족 모두의 「쉬기로 한 날」 */
   restDays: loadRestDays(),
   /** 이번 달 가족 리그 티어. 시연 가족은 골드, 새로 만든 가족은 브론즈에서 시작한다 */
-  leagueTier: "GOLD" as LeagueTier,
+  leagueTier: loadExtra<LeagueTier>("leagueTier", "GOLD"),
 };
+
+/** 키 · 몸무게 — 시연 가족 */
+function demoBody(): Record<string, { heightCm: number; weightKg: number }> {
+  return {
+    [DEMO.kid]: { heightCm: 139, weightKg: 34 },
+    [DEMO.mom]: { heightCm: 163, weightKg: 56 },
+  };
+}
+
+type ExtraKey = "latest" | "tests" | "availability" | "body" | "hasCoachRun" | "leagueTier";
+
+function loadExtra<T>(key: ExtraKey, fallback: T): T {
+  try {
+    const saved = sessionStorage.getItem(`${EXTRA_KEY}-${key}`);
+    if (saved) return JSON.parse(saved) as T;
+  } catch {
+    return fallback;
+  }
+  return fallback;
+}
+
+/** 바꾼 것을 탭 저장소에 — 새로고침해도 방금 한 일이 없던 일이 되지 않게 */
+export function saveExtra(...keys: ExtraKey[]) {
+  try {
+    for (const key of keys) sessionStorage.setItem(`${EXTRA_KEY}-${key}`, JSON.stringify(db[key]));
+  } catch {
+    // 저장이 안 돼도 이번 화면에서는 돈다
+  }
+}
+
+/**
+ * 서준이네로 되돌린다 — 새 계정으로 가족을 만든 탭에서 시연 계정으로 다시 들어올 때.
+ * 안 그러면 시연 계정(엄마)이 방금 만든 남의 집을 본다.
+ */
+export function resetToDemo() {
+  try {
+    for (const key of Object.keys(sessionStorage)) {
+      if (key.startsWith("ff-mock-")) sessionStorage.removeItem(key);
+    }
+  } catch {
+    // 저장소가 없으면 지울 것도 없다
+  }
+  db.profiles = structuredClone(fixtures.profiles);
+  db.fitnessMap = demoMap();
+  db.latest = demoLatest();
+  db.tests = seedTests();
+  db.availability = seedAvailability();
+  db.coachRun = freshCoachRun();
+  db.missions = seedMissions();
+  db.cheers = seedCheers();
+  db.body = demoBody();
+  db.hasCoachRun = true;
+  db.restDays = [];
+  db.leagueTier = "GOLD";
+}
 
 /**
  * 지금 로그인한 계정이 어디까지 와 있나.
