@@ -54,7 +54,7 @@ export default function PlanRunPage() {
 function PlanRun() {
   const router = useRouter();
   const { runId } = useParams<{ runId: string }>();
-  const { data: run, error, refetch } = useCoachRun(runId);
+  const { data: run, error, refetch, isRefetching } = useCoachRun(runId);
 
   const status = run?.status;
   // 다 짰으면 한 박자 쉬고 제안으로. 마지막 줄이 찍히는 걸 보고 넘어가게
@@ -115,6 +115,20 @@ function PlanRun() {
           <p className="text-caption text-ink-soft mt-1">
             {finished ? " " : `${Math.min(done + 1, names.length)} / ${names.length}`}
           </p>
+          {/* 짜던 중에 다시 묻다 못 받았다 — 단계는 두고 그렇다고만. 말없이 돌기만 하면 멈춘 줄 모른다 */}
+          {error && !finished && (
+            <p className="text-ink-soft mt-2 flex items-center gap-3 text-sm">
+              불러오지 못했어요
+              <button
+                type="button"
+                onClick={() => void refetch()}
+                disabled={isRefetching}
+                className="press text-signal-strong min-h-11 px-1 font-extrabold"
+              >
+                다시 불러오기
+              </button>
+            </p>
+          )}
         </section>
 
         <ol className="card divide-rows py-1" aria-label="짜는 단계">
