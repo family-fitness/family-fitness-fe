@@ -47,7 +47,7 @@ export default function StickerPage() {
 function StickerForm() {
   const { profileId } = useParams<{ profileId: string }>();
   const missionId = useSearchParams().get("missionId");
-  const { familyId, profile } = useSession();
+  const { familyId, profile, error: sessionError, refetch: refetchMe } = useSession();
   const { data: family, error: familyError, refetch: refetchFamily } = useFamilyProfiles(familyId);
   const now = today();
   // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
@@ -61,7 +61,9 @@ function StickerForm() {
     to: now,
   });
   // 누구에게 · 오늘 무엇을 했는지 못 받았으면 「아이에게 붙여 줄 스티커」 로 얼버무리지 않는다
-  const failed = Boolean(familyError ?? calendarError);
+  const failed = Boolean(
+    sessionError ?? (family ? null : familyError) ?? (calendar ? null : calendarError),
+  );
   const { data: missions } = useMissions(familyId, { scope: "ALL", status: "ACTIVE" });
   // 알림에서 곧장 열면 운동 목록 · 나(/me)가 늦게 온다 — 오기 전에 보내면 걸음수 확인을 건너뛰거나
   // 단추가 아무 일도 안 했다
@@ -151,6 +153,7 @@ function StickerForm() {
               <button
                 type="button"
                 onClick={() => {
+                  if (sessionError) return void refetchMe();
                   void refetchFamily();
                   void refetchCalendar();
                 }}

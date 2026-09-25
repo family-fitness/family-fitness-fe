@@ -58,7 +58,7 @@ export default function CustomPlanPage() {
 
 function CustomPlan() {
   const router = useRouter();
-  const { familyId } = useSession();
+  const { familyId, error: sessionError, refetch: refetchMe } = useSession();
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const {
     data: family,
@@ -308,12 +308,12 @@ function CustomPlan() {
         <Card>
           <CardHead title="누가 할까요" meta={`${chosen.length}명`} />
           {/* 가족을 못 받으면 고를 사람이 비어 보인다 — 비었다고 두지 않고 못 불러왔다고 */}
-          {familyError && (
+          {(sessionError ?? (family ? null : familyError)) && (
             <p className="text-ink-soft mt-2 flex items-center justify-between gap-3 text-sm">
               가족을 불러오지 못했어요
               <button
                 type="button"
-                onClick={() => void refetchFamily()}
+                onClick={() => void (sessionError ? refetchMe() : refetchFamily())}
                 className="press text-signal-strong min-h-11 shrink-0 px-1 font-extrabold"
               >
                 다시 불러오기
