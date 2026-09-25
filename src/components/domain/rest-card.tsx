@@ -48,11 +48,12 @@ export function RestCardRow({
 
   const restToday = rest.days.includes(now);
   const upcoming = rest.days.filter((d) => d > now);
+  // 남은 장수는 오른쪽 「2 / 2장」 이 말한다 — 같은 수를 한 줄에 두 번 쓰지 않는다
   const note = restToday
     ? "오늘은 쉬는 날이에요"
     : upcoming.length > 0
       ? `${upcoming.map((d) => `${Number(d.slice(8))}일`).join(" · ")} 쉬기로 했어요`
-      : `이번 달 ${rest.left}장 남았어요`;
+      : null;
 
   return (
     <div className={className}>
@@ -68,7 +69,7 @@ export function RestCardRow({
         {artFor("icon/menu-rest") && <ArtIcon name="icon/menu-rest" className="size-8" />}
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-extrabold">쉬는 날 카드</span>
-          <span className="text-caption text-ink-soft block truncate">{note}</span>
+          {note && <span className="text-caption text-ink-soft block truncate">{note}</span>}
         </span>
         <span className="text-caption text-ink-soft shrink-0 font-bold tabular-nums">
           {rest.left} / {rest.perMonth}장
