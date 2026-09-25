@@ -160,6 +160,15 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
     ? childProfile.measurable !== false
     : kidAge == null || kidAge >= 4;
   const kid = kidName.trim() || childProfile?.name || "아이";
+  /*
+    아이 더하기에서도 참여 방식을 묻는가 — 보호자가 아직 안 골랐으면(가족을 만든 뒤 아이 전에 새로고침했다).
+    참여 방식은 아이 다음 차례라 그 새로고침은 아이 등록으로 가고, 거기서 묻지 않으면 영영 비었다.
+    한 번 정하면 그대로 둔다 — 고른 뒤 /me 가 다시 오면 칸이 빠져 다음 칸(운동 시간)을 건너뛰었다
+  */
+  const [askSupport, setAskSupport] = useState<boolean | null>(null);
+  if (askSupport === null && !sessionPending) {
+    setAskSupport(mode === "child" && profile?.role === "PARENT" && profile.supportMode == null);
+  }
 
   const steps: StepId[] = (
     mode === "family"
@@ -188,15 +197,21 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
           "kid-body",
           "kid-photo",
           "consent",
+          ...(askSupport ? (["support"] as const) : []),
           "schedule",
           "measure",
           "done",
         ]
   ).filter((s) => (s !== "consent" || needsConsent) && (s !== "measure" || measurable)) as StepId[];
 
-  // 새로고침 전에 아이를 만들었으면 그다음 칸부터
+  // 새로고침 전에 아이를 만들었으면 그다음 칸부터 — 참여 방식을 물을 차례면 그것부터
   const [at, setAt] = useState(() =>
-    resume ? Math.max(0, steps.indexOf(mode === "family" ? "support" : "schedule")) : 0,
+    resume
+      ? Math.max(
+          0,
+          steps.indexOf(mode === "family" || steps.includes("support") ? "support" : "schedule"),
+        )
+      : 0,
   );
   const step = steps[Math.min(at, steps.length - 1)];
   const go = (d: number) => {
@@ -415,8 +430,9 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       </div>
     );
   }
-  // 세션을 기다리는 동안 · 이미 가족이 있어 다른 곳으로 보내는 동안
-  if (mode === "family" && (sessionPending || hadFamily)) return <WizardSkeleton />;
+  // 세션을 기다리는 동안 · 이미 가족이 있어 다른 곳으로 보내는 동안. 아이 더하기도 세션을 기다린다 —
+  // 참여 방식을 물을지는 나(/me)를 받아야 안다
+  if (sessionPending || (mode === "family" && hadFamily)) return <WizardSkeleton />;
 
   const body = (() => {
     switch (step) {

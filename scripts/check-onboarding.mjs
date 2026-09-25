@@ -236,6 +236,14 @@ await walk("새로고침에도 두 번 만들지 않는다", async (h) => {
     await page.getByRole("checkbox", { name: /개인정보 처리에 동의/ }).click();
     await page.getByRole("checkbox", { name: /건강정보 처리에 동의/ }).click();
     await next();
+  });
+  // 가족만 만들고 새로고침했다 — 참여 방식을 아직 안 골랐으니 아이 다음에 묻는다(안 물으면 영영 빈다)
+  await h.step("아이 다음에 참여 방식을 묻는다", async () => {
+    await page.getByRole("heading", { name: /얼마나 같이 하실래요/ }).waitFor({ timeout: 8000 });
+    await page.getByRole("radio", { name: /매번 같이/ }).click();
+    await next();
+    // 고른 뒤 나(/me)가 다시 와도 운동 시간 칸을 건너뛰지 않는다
+    await h.settle(1500);
     await page.getByRole("heading", { name: /언제 운동할 수 있어요/ }).waitFor({ timeout: 8000 });
   });
   await h.step("새로고침하면 그 아이로 이어 간다 — 아이 이름부터 다시 묻지 않는다", async () => {
