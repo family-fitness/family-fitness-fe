@@ -274,6 +274,8 @@ await step("리그 — 새 가족은 브론즈, 오늘 한 것이 달성률에 �
   await page.waitForTimeout(1200);
 });
 await shot("league", true);
+/** 쉬는 날을 골랐나 — 이 달 마지막 날에는 고를 앞날이 없다 */
+let restPicked = false;
 await step("쉬는 날 카드 — 오늘은 움직여서 못 고르고 내일은 고른다", async () => {
   await page.getByRole("button", { name: /쉬는 날 카드/ }).click();
   await page.waitForTimeout(800);
@@ -288,16 +290,25 @@ await step("쉬는 날 카드 — 오늘은 움직여서 못 고르고 내일은
     const r = radios.nth(i);
     if (!(await r.isDisabled())) {
       await r.click();
+      restPicked = true;
       break;
     }
   }
-  await page.getByRole("button", { name: /쉬기$/ }).click();
+  const rest = page.getByRole("button", { name: /쉬기$/ });
+  if (!restPicked) {
+    // 이 달 마지막 날 — 고를 날이 없다. 쉬기는 눌리지 않아야 한다
+    if (!(await rest.isDisabled())) throw new Error("고를 날이 없는데 쉬기가 눌린다");
+    await page.keyboard.press("Escape");
+    return;
+  }
+  await rest.click();
   await page.waitForTimeout(1200);
 });
 await shot("league-after-rest", true);
 await step("캘린더에 쉬는 날이 보인다", async () => {
   await page.goto(B + "/calendar", { waitUntil: "load" });
   await page.waitForTimeout(2500);
+  if (restPicked) await page.locator('[aria-label*="쉬는 날"]').first().waitFor({ timeout: 8000 });
 });
 await shot("calendar", true);
 await step("대시보드 → 초대 코드 만들기", async () => {
@@ -309,7 +320,8 @@ await step("대시보드 → 초대 코드 만들기", async () => {
   const make = page.getByRole("button", { name: /코드 만들기|만들기/ }).first();
   if (await make.count()) {
     await make.click();
-    await page.waitForTimeout(1500);
+    // 만든 코드 여섯 자리가 크게 뜬다
+    await page.getByRole("dialog").getByText(/^[A-Z0-9]{6}$/).first().waitFor({ timeout: 8000 });
   }
 });
 await shot("invite-code");
