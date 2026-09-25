@@ -1,6 +1,5 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
 import { useParams } from "next/navigation";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -210,14 +209,6 @@ export default function ChildDetailPage() {
             </div>
           </Card>
         )}
-
-        <Card href={`/p/${profileId}/future`} label="10년 위 연령대 보기">
-          <div className="flex items-center gap-3">
-            <ArtIcon name="icon/menu-future" className="size-9 shrink-0" />
-            <p className="min-w-0 flex-1 text-sm font-extrabold">10년 위 연령대 보기</p>
-            <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
-          </div>
-        </Card>
       </Stage>
     </>
   );

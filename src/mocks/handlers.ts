@@ -619,10 +619,6 @@ const fitness = [
   ),
 
   http.get(`${BASE}/families/:familyId/fitness-map`, () => HttpResponse.json(db.fitnessMap)),
-
-  http.post(`${BASE}/profiles/:profileId/predictions`, () =>
-    HttpResponse.json(fixtures.prediction, { status: 201 }),
-  ),
 ];
 
 /* ─── 코치 — 승인 게이트 ───────────────────────────────────── */

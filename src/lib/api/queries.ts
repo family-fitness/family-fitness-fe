@@ -29,7 +29,6 @@ import type {
   NextStep,
   MissionList,
   ProgressView,
-  PredictionResult,
   ProfileSummary,
   Role,
   SupportMode,
@@ -300,14 +299,6 @@ export function useFitnessMap(familyId: Uuid | undefined) {
     queryKey: qk.family.fitnessMap(familyId ?? ""),
     queryFn: () => api.get<FitnessMap>(path`/families/${familyId}/fitness-map`),
     enabled: Boolean(familyId),
-  });
-}
-
-/** AI 가 MAINTAIN 시나리오 하나만 낸다. 횡단면 자료라 개인의 변화가 아니다 */
-export function useCreatePrediction(profileId: Uuid) {
-  return useMutation({
-    mutationFn: (body: { horizonYears?: number; itemCode?: string } = {}) =>
-      api.post<PredictionResult>(path`/profiles/${profileId}/predictions`, body),
   });
 }
 

@@ -20,7 +20,6 @@ import type {
   MeResponse,
   Mission,
   MissionSession,
-  PredictionResult,
   ProfileSummary,
 } from "@/lib/api/types";
 
@@ -44,7 +43,6 @@ interface Fixtures {
   itemsByAgeGroup: Record<string, FitnessItems>;
   latestByProfile: Record<string, LatestFitnessTest>;
   coachRun: CoachRun;
-  prediction: PredictionResult;
 }
 
 export const fixtures = fixturesJson as unknown as Concrete<Fixtures>;
