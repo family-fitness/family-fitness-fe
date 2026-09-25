@@ -2,12 +2,13 @@
 
 import { ChevronRight, Heart, Play, Plus, Search, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { Fragment, Suspense, useState } from "react";
+import { Fragment, Suspense, useDeferredValue, useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { Dock } from "@/components/ui/dock";
 import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -83,14 +84,18 @@ function Finder() {
   useRoutineReady();
   const toggleMove = useRoutineStore((s) => s.toggle);
   const clearMoves = useRoutineStore((s) => s.clear);
-  // 시범으로 연 클립. 홈의 영상 줄에서 `?clip=` 으로 오면 그 클립이 바로 열린다
+  // 시범으로 연 클립. 홈의 영상 줄에서 `?clip=` 으로 오면 그 클립이 바로 열린다.
+  // 닫아도 고른 클립은 남긴다 — 시트가 내려가는 동안 제목과 영상이 비지 않게
   const [previewId, setPreviewId] = useState<string | null>(params.get("clip"));
+  const [previewOpen, setPreviewOpen] = useState(Boolean(params.get("clip")));
+  // 치는 동안은 앞 결과를 둔다 — 한 글자마다 서버에 묻지 않게
+  const search = useDeferredValue(q.trim());
 
-  const { data, isPending, isFetching } = useClips({
+  const { data, isPending, isFetching, error, refetch, isRefetching } = useClips({
     factor,
     phase,
     quiet,
-    q: q.trim(),
+    q: search,
     list: favoritesOnly ? "FAVORITES" : "ALL",
     profileId: owner,
   });
@@ -103,11 +108,11 @@ function Finder() {
     <>
       <AppBar back title="운동 찾기" />
       <Stage wide className={cn("space-y-3", moves.length > 0 && !kidView && "pb-32")}>
-        <label className="card flex items-center gap-2 py-2">
+        <div className="card flex items-center gap-2 py-2">
           <Search aria-hidden className="text-faint size-5 shrink-0" />
-          <span className="sr-only">동작 이름으로 찾기</span>
           <input
             type="search"
+            aria-label="동작 이름으로 찾기"
             value={q}
             onChange={(e) => setQ(e.target.value.slice(0, 20))}
             placeholder="동작 이름으로 찾기 — 스쿼트, 스트레칭"
@@ -123,7 +128,7 @@ function Finder() {
               <X className="size-4" />
             </button>
           )}
-        </label>
+        </div>
 
         {/* 키우고 싶은 힘 — 이 화면의 주된 고르기 */}
         <div className="scroll-row -mx-4 -mt-1 px-4 py-1">
@@ -194,7 +199,7 @@ function Finder() {
           </button>
         </div>
 
-        <p className="text-caption text-ink-soft px-1 font-bold" aria-live="polite">
+        <p className="text-caption text-ink-soft px-1 font-bold">
           {isPending
             ? "찾는 중"
             : `국민체력100 운동영상 · ${factor ?? "모든 힘"} · ${data?.total ?? 0}개`}
@@ -203,6 +208,9 @@ function Finder() {
 
         {isPending ? (
           <ListSkeleton />
+        ) : error && !data ? (
+          // 못 받은 것을 「조건에 맞는 동작이 없어요」 로 그리지 않는다
+          <ErrorState error={error} onRetry={() => void refetch()} retrying={isRefetching} />
         ) : clips.length === 0 ? (
           <EmptyState
             scene="no-mission"
@@ -218,7 +226,10 @@ function Finder() {
                 picked={inTray(c)}
                 canPick={!kidView}
                 onPick={() => toggleMove(c)}
-                onPreview={() => setPreviewId(c.clipId)}
+                onPreview={() => {
+                  setPreviewId(c.clipId);
+                  setPreviewOpen(true);
+                }}
               />
             ))}
           </ul>
@@ -227,7 +238,11 @@ function Finder() {
 
       {!kidView && moves.length > 0 && <Tray onClear={clearMoves} />}
 
-      <Sheet open={preview != null} onClose={() => setPreviewId(null)} title={preview?.title ?? ""}>
+      <Sheet
+        open={previewOpen && preview != null}
+        onClose={() => setPreviewOpen(false)}
+        title={preview?.title ?? "시범"}
+      >
         {preview && <Preview clip={preview} />}
       </Sheet>
     </>
@@ -261,11 +276,9 @@ function ClipRow({
         className="press relative shrink-0 overflow-hidden rounded-xl"
       >
         <VideoThumb videoId={c.videoId} className="aspect-video w-24" />
-        <span className="text-micro bg-ink/70 absolute right-1 bottom-1 rounded-md px-1.5 py-0.5 font-bold text-white">
-          {clock(length)}
-        </span>
+        {/* 누르면 시범이 돈다는 표시. 검정 면 대신 남색(규칙: 검정으로 면을 채우지 않는다) */}
         <span className="absolute inset-0 grid place-items-center">
-          <span className="bg-ink/45 grid size-8 place-items-center rounded-full text-white">
+          <span className="bg-signal-deep/70 grid size-8 place-items-center rounded-full text-white">
             <Play aria-hidden className="size-4 fill-current" />
           </span>
         </span>
@@ -274,7 +287,13 @@ function ClipRow({
         <p className="line-clamp-2 text-sm leading-snug font-bold">{c.title}</p>
         {/* 꼬리표는 통째로 줄을 넘긴다 — 「도구 / 필요」 로 쪼개지지 않게. 「·」 는 앞 꼬리표에 붙는다 */}
         <p className="text-caption text-ink-soft mt-0.5">
-          {[PHASE_LABEL[c.phase], c.factor, c.quiet && "조용함", c.props && "도구 필요"]
+          {[
+            PHASE_LABEL[c.phase],
+            c.factor,
+            clock(length),
+            c.quiet && "조용함",
+            c.props && "도구 필요",
+          ]
             .filter((t): t is string => Boolean(t))
             .map((t, i) => (
               <Fragment key={t}>
