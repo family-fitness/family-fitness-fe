@@ -549,8 +549,8 @@ function Step({
           <p className="text-caption text-signal-deep font-extrabold">{PHASE_LABEL[s.phase]}</p>
           <h2 className="text-lead mt-0.5 font-extrabold">{s.title}</h2>
 
-          <div className="mt-3">
-            {clip?.videoId ? (
+          {clip?.videoId && (
+            <div className="mt-3">
               <ClipPlayer
                 videoId={clip.videoId}
                 startSec={clip.startSec ?? 0}
@@ -559,12 +559,8 @@ function Step({
                 title={s.title}
                 onBlocked={onBlocked}
               />
-            ) : (
-              <div className="bg-sub grid aspect-video place-content-center rounded-2xl px-6 text-center">
-                <p className="text-sm font-extrabold">영상 없이 따라 해요</p>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
 
           <div className="mt-4 flex items-center gap-4">
             <Ring
@@ -773,14 +769,14 @@ function Finish({
       <p className="text-caption text-ink-soft mt-1 font-semibold">{minutes}분 움직였어요</p>
 
       {progress && (
-        <div className="bg-sub mt-4 rounded-2xl p-4 text-left">
+        <div className="border-line mt-4 border-t pt-4 text-left">
           <div className="flex items-baseline justify-between">
             <p className="text-sm font-extrabold">
               {leveledUp ? `레벨이 올랐어요! Lv.${progress.level}` : `Lv.${progress.level}`}
             </p>
             {xp > 0 && <p className="text-signal-deep text-sm font-extrabold">+{xp} 경험치</p>}
           </div>
-          <XpGauge progress={progress} track="bg-paper" className="mt-2" />
+          <XpGauge progress={progress} className="mt-2" />
           {/* 레벨이 올라 새로 열린 것 — 위 섬에 방금 섰다 */}
           {opened.map((u) => (
             <p key={u.id} className="border-line mt-3 border-t pt-3 text-sm font-extrabold">

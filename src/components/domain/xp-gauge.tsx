@@ -11,12 +11,9 @@ import { cn } from "@/lib/utils";
  */
 export function XpGauge({
   progress,
-  track = "bg-deep-soft",
   className,
 }: {
   progress: Pick<ProgressView, "xp" | "levelFloorXp" | "nextLevelXp">;
-  /** 게이지 바탕 — 회색 칸(bg-sub) 안에 설 때는 흰 바탕 */
-  track?: string;
   className?: string;
 }) {
   const bar = levelProgress(progress);
@@ -37,7 +34,7 @@ export function XpGauge({
         )}
       </div>
       <div
-        className={cn("mt-1.5 h-3 overflow-hidden rounded-full", track)}
+        className="bg-deep-soft mt-1.5 h-3 overflow-hidden rounded-full"
         role="progressbar"
         aria-label="경험치"
         aria-valuemin={0}
