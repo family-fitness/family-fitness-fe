@@ -187,7 +187,8 @@ export function FactorRadar({
               <span
                 className={cn(
                   "flex items-center gap-1",
-                  focus === p.factor && "bg-signal-soft -mx-2 rounded-full px-2 py-0.5",
+                  // 키울 힘은 글자색으로만 — 둥근 바탕을 깔지 않는다(9/25)
+                  focus === p.factor && "text-signal-deep",
                 )}
               >
                 <FactorIcon factor={p.factor} className={cn("size-4.5", missing && "opacity-40")} />
@@ -214,7 +215,7 @@ export function FactorRadar({
       </div>
 
       {legend && (
-        <ul className="text-caption text-ink-soft mt-2 flex items-center justify-center gap-4 font-semibold">
+        <ul className="text-caption text-ink-soft mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-semibold">
           <li className="flex items-center gap-1.5">
             <span aria-hidden className="bg-signal relative h-0.5 w-4 rounded-full">
               <span className="bg-signal absolute top-1/2 left-1/2 size-2 -translate-1/2 rounded-full" />
@@ -233,7 +234,8 @@ export function FactorRadar({
                 strokeDasharray="4 3"
               />
             </svg>
-            또래 평균
+            {/* 무엇과 견준 값인지 — 국민체력100 공공데이터의 또래(공모전이라 출처가 보여야 한다) */}
+            국민체력100 또래 평균
           </li>
         </ul>
       )}

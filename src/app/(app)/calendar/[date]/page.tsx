@@ -192,7 +192,7 @@ function Day() {
           >
             <ChevronLeft aria-hidden className="size-5" />
           </button>
-          <p className="bg-paper min-w-44 rounded-full px-6 py-2.5 text-center text-base font-extrabold shadow-sm">
+          <p className="min-w-44 py-2.5 text-center text-base font-extrabold">
             {date === now ? "오늘" : longDate(date)}
           </p>
           <button
@@ -257,10 +257,8 @@ function Day() {
           <section className="card-hero">
             {/* 쉬는 날 카드를 쓴 날 — 빈 날이 아니라 쉬기로 한 날이다 */}
             {log?.rest && (
-              <p className="mb-2 flex justify-center">
-                <span className="bg-mark-soft text-ink text-caption rounded-full px-3 py-1 font-extrabold">
-                  쉬기로 한 날 · 쉬는 날 카드
-                </span>
+              <p className="text-caption text-ink-soft mb-2 text-center font-extrabold">
+                쉬기로 한 날 · 쉬는 날 카드
               </p>
             )}
             <div className="grid place-items-center pt-2">

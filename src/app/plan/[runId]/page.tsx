@@ -130,10 +130,11 @@ function Proposal() {
       <AppBar backHref="/parent" title="오늘 운동 제안" />
       <Stage wide className={cn("space-y-3", !approved && !rejected && "pb-40")}>
         <section className="card-hero">
-          <span
+          {/* 제안인지 등록한 운동인지(규칙 1) — 둥근 딱지가 아니라 제목 위 한 줄 글자로 */}
+          <p
             className={cn(
-              "text-micro inline-block rounded-full px-2.5 py-1 font-extrabold",
-              approved ? "bg-done-soft text-done" : "bg-signal-soft text-signal-deep",
+              "text-caption font-extrabold",
+              approved ? "text-done" : "text-signal-deep",
             )}
           >
             {approved
@@ -141,7 +142,7 @@ function Proposal() {
               : rejected
                 ? "이번엔 안 하기로 했어요"
                 : "제안 · 아직 등록 전"}
-          </span>
+          </p>
           {/* 서버가 지은 이름을 그대로 */}
           <h2 className="page-title mt-2">{proposal?.title ?? "오늘 운동"}</h2>
           <p className="text-caption text-ink-soft mt-1 font-semibold">
@@ -196,7 +197,7 @@ function Proposal() {
         {(approved || rejected) && (
           <div className="grid gap-2">
             {approved && (
-              <p className="bg-done-soft text-done flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold">
+              <p className="text-done flex min-h-12 items-center justify-center gap-1.5 text-sm font-extrabold">
                 <Check aria-hidden className="size-4" strokeWidth={3} />
                 아이 화면에 오늘 운동이 떴어요
               </p>

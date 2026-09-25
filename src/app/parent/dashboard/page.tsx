@@ -159,12 +159,7 @@ export default function FamilyDashboardPage() {
             className="press border-line mt-2 flex min-h-12 items-center gap-3 border-t pt-3"
           >
             <ArtIcon name="icon/menu-ai" className="size-8" />
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-extrabold">AI 코치에게 운동 받기</span>
-              <span className="text-caption text-ink-soft block">
-                국민체력100 또래 운동처방으로
-              </span>
-            </span>
+            <span className="min-w-0 flex-1 text-sm font-extrabold">AI 코치에게 운동 받기</span>
             <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
           </NavLink>
         </section>
@@ -313,11 +308,7 @@ function MemberLine({
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
           <span className="truncate font-extrabold">{member.name}</span>
-          {me && (
-            <span className="bg-sub text-ink-soft text-micro rounded-md px-1.5 py-0.5 font-bold">
-              나
-            </span>
-          )}
+          {me && <span className="text-ink-soft text-caption font-bold">나</span>}
         </span>
         <span className="text-caption text-ink-soft block truncate">
           {child ? "자녀" : "부모"} · {member.ageGroup}

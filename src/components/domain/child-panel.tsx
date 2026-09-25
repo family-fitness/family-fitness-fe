@@ -56,7 +56,6 @@ export function ChildPanel({
             points={latest?.radar}
             name={name}
             pending={isPending}
-            ageGroup={child.ageGroup}
             score={score}
             headline={child.headline}
             className="mx-auto mt-2 max-w-80"
@@ -256,7 +255,7 @@ function TodaySection({
       {main && finished && (
         <div className="mt-3">
           {praisedToday ? (
-            <p className="bg-done-soft text-done flex min-h-11 items-center justify-center gap-1.5 rounded-2xl text-sm font-bold">
+            <p className="text-done flex min-h-11 items-center justify-center gap-1.5 text-sm font-bold">
               <Check aria-hidden className="size-4" strokeWidth={3} />
               오늘 스티커를 붙였어요
             </p>
