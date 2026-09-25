@@ -16,6 +16,7 @@ import { InviteSheet } from "@/components/domain/invite-sheet";
 import { LeagueRow } from "@/components/domain/league-row";
 import { RestCardRow } from "@/components/domain/rest-card";
 import { StreakChip } from "@/components/domain/streak-chip";
+import { WeekDots } from "@/components/domain/week-dots";
 import type { DayLog, FitnessMapMember, Mission } from "@/lib/api/types";
 import {
   useFamilyCalendars,
@@ -24,8 +25,7 @@ import {
   useCurrentMissions,
   useProgress,
 } from "@/lib/api/queries";
-import { daySummary } from "@/lib/day";
-import { sessionsOf } from "@/lib/session-plan";
+import { daySummary, dayWork, todayLine } from "@/lib/day";
 import { useSession } from "@/lib/session";
 import { monthGrid, monthLabel, monthOf, today, weekOf } from "@/lib/today";
 import { cn } from "@/lib/utils";
@@ -50,7 +50,7 @@ export default function FamilyDashboardPage() {
     isRefetching,
   } = useFitnessMap(familyId);
   const { data: family } = useFamilyProfiles(familyId);
-  const { data: missions } = useCurrentMissions(familyId);
+  const { data: missions, error: missionsError } = useCurrentMissions(familyId);
   // 초대 시트 — 닫힘(undefined) · 누구든(null) · 이 자리로(id)
   const [inviting, setInviting] = useState<string | null | undefined>(undefined);
 
@@ -99,6 +99,8 @@ export default function FamilyDashboardPage() {
     .flatMap((m) => logsOf(m.profileId).filter((d) => monthOf(d.date) === month))
     .reduce((sum, d) => sum + d.stickers.length, 0);
   const profiles = family?.profiles ?? [];
+  // 쉬는 날 카드는 가족 단위 — 오늘 쓴 날이면 운동을 권하지 않는다(규칙 15)
+  const restToday = members.some((m) => logsOf(m.profileId).find((d) => d.date === now)?.rest);
 
   return (
     <>
@@ -154,14 +156,16 @@ export default function FamilyDashboardPage() {
             )}
             className="border-line mt-3 border-t pt-2"
           />
-          <NavLink
-            href="/plan"
-            className="press border-line mt-2 flex min-h-12 items-center gap-3 border-t pt-3"
-          >
-            <ArtIcon name="icon/menu-ai" className="size-8" />
-            <span className="min-w-0 flex-1 text-sm font-extrabold">AI 코치에게 운동 받기</span>
-            <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
-          </NavLink>
+          {!restToday && (
+            <NavLink
+              href="/plan"
+              className="press border-line mt-2 flex min-h-12 items-center gap-3 border-t pt-3"
+            >
+              <ArtIcon name="icon/menu-ai" className="size-8" />
+              <span className="min-w-0 flex-1 text-sm font-extrabold">AI 코치에게 운동 받기</span>
+              <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
+            </NavLink>
+          )}
         </section>
 
         {/* 둘째 묶음 — 구성원. 한 사람이 한 줄, 점수로 줄 세우지 않는다 */}
@@ -178,6 +182,7 @@ export default function FamilyDashboardPage() {
                 }
                 logs={logsOf(m.profileId)}
                 missions={missions?.missions}
+                missionsFailed={Boolean(missionsError)}
                 onInvite={() => setInviting(m.profileId ?? null)}
               />
             ))}
@@ -266,37 +271,29 @@ function MemberLine({
   hasAccount,
   logs,
   missions,
+  missionsFailed,
   onInvite,
 }: {
   member: FitnessMapMember;
   me: boolean;
   hasAccount: boolean | undefined;
   logs: DayLog[];
+  /** 아직 못 받았으면 undefined — 오늘 한마디를 말하지 않는다 */
   missions: Mission[] | undefined;
+  missionsFailed: boolean;
   onInvite: () => void;
 }) {
   const { data: progress } = useProgress(member.profileId);
   const child = member.role === "CHILD";
   const week = weekOf();
-  const byDate = new Map(logs.map((l) => [l.date, l]));
   const now = today();
-
-  // 오늘 이 사람이 하는 운동 — 걸음수(자기 신고)는 세지 않는다(규칙 2)
-  const mine = (missions ?? []).filter(
-    (m) =>
-      m.targetMetric !== "STEPS" &&
-      (m.startDate ?? "") <= now &&
-      now <= (m.endDate ?? "") &&
-      m.participants?.some((p) => p.profileId === member.profileId),
-  );
-  const sessions = mine.flatMap((m) => sessionsOf(m, member.profileId));
-  const doneCount = sessions.filter((s) => s.completed).length;
-  const today_ =
-    mine.length === 0
-      ? "오늘 운동 없어요"
-      : sessions.length > 0 && doneCount === sessions.length
-        ? "오늘 다 했어요"
-        : `오늘 ${doneCount} / ${sessions.length}개`;
+  const rest = Boolean(logs.find((l) => l.date === now)?.rest);
+  // 부모 홈의 아이 줄과 같은 한마디 — 같은 아이의 오늘을 두 화면이 다르게 말하지 않게
+  const today_ = missions
+    ? todayLine(dayWork(missions, member.profileId, now), rest)
+    : missionsFailed
+      ? "—"
+      : null;
 
   const body = (
     <>
@@ -313,28 +310,15 @@ function MemberLine({
         <span className="text-caption text-ink-soft block truncate">
           {child ? "자녀" : "부모"} · {member.ageGroup}
           {/* 아이는 부모 폰을 빌려 쓰는 게 기본이라 계정이 없어도 오늘을 적는다. 부모 자리만 「아직 안 들어옴」 */}
-          {!child && hasAccount === false ? " · 아직 안 들어옴" : ` · ${today_}`}
+          {!child && hasAccount === false ? (
+            " · 아직 안 들어옴"
+          ) : today_ ? (
+            ` · ${today_}`
+          ) : (
+            <span className="skeleton ml-1 inline-block h-3 w-14 rounded align-middle" />
+          )}
         </span>
-        {/* 이번 주 월~일 — 움직인 날만 채운다. 쉰 날을 빠진 날처럼 칠하지 않는다 */}
-        <span
-          className="mt-1.5 flex gap-1"
-          aria-label={`이번 주 ${week.days.filter((d) => (byDate.get(d)?.minutes ?? 0) > 0).length}일 움직였어요`}
-        >
-          {week.days.map((d) => {
-            const moved = (byDate.get(d)?.minutes ?? 0) > 0;
-            return (
-              <span
-                key={d}
-                aria-hidden
-                className={cn(
-                  "size-2.5 rounded-full",
-                  moved ? "bg-signal" : "bg-sub",
-                  d === now && !moved && "ring-signal ring-1",
-                )}
-              />
-            );
-          })}
-        </span>
+        <WeekDots days={week.days} logs={logs} />
       </span>
       {progress && progress.streakDays > 1 && (
         <span className="text-caption shrink-0">

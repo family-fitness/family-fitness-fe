@@ -27,6 +27,7 @@ import {
   useCurrentMissions,
   useProgress,
 } from "@/lib/api/queries";
+import { missionsOn } from "@/lib/day";
 import { callName } from "@/lib/family";
 import { badgeArt, stageOf } from "@/lib/levels";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
@@ -56,14 +57,20 @@ export default function KidHomePage() {
     refetch: refetchMap,
     isRefetching,
   } = useFitnessMap(familyId);
-  const { data: missions } = useCurrentMissions(familyId);
+  const {
+    data: missions,
+    isPending: missionsPending,
+    error: missionsError,
+    refetch: refetchMissions,
+  } = useCurrentMissions(familyId);
   const { data: progress } = useProgress(childProfileId ?? undefined);
   const week = weekOf();
-  const { data: calendar, isPending: calendarPending } = useCalendar(
-    familyId,
-    childProfileId ?? undefined,
-    week,
-  );
+  const {
+    data: calendar,
+    isPending: calendarPending,
+    error: calendarError,
+    refetch: refetchCalendar,
+  } = useCalendar(familyId, childProfileId ?? undefined, week);
   const { data: cheers } = useCheers(familyId, childProfileId ?? undefined);
   const { data: family } = useFamilyProfiles(familyId);
   // 아이에게 부모는 엄마 · 아빠다
@@ -111,12 +118,8 @@ export default function KidHomePage() {
   }
 
   const now = today();
-  const mine = (missions?.missions ?? []).filter(
-    (m) =>
-      (m.startDate ?? "") <= now &&
-      now <= (m.endDate ?? "") &&
-      m.targetMetric !== "STEPS" &&
-      m.participants?.some((p) => p.profileId === childProfileId),
+  const mine = missionsOn(missions?.missions, childProfileId, now).filter(
+    (m) => m.targetMetric !== "STEPS",
   );
   const todo = mine.find(
     (m) => !m.participants?.find((p) => p.profileId === childProfileId)?.completed,
@@ -177,8 +180,20 @@ export default function KidHomePage() {
 
         {/* 오늘 할 일 하나. 이 화면에서 누를 큰 것은 이것뿐이다.
             쉬는 날인지는 이번 주 기록에 같이 온다 — 오기 전에는 자리만 잡는다(운동 카드가 떴다 쉬는 날로 바뀌지 않게) */}
-        {calendarPending ? (
+        {calendarPending || (missionsPending && !missions) ? (
           <Skeleton className="h-32 w-full rounded-3xl" />
+        ) : missionsError && !missions ? (
+          // 못 받은 것을 「오늘 운동이 아직 없어요」 로 그리지 않는다
+          <div className="card-hero flex flex-col items-center text-center">
+            <p className="text-lead font-extrabold">오늘 운동을 못 불러왔어요</p>
+            <button
+              type="button"
+              onClick={refetchMissions}
+              className="press bg-signal-strong mt-3 min-h-12 rounded-2xl px-6 text-base font-extrabold text-white"
+            >
+              다시 해 볼래요
+            </button>
+          </div>
         ) : mine.length > 0 && !todo ? (
           // 다 했으면 쉬는 날이어도 다 했다고 — 「그래도 할래요」 로 한 것을 덮지 않는다
           <div className="card-hero text-center">
@@ -214,6 +229,8 @@ export default function KidHomePage() {
           days={week.days}
           logs={calendar?.days}
           loading={calendarPending}
+          failed={Boolean(calendarError)}
+          onRetry={() => void refetchCalendar()}
           href={`/calendar/${now}`}
           meta={
             // 이어서 한 날은 이번 주와 다른 수다(지난주부터 이어질 수 있다) — 머리 곁에 따로. 끊긴 날은 말하지 않는다

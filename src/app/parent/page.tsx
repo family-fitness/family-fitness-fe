@@ -58,7 +58,11 @@ export default function ParentHomePage() {
     refetch: refetchMap,
     isRefetching,
   } = useFitnessMap(familyId);
-  const { data: missions } = useCurrentMissions(familyId);
+  const {
+    data: missions,
+    error: missionsError,
+    refetch: refetchMissions,
+  } = useCurrentMissions(familyId);
 
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
@@ -73,11 +77,12 @@ export default function ParentHomePage() {
   const child = children.find((c) => c.profileId === childProfileId) ?? children[0];
 
   const week = weekOf();
-  const { data: calendar, isPending: calendarPending } = useCalendar(
-    familyId,
-    child?.profileId,
-    week,
-  );
+  const {
+    data: calendar,
+    isPending: calendarPending,
+    error: calendarError,
+    refetch: refetchCalendar,
+  } = useCalendar(familyId, child?.profileId, week);
   // 영상 줄은 아이의 키울 힘으로 — 서버가 준 가장 낮은 요인
   const { data: latest } = useLatestFitnessTest(child?.profileId);
   const weakest = latest?.weakest?.factor;
@@ -150,6 +155,7 @@ export default function ParentHomePage() {
           onSelect={setChild}
           familyId={familyId ?? undefined}
           missions={missions?.missions}
+          missionsFailed={Boolean(missionsError)}
           onInvite={() => setInviting(true)}
         />
 
@@ -158,6 +164,8 @@ export default function ParentHomePage() {
           familyId={familyId ?? ""}
           parentProfileId={profile?.profileId ?? ""}
           missions={missions?.missions}
+          missionsFailed={Boolean(missionsError)}
+          onRetryMissions={refetchMissions}
         />
 
         <WeekPanel
@@ -166,6 +174,8 @@ export default function ParentHomePage() {
           days={week.days}
           logs={calendar?.days}
           loading={calendarPending}
+          failed={Boolean(calendarError)}
+          onRetry={() => void refetchCalendar()}
           meta={
             progress && progress.streakDays > 1 ? (
               <StreakChip days={progress.streakDays} />

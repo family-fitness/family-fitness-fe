@@ -448,8 +448,14 @@ export function useCurrentMissions(familyId: Uuid | undefined) {
   });
 }
 
-/** 컴포넌트 밖에 둔다 — 렌더마다 새 함수면 합친 결과도 매번 새것이 된다 */
-function mergeMissions(results: { data?: MissionList; isPending: boolean; error: unknown }[]) {
+/**
+ * 컴포넌트 밖에 둔다 — 렌더마다 새 함수면 합친 결과도 매번 새것이 된다.
+ * 기다리는 중 · 못 받음을 같이 돌려준다 — 못 받은 것을 「오늘 운동이 없어요」 로 그리면
+ * 부모가 같은 운동을 한 번 더 받는다.
+ */
+function mergeMissions(
+  results: { data?: MissionList; isPending: boolean; error: unknown; refetch: () => unknown }[],
+) {
   const [active, done] = results;
   // 다 한 것을 못 받아도 아직인 것은 보인다 — 오늘 할 운동이 가려지지 않게
   const seen = new Set<string>();
@@ -465,6 +471,7 @@ function mergeMissions(results: { data?: MissionList; isPending: boolean; error:
     data: active.data ? { ...active.data, missions } : undefined,
     isPending: active.isPending,
     error: active.error,
+    refetch: () => results.forEach((r) => void r.refetch()),
   };
 }
 
