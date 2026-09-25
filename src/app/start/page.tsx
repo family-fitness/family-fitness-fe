@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { Stage } from "@/components/app-shell/stage";
 
 import { LevelBuddy } from "@/components/domain/level-buddy";
-import { ErrorState } from "@/components/ui/error-state";
+import { SessionError } from "@/components/app-shell/session-error";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFamilyProfiles } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
@@ -68,9 +68,7 @@ export default function StartPage() {
   const failure = error ?? (family ? null : familyError);
   if (failure) {
     return (
-      <Stage className="flex min-h-dvh flex-col justify-center">
-        <ErrorState error={failure} onRetry={() => void (error ? refetch() : refetchFamily())} />
-      </Stage>
+      <SessionError error={failure} onRetry={() => void (error ? refetch() : refetchFamily())} />
     );
   }
 

@@ -3,11 +3,11 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { SessionError } from "@/components/app-shell/session-error";
 import { ChoiceButton, WizardShell, WizardSkeleton } from "@/components/app-shell/wizard";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { Illustration } from "@/components/ui/illustration";
 import { Button } from "@/components/ui/button";
-import { ErrorState } from "@/components/ui/error-state";
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { PhotoPicker } from "@/components/domain/photo-picker";
 import type { SupportMode, Weekday } from "@/lib/api/types";
@@ -424,11 +424,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
 
   // 누구인지 못 받으면 가족이 있는지 모른다 — 모르는 채 만들기 시작하면 끝에서 막힌다
   if (sessionError) {
-    return (
-      <div className="flex min-h-dvh flex-col justify-center px-5">
-        <ErrorState error={sessionError} onRetry={() => void refetchMe()} />
-      </div>
-    );
+    return <SessionError error={sessionError} onRetry={() => void refetchMe()} />;
   }
   // 세션을 기다리는 동안 · 이미 가족이 있어 다른 곳으로 보내는 동안. 아이 더하기도 세션을 기다린다 —
   // 참여 방식을 물을지는 나(/me)를 받아야 안다

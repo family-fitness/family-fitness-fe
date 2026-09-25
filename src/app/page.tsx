@@ -3,11 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { SessionError } from "@/components/app-shell/session-error";
 import { LevelBuddy } from "@/components/domain/level-buddy";
-import { ErrorState } from "@/components/ui/error-state";
 import { ApiError } from "@/lib/api/client";
 import { useMe } from "@/lib/api/queries";
-import { useSignOut } from "@/lib/session";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRoleStore } from "@/stores/role-store";
 
@@ -17,7 +16,6 @@ export default function SplashPage() {
   const token = useAuthStore((s) => s.accessToken);
   const mode = useRoleStore((s) => s.mode);
   const { data, error, refetch, isRefetching } = useMe();
-  const signOut = useSignOut();
   // 로그인이 풀린 것만 로그인 화면으로. 망이 끊기거나 서버가 넘어졌을 때 보내면 다시 들어와도 같은 자리다
   const signedOut = error instanceof ApiError && error.status === 401;
 
@@ -63,27 +61,9 @@ export default function SplashPage() {
     router.replace(mode === "kid" ? "/kid" : mode === "parent" ? "/parent" : "/start");
   }, [data, mode, router]);
 
+  // 막혔거나 없는 계정(403 · 404)은 다시 불러도 같다 — 다시 불러오기도 없이 갇혔다. 로그아웃이 같이 선다
   if (error && !signedOut) {
-    // 막혔거나 없는 계정(403 · 404)은 다시 불러도 같다 — 다시 불러오기도 없이 갇혔다. 다른 계정으로 갈 길을 둔다
-    const settled = error instanceof ApiError && (error.status === 403 || error.status === 404);
-    return (
-      <div className="flex min-h-dvh flex-col justify-center px-5">
-        <h1 className="sr-only">우리가족 체력키움</h1>
-        <ErrorState error={error} onRetry={() => void refetch()} retrying={isRefetching} />
-        {settled && (
-          <button
-            type="button"
-            onClick={() => {
-              router.replace("/login");
-              signOut();
-            }}
-            className="press text-ink-soft mx-auto min-h-11 px-4 text-sm font-bold"
-          >
-            로그아웃
-          </button>
-        )}
-      </div>
-    );
+    return <SessionError error={error} onRetry={() => void refetch()} retrying={isRefetching} />;
   }
 
   return (
