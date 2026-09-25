@@ -14,7 +14,7 @@ import { HttpResponse, http, type PathParams } from "msw";
 import type { FamilyLeague, RestDays } from "@/lib/api/types";
 import { daysBefore, monthOf, today, weekdayCode } from "@/lib/today";
 
-import { BASE, DEMO_SCHEDULE, db, fail, saveRestDays } from "./db";
+import { BASE, DEMO_SCHEDULE, acting, db, fail, saveRestDays } from "./db";
 import { dayLogFor, hasHistory, standsOn } from "./history";
 
 /** 한 달에 주는 쉬는 날 카드 */
@@ -145,6 +145,8 @@ export const league = [
 
   /** 쉬는 날 카드 쓰기. 지난 날에는 못 쓴다 — 빈 날을 나중에 덮으면 카드가 핑계가 된다 */
   http.post<PathParams>(`${BASE}/families/:familyId/rest-days`, async ({ request }) => {
+    // 쉬는 날 카드는 부모가 쓴다(규칙 15)
+    if (acting()?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자만 쓸 수 있습니다");
     const { date } = (await request.json().catch(() => ({}))) as { date?: string };
     const now = today();
     if (
@@ -172,6 +174,8 @@ export const league = [
 
   /** 쉬는 날 되돌리기 — 오늘이나 앞날만. 카드는 돌려준다 */
   http.delete<PathParams>(`${BASE}/families/:familyId/rest-days/:date`, ({ params }) => {
+    if (acting()?.role !== "PARENT")
+      return fail(403, "NOT_A_PARENT", "보호자만 되돌릴 수 있습니다");
     const date = String(params.date);
     if (date < today()) return fail(422, "INVALID_DATE", "지난 날은 되돌릴 수 없습니다");
     if (!db.restDays.includes(date)) return fail(404, "NOT_REST_DAY", "쉬는 날이 아닙니다");

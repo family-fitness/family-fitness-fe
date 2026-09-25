@@ -456,6 +456,14 @@ check(
 );
 check("쉬는 날만으로는 이어서 한 날이 생기지 않는다", streakOf(new Set(), new Set([d0, d1])) === 0);
 
+// 쉬는 날 카드는 부모가 쓴다(규칙 15) — 아이 프로필로는 쓰지도 되돌리지도 못한다
+setActingProfile(DEMO.kid);
+res = await post(`/families/${DEMO.familyId}/rest-days`, { date: today });
+check("아이는 쉬는 날 카드를 쓸 수 없다", (await codeOf(res)) === "NOT_A_PARENT");
+res = await send("DELETE", `/families/${DEMO.familyId}/rest-days/${today}`);
+check("아이는 쉬는 날을 되돌릴 수 없다", (await codeOf(res)) === "NOT_A_PARENT");
+setActingProfile(DEMO.mom);
+
 type League = { tier: string; rate: number | null; rank: number | null };
 const demoLeague = (await (await get(`/families/${DEMO.familyId}/league`)).json()) as League;
 check(
