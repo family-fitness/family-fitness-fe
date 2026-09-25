@@ -63,14 +63,15 @@ export default function SettingsPage() {
     </button>
   );
 
-  // 누구인지 못 받으면 「나 · 아이 화면」 으로 그리지 않는다. 로그아웃은 남긴다 — 나갈 길이다
+  // 누구인지 못 받으면 「나 · 아이 화면」 으로 그리지 않는다. 로그아웃은 남긴다 — 나갈 길이다.
+  // 아이 모드(부모 폰을 빌려 쓰는 중일 수 있다)에서는 내지 않는다 — 아이가 부모를 로그아웃시킨다
   if (error) {
     return (
       <>
         <AppBar back title="설정" />
         <Stage wide className="space-y-3">
           <ErrorState error={error} onRetry={() => void refetch()} />
-          {logout}
+          {mode !== "kid" && logout}
         </Stage>
       </>
     );
