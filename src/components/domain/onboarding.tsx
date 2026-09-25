@@ -138,7 +138,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
   const [problem, setProblem] = useState<string | null>(null);
 
   const fid = newFamilyId ?? familyId ?? "";
-  const { data: family } = useFamilyProfiles(fid || undefined);
+  const { data: family, error: familyError } = useFamilyProfiles(fid || undefined);
   const childProfile = family?.profiles?.find((p) => p.profileId === childId);
   const createFamily = useCreateFamily();
   const createProfile = useCreateProfile(fid);
@@ -215,10 +215,21 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
     Boolean(familyId) &&
     nextStep !== "CREATE_FAMILY";
   useEffect(() => {
-    if (!hadFamily || !family) return;
-    // 아이가 있으면 홈, 없으면 아이 등록부터
+    if (!hadFamily) return;
+    // 가족을 못 받으면 홈으로 — 홈이 다시 불러오기를 준다(여기서 기다리면 뼈대만 남았다)
+    if (familyError) {
+      router.replace("/parent");
+      return;
+    }
+    if (!family) return;
+    // 참여 방식을 고르기 전에 닫았으면 그것부터 — 가족을 만든 뒤 새로고침하면 참여 방식 없이 홈으로 갔다.
+    // 그다음 아이가 있으면 홈, 없으면 아이 등록
+    if (profile?.role === "PARENT" && profile.supportMode == null) {
+      router.replace("/settings/support-mode?from=claim");
+      return;
+    }
     router.replace(family.profiles?.some((p) => p.role === "CHILD") ? "/parent" : "/start/child");
-  }, [hadFamily, family, router]);
+  }, [hadFamily, family, familyError, profile, router]);
 
   const busy =
     createFamily.isPending ||
