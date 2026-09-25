@@ -217,8 +217,9 @@ export function useClaimProfile() {
         "/profiles/claim",
         { claimCode },
       ),
-    // 이 계정의 세상이 바뀐다(가족이 생긴다) — 받아 둔 옛 `/me` 로 다음 화면이 길을 정하지 않게 비운다
-    onSuccess: () => qc.removeQueries(),
+    // 이 계정의 세상이 바뀐다(가족이 생긴다) — 받아 둔 옛 `/me` 로 다음 화면이 길을 정하지 않게 비운다.
+    // 코드 미리 보기는 남긴다 — 지우면 떠나는 동안 코드 화면이 다시 물어 방금 쓴 코드를 「이미 쓴 코드」 라 했다
+    onSuccess: () => qc.removeQueries({ predicate: (q) => q.queryKey[0] !== "invites" }),
   });
 }
 
