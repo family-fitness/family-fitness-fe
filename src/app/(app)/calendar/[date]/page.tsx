@@ -20,7 +20,7 @@ import { useCalendar, useFamilyProfiles, useFitnessMap, useMissions } from "@/li
 import { daySummary, didSomething, isRealDate, plannedDay, plannedOn } from "@/lib/day";
 import { callName } from "@/lib/family";
 import { VERIFIED_COPY } from "@/lib/mission";
-import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
+import { PHASE_LABEL, sessionsOf, stepMinutes, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { stickerOf } from "@/lib/stickers";
 import { daysBefore, longDate, monthOf, today, weekOf, weekdayOf } from "@/lib/today";
@@ -467,8 +467,7 @@ function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; missi
               <span className={cn("min-w-0 flex-1", !s.done && "opacity-50")}>
                 <span className="block truncate text-sm font-bold">{s.title}</span>
                 <span className="text-caption text-ink-soft block">
-                  {PHASE_LABEL[s.phase]}
-                  {s.minutes != null && ` · ${s.minutes}분`}
+                  {PHASE_LABEL[s.phase]} · {stepMinutes(s)}분
                 </span>
               </span>
               {s.done && <Done />}
@@ -520,8 +519,7 @@ function PlannedRows({
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-bold">{s.title}</span>
               <span className="text-caption text-ink-soft block">
-                {PHASE_LABEL[s.phase]}
-                {s.minutes != null && ` · ${s.minutes}분`}
+                {PHASE_LABEL[s.phase]} · {stepMinutes(s)}분
               </span>
             </span>
           </li>
