@@ -2,7 +2,7 @@
 
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api, path, query } from "./client";
+import { ApiError, api, path, query } from "./client";
 import type {
   AgeGroup,
   AuthResponse,
@@ -358,8 +358,13 @@ export function useCoachRun(runId: Uuid | undefined) {
     queryKey: qk.coach.run(runId ?? ""),
     queryFn: () => api.get<CoachRun>(path`/coach/runs/${runId}`),
     enabled: Boolean(runId),
-    // 짜는 동안은 촘촘히 — 단계가 하나씩 차오르는 것이 이 화면의 전부다
-    refetchInterval: (q) => (q.state.data?.status === "RUNNING" ? 700 : false),
+    // 짜는 동안은 촘촘히 — 단계가 하나씩 차오르는 것이 이 화면의 전부다.
+    // 막혔거나 없어진 회차(4xx)면 멈춘다 — 다시 물어도 같은 답을 0.7초마다 받았다
+    refetchInterval: (q) =>
+      q.state.data?.status === "RUNNING" &&
+      !(q.state.error instanceof ApiError && q.state.error.status < 500)
+        ? 700
+        : false,
   });
 }
 
