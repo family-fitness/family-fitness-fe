@@ -17,10 +17,11 @@ import { useAuthStore } from "@/stores/auth-store";
  * **「가족 없음」 이 없어서 여태 가입 경로를 한 번도 못 걸어 봤다.** 시연 계정으로만
  * 앱이 돌고 있었고, 처음 쓰는 사람이 겪는 화면은 아무도 안 봤다.
  */
-const DEV_ACCOUNTS = [
+const DEV_ACCOUNTS: { id: string; label: string; claimCode?: string }[] = [
   { id: "demo-fresh", label: "새 계정 · 가족 없음" },
   { id: "demo-parent", label: "은영 · 가족 3명" },
-  { id: "demo-newcomer", label: "초대받은 계정" },
+  // 백엔드 시드의 두 번째 부모와 그 자리의 초대코드 — 코드를 들고 가야 서버가 코드 넣는 단계로 보낸다
+  { id: "demo-parent-2", label: "초대받은 계정", claimCode: "K7M2QT" },
 ];
 
 /** 구글이 돌아올 자리. 인가코드는 이 주소로 붙어서 온다 */
@@ -117,12 +118,14 @@ function LoginContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, state]);
 
-  const enter = async (providerUserId: string) => {
+  const enter = async (account: (typeof DEV_ACCOUNTS)[number]) => {
     setError(null);
+    // 초대 링크로 들고 온 코드가 먼저다
+    const claim = claimCode ?? account.claimCode;
     try {
-      const auth = await devLogin.mutateAsync(providerUserId);
+      const auth = await devLogin.mutateAsync({ providerUserId: account.id, claimCode: claim });
       signIn(auth);
-      router.replace(after(auth, claimCode));
+      router.replace(after(auth, claim));
     } catch (e) {
       setError(errorMessage(e, "들어가지 못했어요."));
     }
@@ -179,7 +182,7 @@ function LoginContent() {
                   variant={primary ? "primary" : "outline"}
                   className="w-full"
                   loading={devLogin.isPending}
-                  onClick={() => enter(account.id)}
+                  onClick={() => enter(account)}
                 >
                   <span className="min-w-0 flex-1 text-left">{account.label}</span>
                 </Button>
