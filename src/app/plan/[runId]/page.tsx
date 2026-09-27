@@ -23,7 +23,7 @@ import {
   useRejectCoachRun,
 } from "@/lib/api/queries";
 import { errorMessage } from "@/lib/errors";
-import { PHASE_LABEL, orderSessions, totalMinutes } from "@/lib/session-plan";
+import { PHASE_LABEL, proposalSessions, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
@@ -91,7 +91,7 @@ function Proposal() {
   }
 
   const proposal = (run.proposals ?? [])[0] as ProposalWithSessions | undefined;
-  const sessions = orderSessions(proposal?.sessions);
+  const sessions = proposalSessions(proposal);
   const minutes = totalMinutes(sessions);
   const nameOf = (id: string | undefined) =>
     family?.profiles?.find((p) => p.profileId === id)?.name ?? "가족";
@@ -189,7 +189,7 @@ function Proposal() {
 
             {/* 등록하면 제안 전부가 운동이 된다(서버가 한꺼번에 등록한다). 둘째부터도 근거 · 순서까지 다 보인다(규칙 6) */}
             {(run.proposals ?? []).slice(1).map((p, i) => {
-              const list = orderSessions((p as ProposalWithSessions).sessions);
+              const list = proposalSessions(p as ProposalWithSessions);
               return (
                 <section key={`${p.title}-${i}`} className="card">
                   <CardHead
