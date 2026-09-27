@@ -31,11 +31,13 @@ const REDIRECT_PATH = "/login";
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
 /**
- * 개발용 계정을 내는가 — 개발 서버이거나 목 서버를 켠 빌드. 목 서버 빌드에서 이게 없으면
- * 구글 키도 백엔드도 없어 들어갈 길이 하나도 없다.
+ * 개발용 계정을 내는가 — 개발 서버, 목 서버를 켠 빌드, 구글 키가 없는 빌드. 구글 키가 없으면
+ * 구글 단추가 없어 들어갈 길이 하나도 없다(로컬 백엔드에 붙인 빌드). 운영 서버는 개발 로그인을 막는다.
  */
 const DEV_LOGIN =
-  process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_API_MOCKING === "enabled";
+  process.env.NODE_ENV === "development" ||
+  process.env.NEXT_PUBLIC_API_MOCKING === "enabled" ||
+  !GOOGLE_CLIENT_ID;
 
 /**
  * 구글에 가기 전 이 탭에 남기는 것 — 돌아올 때 맞춰 볼 표(state)와 들고 가는 초대코드.
