@@ -517,6 +517,17 @@ check(
   `${fresh.rate} · ${fresh.rank}`,
 );
 
+// 아무도 안 잰 가족은 편성을 받지 못한다 — 실제 서버와 같은 코드(화면이 「아직 재지 않았어요」 로 옮긴다)
+const unmeasuredRun = await post(`/families/${freshFamily.familyId}/coach/runs`, {
+  date: toDateString(new Date()),
+  minutes: 20,
+});
+check(
+  "아무도 안 잰 가족은 편성이 422 NO_MEASURED_MEMBER",
+  unmeasuredRun.status === 422 && (await codeOf(unmeasuredRun)) === "NO_MEASURED_MEMBER",
+  `${unmeasuredRun.status}`,
+);
+
 server.close();
 console.log(failed === 0 ? "\n전부 통과" : `\n${failed}건 실패`);
 process.exit(failed === 0 ? 0 : 1);

@@ -17,10 +17,11 @@ import { useAuthStore } from "@/stores/auth-store";
  * **「가족 없음」 이 없어서 여태 가입 경로를 한 번도 못 걸어 봤다.** 시연 계정으로만
  * 앱이 돌고 있었고, 처음 쓰는 사람이 겪는 화면은 아무도 안 봤다.
  */
-const DEV_ACCOUNTS = [
+const DEV_ACCOUNTS: { id: string; label: string; claimCode?: string }[] = [
   { id: "demo-fresh", label: "새 계정 · 가족 없음" },
   { id: "demo-parent", label: "은영 · 가족 3명" },
-  { id: "demo-newcomer", label: "초대받은 계정" },
+  // 백엔드 시드의 두 번째 부모와 그 자리의 초대코드 — 코드를 들고 가야 서버가 코드 넣는 단계로 보낸다
+  { id: "demo-parent-2", label: "초대받은 계정", claimCode: "K7M2QT" },
 ];
 
 /** 구글이 돌아올 자리. 인가코드는 이 주소로 붙어서 온다 */
@@ -30,11 +31,13 @@ const REDIRECT_PATH = "/login";
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
 /**
- * 개발용 계정을 내는가 — 개발 서버이거나 목 서버를 켠 빌드. 목 서버 빌드에서 이게 없으면
- * 구글 키도 백엔드도 없어 들어갈 길이 하나도 없다.
+ * 개발용 계정을 내는가 — 개발 서버, 목 서버를 켠 빌드, 구글 키가 없는 빌드. 구글 키가 없으면
+ * 구글 단추가 없어 들어갈 길이 하나도 없다(로컬 백엔드에 붙인 빌드). 운영 서버는 개발 로그인을 막는다.
  */
 const DEV_LOGIN =
-  process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_API_MOCKING === "enabled";
+  process.env.NODE_ENV === "development" ||
+  process.env.NEXT_PUBLIC_API_MOCKING === "enabled" ||
+  !GOOGLE_CLIENT_ID;
 
 /**
  * 구글에 가기 전 이 탭에 남기는 것 — 돌아올 때 맞춰 볼 표(state)와 들고 가는 초대코드.
@@ -117,12 +120,14 @@ function LoginContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, state]);
 
-  const enter = async (providerUserId: string) => {
+  const enter = async (account: (typeof DEV_ACCOUNTS)[number]) => {
     setError(null);
+    // 초대 링크로 들고 온 코드가 먼저다
+    const claim = claimCode ?? account.claimCode;
     try {
-      const auth = await devLogin.mutateAsync(providerUserId);
+      const auth = await devLogin.mutateAsync({ providerUserId: account.id, claimCode: claim });
       signIn(auth);
-      router.replace(after(auth, claimCode));
+      router.replace(after(auth, claim));
     } catch (e) {
       setError(errorMessage(e, "들어가지 못했어요."));
     }
@@ -179,7 +184,7 @@ function LoginContent() {
                   variant={primary ? "primary" : "outline"}
                   className="w-full"
                   loading={devLogin.isPending}
-                  onClick={() => enter(account.id)}
+                  onClick={() => enter(account)}
                 >
                   <span className="min-w-0 flex-1 text-left">{account.label}</span>
                 </Button>
