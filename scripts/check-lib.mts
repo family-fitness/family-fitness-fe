@@ -34,7 +34,7 @@ import {
   todayLine,
 } from "@/lib/day";
 import { UNLOCKS, decorationsAt, newlyUnlocked, nextUnlock } from "@/lib/unlocks";
-import { orderSessions, totalMinutes } from "@/lib/session-plan";
+import { orderSessions, proposalSessions, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { todayActivity } from "@/lib/activity";
 import { josa } from "@/lib/utils";
 
@@ -415,6 +415,34 @@ check(
     "부모가 짠 차례대로 한다 — 준비 · 본 · 정리로 다시 줄 세우지 않는다",
     same(
       orderSessions(mixed).map((s) => s.title),
+      ["정리", "준비", "차례 없음"],
+    ),
+  );
+  // 실제 서버는 제안 · 미션에 칸을 아직 싣지 않는다 — 제안이 「0개 · 0분」, 등록한 뒤 아이 화면은 「1개 · 60분」 이었다
+  const bare = {
+    title: "같이 늘이는 한 주",
+    targetMetric: "TIMER_MINUTES" as const,
+    targetValue: 60,
+    video: { videoId: "v1", startSec: 30, title: "스트레칭" },
+  };
+  const asProposal = proposalSessions(bare as Parameters<typeof proposalSessions>[0]);
+  const asMission = sessionsOf(bare as Parameters<typeof sessionsOf>[0], "A");
+  check(
+    "칸이 없는 제안은 본운동 한 칸 — 등록한 미션과 같은 칸 · 같은 분",
+    asProposal.length === 1 &&
+      asProposal[0].phase === "MAIN" &&
+      totalMinutes(asProposal) === 60 &&
+      same(
+        asProposal.map((s) => [s.title, s.minutes, s.clip?.videoId]),
+        asMission.map((s) => [s.title, s.minutes, s.clip?.videoId]),
+      ),
+  );
+  check(
+    "칸이 오는 제안은 온 칸 그대로(차례대로)",
+    same(
+      proposalSessions({ ...bare, sessions: mixed } as Parameters<typeof proposalSessions>[0]).map(
+        (s) => s.title,
+      ),
       ["정리", "준비", "차례 없음"],
     ),
   );
