@@ -60,7 +60,7 @@ const authGate = [
 ];
 
 /** 개발용 계정 셋. 로그인 화면에서 고르는 것과 같은 순서다 */
-const CLAIM_ID = "demo-newcomer";
+const CLAIM_ID = "demo-parent-2";
 const FRESH_ID = "demo-fresh";
 
 /** 초대를 기다리는 계정 — 부모가 낸 자리에 붙는다 */

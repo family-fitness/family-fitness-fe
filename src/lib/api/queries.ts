@@ -115,12 +115,15 @@ function seedAccount(qc: ReturnType<typeof useQueryClient>, auth: AuthResponse) 
   }
 }
 
-/** 로컬 전용. 구글 없이 시드 계정으로 들어간다 */
+/**
+ * 로컬 전용. 구글 없이 시드 계정으로 들어간다. 초대코드를 들고 가면 서버가 가족이 없는 계정에
+ * `CLAIM` 을 준다(구글 로그인과 같다)
+ */
 export function useDevLogin() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (providerUserId: string) =>
-      api.post<AuthResponse>("/auth/dev-login", { providerUserId }),
+    mutationFn: (body: { providerUserId: string; claimCode?: string }) =>
+      api.post<AuthResponse>("/auth/dev-login", body),
     onSuccess: (auth) => seedAccount(qc, auth),
   });
 }
