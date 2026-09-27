@@ -93,6 +93,8 @@ function PlanForm() {
   const [error, setError] = useState<string | null>(null);
   /** 막힌 까닭이 「이미 있는 제안」 이면 그리로 가는 길 */
   const [existing, setExisting] = useState(false);
+  /** 막힌 까닭이 「잰 사람이 없다」 면 첫 측정으로 가는 길(규칙 4) */
+  const [unmeasured, setUnmeasured] = useState(false);
 
   const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
@@ -131,6 +133,7 @@ function PlanForm() {
     if (!kid?.profileId) return;
     setError(null);
     setExisting(false);
+    setUnmeasured(false);
     try {
       const run = await start.mutateAsync({
         profileId: kid.profileId,
@@ -147,6 +150,7 @@ function PlanForm() {
         e instanceof ApiError &&
           (e.code === "RUN_IN_PROGRESS" || e.code === "ALREADY_RUN_THIS_WEEK"),
       );
+      setUnmeasured(e instanceof ApiError && e.code === "NO_MEASURED_MEMBER");
       setError(
         errorMessage(
           e,
@@ -156,6 +160,8 @@ function PlanForm() {
             RUN_IN_PROGRESS: "짜고 있는 제안이 있어요.",
             CONSENT_REQUIRED: "보호자 동의가 필요해요.",
             TEMPORARILY_UNAVAILABLE: "코치가 잠깐 쉬고 있어요.",
+            // 가족 중 잰 사람이 없으면 서버가 짜지 않는다(422)
+            NO_MEASURED_MEMBER: "아직 재지 않았어요.",
           },
           "짜 달라고 하지 못했어요.",
         ),
@@ -307,6 +313,15 @@ function PlanForm() {
                 className="press text-signal-strong min-h-11 shrink-0 content-center text-sm font-extrabold"
               >
                 제안 보기
+              </NavLink>
+            )}
+            {/* 만 4세 미만이면 측정 길을 두지 않는다(규칙 4) */}
+            {unmeasured && kid?.profileId && kid.measurable !== false && (
+              <NavLink
+                href={`/p/${kid.profileId}/measure`}
+                className="press text-signal-strong min-h-11 shrink-0 content-center text-sm font-extrabold"
+              >
+                첫 측정 하기
               </NavLink>
             )}
           </div>
