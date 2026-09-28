@@ -476,7 +476,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       case "me-photo":
         return (
           <WizardShell {...common} title="프로필 사진을 올릴까요?">
-            <PhotoPicker value={mePhoto} name={meName} onChange={setMePhoto} />
+            <PhotoPicker value={mePhoto} name={meName} onChange={setMePhoto} tone="mark" />
           </WizardShell>
         );
       case "kid-name":
@@ -544,7 +544,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       case "kid-photo":
         return (
           <WizardShell {...common} title={`${kid} 사진도 올릴까요?`}>
-            <PhotoPicker value={kidPhoto} name={kidName} onChange={setKidPhoto} />
+            <PhotoPicker value={kidPhoto} name={kidName} onChange={setKidPhoto} tone="signal" />
           </WizardShell>
         );
       case "consent":
