@@ -591,7 +591,7 @@ function Step({
               )}
             </Ring>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold">{stepMinutes(s)}분 동안 따라 해요</p>
+              <p className="text-sm font-bold">{stepMinutes(s)}분</p>
               {status === "rest" && (
                 <button
                   type="button"
