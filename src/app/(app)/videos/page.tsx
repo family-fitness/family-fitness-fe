@@ -125,7 +125,7 @@ function Finder() {
             aria-label="동작 이름으로 찾기"
             value={q}
             onChange={(e) => setQ(e.target.value.slice(0, 20))}
-            placeholder="동작 이름으로 찾기 — 스쿼트, 스트레칭"
+            placeholder="동작 이름으로 찾기"
             className="min-h-11 min-w-0 flex-1 bg-transparent text-sm outline-none"
           />
           {q && (
