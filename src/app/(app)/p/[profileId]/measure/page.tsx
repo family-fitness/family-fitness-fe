@@ -324,7 +324,7 @@ export default function MeasurePage() {
 
           {easy.length > 0 && (
             <section className="card">
-              <CardHead title="집에서 잴 수 있어요" meta={`${easy.length}개`} />
+              <CardHead title="집에서 재기" meta={`${easy.length}개`} />
               <div className="divide-rows">
                 {easy.map((item) => (
                   <MeasureField
@@ -349,7 +349,7 @@ export default function MeasurePage() {
               >
                 <ArtIcon name="icon/menu-equipment" className="size-9 shrink-0" />
                 <span className="flex-1">
-                  <span className="block text-sm font-bold">장비가 있으면 더 정확해요</span>
+                  <span className="block text-sm font-bold">장비로 재기</span>
                   <span className="text-ink-soft text-xs">{equipment.length}개 항목</span>
                 </span>
                 {showEquipment ? (
