@@ -6,10 +6,12 @@ import { useEffect, useState } from "react";
 import { SessionError } from "@/components/app-shell/session-error";
 import { ChoiceButton, WizardShell, WizardSkeleton } from "@/components/app-shell/wizard";
 import { ArtIcon } from "@/components/ui/art-icon";
+import { useBackSheet } from "@/components/ui/use-back-sheet";
 import { Illustration } from "@/components/ui/illustration";
 import { Button } from "@/components/ui/button";
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { PhotoPicker } from "@/components/domain/photo-picker";
+import { ConsentTermsSheet, TermsLink } from "@/components/domain/consent-terms-sheet";
 import type { SupportMode, Weekday } from "@/lib/api/types";
 import { ApiError } from "@/lib/api/client";
 import {
@@ -21,6 +23,7 @@ import {
 } from "@/lib/api/queries";
 import { bodyError, bodyValue, rangeHint } from "@/lib/body";
 import { errorMessage } from "@/lib/errors";
+import type { ConsentKind } from "@/lib/legal";
 import { useSession } from "@/lib/session";
 import { ageOf, daysBefore, today } from "@/lib/today";
 import { cn, withJosa } from "@/lib/utils";
@@ -130,6 +133,8 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
   const [weight, setWeight] = useState("");
   const [kidPhoto, setKidPhoto] = useState<string | null>(null);
   const [consent, setConsent] = useState({ personalData: false, healthData: false });
+  // 동의 상세내용 — 시트로, 뒤로 가기를 눌러도 이 단계에 남는다(9/28)
+  const terms = useBackSheet<ConsentKind>();
   // 서버가 동의를 요구하면(만 14세 생일 앞뒤로 날짜 셈이 다를 때) 동의 칸을 넣는다
   const [forceConsent, setForceConsent] = useState(false);
   // ─ 함께 · 시간
@@ -550,20 +555,31 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       case "consent":
         return (
           <WizardShell {...common} title="보호자 동의가 필요해요">
-            <div className="space-y-3">
-              <ChoiceButton
-                multi
-                selected={consent.personalData}
-                onClick={() => setConsent((c) => ({ ...c, personalData: !c.personalData }))}
-                title="개인정보 처리에 동의해요"
-              />
-              <ChoiceButton
-                multi
-                selected={consent.healthData}
-                onClick={() => setConsent((c) => ({ ...c, healthData: !c.healthData }))}
-                title="건강정보 처리에 동의해요"
-              />
+            <div className="space-y-2">
+              <div>
+                <ChoiceButton
+                  multi
+                  selected={consent.personalData}
+                  onClick={() => setConsent((c) => ({ ...c, personalData: !c.personalData }))}
+                  title="개인정보 처리에 동의해요"
+                />
+                <div className="flex">
+                  <TermsLink label="개인정보 처리" onClick={() => terms.show("personal")} />
+                </div>
+              </div>
+              <div>
+                <ChoiceButton
+                  multi
+                  selected={consent.healthData}
+                  onClick={() => setConsent((c) => ({ ...c, healthData: !c.healthData }))}
+                  title="건강정보 처리에 동의해요"
+                />
+                <div className="flex">
+                  <TermsLink label="건강정보 처리" onClick={() => terms.show("health")} />
+                </div>
+              </div>
             </div>
+            <ConsentTermsSheet kind={terms.value} open={terms.open} onClose={terms.hide} />
           </WizardShell>
         );
       case "support":
