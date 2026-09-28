@@ -122,6 +122,7 @@ export default function SettingsPage() {
           onClose={() => setPhotoOpen(false)}
           profileId={profile.profileId}
           name={profile.name ?? "나"}
+          tone="mark"
         />
       )}
     </>
