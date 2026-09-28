@@ -18,9 +18,13 @@ import { usePhotoStore } from "@/stores/photo-store";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
+import { ConsentTermsSheet, TermsRow } from "@/components/domain/consent-terms-sheet";
+import { useBackSheet } from "@/components/ui/use-back-sheet";
+import { CONSENT_TERMS, type ConsentKind } from "@/lib/legal";
 
-/** 보호자 동의 관리. */
+/** 보호자 동의 관리. 동의마다 상세내용을 볼 수 있다 — 시트로, 뒤로 가기를 눌러도 이 화면에 남는다(9/28) */
 function ConsentPageContent() {
+  const terms = useBackSheet<ConsentKind>();
   const {
     familyId,
     isPending: sessionPending,
@@ -71,7 +75,13 @@ function ConsentPageContent() {
             ))}
           </ul>
         )}
+
+        <ul className="card divide-rows py-1" aria-label="동의 내용">
+          <TermsRow title={CONSENT_TERMS.personal.title} onClick={() => terms.show("personal")} />
+          <TermsRow title={CONSENT_TERMS.health.title} onClick={() => terms.show("health")} />
+        </ul>
       </Screen>
+      <ConsentTermsSheet kind={terms.value} open={terms.open} onClose={terms.hide} />
     </>
   );
 }
