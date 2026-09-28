@@ -159,11 +159,6 @@ function PlanRun() {
                   <p className={cn("text-sm font-extrabold", !step && "text-faint")}>
                     {i + 1}. {STEP_TITLE[name] ?? name}
                   </p>
-                  {(ok || state === "failed") && step?.summary && (
-                    <p className="text-caption text-ink-soft mt-0.5 leading-relaxed">
-                      {step.summary}
-                    </p>
-                  )}
                   {running && <p className="text-caption text-ink-soft mt-0.5">보는 중</p>}
                 </div>
               </li>
