@@ -30,8 +30,8 @@ import { cn } from "@/lib/utils";
 /**
  * AI 편성 — 제안 · 근거 · 순서.
  *
- * **등록하기 전에는 미션이 아니다**(규칙 1). 이 화면에 「미션」 이라는 말이 없고, 맨 위에
- * 늘 「제안 · 아직 등록 전」 이 붙는다. 「오늘 운동으로 등록」 을 눌러야 아이 화면에 뜬다.
+ * **등록하기 전에는 미션이 아니다**(규칙 1). 이 화면에 「미션」 이라는 말이 없다 — 막대 제목이 「오늘 운동 제안」 이고,
+ * 「오늘 운동으로 등록」 을 눌러야 아이 화면에 뜬다. 까닭 문장(`rationale`)은 내지 않는다(9/28 · 규칙 6).
  *
  * 근거(`citations`)는 접지 않고 늘 보인다(규칙 6). 거절도 한 가지 길이다 — 이유를 받는다.
  */
@@ -151,28 +151,23 @@ function Proposal() {
         ) : (
           <>
             <section className="card-hero">
-              {/* 제안인지 등록한 운동인지(규칙 1) — 둥근 딱지가 아니라 제목 위 한 줄 글자로 */}
-              <p
-                className={cn(
-                  "text-caption font-extrabold",
-                  approved ? "text-done" : "text-signal-deep",
-                )}
-              >
-                {approved
-                  ? "오늘 운동으로 등록했어요"
-                  : rejected
-                    ? "이번엔 안 하기로 했어요"
-                    : "제안 · 아직 등록 전"}
-              </p>
+              {/* 등록 · 거절한 뒤에만 한마디. 등록 전은 막대 제목(「오늘 운동 제안」)이 말한다 — 「제안 · 아직 등록 전」 을 두지 않는다(9/28) */}
+              {settled && (
+                <p
+                  className={cn(
+                    "text-caption mb-2 font-extrabold",
+                    approved ? "text-done" : "text-ink-soft",
+                  )}
+                >
+                  {approved ? "등록했어요" : "안 하기로 했어요"}
+                </p>
+              )}
               {/* 서버가 지은 이름을 그대로 */}
-              <h2 className="page-title mt-2">{proposal?.title ?? "오늘 운동"}</h2>
+              <h2 className="page-title">{proposal?.title ?? "오늘 운동"}</h2>
               <p className="text-caption text-ink-soft mt-1 font-semibold">
                 {sessions.length}개 · {minutes}분{phases && ` · ${phases}`}
                 {people.length > 0 && ` · ${people.join(" · ")}`}
               </p>
-              {proposal?.rationale && (
-                <p className="mt-3 text-sm leading-relaxed">{proposal.rationale}</p>
-              )}
             </section>
 
             <section className="card">
@@ -187,7 +182,7 @@ function Proposal() {
               </div>
             </section>
 
-            {/* 등록하면 제안 전부가 운동이 된다(서버가 한꺼번에 등록한다). 둘째부터도 근거 · 순서까지 다 보인다(규칙 6) */}
+            {/* 등록하면 제안 전부가 운동이 된다(서버가 한꺼번에 등록한다). 둘째부터도 근거 · 순서까지 다 보인다(규칙 6) — 까닭 문장은 없이 */}
             {(run.proposals ?? []).slice(1).map((p, i) => {
               const list = proposalSessions(p as ProposalWithSessions);
               return (
@@ -198,7 +193,6 @@ function Proposal() {
                       .filter(Boolean)
                       .join(" ~ ")}
                   />
-                  {p.rationale && <p className="mt-2 text-sm leading-relaxed">{p.rationale}</p>}
                   <Citations items={p.citations} className="mt-2" />
                   {list.length > 0 && (
                     <div className="mt-2">
