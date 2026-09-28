@@ -7,35 +7,45 @@ import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { PhotoSheet } from "@/components/domain/photo-sheet";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
+import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/error-state";
 import { ListRow } from "@/components/ui/list-row";
+import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useFamilyProfiles } from "@/lib/api/queries";
+import { useDeleteAccount, useFamilyProfiles, useMe } from "@/lib/api/queries";
+import type { MeWithEmail } from "@/lib/api/types";
+import { errorMessage } from "@/lib/errors";
 import { useSession, useSignOut } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 
+import { version } from "../../../../package.json";
+
 /**
- * 설정 — 계정과 이 기기에 관한 것만.
+ * 설정 — 로그인 계정 · 누가 쓰는지 · 동의 · 약관 · 앱 정보 · 로그아웃 · 회원 탈퇴(9/28 「설정에 이런 식으로」).
  *
- * 9/23 "너무 설정에 메뉴가 몰려 있다". 쓰는 자리가 따로 있는 것은 그리로 옮겼다 —
- * 가족 · 초대 · 참여 방식은 부모 홈 「우리 가족」 → 가족 대시보드 · 가족 관리, 운동할 수 있는 시간은 짜는 화면 ·
- * 직접 짜기 · 캘린더, 즐겨찾기는 운동 찾기. 여기에는 누가 쓰는지 · 동의 · 로그아웃만 남는다.
- * 자녀 프로필에는 없는 줄은 비활성으로 두지 않고 아예 내지 않는다.
+ * 쓰는 자리가 따로 있는 것은 그리로 옮겼다(9/23) — 가족 · 초대 · 참여 방식은 가족 관리, 운동할 수 있는 시간은
+ * 짜는 화면 · 직접 짜기 · 캘린더, 즐겨찾기는 운동 찾기. 자녀 프로필에는 없는 줄은 비활성으로 두지 않고 아예 내지 않는다.
  */
 export default function SettingsPage() {
   const router = useRouter();
   const { profile, familyId, isPending, error, refetch } = useSession();
+  const { data: me } = useMe();
   const { data: family } = useFamilyProfiles(familyId);
   const signOut = useSignOut();
+  const remove = useDeleteAccount();
   const mode = useRoleStore((s) => s.mode);
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const parentView = profile?.role === "PARENT" && mode !== "kid";
-  // 지금 이 기기를 쓰는 사람 — 아이 화면이면 그 아이(부모 폰을 빌려 쓰는 중이다)
+  // 부모 폰을 빌려 쓰는 아이 화면 — 로그아웃 · 탈퇴를 내지 않는다(아이가 누르면 곤란하다)
   const kidOnParentPhone = profile?.role === "PARENT" && mode === "kid";
-  const me = kidOnParentPhone
+  const kid = kidOnParentPhone
     ? family?.profiles?.find((p) => p.profileId === childProfileId)
-    : profile;
+    : undefined;
+  // ▲ 서버가 아직 주지 않는다 — 오면 로그인 계정 아래에 둔다
+  const email = (me as MeWithEmail | undefined)?.email;
   const [photoOpen, setPhotoOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
 
   // 누구인지 받기 전에 「나 · 우리집 · 아이 화면」 을 그리면 로그아웃도 없이 아이 화면처럼 보였다
   if (isPending) {
@@ -43,64 +53,91 @@ export default function SettingsPage() {
       <>
         <AppBar back title="설정" />
         <Stage wide className="space-y-3">
-          <Skeleton className="h-20 w-full rounded-3xl" />
+          <Skeleton className="h-24 w-full rounded-3xl" />
+          <Skeleton className="h-28 w-full rounded-3xl" />
           <Skeleton className="h-28 w-full rounded-3xl" />
         </Stage>
       </>
     );
   }
 
-  const logout = (
+  const logOut = () => {
+    router.replace("/login");
+    signOut();
+  };
+
+  const logoutLink = (
     <button
       type="button"
-      onClick={() => {
-        router.replace("/login");
-        signOut();
-      }}
-      className="card press text-ink-soft block w-full text-center text-sm font-bold"
+      onClick={logOut}
+      className="press text-ink-soft min-h-11 px-4 text-sm font-bold underline underline-offset-4"
     >
       로그아웃
     </button>
   );
 
   // 누구인지 못 받으면 「나 · 아이 화면」 으로 그리지 않는다. 로그아웃은 남긴다 — 나갈 길이다.
-  // 아이 모드(부모 폰을 빌려 쓰는 중일 수 있다)에서는 내지 않는다 — 아이가 부모를 로그아웃시킨다
   if (error) {
     return (
       <>
         <AppBar back title="설정" />
         <Stage wide className="space-y-3">
           <ErrorState error={error} onRetry={() => void refetch()} />
-          {mode !== "kid" && logout}
+          {mode !== "kid" && <div className="flex justify-center">{logoutLink}</div>}
         </Stage>
       </>
     );
   }
 
+  const leave = async () => {
+    setProblem(null);
+    try {
+      await remove.mutateAsync();
+      setLeaving(false);
+      logOut();
+    } catch (e) {
+      setProblem(errorMessage(e, "탈퇴하지 못했어요."));
+    }
+  };
+
   return (
     <>
       <AppBar back title="설정" />
       <Stage wide className="space-y-3">
-        {/* 지금 누구로 쓰고 있나. 한 기기를 부모와 아이가 번갈아 쓴다 */}
-        <section className="card flex items-center gap-3">
-          {/* 부모 화면에서만 누르면 내 사진 바꾸기 — 아이가 빌려 쓰는 중에 부모 사진을 바꾸지 않게 */}
-          {parentView ? (
-            <button
-              type="button"
-              onClick={() => setPhotoOpen(true)}
-              aria-label="내 사진 바꾸기"
-              className="press grid size-12 shrink-0 place-items-center rounded-full"
-            >
-              <ProfileAvatar profileId={me?.profileId} name={me?.name} size="lg" tone="mark" />
-            </button>
-          ) : (
-            <ProfileAvatar profileId={me?.profileId} name={me?.name} size="lg" tone="signal" />
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="text-lead truncate font-extrabold">{me?.name ?? "나"}</p>
-            <p className="text-caption text-ink-soft mt-0.5">
-              {family?.familyName ?? "우리집"} · {parentView ? "부모 화면" : "아이 화면"}
-            </p>
+        <section className="card">
+          <p className="text-caption text-ink-soft font-bold">로그인 계정</p>
+          <div className="mt-2 flex items-center gap-3">
+            {/* 부모 화면에서만 누르면 내 사진 바꾸기 — 아이가 빌려 쓰는 중에 부모 사진을 바꾸지 않게 */}
+            {parentView ? (
+              <button
+                type="button"
+                onClick={() => setPhotoOpen(true)}
+                aria-label="내 사진 바꾸기"
+                className="press grid size-12 shrink-0 place-items-center rounded-full"
+              >
+                <ProfileAvatar
+                  profileId={profile?.profileId}
+                  name={profile?.name}
+                  size="lg"
+                  tone="mark"
+                />
+              </button>
+            ) : (
+              <ProfileAvatar
+                profileId={profile?.profileId}
+                name={profile?.name}
+                size="lg"
+                tone={profile?.role === "CHILD" ? "signal" : "mark"}
+              />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-lead truncate font-extrabold">{profile?.name ?? "나"}</p>
+              {email && <p className="text-caption text-ink-soft mt-0.5 truncate">{email}</p>}
+              <p className="text-caption text-ink-soft mt-0.5">
+                {family?.familyName ?? "우리집"} ·{" "}
+                {parentView ? "부모 화면" : `아이 화면${kid?.name ? ` · ${kid.name}` : ""}`}
+              </p>
+            </div>
           </div>
         </section>
 
@@ -112,9 +149,34 @@ export default function SettingsPage() {
           )}
         </ul>
 
-        {/* 부모 폰을 빌려 쓰는 아이 화면에서는 로그아웃을 내지 않는다 — 눌러 버리면 곤란하다.
-            자기 계정으로 들어온 아이는 나갈 수 있어야 한다 */}
-        {!kidOnParentPhone && logout}
+        <ul className="card divide-rows py-1">
+          <ListRow href="/settings/privacy" title="개인정보처리방침" />
+          <ListRow href="/settings/terms" title="이용약관" />
+        </ul>
+
+        <section className="card">
+          <p className="font-extrabold">우리가족 체력키움</p>
+          <p className="text-ink-soft mt-1 text-sm">
+            국민체력100 데이터로 그리는 우리 가족 체력 지도
+          </p>
+          <p className="text-ink-soft mt-1 text-sm">버전 {version}</p>
+        </section>
+
+        {!kidOnParentPhone && (
+          <div className="flex flex-col items-center pt-1">
+            {logoutLink}
+            <button
+              type="button"
+              onClick={() => {
+                setProblem(null);
+                setLeaving(true);
+              }}
+              className="press text-ink-soft min-h-11 px-4 text-sm font-bold underline underline-offset-4"
+            >
+              회원 탈퇴
+            </button>
+          </div>
+        )}
       </Stage>
       {parentView && profile?.profileId && (
         <PhotoSheet
@@ -125,6 +187,38 @@ export default function SettingsPage() {
           tone="mark"
         />
       )}
+      <Sheet
+        open={leaving}
+        onClose={() => setLeaving(false)}
+        title="탈퇴하면 가족 기록이 모두 지워져요"
+      >
+        <div className="space-y-3">
+          {problem && (
+            <p role="alert" className="text-signal-deep text-sm font-semibold">
+              {problem}
+            </p>
+          )}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="md"
+              className="flex-1"
+              onClick={() => setLeaving(false)}
+            >
+              그대로 두기
+            </Button>
+            <Button
+              variant="danger"
+              size="md"
+              className="flex-1"
+              loading={remove.isPending}
+              onClick={() => void leave()}
+            >
+              탈퇴하기
+            </Button>
+          </div>
+        </div>
+      </Sheet>
     </>
   );
 }

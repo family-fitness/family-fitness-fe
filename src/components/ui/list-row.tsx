@@ -19,8 +19,8 @@ export function ListRow({
   trailing,
 }: {
   href: string;
-  /** 그림 이름(`icon/menu-family`). 오기 전에는 칸만 비어 있다 */
-  art: string;
+  /** 그림 이름(`icon/menu-family`). 오기 전에는 칸만 비어 있다. 약관처럼 글만 있는 줄은 두지 않는다 */
+  art?: string;
   title: string;
   description?: string;
   trailing?: ReactNode;
@@ -29,7 +29,7 @@ export function ListRow({
     <li>
       <NavLink href={href} className="press flex min-h-14 items-center gap-3 py-3">
         {/* 그림을 둥근 면에 넣지 않는다(9/25 「둥근 배경 안에 뭘 넣는 건 너무 AI 같다」) */}
-        <ArtIcon name={art} className="size-8 shrink-0" />
+        {art && <ArtIcon name={art} className="size-8 shrink-0" />}
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-bold">{title}</span>
           {description && (
