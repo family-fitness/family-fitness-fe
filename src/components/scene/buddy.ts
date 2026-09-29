@@ -9,10 +9,10 @@
 export const BUDDY_FRAME = { feet: 0.05, body: 0.69 } as const;
 
 /**
- * 서 있는 캐릭터를 그림 한 장으로 — 섬 · 키 자 · 징검다리 위에 세울 종이 인형이다.
+ * 서 있는 캐릭터를 그림 한 장으로 — 섬 · 징검다리 위에 세울 종이 인형이다.
  * 먼저 서 있는 2D 캐릭터(`LevelBuddy`)의 그림을 그대로 쓴다. 그림이 없으면 null — 캐릭터 없이 선다.
  *
- * 섬 파일(island · decorations)과 떨어뜨려 둔다. 키 자 · 징검다리가 이것 하나 때문에 섬 코드를 같이 받았다.
+ * 섬 파일(island · decorations)과 떨어뜨려 둔다. 징검다리가 이것 하나 때문에 섬 코드를 같이 받았다.
  */
 export async function mascotImage(stand: HTMLElement): Promise<HTMLImageElement | null> {
   const img = stand.querySelector("img");
