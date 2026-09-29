@@ -204,6 +204,10 @@ export const coaching = [
   http.post(`${BASE}/families/:familyId/coach/runs`, async ({ request }) => {
     const me = acting();
     if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자만 편성을 받을 수 있습니다");
+    // 잰 사람이 하나도 없으면 짤 근거가 없다 — 실제 서버와 같은 422
+    if (!db.profiles.profiles.some((p) => db.latest[p.profileId ?? ""]?.fitnessTestId)) {
+      return fail(422, "NO_MEASURED_MEMBER", "측정 기록이 있는 구성원이 없습니다");
+    }
     const body = ((await request.json().catch(() => ({}))) ?? {}) as Partial<PlanParams> & {
       minutesPerSession?: number;
     };

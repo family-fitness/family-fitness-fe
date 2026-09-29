@@ -63,7 +63,7 @@ export default function KidHomePage() {
     error: missionsError,
     refetch: refetchMissions,
   } = useCurrentMissions(familyId);
-  const { data: progress } = useProgress(childProfileId ?? undefined);
+  const { data: progress, error: progressError } = useProgress(childProfileId ?? undefined);
   const week = weekOf();
   const {
     data: calendar,
@@ -164,7 +164,7 @@ export default function KidHomePage() {
             level={progress?.level}
             plants={progress ? trees : null}
             seed={childProfileId ?? "kid"}
-            label={`${me.name}의 섬. 운동한 날마다 나무가 하나씩 자라요. 지금 ${trees}그루`}
+            label={`${me.name}의 섬. 운동한 날마다 나무가 하나씩 자라요${progress ? `. 지금 ${trees}그루` : ""}`}
             className="-mt-3"
           />
           <h1 className="page-title -mt-2 max-w-full break-words">{me.name}</h1>
@@ -177,7 +177,8 @@ export default function KidHomePage() {
               {/* 다음 레벨까지 · 경험치 — 아래에 두꺼운 게이지(9/25) */}
               <XpGauge progress={progress} className="mt-3 max-w-64 text-left" />
             </>
-          ) : (
+          ) : progressError ? null : (
+            // 기다리는 동안만 자리를 잡는다 — 못 받았는데 뼈대를 두면 영영 기다리는 화면이 된다
             <Skeleton className="mt-2 h-4 w-40" />
           )}
         </section>
@@ -257,7 +258,11 @@ export default function KidHomePage() {
             <PanelCell
               href="/kid/badges"
               label="업적"
-              note={badge?.title ?? "아직 없어요"}
+              // 레벨 조회를 기다리거나 못 받았으면 「아직 없어요」 라고 하지 않는다
+              note={
+                badge?.title ??
+                (progress ? "아직 없어요" : progressError ? "못 불러왔어요" : undefined)
+              }
               art={badge ? <ArtIcon name={badgeArt(badge.code)} className="size-10" /> : null}
             />
             {/* 점수 하나는 아이도 본다. 등수로 바꾸지 않고 또래 평균 50 눈금과 같이(규칙 10) */}

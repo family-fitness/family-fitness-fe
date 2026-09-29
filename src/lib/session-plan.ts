@@ -3,6 +3,7 @@ import type {
   MissionParticipant,
   MissionSession,
   MissionWithSessions,
+  ProposalWithSessions,
   SessionPhase,
 } from "./api/types";
 
@@ -59,23 +60,50 @@ export function sessionsOf(
   /* 세션이 없는 미션도 하나는 해야 한다. 미션 자체를 본운동 한 칸으로 본다 */
   return [
     {
-      position: 1,
-      phase: "MAIN",
-      title: mission.title ?? "오늘의 운동",
-      minutes: mission.targetMetric === "TIMER_MINUTES" ? mission.targetValue : null,
-      clip: mission.video
-        ? {
-            videoId: mission.video.videoId ?? "",
-            startSec: mission.video.startSec,
-            endSec: null,
-            title: mission.video.title,
-            url: mission.video.url,
-          }
-        : null,
+      ...wholeAsMain(mission),
       completed: me?.completed ?? false,
       verifiedBy: me?.verifiedBy ?? null,
     },
   ];
+}
+
+/**
+ * 제안의 칸. 칸이 안 오면 미션처럼 본운동 한 칸으로 본다 — 등록하면 같은 운동이 아이 화면에
+ * 본운동 한 칸으로 뜬다. 제안에서만 「0개 · 0분」 이면 같은 운동을 두 화면이 다르게 말한다.
+ */
+export function proposalSessions(proposal: ProposalWithSessions | undefined): MissionSession[] {
+  if (!proposal) return [];
+  const given = proposal.sessions;
+  return given && given.length > 0 ? orderSessions(given) : [wholeAsMain(proposal)];
+}
+
+/** 칸이 안 온 운동(미션 · 제안) 전체를 본운동 한 칸으로. 준비 · 정리는 지어내지 않는다 */
+function wholeAsMain(source: {
+  title?: string | null;
+  targetMetric?: string | null;
+  targetValue?: number | null;
+  video?: {
+    videoId?: string | null;
+    startSec?: number | null;
+    title?: string | null;
+    url?: string | null;
+  } | null;
+}): MissionSession {
+  return {
+    position: 1,
+    phase: "MAIN",
+    title: source.title ?? "오늘의 운동",
+    minutes: source.targetMetric === "TIMER_MINUTES" ? (source.targetValue ?? null) : null,
+    clip: source.video
+      ? {
+          videoId: source.video.videoId ?? "",
+          startSec: source.video.startSec,
+          endSec: null,
+          title: source.video.title,
+          url: source.video.url,
+        }
+      : null,
+  };
 }
 
 /**
