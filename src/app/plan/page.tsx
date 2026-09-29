@@ -38,7 +38,7 @@ import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
  * **채팅이 아니라 칩이다.** 열린 질문을 받으면 「우리 애 살 빼려면?」 같은 답하면 안 되는
  * 질문까지 들어온다. 고를 수 있는 것만 두면 막을 것이 없고, 부모는 자기가 조종한다고 느낀다.
  *
- * 키울 힘을 고르지 않으면 코치가 가장 낮은 요인을 고른다 — 육각형에서 안쪽으로
+ * 보호자가 키워 주고 싶은 역량(focus_factor)을 고르지 않으면 코치가 가장 낮은 요인을 고른다 — 육각형에서 안쪽으로
  * 들어간 꼭지점이다. 그래서 여기에 그 육각형을 같이 둔다.
  */
 const MINUTES = [10, 20, 30, 40] as const;
@@ -125,7 +125,7 @@ function PlanForm() {
   }
 
   const name = kid?.name ?? "아이";
-  // 서버가 준 가장 낮은 요인. 부모가 고르지 않으면 코치가 이걸 키운다 — 육각형 밖(협응력 · 평형성)이면 두지 않는다
+  // 서버가 준 가장 낮은 요인. 보호자가 키워 주고 싶은 역량을 고르지 않으면 코치가 이걸 키운다 — 육각형 밖(협응력 · 평형성)이면 두지 않는다
   const given = latest?.weakest?.factor;
   const weakest = isFactor(given) ? given : undefined;
   const shownFocus = focus ?? weakest ?? null;
@@ -191,7 +191,7 @@ function PlanForm() {
           )}
           {shownFocus && (
             <p className="mt-3 text-center text-sm font-bold">
-              <span className="text-ink-soft">{focus ? "고른 힘" : "키울 힘"}</span>{" "}
+              <span className="text-ink-soft">{focus ? "키워 주고 싶은 힘" : "키울 힘"}</span>{" "}
               <span className="text-signal-deep font-extrabold">{shownFocus}</span>
             </p>
           )}
@@ -262,8 +262,8 @@ function PlanForm() {
         </section>
 
         <section className="card">
-          <CardHead title="키우고 싶은 힘" />
-          <div className="mt-2 grid grid-cols-3 gap-2" role="group" aria-label="키우고 싶은 힘">
+          <CardHead title="키워 주고 싶은 힘" />
+          <div className="mt-2 grid grid-cols-3 gap-2" role="group" aria-label="키워 주고 싶은 힘">
             {/* 다른 고르기와 같은 칩이다. 폭을 다 채운 파랑 단추로 두었더니 아래 주 버튼과 누를 곳이 둘로 보였다 */}
             <span className="col-span-3 flex">
               <Chip on={focus === null} onClick={() => setFocus(null)}>

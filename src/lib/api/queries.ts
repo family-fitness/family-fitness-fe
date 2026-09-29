@@ -343,7 +343,7 @@ interface PlanRequest {
   /** 아랫집이 신경 쓰이면 뛰는 동작을 뺀다 */
   quiet: boolean;
   place: "HOME" | "OUTDOOR";
-  /** 부모가 고른 힘. null 이면 코치가 가장 낮은 요인을 고른다 */
+  /** 보호자가 키워 주고 싶은 역량(focus_factor). null 이면 코치가 가장 낮은 요인을 고른다 */
   focusFactor: string | null;
   /** 부모도 같이 하나. 참여 방식에서 기본값이 온다 */
   withParent: boolean;

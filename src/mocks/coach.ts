@@ -37,7 +37,7 @@ interface PlanParams {
   minutes: number;
   quiet: boolean;
   place: "HOME" | "OUTDOOR";
-  /** 부모가 고른 힘. 없으면 코치가 가장 낮은 요인을 고른다 */
+  /** 보호자가 키워 주고 싶은 역량(focus_factor). 없으면 코치가 가장 낮은 요인을 고른다 */
   focusFactor: string | null;
   withParent: boolean;
 }
@@ -83,7 +83,7 @@ function stepSummary(
   const minutes = plan.reduce((sum, s) => sum + s.minutes, 0);
   switch (name) {
     case "assess":
-      return `${who} · 측정 ${latest?.items?.length ?? 0}항목 · ${p.focusFactor ? `키울 힘 ${focus}(부모가 고름)` : `대상 요인 = ${focus}`}`;
+      return `${who} · 측정 ${latest?.items?.length ?? 0}항목 · ${p.focusFactor ? `키워 주고 싶은 힘 ${focus}` : `가장 낮은 힘 ${focus}`}`;
     case "retrieve":
       return `국민체력100 운동처방 ${focus} 12건 · 클립 ${catalog.length}개 중 ${pool.length}개${p.quiet ? " · 조용한 것 먼저" : ""}`;
     case "compose":
@@ -108,7 +108,7 @@ function proposalFor(p: PlanParams, focus: string, runId: string) {
     position: 0,
     title: `${focus} 키우기 ${minutes}분`,
     rationale: p.focusFactor
-      ? `고르신 ${focus}을 본운동에 넣고, 몸을 푸는 동작을 앞뒤에 붙였어요.`
+      ? `키워 주고 싶다고 하신 ${focus}을 본운동에 넣고, 몸을 푸는 동작을 앞뒤에 붙였어요.`
       : `${kid}의 ${focus}이 또래보다 가장 낮아요. ${focus}을 기르는 동작을 본운동에 넣고, 늘이는 동작으로 시작과 끝을 잡았어요.`,
     targetMetric: "TIMER_MINUTES",
     targetValue: minutes,
