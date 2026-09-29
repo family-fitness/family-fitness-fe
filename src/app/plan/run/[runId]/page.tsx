@@ -105,13 +105,13 @@ function PlanRun() {
             label={`${names.length}단계 중 ${done}단계를 마쳤어요`}
             className="-mt-2"
           />
-          <h2 className="text-lead mt-2 font-extrabold" aria-live="polite">
-            {failedRun
-              ? "짜지 못했어요"
-              : finished
-                ? "다 짰어요"
-                : "코치가 오늘 운동을 짜고 있어요"}
-          </h2>
+          {/* 짜는 동안은 막대 제목(「짜는 중」)이 말한다 — 끝났을 때만 한마디 */}
+          <p
+            className={cn("text-lead font-extrabold", (failedRun || finished) && "mt-2")}
+            aria-live="polite"
+          >
+            {failedRun ? "짜지 못했어요" : finished ? "다 짰어요" : null}
+          </p>
           <p className="text-caption text-ink-soft mt-1">
             {finished ? " " : `${Math.min(done + 1, names.length)} / ${names.length}`}
           </p>
@@ -159,11 +159,6 @@ function PlanRun() {
                   <p className={cn("text-sm font-extrabold", !step && "text-faint")}>
                     {i + 1}. {STEP_TITLE[name] ?? name}
                   </p>
-                  {(ok || state === "failed") && step?.summary && (
-                    <p className="text-caption text-ink-soft mt-0.5 leading-relaxed">
-                      {step.summary}
-                    </p>
-                  )}
                   {running && <p className="text-caption text-ink-soft mt-0.5">보는 중</p>}
                 </div>
               </li>
