@@ -809,6 +809,21 @@ export function useRestDays(familyId: Uuid | undefined, month: string) {
 }
 
 /**
+ * 여러 달의 쉬는 날을 한꺼번에 — 직접 짜기가 몇 주 되풀이할 때 달을 넘는다. 키가 `useRestDays` 와 같아 캐시를 나눠 쓴다.
+ * 쓴 날(YYYY-MM-DD)을 한 묶음으로 돌려준다. 못 받은 달은 비어 있다
+ */
+export function useRestDaysIn(familyId: Uuid | undefined, months: string[]) {
+  return useQueries({
+    queries: months.map((month) => ({
+      queryKey: qk.family.restDays(familyId ?? "", month),
+      queryFn: () => api.get<RestDays>(path`/families/${familyId}/rest-days${query({ month })}`),
+      enabled: Boolean(familyId),
+    })),
+    combine: (results) => new Set(results.flatMap((r) => r.data?.days ?? [])),
+  });
+}
+
+/**
  * 쉬는 날 카드를 쓰거나(`date`) 되돌린다(`cancel`).
  * 쉬는 날은 달력 · 이어서 한 날 · 리그 달성률이 달라진다 — 그것만 다시 받는다(가족 것 전부를 다시 받지 않는다).
  */
