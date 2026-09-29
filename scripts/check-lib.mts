@@ -37,6 +37,7 @@ import { UNLOCKS, decorationsAt, newlyUnlocked, nextUnlock } from "@/lib/unlocks
 import { orderSessions, proposalSessions, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { todayActivity } from "@/lib/activity";
 import { josa } from "@/lib/utils";
+import { finderHref, finderOwner } from "@/lib/videos";
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -445,6 +446,35 @@ check(
       ),
       ["정리", "준비", "차례 없음"],
     ),
+  );
+}
+
+/* ─── 운동 찾기 — 홈 영상 줄과 같은 사람의 목록 ─────────────────── */
+
+{
+  const kid = "11111111-1111-1111-1111-111111111111";
+  check(
+    "홈 영상 줄은 보고 있는 아이를 주소에 싣는다",
+    finderHref({ factor: "유연성", profileId: kid, clipId: "abc-0" }) ===
+      `/videos?phase=MAIN&factor=%EC%9C%A0%EC%97%B0%EC%84%B1&profileId=${kid}&clip=abc-0`,
+  );
+  check(
+    "힘도 아이도 모르면 본운동만 건다",
+    finderHref({ factor: null, profileId: undefined }) === "/videos?phase=MAIN",
+  );
+  check(
+    "부모 화면은 주소의 아이를 먼저 본다 — 아이를 고른 적 없이 첫째를 보던 홈에서 와도 같은 목록",
+    finderOwner({ kidView: false, fromUrl: kid, childProfileId: null, self: "me" }) === kid,
+  );
+  check(
+    "주소에 없으면 고른 아이, 그것도 없으면 나",
+    finderOwner({ kidView: false, fromUrl: null, childProfileId: "c", self: "me" }) === "c" &&
+      finderOwner({ kidView: false, fromUrl: null, childProfileId: null, self: "me" }) === "me",
+  );
+  check(
+    "아이 화면은 주소를 따르지 않는다 — 다른 아이 목록으로 바뀌지 않게",
+    finderOwner({ kidView: true, fromUrl: kid, childProfileId: "c", self: "me" }) === "c" &&
+      finderOwner({ kidView: true, fromUrl: kid, childProfileId: null, self: "me" }) === undefined,
   );
 }
 

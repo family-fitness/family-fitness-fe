@@ -23,6 +23,7 @@ import { PHASE_LABEL, clock } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { useIsKidView } from "@/lib/view-role";
+import { finderOwner } from "@/lib/videos";
 import { useRoleStore } from "@/stores/role-store";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
@@ -62,8 +63,14 @@ function Finder() {
   const kidView = useIsKidView();
   const { profile } = useSession();
   const childProfileId = useRoleStore((s) => s.childProfileId);
-  // 즐겨찾기는 누구의 것인가. 아이 화면이면 아이, 부모 화면이면 보고 있는 아이
-  const owner = kidView ? (childProfileId ?? undefined) : (childProfileId ?? profile?.profileId);
+  // 목록 · 즐겨찾기는 누구의 것인가. 아이 화면이면 아이, 부모 화면이면 홈이 주소에 실어 보낸 아이 → 보고 있는 아이.
+  // 홈은 아이를 고른 적이 없으면 첫째를 보여 준다 — 주소가 없으면 여기서는 부모 목록이 되어 누른 클립이 없었다
+  const owner = finderOwner({
+    kidView,
+    fromUrl: params.get("profileId"),
+    childProfileId,
+    self: profile?.profileId,
+  });
 
   const initialFactor = params.get("factor");
   const [factor, setFactor] = useState<Factor | null>(

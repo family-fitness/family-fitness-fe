@@ -226,7 +226,10 @@ export default function ParentHomePage() {
           </PanelCells>
         </WeekPanel>
 
-        <ClipShelf factor={isFactor(weakest) ? weakest : null} />
+        <ClipShelf
+          factor={isFactor(weakest) ? weakest : null}
+          profileId={child.profileId ?? undefined}
+        />
       </Stage>
       <InviteSheet
         open={inviting}
