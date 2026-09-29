@@ -211,7 +211,17 @@ function LoginContent() {
       router.replace("/");
     } catch (e) {
       setSigning(null);
-      setError(errorMessage(e, "심사용 계정으로 들어가지 못했어요."));
+      setError(
+        errorMessage(
+          e,
+          {
+            // 같은 곳(IP)에서 한 시간에 30번을 넘기면 서버가 막는다. 지난 한 시간 동안 만든 것만 센다
+            TOO_MANY:
+              "여기서 심사용 계정을 너무 많이 만들었어요. 한 시간 안에 다시 들어갈 수 있어요.",
+          },
+          "심사용 계정으로 들어가지 못했어요.",
+        ),
+      );
     }
   };
 
