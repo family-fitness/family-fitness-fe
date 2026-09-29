@@ -171,13 +171,6 @@ const identity = [
     });
   }),
 
-  /** 회원 탈퇴 ▲ 요청 — 목은 시연 가족으로 되돌린다(다시 들어오면 처음부터) */
-  http.delete(`${BASE}/me`, () => {
-    resetToDemo();
-    setStage("fresh");
-    return new HttpResponse(null, { status: 204 });
-  }),
-
   /** 액세스 토큰 새로 받기. 목은 토큰을 따지지 않으니 같은 모양으로 돌려준다 */
   http.post(`${BASE}/auth/refresh`, async ({ request }) => {
     const body = (await request.json().catch(() => ({}))) as { refreshToken?: string };

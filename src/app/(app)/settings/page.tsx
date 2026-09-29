@@ -7,21 +7,18 @@ import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { PhotoSheet } from "@/components/domain/photo-sheet";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
-import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/error-state";
 import { ListRow } from "@/components/ui/list-row";
-import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDeleteAccount, useFamilyProfiles, useMe } from "@/lib/api/queries";
+import { useFamilyProfiles, useMe } from "@/lib/api/queries";
 import type { MeWithEmail } from "@/lib/api/types";
-import { errorMessage } from "@/lib/errors";
 import { useSession, useSignOut } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 
 import { version } from "../../../../package.json";
 
 /**
- * 설정 — 로그인 계정 · 누가 쓰는지 · 동의 · 약관 · 앱 정보 · 로그아웃 · 회원 탈퇴(9/28 「설정에 이런 식으로」).
+ * 설정 — 로그인 계정 · 누가 쓰는지 · 동의 · 약관 · 앱 정보 · 로그아웃(9/28 「설정에 이런 식으로」).
  *
  * 쓰는 자리가 따로 있는 것은 그리로 옮겼다(9/23) — 가족 · 초대 · 참여 방식은 가족 관리, 운동할 수 있는 시간은
  * 짜는 화면 · 직접 짜기 · 캘린더, 즐겨찾기는 운동 찾기. 자녀 프로필에는 없는 줄은 비활성으로 두지 않고 아예 내지 않는다.
@@ -32,11 +29,10 @@ export default function SettingsPage() {
   const { data: me } = useMe();
   const { data: family } = useFamilyProfiles(familyId);
   const signOut = useSignOut();
-  const remove = useDeleteAccount();
   const mode = useRoleStore((s) => s.mode);
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const parentView = profile?.role === "PARENT" && mode !== "kid";
-  // 부모 폰을 빌려 쓰는 아이 화면 — 로그아웃 · 탈퇴를 내지 않는다(아이가 누르면 곤란하다)
+  // 부모 폰을 빌려 쓰는 아이 화면 — 로그아웃을 내지 않는다(아이가 누르면 곤란하다)
   const kidOnParentPhone = profile?.role === "PARENT" && mode === "kid";
   const kid = kidOnParentPhone
     ? family?.profiles?.find((p) => p.profileId === childProfileId)
@@ -44,8 +40,6 @@ export default function SettingsPage() {
   // ▲ 서버가 아직 주지 않는다 — 오면 로그인 계정 아래에 둔다
   const email = (me as MeWithEmail | undefined)?.email;
   const [photoOpen, setPhotoOpen] = useState(false);
-  const [leaving, setLeaving] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
 
   // 누구인지 받기 전에 「나 · 우리집 · 아이 화면」 을 그리면 로그아웃도 없이 아이 화면처럼 보였다
   if (isPending) {
@@ -88,17 +82,6 @@ export default function SettingsPage() {
       </>
     );
   }
-
-  const leave = async () => {
-    setProblem(null);
-    try {
-      await remove.mutateAsync();
-      setLeaving(false);
-      logOut();
-    } catch (e) {
-      setProblem(errorMessage(e, "탈퇴하지 못했어요."));
-    }
-  };
 
   return (
     <>
@@ -162,21 +145,7 @@ export default function SettingsPage() {
           <p className="text-ink-soft mt-1 text-sm">버전 {version}</p>
         </section>
 
-        {!kidOnParentPhone && (
-          <div className="flex flex-col items-center pt-1">
-            {logoutLink}
-            <button
-              type="button"
-              onClick={() => {
-                setProblem(null);
-                setLeaving(true);
-              }}
-              className="press text-ink-soft min-h-11 px-4 text-sm font-bold underline underline-offset-4"
-            >
-              회원 탈퇴
-            </button>
-          </div>
-        )}
+        {!kidOnParentPhone && <div className="flex justify-center pt-1">{logoutLink}</div>}
       </Stage>
       {parentView && profile?.profileId && (
         <PhotoSheet
@@ -187,38 +156,6 @@ export default function SettingsPage() {
           tone="mark"
         />
       )}
-      <Sheet
-        open={leaving}
-        onClose={() => setLeaving(false)}
-        title="탈퇴하면 가족 기록이 모두 지워져요"
-      >
-        <div className="space-y-3">
-          {problem && (
-            <p role="alert" className="text-signal-deep text-sm font-semibold">
-              {problem}
-            </p>
-          )}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="md"
-              className="flex-1"
-              onClick={() => setLeaving(false)}
-            >
-              그대로 두기
-            </Button>
-            <Button
-              variant="danger"
-              size="md"
-              className="flex-1"
-              loading={remove.isPending}
-              onClick={() => void leave()}
-            >
-              탈퇴하기
-            </Button>
-          </div>
-        </div>
-      </Sheet>
     </>
   );
 }
