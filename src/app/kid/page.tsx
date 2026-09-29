@@ -132,6 +132,8 @@ export default function KidHomePage() {
   // 운동한 날만큼 섬에 나무가 선다. 줄지 않는다
   const trees = progress?.activeDays ?? 0;
   const score = me.latest?.overallPercentile ?? null;
+  // 잰 적은 있는데 점수가 없는 아이 — 만 7~10세는 비교할 기준이 없다(규칙 8). 「아직 재지 않았어요」 가 아니다
+  const measured = Boolean(me.latest?.testedOn);
   // 쉬는 날 카드(부모가 쓴다) — 이번 주 기록에 같이 온다. 쓴 날이면 오늘 운동 대신 「쉬는 날」
   const restToday = Boolean(calendar?.days.find((d) => d.date === now)?.rest);
   // 쉬는 날에도 「그래도 할래요」 로 시작했으면 이어서 하게 둔다
@@ -268,9 +270,18 @@ export default function KidHomePage() {
             {/* 점수 하나는 아이도 본다. 등수로 바꾸지 않고 또래 평균 50 눈금과 같이(규칙 10) */}
             <PanelCell
               label="신체 점수"
-              note={score != null ? "또래 평균 50" : "아직 재지 않았어요"}
+              note={score != null ? "또래 평균 50" : measured ? "쟀어요" : "아직 재지 않았어요"}
               art={
-                score != null ? (
+                score == null && measured ? (
+                  // 쟀는데 비교할 점수가 없는 나이 — 0 이 아니라 비어 있음이다
+                  <span
+                    className="metric-value text-faint text-2xl leading-none"
+                    role="img"
+                    aria-label="신체 점수 없음"
+                  >
+                    —
+                  </span>
+                ) : score != null ? (
                   <span className="flex flex-col items-center">
                     <span className="metric-value text-2xl leading-none">
                       {score}
