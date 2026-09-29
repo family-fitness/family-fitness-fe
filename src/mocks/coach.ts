@@ -264,9 +264,14 @@ export const coaching = [
   }),
 
   /** ▲ 서버에 아직 없다. 기기에 든 runId 가 없어도 오늘 제안을 다시 찾게 */
-  http.get(`${BASE}/families/:familyId/coach/runs/latest`, () => {
+  http.get(`${BASE}/families/:familyId/coach/runs/latest`, ({ request }) => {
     if (!db.hasCoachRun) return fail(404, "NO_RUN", "회차가 없습니다");
     const run = advance(current());
+    // 서버와 같게 — 아이를 주면 그 아이를 짠 회차만. 목은 회차가 하나라 다른 아이면 없다
+    const profileId = new URL(request.url).searchParams.get("profileId");
+    if (profileId && run.params && run.params.profileId !== profileId) {
+      return fail(404, "COACH_RUN_NOT_FOUND", "회차가 없습니다");
+    }
     return HttpResponse.json(run);
   }),
 

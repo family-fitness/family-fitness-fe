@@ -70,7 +70,11 @@ const qk = {
   },
   coach: {
     run: (runId: Uuid) => ["coach", "runs", runId] as const,
-    latest: (familyId: Uuid) => ["coach", "runs", "latest", familyId] as const,
+    /** 아이를 주면 그 아이 것만. 가족 id 로 무효화하면 아이마다의 것도 같이 지워진다(앞 키가 같다) */
+    latest: (familyId: Uuid, profileId?: Uuid) =>
+      profileId
+        ? (["coach", "runs", "latest", familyId, profileId] as const)
+        : (["coach", "runs", "latest", familyId] as const),
   },
   clips: (filter: Record<string, string | boolean | null | undefined>) =>
     ["clips", filter] as const,
@@ -386,13 +390,15 @@ export function useCoachRun(runId: Uuid | undefined) {
  * 승인 기다리는 제안이 있는데도 없는 것처럼 보이는 게 이 서비스에서 가장
  * 나쁜 상태다 — 승인 게이트가 통째로 사라진다.
  *
- * ▲ 요청: `GET /families/{familyId}/coach/runs/latest`.
- * 아직 없으면 404 가 오고, 그때는 기기에 든 값만으로 지금처럼 돈다.
+ * 아이를 주면(`?profileId=`) 그 아이를 짠 것 가운데 가장 최근 것이다. 편성은 아이 한 명의 하루라서,
+ * 가족 전체의 최근 한 건만 보면 둘째를 나중에 짜는 순간 첫째의 기다리는 제안이 가려졌다
+ * (첫째 칸에 「AI 제안이 와 있어요」 가 사라지고 AI 받기 단추가 다시 떴다). 없으면 404 `COACH_RUN_NOT_FOUND`.
  */
-export function useLatestCoachRun(familyId: Uuid | undefined) {
+export function useLatestCoachRun(familyId: Uuid | undefined, profileId?: Uuid) {
   return useQuery({
-    queryKey: qk.coach.latest(familyId ?? ""),
-    queryFn: () => api.get<CoachRun>(path`/families/${familyId}/coach/runs/latest`),
+    queryKey: qk.coach.latest(familyId ?? "", profileId),
+    queryFn: () =>
+      api.get<CoachRun>(path`/families/${familyId}/coach/runs/latest${query({ profileId })}`),
     enabled: Boolean(familyId),
     retry: false,
   });

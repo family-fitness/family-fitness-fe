@@ -73,7 +73,8 @@ function PlanForm() {
   const { data: latest } = useLatestFitnessTest(kid?.profileId);
   const start = useStartCoachRun(familyId ?? "");
   // 이미 짜고 있거나 받아 둔 제안 — 다시 짜 달라고 했다가 막히면 그리로 간다
-  const { data: current } = useLatestCoachRun(familyId);
+  // 지금 짜려는 아이의 것만 — 「제안 보기」 가 형제의 제안으로 가지 않게
+  const { data: current } = useLatestCoachRun(familyId, kid?.profileId);
 
   const { data: availability } = useAvailability(kid?.profileId);
   // 고르기 전에는 오늘 적어 둔 시간이 기본이다. 적어 둔 게 없으면 20분

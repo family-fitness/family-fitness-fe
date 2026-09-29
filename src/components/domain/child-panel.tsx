@@ -144,7 +144,8 @@ function TodaySection({
   onRetryMissions: () => void;
 }) {
   const { data: given } = useCheers(familyId, childProfileId);
-  const { data: run } = useLatestCoachRun(familyId);
+  // 이 아이를 짠 것만 — 형제의 새 편성이 이 아이의 기다리는 제안을 가리지 않게
+  const { data: run } = useLatestCoachRun(familyId, childProfileId || undefined);
   // 쉬는 날 카드를 쓴 날 — 「아직 시작 전」 이 아니라 「쉬는 날」
   const { data: rest } = useRestDays(familyId, monthOf(today()));
   const stickerHref = (missionId?: string) =>
