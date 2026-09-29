@@ -190,6 +190,12 @@ export interface VideoClip {
   endSec?: number | null;
   title?: string | null;
   url?: string | null;
+  /**
+   * 공단 오픈API 「국민체력100 동영상 정보」 영상이면 mp4 주소. 유튜브 영상이면 비어 있다.
+   * 있으면 플레이어가 유튜브가 아니라 이 파일을 튼다
+   */
+  mediaUrl?: string | null;
+  /** 공단 영상의 장면 이미지. 유튜브 영상이면 비어 있고 화면이 유튜브 썸네일을 쓴다 */
   thumbnailUrl?: string | null;
 }
 
@@ -416,6 +422,10 @@ export interface ClipView {
   /** 도구가 필요한가 */
   props: boolean;
   favorited: boolean;
+  /** 공단 영상이면 mp4 주소. 유튜브 클립이면 비어 있다 — `VideoClip.mediaUrl` 과 같다 */
+  mediaUrl?: string | null;
+  /** 공단 영상의 장면 이미지. 유튜브 클립이면 비어 있다 */
+  thumbnailUrl?: string | null;
 }
 
 export interface ClipList {

@@ -30,6 +30,7 @@ export function SessionList({ sessions }: { sessions: MissionSession[] }) {
                 {s.clip?.videoId ? (
                   <VideoThumb
                     videoId={s.clip.videoId}
+                    src={s.clip.thumbnailUrl}
                     className="aspect-video w-24 shrink-0 rounded-xl"
                   />
                 ) : (

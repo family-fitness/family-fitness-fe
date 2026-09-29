@@ -285,7 +285,7 @@ function ClipRow({
         aria-label={`${c.title} 시범 보기`}
         className="press relative shrink-0 overflow-hidden rounded-xl"
       >
-        <VideoThumb videoId={c.videoId} className="aspect-video w-24" />
+        <VideoThumb videoId={c.videoId} src={c.thumbnailUrl} className="aspect-video w-24" />
         {/* 누르면 시범이 돈다는 표시. 검정 면 대신 남색(규칙: 검정으로 면을 채우지 않는다) */}
         <span className="absolute inset-0 grid place-items-center">
           <span className="bg-signal-deep/70 grid size-8 place-items-center rounded-full text-white">
@@ -361,6 +361,8 @@ function Preview({ clip }: { clip: ClipView }) {
         videoId={clip.videoId}
         startSec={clip.startSec}
         endSec={clip.endSec}
+        mediaUrl={clip.mediaUrl}
+        thumbnailUrl={clip.thumbnailUrl}
         playing={playing}
         title={clip.title}
       />

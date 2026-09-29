@@ -31,6 +31,7 @@ import {
   participantOf,
   saveRestDays,
   sessionsOfRow,
+  withMedia,
 } from "./db";
 
 import { clips } from "./clips";
@@ -712,7 +713,9 @@ const missions = [
         ? {
             sessions: body.sessions.map((s) => {
               const { completed: _c, verifiedBy: _v, ...rest } = s as Record<string, unknown>;
-              return rest;
+              // 서버처럼 칸의 영상에 공단 mp4 주소를 채운다 — 보낸 쪽은 아이디 · 구간만 싣는다
+              const clip = rest.clip as { videoId?: string | null } | null | undefined;
+              return clip ? { ...rest, clip: withMedia(clip) } : rest;
             }),
           }
         : {}),

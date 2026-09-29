@@ -561,6 +561,8 @@ function Step({
                 videoId={clip.videoId}
                 startSec={clip.startSec ?? 0}
                 endSec={clip.endSec ?? null}
+                mediaUrl={clip.mediaUrl}
+                thumbnailUrl={clip.thumbnailUrl}
                 playing={status === "running"}
                 title={s.title}
                 onBlocked={onBlocked}
@@ -656,7 +658,11 @@ function Step({
           )}
         >
           {clip?.videoId ? (
-            <VideoThumb videoId={clip.videoId} className="aspect-video w-24 shrink-0 rounded-xl" />
+            <VideoThumb
+              videoId={clip.videoId}
+              src={clip.thumbnailUrl}
+              className="aspect-video w-24 shrink-0 rounded-xl"
+            />
           ) : (
             <span className="bg-sub aspect-video w-24 shrink-0 rounded-xl" />
           )}

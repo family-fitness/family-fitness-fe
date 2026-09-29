@@ -45,8 +45,8 @@ await context.addInitScript(() => {
     window.speechSynthesis.cancel = () => {};
   }
 });
-// 유튜브 스크립트 · 영상은 막는다. 없어도 타이머로 끝까지 가야 한다
-await context.route(/youtube\.com|ytimg\.com/, (route) => route.abort());
+// 유튜브 스크립트 · 영상과 공단 mp4 는 막는다. 없어도 타이머로 끝까지 가야 한다
+await context.route(/youtube\.com|ytimg\.com|openapi\.kspo\.or\.kr/, (route) => route.abort());
 
 const page = await context.newPage();
 const errors = [];

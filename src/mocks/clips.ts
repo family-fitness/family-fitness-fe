@@ -1,7 +1,7 @@
 /**
  * 운동 클립 찾기 — `GET /clips` · `POST /clips/{clipId}/favorite`.
  *
- * ▲ 서버에 아직 없다. AI 쪽 클립 표(491개)를 그대로 거른다.
+ * ▲ 서버에 아직 없다. AI 쪽 클립 표(유튜브 491개)와 공단 mp4 몇 편을 그대로 거른다.
  */
 import { HttpResponse, http, type PathParams } from "msw";
 
@@ -25,6 +25,8 @@ function viewOf(c: CatalogClip, profileId: string | null): ClipView {
     quiet: c.quiet,
     props: c.props,
     favorited: profileId ? Boolean(favorites.get(profileId)?.has(c.id)) : false,
+    mediaUrl: c.mediaUrl ?? null,
+    thumbnailUrl: c.thumbnailUrl ?? null,
   };
 }
 

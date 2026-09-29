@@ -13,6 +13,11 @@ import { useEffect, useRef, useState } from "react";
   자동 재생이 막히는 경우가 있다. 한 칸을 끝내고 다음 칸으로 스스로 넘어갈 때는
   누른 손가락이 없어서, 브라우저(특히 아이폰)가 소리 있는 재생을 막는다. 그러면 소리를
   끄고 다시 틀고, 그래도 안 되면 위에 알린다(`onBlocked`) — 타이머를 멈추고 「눌러서 시작」.
+
+  영상은 두 곳에서 온다. 국민체력100 유튜브 영상의 한 토막(`videoId` + 구간)과, 공단 오픈API
+  「국민체력100 동영상 정보」 의 mp4 한 편(`mediaUrl`)이다. mp4 가 오면 `<video>` 로 튼다 —
+  유튜브 스크립트를 받지 않는다. 켜고 끄기 · 구간 되풀이 · 막히면 소리 끄고 다시 · 그래도 막히면
+  알리기는 둘이 똑같다.
 */
 
 declare global {
@@ -82,14 +87,7 @@ function embedSrc(videoId: string, startSec: number): string {
   return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?${params}`;
 }
 
-export function ClipPlayer({
-  videoId,
-  startSec,
-  endSec,
-  playing,
-  title,
-  onBlocked,
-}: {
+interface PlayerProps {
   videoId: string;
   startSec: number;
   /** 없으면 영상 끝까지가 한 칸이다 */
@@ -99,7 +97,24 @@ export function ClipPlayer({
   title: string;
   /** 소리를 꺼도 재생이 안 됐다 */
   onBlocked?: () => void;
+}
+
+export function ClipPlayer({
+  mediaUrl,
+  thumbnailUrl,
+  ...props
+}: PlayerProps & {
+  /** 공단 mp4 주소. 있으면 유튜브가 아니라 이 파일을 튼다 */
+  mediaUrl?: string | null;
+  /** 공단 영상의 장면 이미지. 유튜브는 비어 있고 유튜브 썸네일을 쓴다 */
+  thumbnailUrl?: string | null;
 }) {
+  if (mediaUrl) return <FilePlayer {...props} src={mediaUrl} poster={thumbnailUrl ?? null} />;
+  return <YoutubePlayer {...props} />;
+}
+
+/** 유튜브 영상의 한 토막 */
+function YoutubePlayer({ videoId, startSec, endSec, playing, title, onBlocked }: PlayerProps) {
   const frame = useRef<HTMLIFrameElement>(null);
   const player = useRef<YtPlayer | null>(null);
   const [ready, setReady] = useState(false);
@@ -221,18 +236,128 @@ export function ClipPlayer({
       )}
 
       {muted && playing && (
-        <button
-          type="button"
+        <UnmuteButton
           onClick={() => {
             player.current?.unMute();
             setMuted(false);
           }}
-          className="press bg-signal-deep/80 absolute top-2 right-2 flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-sm font-bold text-white"
-        >
-          <Volume2 aria-hidden className="size-4" />
-          소리 켜기
-        </button>
+        />
       )}
     </div>
+  );
+}
+
+/**
+ * 공단 mp4 한 편. 한 편에 운동 하나(1~2분)라 보통 처음부터 끝까지가 한 칸이지만,
+ * 구간(`startSec` ~ `endSec`)이 오면 유튜브처럼 그 구간만 되풀이한다.
+ */
+function FilePlayer({
+  src,
+  poster,
+  startSec,
+  endSec,
+  playing,
+  title,
+  onBlocked,
+}: Omit<PlayerProps, "videoId"> & { src: string; poster: string | null }) {
+  const video = useRef<HTMLVideoElement>(null);
+  // 못 튼 파일을 기억한다 — 같은 자리에 다른 영상이 오면(시범 보기에서 다른 동작을 누르면) 다시 틀어 본다
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const [muted, setMuted] = useState(false);
+  const failed = failedSrc === src;
+
+  const blocked = useRef(onBlocked);
+  useEffect(() => {
+    blocked.current = onBlocked;
+  }, [onBlocked]);
+  const running = useRef(playing);
+  useEffect(() => {
+    running.current = playing;
+  }, [playing]);
+
+  // 켜고 끄기. 막히면(NotAllowedError) 소리를 끄고 한 번 더, 그래도 막히면 위에 알린다.
+  // 받는 중에는 play() 가 기다릴 뿐 실패하지 않는다 — 느린 망을 막힌 것으로 읽지 않는다
+  useEffect(() => {
+    const v = video.current;
+    if (!v || failed) return;
+    if (!playing) {
+      v.pause();
+      return;
+    }
+    let cancelled = false;
+    const notAllowed = (e: unknown) => e instanceof DOMException && e.name === "NotAllowedError";
+    v.play().catch((e: unknown) => {
+      // 멈추기 · 파일 오류로 끊긴 것은 막힌 게 아니다. 파일 오류는 onError 가 받는다
+      if (cancelled || !notAllowed(e)) return;
+      v.muted = true;
+      setMuted(true);
+      v.play().catch((again: unknown) => {
+        if (!cancelled && notAllowed(again)) blocked.current?.();
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [playing, failed, src]);
+
+  // 클립의 처음으로. 구간이 없는 한 편이면 0초다
+  const rewind = () => {
+    const v = video.current;
+    if (v) v.currentTime = startSec;
+  };
+
+  if (failed) {
+    return <p className="text-caption text-ink-soft py-2 text-center">영상을 못 불러왔어요</p>;
+  }
+
+  return (
+    <div className="bg-signal-deep relative overflow-hidden rounded-2xl">
+      <video
+        ref={video}
+        src={src}
+        poster={poster ?? undefined}
+        title={`${title} 시범 영상`}
+        controls
+        playsInline
+        preload="metadata"
+        controlsList="nodownload"
+        className="aspect-video w-full"
+        onLoadedMetadata={() => {
+          if (startSec > 0) rewind();
+        }}
+        // 클립 끝에 닿으면 처음으로. 잡힌 시간이 클립보다 길다
+        onTimeUpdate={(e) => {
+          if (endSec != null && e.currentTarget.currentTime >= endSec - 0.3) rewind();
+        }}
+        // 파일 끝까지 가 버렸으면 처음으로 — 타이머가 도는 동안은 다시 튼다
+        onEnded={(e) => {
+          rewind();
+          if (running.current) e.currentTarget.play().catch(() => {});
+        }}
+        onError={() => setFailedSrc(src)}
+      />
+
+      {muted && playing && (
+        <UnmuteButton
+          onClick={() => {
+            if (video.current) video.current.muted = false;
+            setMuted(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function UnmuteButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="press bg-signal-deep/80 absolute top-2 right-2 flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-sm font-bold text-white"
+    >
+      <Volume2 aria-hidden className="size-4" />
+      소리 켜기
+    </button>
   );
 }

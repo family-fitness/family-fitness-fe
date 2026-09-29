@@ -87,6 +87,8 @@ function wholeAsMain(source: {
     startSec?: number | null;
     title?: string | null;
     url?: string | null;
+    mediaUrl?: string | null;
+    thumbnailUrl?: string | null;
   } | null;
 }): MissionSession {
   return {
@@ -101,6 +103,8 @@ function wholeAsMain(source: {
           endSec: null,
           title: source.video.title,
           url: source.video.url,
+          mediaUrl: source.video.mediaUrl,
+          thumbnailUrl: source.video.thumbnailUrl,
         }
       : null,
   };

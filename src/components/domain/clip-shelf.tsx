@@ -48,7 +48,11 @@ export function ClipShelf({ factor }: { factor: Factor | null }) {
                     aria-label={`${c.title} 시범 보기`}
                   >
                     <span className="relative block overflow-hidden rounded-2xl">
-                      <VideoThumb videoId={c.videoId} className="aspect-video w-full" />
+                      <VideoThumb
+                        videoId={c.videoId}
+                        src={c.thumbnailUrl}
+                        className="aspect-video w-full"
+                      />
                     </span>
                     <span className="mt-1.5 line-clamp-2 block text-sm leading-snug font-bold">
                       {c.title}

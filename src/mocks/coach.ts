@@ -128,14 +128,22 @@ function proposalFor(p: PlanParams, focus: string, runId: string) {
         chunkId: `prescription:${ageGroup}-${focus}`,
         url: null,
       },
-      {
-        index: 2,
-        label: `국민체력100 운동영상 · ${first?.title ?? "기초체력"}`,
-        chunkId: `video:${first?.clip.videoId ?? ""}`,
-        url: first
-          ? `https://www.youtube.com/watch?v=${first.clip.videoId}&t=${first.clip.startSec}s`
-          : null,
-      },
+      // 공단 영상은 코퍼스 색인에 없어 AI 가 `kspo:<영상 아이디>` 로 인용한다(인터페이스 명세)
+      first?.clip.mediaUrl
+        ? {
+            index: 2,
+            label: `국민체력100 동영상 정보 · ${first.title}`,
+            chunkId: `kspo:${first.clip.videoId}`,
+            url: first.clip.mediaUrl,
+          }
+        : {
+            index: 2,
+            label: `국민체력100 운동영상 · ${first?.title ?? "기초체력"}`,
+            chunkId: `video:${first?.clip.videoId ?? ""}`,
+            url: first
+              ? `https://www.youtube.com/watch?v=${first.clip.videoId}&t=${first.clip.startSec}s`
+              : null,
+          },
     ],
     sessions,
   };

@@ -49,8 +49,88 @@ interface Fixtures {
 
 export const fixtures = fixturesJson as unknown as Concrete<Fixtures>;
 
+/** 공단 영상 주소. 영상은 `web/video/<파일>`, 장면 이미지는 `web/image/<아이디>/<그림>` 이다 */
+const KSPO = "https://openapi.kspo.or.kr/web";
+
+/**
+ * 공단 오픈API 「국민체력100 동영상 정보」 영상 몇 편 — 한 편에 운동 하나라 자르지 않고 한 편이 클립 하나다.
+ * 아이디 · 길이 · 장면 이미지는 API 응답 그대로다. 체력요인 · 단계 · 집에서 · 조용함은 목에서 붙였다
+ * (진짜 라벨은 AI `kspo_videos.csv` 가 낸다).
+ *
+ * 목록 앞에 둔다 — 오늘 미션(유연성)의 준비 첫 칸 · 본 첫 칸 · 정리 첫 칸이 이 영상이 되어, 목 모드에서
+ * 아이 운동 화면을 열면 바로 mp4 로 도는 것을 볼 수 있다.
+ */
+const kspoClip = (
+  videoId: string,
+  frame: string,
+  c: Omit<CatalogClip, "id" | "videoId" | "startSec" | "mediaUrl" | "thumbnailUrl">,
+): CatalogClip => ({
+  id: `${videoId}-0`,
+  videoId,
+  startSec: 0,
+  ...c,
+  mediaUrl: `${KSPO}/video/${videoId}.mp4`,
+  thumbnailUrl: `${KSPO}/image/${videoId}/${videoId}_${frame}.jpeg`,
+});
+const kspoCatalog: CatalogClip[] = [
+  kspoClip("0AUDLJ08S_00583", "SC_00003", {
+    endSec: 65,
+    title: "가슴/어깨 앞쪽 스트레칭",
+    factor: "유연성",
+    phase: "WARMUP",
+    homeOk: true,
+    quiet: true,
+    props: false,
+  }),
+  kspoClip("0AUDLJ08S_00589", "SC_00004", {
+    endSec: 77,
+    title: "넙다리 뒤쪽 스트레칭",
+    factor: "유연성",
+    phase: "MAIN",
+    homeOk: true,
+    quiet: true,
+    props: false,
+  }),
+  kspoClip("0AUDLJ08S_00590", "SC_00003", {
+    endSec: 81,
+    title: "넙다리 앞쪽 스트레칭",
+    factor: "유연성",
+    phase: "COOLDOWN",
+    homeOk: true,
+    quiet: true,
+    props: false,
+  }),
+  kspoClip("0AUDLJ08S_00544", "SC_00001", {
+    endSec: 65,
+    title: "누워서 엉덩이 들어올리기",
+    factor: "근력",
+    phase: "MAIN",
+    homeOk: true,
+    quiet: true,
+    props: false,
+  }),
+  kspoClip("0AUDLJ08S_00455", "FR_00002", {
+    endSec: 78,
+    title: "벽 패스",
+    factor: "민첩성",
+    phase: "MAIN",
+    homeOk: true,
+    quiet: false,
+    props: true,
+  }),
+];
+
 /** 클립 목록. `db` 를 채우기 전에 있어야 한다 — 오늘 미션을 이걸로 짠다 */
-export const catalog = clipsJson as CatalogClip[];
+export const catalog: CatalogClip[] = [...kspoCatalog, ...(clipsJson as CatalogClip[])];
+
+/**
+ * 칸의 영상에 공단 mp4 주소 · 장면 이미지를 채운다 — 서버가 영상 표에서 채우는 것과 같다.
+ * 등록 요청에는 영상 아이디 · 구간만 실어 보내므로, 목도 받은 칸을 이것으로 다시 채운다
+ */
+export function withMedia<T extends { videoId?: string | null }>(clip: T): T {
+  const hit = catalog.find((c) => c.mediaUrl && c.videoId === clip.videoId);
+  return hit ? { ...clip, mediaUrl: hit.mediaUrl, thumbnailUrl: hit.thumbnailUrl } : clip;
+}
 
 /**
  * 국민체력100 1등급 줄이 보는 종목 — AI `grade_thresholds.csv` 에서 연령대마다 한 나이를 옮겼다.
@@ -586,9 +666,10 @@ function seedCheers(): CheerLog[] {
 /**
  * 운동 클립 목록 — 영상 속 한 동작.
  *
- * AI 쪽이 국민체력100 유튜브 영상 48편을 화면 글자로 읽어 끊어 낸 491개다
+ * 대부분은 AI 쪽이 국민체력100 유튜브 영상 48편을 화면 글자로 읽어 끊어 낸 491개다
  * (`family-fitness-ai` develop, `data/release/video_clips.csv` + `clip_labels.csv`).
  * 유튜브 아이디 · 시작 · 끝이 진짜라 시연에서 영상이 그대로 돈다.
+ * 앞의 몇 개는 공단 오픈API mp4 다(`kspoCatalog`) — `mediaUrl` 이 있다.
  */
 export interface CatalogClip {
   id: string;
@@ -601,17 +682,27 @@ export interface CatalogClip {
   homeOk: boolean;
   quiet: boolean;
   props: boolean;
+  /** 공단 영상이면 mp4 주소. 유튜브 클립에는 없다 */
+  mediaUrl?: string;
+  /** 공단 영상의 장면 이미지 */
+  thumbnailUrl?: string;
 }
 
-/** 영상 속 한 토막. ▲ `endSec` 는 계약에 없다 — 목에서는 준다 */
-function clip(c: Pick<CatalogClip, "videoId" | "startSec" | "endSec" | "title">) {
+/**
+ * 영상 속 한 토막. ▲ `endSec` 는 계약에 없다 — 목에서는 준다.
+ * 공단 영상이면 주소도 mp4 이고 `mediaUrl` · `thumbnailUrl` 이 선다. 유튜브면 둘 다 비어 있다(서버와 같게)
+ */
+function clip(
+  c: Pick<CatalogClip, "videoId" | "startSec" | "endSec" | "title" | "mediaUrl" | "thumbnailUrl">,
+) {
   return {
     videoId: c.videoId,
     startSec: c.startSec,
     endSec: c.endSec,
     title: c.title,
-    url: `https://www.youtube.com/watch?v=${c.videoId}`,
-    thumbnailUrl: `https://i.ytimg.com/vi/${c.videoId}/mqdefault.jpg`,
+    url: c.mediaUrl ?? `https://www.youtube.com/watch?v=${c.videoId}`,
+    mediaUrl: c.mediaUrl ?? null,
+    thumbnailUrl: c.thumbnailUrl ?? null,
   };
 }
 
