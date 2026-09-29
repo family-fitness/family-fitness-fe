@@ -189,15 +189,25 @@ function League() {
           <CardHead title="이번 달 순위" meta={`${league.groupSize}가족`} />
           <ol className="mt-1">
             {league.standings.map((s, i) => {
-              const place = i + 1;
-              const zoneAt = (n: number) =>
-                (league.standings[n - 1]?.rate ?? null) == null
+              /*
+                몇 등인지는 서버의 rank 와 같은 셈이다 — 나보다 높은 집 수 + 1. 동률이면 같은 등수다.
+                전에는 줄 차례(i + 1)를 그대로 적어 달성률이 같은 두 집이 1 · 2등으로 갈렸다
+              */
+              const placeAt = (n: number) => {
+                const rate = league.standings[n]?.rate ?? null;
+                return rate == null
                   ? null
-                  : zoneOf(n, ranked, league.promote, league.demote);
-              const z = zoneAt(place);
-              const zonePrev = i === 0 ? null : zoneAt(place - 1);
+                  : league.standings.filter((x) => x.rate != null && x.rate > rate).length + 1;
+              };
+              const place = placeAt(i);
+              const zoneAt = (n: number) => {
+                const p = placeAt(n);
+                return p == null ? null : zoneOf(p, ranked, league.promote, league.demote);
+              };
+              const z = zoneAt(i);
+              const zonePrev = i === 0 ? null : zoneAt(i - 1);
               return (
-                <Fragment key={`${s.familyName}-${place}`}>
+                <Fragment key={`${s.familyName}-${i}`}>
                   {z !== zonePrev && (z === "up" || z === "down") && (
                     <li className="text-micro text-ink-soft border-line mt-2 border-t pt-2 font-extrabold">
                       {z === "up" ? "다음 달 올라가는 자리" : "다음 달 내려가는 자리"}
@@ -214,7 +224,7 @@ function League() {
                     aria-current={s.me ? "true" : undefined}
                   >
                     <span className="text-ink-soft w-5 shrink-0 text-right text-sm font-extrabold tabular-nums">
-                      {s.rate != null ? place : ""}
+                      {place ?? ""}
                     </span>
                     <span
                       className={cn(
@@ -237,7 +247,8 @@ function League() {
                     </span>
                     <span
                       className={cn(
-                        "w-10 shrink-0 text-right text-sm font-extrabold tabular-nums",
+                        // 「100%」 가 두 줄로 쪼개지지 않게 — 네 글자가 들어가는 폭에 줄바꿈 없이
+                        "w-12 shrink-0 text-right text-sm font-extrabold whitespace-nowrap tabular-nums",
                         s.me ? "text-signal-deep" : "text-ink-soft",
                       )}
                     >
