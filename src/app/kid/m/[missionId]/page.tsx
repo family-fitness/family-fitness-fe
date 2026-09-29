@@ -785,7 +785,12 @@ function Finish({
     알렸는지 받는 동안은 알리기를 내지 않는다(누르는 틈에 두 번 갔다). 못 받으면 알리기를 둔다 — 막히지 않게.
     부모가 벌써 스티커를 붙였으면 「기다리는 중」 이 아니다(규칙 12)
   */
-  const { data: sent, isLoading: checking } = useCheers(fresh ? undefined : familyId);
+  // 이 운동에 오간 것만 받는다(missionId) — 가족 전체 최근 20건에서 찾으면 응원이 쌓인 뒤 「알리기」 가 다시 떴다
+  const { data: sent, isLoading: checking } = useCheers(
+    fresh ? undefined : familyId,
+    undefined,
+    missionId,
+  );
   const aboutThis = (sent?.cheers ?? []).filter((c) => c.missionId === missionId);
   const toldBefore = !fresh && aboutThis.some((c) => c.fromProfileId === kidId);
   const answered = !fresh && aboutThis.some((c) => c.toProfileId === kidId && c.stickerId);

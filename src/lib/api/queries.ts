@@ -50,8 +50,8 @@ const qk = {
     fitnessMap: (familyId: Uuid) => ["family", familyId, "fitness-map"] as const,
     missions: (familyId: Uuid, scope?: string, status?: string) =>
       ["family", familyId, "missions", scope ?? "ALL", status ?? "ALL"] as const,
-    cheers: (familyId: Uuid, toProfileId?: Uuid) =>
-      ["family", familyId, "cheers", toProfileId ?? "all"] as const,
+    cheers: (familyId: Uuid, toProfileId?: Uuid, missionId?: Uuid) =>
+      ["family", familyId, "cheers", toProfileId ?? "all", missionId ?? "all"] as const,
     /** 앞 세 칸으로 무효화한다 — 한 일이 생기면 그 가족의 달력은 다 다시 받는다 */
     calendar: (familyId: Uuid, profileId?: Uuid, from?: string, to?: string) =>
       ["family", familyId, "calendar", profileId ?? "-", from ?? "-", to ?? "-"] as const,
@@ -571,13 +571,15 @@ export function useSendCheer(familyId: Uuid) {
 
 /**
  * 받은 칭찬.
- * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
+ *
+ * 서버는 최근 20건만 준다. 「이 운동에 벌써 알렸나 · 칭찬했나」 를 보려면 `missionId` 로 좁혀 받는다 —
+ * 가족 전체 20건 안에서 찾으면 응원이 쌓인 뒤에는 그 운동의 것이 목록 밖으로 밀려 없는 것처럼 보였다.
  */
-export function useCheers(familyId: Uuid | undefined, toProfileId?: Uuid) {
+export function useCheers(familyId: Uuid | undefined, toProfileId?: Uuid, missionId?: Uuid) {
   return useQuery({
-    queryKey: qk.family.cheers(familyId ?? "", toProfileId),
+    queryKey: qk.family.cheers(familyId ?? "", toProfileId, missionId),
     queryFn: () =>
-      api.get<CheerLogList>(path`/families/${familyId}/cheers${query({ toProfileId })}`),
+      api.get<CheerLogList>(path`/families/${familyId}/cheers${query({ toProfileId, missionId })}`),
     enabled: Boolean(familyId),
   });
 }

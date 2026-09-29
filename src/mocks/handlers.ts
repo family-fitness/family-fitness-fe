@@ -434,9 +434,12 @@ const identity = [
    * 칭찬을 보내는 길은 있는데 받은 걸 보는 길이 없어서 기능이 성립하지 않는다.
    */
   http.get(`${BASE}/families/:familyId/cheers`, ({ request }) => {
-    const to = new URL(request.url).searchParams.get("toProfileId");
-    const cheers = (to ? db.cheers.filter((c) => c.toProfileId === to) : db.cheers)
-      .slice()
+    const params = new URL(request.url).searchParams;
+    const to = params.get("toProfileId");
+    // 서버와 같게 — missionId 로 좁혀 읽는다(「벌써 알렸나」)
+    const mission = params.get("missionId");
+    const cheers = db.cheers
+      .filter((c) => (!to || c.toProfileId === to) && (!mission || c.missionId === mission))
       .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
     return HttpResponse.json({ cheers });
   }),
