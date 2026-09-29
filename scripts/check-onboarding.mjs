@@ -147,12 +147,22 @@ await walk("새 가족 만들기", async (h) => {
     if (!text.includes("민서네")) problems.push("새 가족 만들기\n    부모 홈에 가족 이름이 없다");
     if (text.includes("서준")) problems.push("새 가족 만들기\n    남의 집 사람이 보인다");
   });
+  await h.step("처음 한 번 환영 안내 — 닫으면 이 기기에서 다시 안 뜬다", async () => {
+    const welcome = page.getByRole("dialog", { name: "환영합니다" });
+    await welcome.waitFor({ timeout: 8000 });
+    // 위 X 도 「닫기」 다 — 아래 큰 단추를 누른다
+    await welcome.getByRole("button", { name: "닫기", exact: true }).last().click();
+    await h.settle(900);
+  });
   await h.step("새로고침해도 남는다", async () => {
     await page.reload({ waitUntil: "load" });
     await h.settle(2200);
     const text = await page.locator("body").innerText();
     if (!text.includes("민서네")) {
       problems.push("새 가족 만들기\n    새로고침하면 가족이 사라진다");
+    }
+    if (await page.getByRole("dialog", { name: "환영합니다" }).count()) {
+      problems.push("새 가족 만들기\n    닫은 환영 안내가 새로고침하면 또 뜬다");
     }
   });
 });

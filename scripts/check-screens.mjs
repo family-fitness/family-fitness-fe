@@ -103,6 +103,8 @@ const PARENT_ONLY = [`/p/${KID}/result`, `/p/${KID}/measure`, "/parent"];
 
 const browser = await chromium.launch({ channel: "chrome" });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+// 처음 한 번 뜨는 환영 안내는 본 것으로 — 화면을 덮으면 누를 것을 못 누른다
+await context.addInitScript(() => localStorage.setItem("ff-welcome", "parent,kid"));
 
 /** 로그인한 채로, 정해진 역할로 본다 */
 function seed(mode) {
@@ -263,6 +265,8 @@ for (const route of ROUTES) {
 /* ─── 아이 모드로 한 번 더 ─────────────────────────────────── */
 
 const kidContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+// 처음 한 번 뜨는 환영 안내는 본 것으로 — 화면을 덮으면 누를 것을 못 누른다
+await kidContext.addInitScript(() => localStorage.setItem("ff-welcome", "parent,kid"));
 await kidContext.addInitScript(...seed("kid"));
 
 for (const route of KID_ROUTES) {
@@ -301,6 +305,8 @@ for (const route of PARENT_ONLY) {
  * 여기서는 **가로 스크롤만** 본다. 누르는 크기와 제목 수는 폭과 무관하다.
  */
 const narrow = await browser.newContext({ viewport: { width: 320, height: 720 } });
+// 처음 한 번 뜨는 환영 안내는 본 것으로 — 화면을 덮으면 누를 것을 못 누른다
+await narrow.addInitScript(() => localStorage.setItem("ff-welcome", "parent,kid"));
 await narrow.addInitScript(...seed("parent"));
 
 for (const route of ROUTES) {
