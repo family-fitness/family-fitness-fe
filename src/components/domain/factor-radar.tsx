@@ -69,6 +69,9 @@ export function FactorRadar({
     .map((p, i) => ({ ...p, i }))
     .filter((p): p is FactorPointView & { i: number; percentile: number } => p.percentile != null);
 
+  /** 또래와 견준 값이 하나라도 있나. 없으면 파랑 선도 또래 평균 점선도 없다 */
+  const compared = measured.length > 0;
+
   const vertex = (p: { i: number; percentile: number }) => at(p.i, p.percentile);
 
   /* 잰 꼭지점을 한 바퀴 돌며 잇는다. 바로 옆이면 실선, 사이에 안 잰 것이 있으면 점선 */
@@ -125,15 +128,18 @@ export function FactorRadar({
             );
           })}
 
-          {/* 또래 평균 — 점선. 눈금이 아니라 견줄 기준이다. 범례에 이름이 있다 */}
-          <polygon
-            points={ring(50)}
-            fill="none"
-            stroke="var(--color-baseline)"
-            strokeWidth={1.5}
-            strokeDasharray="5 4"
-            strokeLinejoin="round"
-          />
+          {/* 또래 평균 — 점선. 눈금이 아니라 견줄 기준이다. 범례에 이름이 있다.
+              견줄 값이 하나도 없으면(만 7~10세처럼 또래 기준이 없는 나이) 긋지 않는다 */}
+          {compared && (
+            <polygon
+              points={ring(50)}
+              fill="none"
+              stroke="var(--color-baseline)"
+              strokeWidth={1.5}
+              strokeDasharray="5 4"
+              strokeLinejoin="round"
+            />
+          )}
 
           {/* 아이 — 가운데에서 차오른다 */}
           <g className="radar-grow" style={{ transformOrigin: `${CX}px ${CY}px` }}>
@@ -217,7 +223,8 @@ export function FactorRadar({
         })}
       </div>
 
-      {legend && (
+      {/* 범례는 그린 선이 있을 때만 — 선이 없는데 「또래 백분위」 · 「또래 평균」 을 달면 찾게 된다 */}
+      {legend && compared && (
         <ul className="text-caption text-ink-soft mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-semibold">
           <li className="flex items-center gap-1.5">
             <span aria-hidden className="bg-signal relative h-0.5 w-4 rounded-full">

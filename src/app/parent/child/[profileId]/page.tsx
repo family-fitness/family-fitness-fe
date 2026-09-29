@@ -165,7 +165,13 @@ export default function ChildDetailPage() {
         <RecentDays familyId={familyId ?? undefined} profileId={profileId} />
 
         <Card>
-          <CardHead title="요인별" meta="또래 평균 50" />
+          {/* 견준 값이 하나도 없으면(만 7~10세) 또래 평균 눈금도 없다 */}
+          <CardHead
+            title="요인별"
+            meta={
+              (latest?.radar ?? []).some((p) => p.percentile != null) ? "또래 평균 50" : undefined
+            }
+          />
           <FactorTable radar={latest?.radar} results={latest?.items} catalog={catalog?.items} />
         </Card>
 

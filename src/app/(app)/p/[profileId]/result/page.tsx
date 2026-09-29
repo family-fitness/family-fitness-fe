@@ -154,7 +154,11 @@ export default function ResultPage() {
 
         <section className="card">
           {/* 막대 가운데 눈금이 무엇인지 글로 — 요인 표와 같은 말. 몇 항목인지는 머리에 있다 */}
-          <CardHead title="항목별" meta="또래 평균 50" />
+          {/* 막대(또래 백분위)가 하나도 없으면 가운데 눈금도 없다 — 만 7~10세는 또래 기준이 없다 */}
+          <CardHead
+            title="항목별"
+            meta={items.some((e) => e.percentile != null) ? "또래 평균 50" : undefined}
+          />
           <div className="divide-rows">
             {items.map((entry, index) => (
               <div key={entry.itemCode} className="py-3.5">
