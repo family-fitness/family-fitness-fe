@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { KiumIsland } from "@/components/scene/kium-island";
 import type { AuthResponse } from "@/lib/api/types";
 import { errorMessage } from "@/lib/errors";
-import { useDevLogin, useGoogleLogin } from "@/lib/api/queries";
+import { useDevLogin, useGoogleLogin, useReviewLogin } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
 
 /**
@@ -47,7 +47,10 @@ const DEV_LOGIN =
  */
 const GOOGLE_STAND_IN = "demo-fresh";
 
-/** 대신 들어갈 때도 들어가는 화면을 한 번은 보인다 — 너무 빨라 깜빡이면 무엇이 됐는지 모른다 */
+/**
+ * 대신 들어갈 때도, 심사용 계정으로 들어갈 때도 들어가는 화면을 한 번은 보인다 — 너무 빨라 깜빡이면
+ * 무엇이 됐는지 모른다
+ */
 const STAND_IN_MIN_MS = 900;
 
 /**
@@ -90,9 +93,15 @@ function LoginContent() {
   const signIn = useAuthStore((s) => s.signIn);
   const devLogin = useDevLogin();
   const googleLogin = useGoogleLogin();
+  const reviewLogin = useReviewLogin();
   const [error, setError] = useState<string | null>(null);
-  /** 들어가는 중인 길 — 구글로 떠나는 중 · 구글에서 받은 코드를 바꾸는 중 · 구글 대신 새 계정으로 */
-  const [signing, setSigning] = useState<"google" | "exchange" | "stand-in" | null>(null);
+  /**
+   * 들어가는 중인 길 — 구글로 떠나는 중 · 구글에서 받은 코드를 바꾸는 중 · 구글 대신 새 계정으로 ·
+   * 심사용 계정으로
+   */
+  const [signing, setSigning] = useState<"google" | "exchange" | "stand-in" | "review" | null>(
+    null,
+  );
 
   const code = params.get("code");
   const state = params.get("state");
@@ -180,8 +189,31 @@ function LoginContent() {
     }
   };
 
+  /**
+   * 심사위원이 구글 계정 없이 둘러보는 길. 운영 서버에서도 열려 있다 — 서버가 부를 때마다 새 계정과
+   * 체험 가족을 만들어 주고, 가족이 이미 있어서 바로 홈으로 간다. 초대코드는 들고 가지 않는다.
+   */
+  const review = async () => {
+    setError(null);
+    setSigning("review");
+    try {
+      const [auth] = await Promise.all([
+        reviewLogin.mutateAsync(),
+        new Promise((done) => setTimeout(done, STAND_IN_MIN_MS)),
+      ]);
+      signIn(auth);
+      router.replace("/");
+    } catch (e) {
+      setSigning(null);
+      setError(errorMessage(e, "심사용 계정으로 들어가지 못했어요."));
+    }
+  };
+
   // 구글로 떠나는 중 · 돌아와 코드를 바꾸는 중에는 단추 대신 들어가는 화면. 두 번 누르거나 멈춘 줄 알고 닫지 않게
-  if (signing) return <SigningIn step={signing === "exchange" ? "confirm" : "enter"} />;
+  if (signing) {
+    const step = signing === "exchange" ? "confirm" : signing === "review" ? "review" : "enter";
+    return <SigningIn step={step} />;
+  }
 
   return (
     <PlainScreen className="flex min-h-dvh flex-col justify-center gap-8">
@@ -211,6 +243,17 @@ function LoginContent() {
           </p>
         )}
 
+        {/* 심사위원이 구글 계정 없이 채워진 가족으로 둘러보는 길 — 운영 빌드에도 늘 있다 */}
+        <div className="text-center">
+          <button
+            type="button"
+            onClick={review}
+            className="text-ink-soft text-body min-h-11 px-3 font-semibold underline underline-offset-4"
+          >
+            심사용 계정으로 둘러보기
+          </button>
+        </div>
+
         {DEV_LOGIN && (
           <div className="card space-y-2">
             <p className="text-ink-soft text-caption font-bold">개발용 · 구글 없이 들어가기</p>
@@ -239,15 +282,19 @@ function LoginContent() {
   );
 }
 
-/** 들어가는 화면 — 구글로 떠나기 직전과 돌아와 계정을 확인하는 동안 */
-function SigningIn({ step }: { step: "enter" | "confirm" }) {
+const SIGNING_TITLE = {
+  enter: "구글 계정으로 들어가는 중",
+  confirm: "구글 계정을 확인하는 중",
+  review: "심사용 계정으로 들어가는 중",
+} as const;
+
+/** 들어가는 화면 — 구글로 떠나기 직전 · 돌아와 계정을 확인하는 동안 · 심사용 계정을 받는 동안 */
+function SigningIn({ step }: { step: keyof typeof SIGNING_TITLE }) {
   return (
     <PlainScreen className="flex min-h-dvh flex-col items-center justify-center gap-5 text-center">
       <LevelBuddy stage={3} size={140} cheer />
       <div className="space-y-1" role="status" aria-live="polite">
-        <p className="page-title">
-          {step === "enter" ? "구글 계정으로 들어가는 중" : "구글 계정을 확인하는 중"}
-        </p>
+        <p className="page-title">{SIGNING_TITLE[step]}</p>
         <p className="text-ink-soft text-body">잠깐이면 돼요</p>
       </div>
       <Loader2 className="text-signal-strong size-7 animate-spin" aria-hidden />

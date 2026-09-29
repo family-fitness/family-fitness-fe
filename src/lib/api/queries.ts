@@ -137,6 +137,21 @@ export function useGoogleLogin() {
   });
 }
 
+/**
+ * 심사용 계정으로 들어간다. 토큰도 몸체도 없이 부른다.
+ *
+ * 서버가 부를 때마다 새 계정과 「체험 가족」(보호자 둘 · 아이 둘, 측정 기록까지)을 만든다 —
+ * 심사위원끼리 서로의 기록을 건드리지 않게. 가족이 이미 있어서 바로 홈으로 간다.
+ * 같은 곳에서 너무 자주 부르면 서버가 429 로 막는다.
+ */
+export function useReviewLogin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post<AuthResponse>("/auth/review-login"),
+    onSuccess: (auth) => seedAccount(qc, auth),
+  });
+}
+
 /* ─── 가족 · 프로필 ────────────────────────────────────────── */
 
 /*

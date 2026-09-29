@@ -81,6 +81,16 @@ check(
   "로그인 자체는 토큰 없이 된다",
   (await fetch(`${BASE}/auth/dev-login`, { method: "POST" })).ok,
 );
+{
+  // 심사용 계정은 가족이 있는 채로 들어와 바로 홈으로 간다
+  const res = await fetch(`${BASE}/auth/review-login`, { method: "POST" });
+  const auth = (await res.json().catch(() => ({}))) as { accessToken?: string; nextStep?: string };
+  check(
+    "심사용 계정은 토큰 없이 들어와 홈으로 간다",
+    res.ok && !!auth.accessToken && auth.nextStep === "HOME",
+    `${res.status} ${auth.nextStep}`,
+  );
+}
 
 /* ─── 0-1. 두 화면이 같은 말을 한다 ─────────────────────────── */
 
