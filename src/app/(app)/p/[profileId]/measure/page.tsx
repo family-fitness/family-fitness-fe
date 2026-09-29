@@ -15,7 +15,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MeasureField } from "@/components/domain/measure-field";
 import { errorMessage } from "@/lib/errors";
-import type { FitnessItem, FitnessTestSource } from "@/lib/api/types";
+import type { AgeGroup, FitnessItem, FitnessTestSource } from "@/lib/api/types";
 import { useCreateFitnessTest, useFamilyProfiles, useFitnessItems } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { REMEASURE_DAYS } from "@/lib/remeasure";
@@ -27,6 +27,18 @@ import { ArtIcon } from "@/components/ui/art-icon";
 
 /** RHF 필드 이름. 항목 코드가 "012" 라 그대로 쓰면 경로 파서가 숫자로 본다 */
 const field = (itemCode: string) => `item_${itemCode}`;
+
+/** 몸 칸의 자리 글자 — 그 연령대에 흔한 값쯤. 전에는 어른에게도 아이 키 · 몸무게(138 / 34)가 떴다 */
+const BODY_EXAMPLE: Record<
+  AgeGroup,
+  { heightCm: number; weightKg: number; bodyFatPct: number; waistCm: number }
+> = {
+  유아기: { heightCm: 110, weightKg: 19, bodyFatPct: 18, waistCm: 52 },
+  유소년: { heightCm: 145, weightKg: 38, bodyFatPct: 20, waistCm: 62 },
+  청소년: { heightCm: 165, weightKg: 55, bodyFatPct: 20, waistCm: 70 },
+  성인: { heightCm: 168, weightKg: 65, bodyFatPct: 25, waistCm: 80 },
+  어르신: { heightCm: 160, weightKg: 60, bodyFatPct: 28, waistCm: 85 },
+};
 
 export default function MeasurePage() {
   const router = useRouter();
@@ -79,9 +91,14 @@ export default function MeasurePage() {
   const forgetBody = useBodyStore((st) => st.clear);
   const [heightCm, setHeightCm] = useState(() => String(recentBody?.heightCm ?? ""));
   const [weightKg, setWeightKg] = useState(() => String(recentBody?.weightKg ?? ""));
+  // 체지방률 · 허리둘레는 선택이다. 적으면 국민체력100 3등급 판정에 쓰인다(허리둘레 ÷ 키 · 체지방률)
+  const [bodyFatPct, setBodyFatPct] = useState("");
+  const [waistCm, setWaistCm] = useState("");
   // 범위를 벗어난 값은 서버가 422 로 돌려보낸다. 다 적고 나서 알면 늦다
   const heightProblem = bodyError("heightCm", heightCm);
   const weightProblem = bodyError("weightKg", weightKg);
+  const bodyFatProblem = bodyError("bodyFatPct", bodyFatPct);
+  const waistProblem = bodyError("waistCm", waistCm);
 
   const {
     register,
@@ -191,12 +208,20 @@ export default function MeasurePage() {
     );
   }
 
+  const example = BODY_EXAMPLE[profile.ageGroup ?? "성인"];
+
   const onSubmit = handleSubmit(async (form) => {
     setServerError(null);
 
-    // 키 · 몸무게가 범위를 벗어났으면 보내지 않는다 — 빼고 보내면 적은 줄 알았던 키가 사라진다
-    if (heightProblem || weightProblem) {
-      setServerError("키 · 몸무게를 다시 봐 주세요.");
+    // 몸 칸이 범위를 벗어났으면 보내지 않는다 — 빼고 보내면 적은 줄 알았던 키가 사라진다
+    const wrongBody = [
+      heightProblem && "키",
+      weightProblem && "몸무게",
+      bodyFatProblem && "체지방률",
+      waistProblem && "허리둘레",
+    ].filter(Boolean);
+    if (wrongBody.length > 0) {
+      setServerError(`${withJosa(wrongBody.join(" · "), "을를")} 다시 봐 주세요.`);
       return;
     }
     // 접어 둔 장비 항목은 화면에서 빠져 검사를 건너뛴다. 접기 전에 적은 값도 여기서 다시 본다
@@ -225,12 +250,16 @@ export default function MeasurePage() {
     try {
       const height = bodyValue("heightCm", heightCm);
       const weight = bodyValue("weightKg", weightKg);
+      const bodyFat = bodyValue("bodyFatPct", bodyFatPct);
+      const waist = bodyValue("waistCm", waistCm);
       await create.mutateAsync({
         testedOn,
         source,
         items,
         ...(height != null ? { heightCm: height } : {}),
         ...(weight != null ? { weightKg: weight } : {}),
+        ...(bodyFat != null ? { bodyFatPct: bodyFat } : {}),
+        ...(waist != null ? { waistCm: waist } : {}),
       });
       // 서버는 받아 두고도 돌려주지 않는다. 방금 적은 값이 사라지지 않게 남긴다.
       // 지난 날짜로 적은 회차는 「지금 몸」 을 바꾸지 않는다 — 더 최근에 적어 둔 값을 옛 값으로 덮거나 지웠다
@@ -299,12 +328,12 @@ export default function MeasurePage() {
 
           {/* 몸이 자란 만큼 기준도 달라진다. 잴 때마다 다시 묻는다 */}
           <section className="card">
-            <CardHead title="지금 키와 몸무게" />
-            <div className="flex gap-3 pt-2">
+            <CardHead title="지금 몸" />
+            <div className="grid grid-cols-2 gap-x-3 gap-y-4 pt-2">
               <BodyInput
                 label="키"
                 unit="cm"
-                placeholder={String(pendingBody?.heightCm ?? 138)}
+                placeholder={String(pendingBody?.heightCm ?? example.heightCm)}
                 value={heightCm}
                 onChange={setHeightCm}
                 hint={rangeHint("heightCm")}
@@ -313,11 +342,29 @@ export default function MeasurePage() {
               <BodyInput
                 label="몸무게"
                 unit="kg"
-                placeholder={String(pendingBody?.weightKg ?? 34)}
+                placeholder={String(pendingBody?.weightKg ?? example.weightKg)}
                 value={weightKg}
                 onChange={setWeightKg}
                 hint={rangeHint("weightKg")}
                 problem={weightProblem}
+              />
+              <BodyInput
+                label="체지방률(선택)"
+                unit="%"
+                placeholder={String(example.bodyFatPct)}
+                value={bodyFatPct}
+                onChange={setBodyFatPct}
+                hint={rangeHint("bodyFatPct")}
+                problem={bodyFatProblem}
+              />
+              <BodyInput
+                label="허리둘레(선택)"
+                unit="cm"
+                placeholder={String(example.waistCm)}
+                value={waistCm}
+                onChange={setWaistCm}
+                hint={rangeHint("waistCm")}
+                problem={waistProblem}
               />
             </div>
           </section>
@@ -414,7 +461,7 @@ function rules(item: FitnessItem) {
   };
 }
 
-/** 키 · 몸무게 한 칸. */
+/** 몸 한 칸 — 키 · 몸무게 · 체지방률 · 허리둘레. */
 function BodyInput({
   label,
   unit,
@@ -433,7 +480,7 @@ function BodyInput({
   problem: string | null;
 }) {
   return (
-    <label className="flex-1">
+    <label className="min-w-0">
       <span className="text-ink-soft block text-xs font-bold">{label}</span>
       <span className="relative mt-1.5 block">
         <input
