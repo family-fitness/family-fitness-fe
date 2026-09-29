@@ -5,7 +5,7 @@ import { ChevronRight } from "lucide-react";
 import { Sheet } from "@/components/ui/sheet";
 import { CONSENT_TERMS, type ConsentKind } from "@/lib/legal";
 
-/** 동의 한 가지의 상세내용 — 항목 · 목적 · 기간 · 거부할 권리. 첫 시작 · 설정의 보호자 동의가 같이 쓴다 */
+/** 동의 한 가지의 상세내용 — 목적 · 항목 · 기간 · 거부할 권리와 불이익. 첫 시작 · 설정의 보호자 동의가 같이 쓴다 */
 export function ConsentTermsSheet({
   kind,
   open,
@@ -19,14 +19,18 @@ export function ConsentTermsSheet({
   return (
     <Sheet open={open} onClose={onClose} title={terms?.title ?? "상세내용"}>
       {terms && (
-        <dl className="divide-rows pb-2">
-          {terms.rows.map((row) => (
-            <div key={row.label} className="py-3">
-              <dt className="text-caption text-ink-soft font-bold">{row.label}</dt>
-              <dd className="mt-1 text-sm leading-relaxed whitespace-pre-line">{row.text}</dd>
-            </div>
-          ))}
-        </dl>
+        <div className="pb-2">
+          <p className="text-ink-soft text-sm leading-relaxed">{terms.lead}</p>
+          <dl className="divide-rows border-line mt-3 border-y">
+            {terms.rows.map((row) => (
+              <div key={row.label} className="py-3">
+                <dt className="text-caption text-ink-soft font-bold">{row.label}</dt>
+                <dd className="mt-1 text-sm leading-relaxed whitespace-pre-line">{row.text}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-3 text-sm leading-relaxed font-semibold">{terms.refusal}</p>
+        </div>
       )}
     </Sheet>
   );
