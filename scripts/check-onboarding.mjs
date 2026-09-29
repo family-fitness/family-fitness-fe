@@ -8,11 +8,12 @@
  * 결과가 다음 화면을 만드는 길**은 못 잡는다. 실제로 `POST /families` 에 목 응답이
  * 없어서 새 사용자가 첫 관문을 못 넘고 있었는데 아무 검사도 빨갛지 않았다.
  *
- * 세 길을 걷는다.
+ * 네 길을 걷는다.
  *   1. 가족 없는 계정 → 첫 시작(키움이 인사 · 가족 · 보호자 · 아이 · 동의 · 참여 방식 · 운동 시간 · 첫 측정) → 부모 홈
  *   2. 초대받은 계정 → 자리 확인 → 참여 방식 → 역할 고르기
  *   3. 첫 시작 중간에 새로고침 — 가족을 만든 뒤 · 아이를 만든 뒤. 두 번 만들지 않고 이어 간다.
  *      아이 등록 첫 칸의 뒤로 · 「지금 잴래요」 측정 화면의 뒤로가 홈으로 가는지
+ *   4. 심사용 계정 → 들어가는 화면 → 역할 고르기 없이 부모 홈(360px 폰)
  */
 import { chromium } from "playwright";
 
@@ -26,8 +27,8 @@ let steps = 0;
 const browser = await chromium.launch({ channel: "chrome" });
 
 /** 한 길을 걷는다. 중간에 넘어지면 어디서 넘어졌는지 남긴다 */
-async function walk(name, run) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+async function walk(name, run, viewport = { width: 390, height: 844 }) {
+  const ctx = await browser.newContext({ viewport });
   const page = await ctx.newPage();
   const noise = [];
   page.on("pageerror", (e) => noise.push("터짐: " + String(e).split("\n")[0].slice(0, 90)));
@@ -269,10 +270,38 @@ await walk("새로고침에도 두 번 만들지 않는다", async (h) => {
   });
 });
 
+/* ─── 4. 심사위원이 심사용 계정으로 둘러본다 ─────────────── */
+
+await walk(
+  "심사용 계정",
+  async (h) => {
+    const { page } = h;
+    await h.step("로그인 화면", async () => {
+      await page.goto(`${BASE}/login`, { waitUntil: "load", timeout: 30000 });
+      await h.settle(2400);
+    });
+    await h.step("링크를 누르면 들어가는 화면이 뜬다", async () => {
+      await page.getByRole("button", { name: "심사용 계정으로 둘러보기" }).click();
+      await page.getByText("심사용 계정으로 들어가는 중").waitFor({ timeout: 3000 });
+    });
+    // 처음 보는 기기라 역할을 고른 적이 없다 — 그래도 「누가 쓰고 있나요」 를 거치지 않고 부모 홈으로 간다
+    await h.step("역할 고르기 없이 부모 홈", async () => {
+      await h.until(/\/(parent|start)$/);
+      if (!/\/parent$/.test(page.url())) {
+        problems.push(`심사용 계정\n    홈이 아니라 ${new URL(page.url()).pathname} 에 닿았다`);
+        await page.getByRole("button", { name: /부모/ }).click();
+        await h.until(/\/parent$/);
+      }
+      await page.getByRole("heading", { level: 1 }).waitFor({ timeout: 10000 });
+    });
+  },
+  { width: 360, height: 780 },
+);
+
 await browser.close();
 
 if (problems.length > 0) {
   console.error("가입 경로 문제:\n  " + problems.join("\n  "));
   process.exit(1);
 }
-console.log(`가입 경로 세 갈래 · 단계 ${steps}개 이상 없음`);
+console.log(`가입 경로 네 갈래 · 단계 ${steps}개 이상 없음`);

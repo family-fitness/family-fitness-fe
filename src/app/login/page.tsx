@@ -12,6 +12,7 @@ import type { AuthResponse } from "@/lib/api/types";
 import { errorMessage } from "@/lib/errors";
 import { useDevLogin, useGoogleLogin, useReviewLogin } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
+import { useRoleStore } from "@/stores/role-store";
 
 /**
  * 개발용 계정 셋.
@@ -192,6 +193,10 @@ function LoginContent() {
   /**
    * 심사위원이 구글 계정 없이 둘러보는 길. 운영 서버에서도 열려 있다 — 서버가 부를 때마다 새 계정과
    * 체험 가족을 만들어 주고, 가족이 이미 있어서 바로 홈으로 간다. 초대코드는 들고 가지 않는다.
+   *
+   * 들어온 사람은 체험 가족의 보호자라 부모 홈이 맞다. 역할을 부모로 정해 두지 않으면 처음 보는 기기에서
+   * 「누가 쓰고 있나요」 를 한 번 더 거쳤다. 정하는 건 `signIn` 뒤에 — 새 계정이 들어오면 `signIn` 이
+   * 기기에 남은 역할을 비운다.
    */
   const review = async () => {
     setError(null);
@@ -202,6 +207,7 @@ function LoginContent() {
         new Promise((done) => setTimeout(done, STAND_IN_MIN_MS)),
       ]);
       signIn(auth);
+      useRoleStore.getState().setMode("parent");
       router.replace("/");
     } catch (e) {
       setSigning(null);
