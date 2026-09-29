@@ -32,6 +32,7 @@ import { stageOf } from "@/lib/levels";
 import { newlyUnlocked } from "@/lib/unlocks";
 import { PHASE_LABEL, clock, sessionsOf, stepMinutes, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
+import { longDate, today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useVoice } from "@/lib/voice";
 import { usePrefsStore } from "@/stores/prefs-store";
@@ -94,6 +95,22 @@ export default function PlayPage() {
   const complete = useCompleteSession(missionId, familyId ?? "");
 
   const mission = missions?.missions?.find((m) => m.missionId === missionId);
+  /*
+    오늘 이 아이가 할 수 있는 운동인가. 앞날 운동 · 지난 운동 · 형제의 운동은 서버가 칸 끝을 받지 않는다
+    (422 MISSION_NOT_ACTIVE · 403 NOT_A_PARTICIPANT). 전에는 그래도 「시작하기」 가 눌려서, 저장은 안 됐는데
+    칸이 끝난 것처럼 체크되고 마지막에 까닭 없이 「기록을 남기지 못했어요」 가 떴다. 볼 수만 있게 막는다
+  */
+  const now = today();
+  const mine = mission?.participants?.some((p) => p.profileId === kidId) ?? false;
+  const lockedBy: "other" | "later" | "over" | null = !mission
+    ? null
+    : !mine
+      ? "other"
+      : mission.startDate && mission.startDate > now
+        ? "later"
+        : mission.endDate && mission.endDate < now
+          ? "over"
+          : null;
 
   /** 이 화면에서 방금 끝낸 칸. 서버 응답을 기다리지 않고 바로 체크한다 */
   const [doneHere, setDoneHere] = useState<number[]>([]);
@@ -141,7 +158,7 @@ export default function PlayPage() {
       )
     : [];
   const firstOpen = sessions.find((s) => !s.completed)?.position ?? null;
-  const active = status === "ended" ? null : (current ?? firstOpen);
+  const active = status === "ended" || lockedBy ? null : (current ?? firstOpen);
   const activeSession = sessions.find((s) => s.position === active);
   const activeIndex = sessions.findIndex((s) => s.position === active);
   const plannedSec = plannedSecOf(activeSession);
@@ -171,9 +188,13 @@ export default function PlayPage() {
       .then((res) => setXp((x) => x + (res.xpGained ?? 0)))
       .catch((e: unknown) => {
         setUnsaved((list) => [...list, step]);
-        // 망 · 서버 탓이 아니면(4xx) 다시 보내도 같다
+        // 망 · 서버 탓이 아니면(4xx) 다시 보내도 같다. 서버가 받지 않은 칸은 끝낸 칸으로 두지 않고
+        // 다음 칸으로 넘어가지도 않는다 — 다음 칸도 같은 까닭으로 거절된다
         if (e instanceof ApiError && e.status < 500 && e.status !== 408 && e.status !== 429) {
           setStuckTo(e.status === 401 ? "/login" : "/kid");
+          setDoneHere((list) => list.filter((p) => p !== step.position));
+          setCurrent(null);
+          setStatus("ended");
         }
         setSaveError(
           errorMessage(
@@ -181,6 +202,9 @@ export default function PlayPage() {
             {
               CONSENT_REQUIRED: "지금은 기록을 남길 수 없어요.",
               CONSENT_WITHDRAWN: "지금은 기록을 남길 수 없어요.",
+              MISSION_NOT_ACTIVE: "오늘 하는 운동이 아니라서 기록을 남기지 못했어요.",
+              NOT_A_PARTICIPANT: "내 운동이 아니라서 기록을 남기지 못했어요.",
+              TOO_SHORT: "너무 짧게 해서 기록을 남기지 못했어요.",
             },
             "기록을 남기지 못했어요.",
           ),
@@ -397,6 +421,32 @@ export default function PlayPage() {
       </div>
 
       <Stage wide className="pt-1">
+        {lockedBy && !allDone && (
+          // 볼 수만 있는 운동 — 시작 단추 대신 까닭을 맨 위에
+          <section className="card-hero mb-3 text-center" role="status">
+            <p className="text-lead font-extrabold">
+              {lockedBy === "later"
+                ? `${longDate(mission.startDate)}에 하는 운동이에요`
+                : lockedBy === "over"
+                  ? "지난 운동이에요"
+                  : `${ownerNames(mission.participants)} 운동이에요`}
+            </p>
+            <p className="text-caption text-ink-soft mt-1 font-semibold">
+              {lockedBy === "later"
+                ? "그날 와서 시작해요"
+                : lockedBy === "over"
+                  ? "지난 운동은 볼 수만 있어요"
+                  : "내 운동이 아니라서 볼 수만 있어요"}
+            </p>
+            <NavLink
+              href="/kid"
+              transitionTypes={["nav-back"]}
+              className="press text-ink-soft mt-2 inline-flex min-h-11 items-center px-4 text-sm font-bold"
+            >
+              홈으로
+            </NavLink>
+          </section>
+        )}
         <ol className="relative">
           {sessions.map((s, i) => (
             <Step
@@ -422,7 +472,7 @@ export default function PlayPage() {
                 setStatus("blocked");
               }}
               onPick={() => {
-                if (s.completed || status === "running") return;
+                if (s.completed || status === "running" || lockedBy) return;
                 setCurrent(s.position);
                 setElapsed(0);
                 setStatus("idle");
@@ -456,7 +506,7 @@ export default function PlayPage() {
               </section>
             ) : finished && saving > 0 ? (
               <Skeleton className="h-80 w-full rounded-3xl" />
-            ) : finished ? (
+            ) : lockedBy && !allDone ? null : finished ? (
               <Finish
                 allDone={allDone}
                 doneCount={doneCount}
@@ -487,6 +537,12 @@ export default function PlayPage() {
       </Stage>
     </>
   );
+}
+
+/** 운동을 받은 사람들 — 「서준 · 하윤의」 */
+function ownerNames(participants: { name?: string | null }[] | undefined): string {
+  const names = (participants ?? []).map((p) => p.name).filter(Boolean);
+  return names.length > 0 ? `${names.join(" · ")}의` : "다른 사람";
 }
 
 /** 한 칸. 지금 칸만 펼친다 */
