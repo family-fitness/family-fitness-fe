@@ -76,7 +76,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 /calendar/[date]     하루 기록 — 삼성헬스 「일일 활동」 처럼 요일 링 줄 · 큰 링 · 칸 셋
 /notifications       알림
 /videos              운동 찾기 — 키우고 싶은 힘으로
-/settings            설정 — 로그인 계정 · 역할 바꾸기 · 동의 · 개인정보처리방침 · 이용약관 · 앱 정보 · 로그아웃 · 회원 탈퇴
+/settings            설정 — 로그인 계정 · 역할 바꾸기 · 동의 · 개인정보처리방침 · 이용약관 · 앱 정보 · 로그아웃
 ```
 
 전체 지도와 화면마다의 모양은 `SPEC.md` 에 있다.

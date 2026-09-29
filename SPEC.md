@@ -138,7 +138,7 @@ AI 편성
   /calendar/[날짜]         하루 기록 — 삼성헬스 일일 활동처럼       ＋
   /notifications           알림                                    ＋
   /videos                  운동 찾기 — 카테고리 · 검색 · 담기
-  /settings                설정 — 로그인 계정 · 누가 쓰는지 · 동의 · 약관 · 앱 정보 · 로그아웃 · 회원 탈퇴
+  /settings                설정 — 로그인 계정 · 누가 쓰는지 · 동의 · 약관 · 앱 정보 · 로그아웃
   /settings/consent        보호자 동의 — 동의마다 상세내용 보기(시트, 뒤로 가기로 닫힌다)
   /settings/privacy        개인정보처리방침
   /settings/terms          이용약관

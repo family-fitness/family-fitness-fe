@@ -11,7 +11,7 @@
 | ---------------------- | ------- | ----------------------------------------------------------------------------------------------- |
 | **그대로 씀**          | 14      | 서버에 있고 지금 모양으로 쓴다(아래 6장)                                                        |
 | **있지만 바뀌어야 함** | 10      | 주소는 있는데 칸이 모자라거나 뜻이 다르다(아래 2장)                                             |
-| **새로 필요함**        | 18 (+2) | 서버에 없어 지금은 목(MSW)이 대신 답한다(아래 3장). +2 는 아직 부르지 않는 사진 올리기 · 지우기 |
+| **새로 필요함**        | 17 (+2) | 서버에 없어 지금은 목(MSW)이 대신 답한다(아래 3장). +2 는 아직 부르지 않는 사진 올리기 · 지우기 |
 | 서버에만 있음          | 8 (+9)  | 프론트가 부르지 않는다(아래 5장). +9 는 백엔드 명세의 설계안                                    |
 | **백엔드 수정 요청**   | 5 · 4   | 이름이 다른 주소 5 — 백엔드 이름으로 맞춘다 · 규칙이 다른 것 4 — 프론트 규칙대로 바꿔 달라(0장) |
 
@@ -75,8 +75,7 @@
 ### 백엔드 명세에 아예 없는 것 — 명세 목록에 더해 달라
 
 `GET /families/{id}/calendar` · `GET /profiles/{id}/progress` · `GET · PUT /profiles/{id}/availability` · `GET /notifications` ·
-`POST /notifications/read` · `GET /families/{id}/coach/runs/latest` · `GET /invites/{claimCode}` · 구간 단위 찜 · `PUT · DELETE /profiles/{id}/photo` ·
-`DELETE /me`(회원 탈퇴)
+`POST /notifications/read` · `GET /families/{id}/coach/runs/latest` · `GET /invites/{claimCode}` · 구간 단위 찜 · `PUT · DELETE /profiles/{id}/photo`
 
 ### 프론트가 맞춘 것
 
@@ -128,7 +127,6 @@
 | 초대코드 미리 보기  | `GET /invites/{claimCode}`                                          | `{ familyName, profileName, role, ageGroup, invitedByName, expiresAt }` · 없는 코드 404 · 기한 지남 410 · 이미 쓴 코드 409 — 코드는 `CODE_NOT_FOUND` · `CODE_EXPIRED` · `ALREADY_CLAIMED`                                                                                                                  | 초대코드 넣기                                        |
 | 가족 리그           | `GET /families/{id}/league?month=YYYY-MM`                           | `{ month, tier, rate, rank, groupSize, promote, demote, daysLeft, standings[{familyName, rate, me}] }` — **셀 날이 없으면 `rate` · `rank` 는 null**                                                                                                                                                        | 리그 · 대시보드 · 부모 홈 칸                         |
 | 쉬는 날 카드        | `GET · POST /families/{id}/rest-days` · `DELETE …/rest-days/{date}` | `{ month, perMonth: 2, left, days: ["YYYY-MM-DD"] }`                                                                                                                                                                                                                                                       | 리그 · 대시보드 · 캘린더                             |
-| 회원 탈퇴           | `DELETE /me`                                                        | 본문 없이 **204**. 이 계정과, 이 계정만 관리하던 가족 · 프로필 · 측정 · 운동 기록 · 칭찬을 지운다(개인정보처리방침 「탈퇴하면 바로 지워요」). 로그인 없이는 401                                                                                                                                            | 설정 → 회원 탈퇴                                     |
 | 프로필 사진         | `PUT · DELETE /profiles/{id}/photo`                                 | multipart(jpeg ≤ 1MB) → `{ photoUrl }`                                                                                                                                                                                                                                                                     | 첫 시작 · 설정 · 가족 관리(지금은 기기에만 둔다)     |
 
 리그 · 쉬는 날에 붙는 규칙:
