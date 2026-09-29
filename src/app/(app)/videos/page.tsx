@@ -285,7 +285,7 @@ function ClipRow({
         aria-label={`${c.title} 시범 보기`}
         className="press relative shrink-0 overflow-hidden rounded-xl"
       >
-        <VideoThumb videoId={c.videoId} src={c.thumbnailUrl} className="aspect-video w-24" />
+        <VideoThumb videoId={c.videoId} src={c.thumbnailUrl} className="aspect-video w-20" />
         {/* 누르면 시범이 돈다는 표시. 검정 면 대신 남색(규칙: 검정으로 면을 채우지 않는다) */}
         <span className="absolute inset-0 grid place-items-center">
           <span className="bg-signal-deep/70 grid size-8 place-items-center rounded-full text-white">
@@ -313,7 +313,8 @@ function ClipRow({
             ))}
         </p>
       </div>
-      <div className="flex shrink-0 items-center">
+      {/* 즐겨찾기 · 담기는 위아래로 — 옆으로 두면 360px 에서 이름 칸이 100px 남짓으로 줄어 두 글자씩 끊겼다 */}
+      <div className="-my-1 flex shrink-0 flex-col items-center">
         {owner && (
           <button
             type="button"
@@ -321,7 +322,7 @@ function ClipRow({
             aria-label={c.favorited ? `${c.title} 즐겨찾기 빼기` : `${c.title} 즐겨찾기`}
             disabled={favorite.isPending}
             onClick={() => favorite.mutate({ clipId: c.clipId, favorited: !c.favorited })}
-            className="press grid size-11 place-items-center"
+            className="press grid size-10 place-items-center"
           >
             <Heart
               aria-hidden
@@ -336,7 +337,7 @@ function ClipRow({
             aria-label={picked ? `${c.title} 빼기` : `${c.title} 담기`}
             onClick={onPick}
             className={cn(
-              "press grid size-11 place-items-center rounded-full",
+              "press grid size-10 place-items-center rounded-full",
               picked ? "bg-signal-strong text-white" : "bg-sub text-ink",
             )}
           >
@@ -423,7 +424,7 @@ function ListSkeleton() {
     <div className="card space-y-4">
       {[0, 1, 2, 3].map((i) => (
         <div key={i} className="flex items-center gap-3">
-          <Skeleton className="aspect-video w-24 rounded-xl" />
+          <Skeleton className="aspect-video w-20 rounded-xl" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-32" />
             <Skeleton className="h-3 w-24" />
