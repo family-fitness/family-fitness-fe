@@ -14,7 +14,7 @@ import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorIcon } from "@/components/domain/factor-icon";
 import { FactorRadar } from "@/components/domain/factor-radar";
-import { ScoreLine } from "@/components/domain/factor-view";
+import { FirstMeasure, ScoreLine } from "@/components/domain/factor-view";
 import { ErrorState } from "@/components/ui/error-state";
 import { ApiError } from "@/lib/api/client";
 import {
@@ -128,6 +128,11 @@ function PlanForm() {
   const given = latest?.weakest?.factor;
   const weakest = isFactor(given) ? given : undefined;
   const shownFocus = focus ?? weakest ?? null;
+  // 이 아이를 잰 적이 있나. 없으면 빈 육각형 대신 「아직 재지 않았어요」(규칙 4)
+  const measured = Boolean(kid?.latest?.testedOn);
+  // 가족 중 잰 사람이 하나도 없으면 서버가 짜지 않는다(422 NO_MEASURED_MEMBER).
+  // 조건을 다 고르고 누른 뒤에야 말하지 않게 — 처음부터 첫 측정만 둔다(9/29 「아직 재지 않았어요 뜨는데 이건 왜 이래」)
+  const nobodyMeasured = !(map?.members ?? []).some((m) => Boolean(m.latest?.testedOn));
 
   const submit = async () => {
     if (!kid?.profileId) return;
@@ -175,22 +180,28 @@ function PlanForm() {
       <Stage wide className="space-y-3 pb-28">
         <section className="card-hero">
           <p className="text-lead font-extrabold">{name}의 체력</p>
-          <FactorRadar
-            points={latest?.radar}
-            name={name}
-            focus={shownFocus}
-            legend={false}
-            className="mx-auto mt-2 max-w-72"
-          />
-          {/* 육각형 아래 통합 신체 점수(9/25). 안 쟀으면 그리지 않는다 */}
-          {kid?.latest?.overallPercentile != null && (
-            <ScoreLine score={kid.latest.overallPercentile} />
-          )}
-          {shownFocus && (
-            <p className="mt-3 text-center text-sm font-bold">
-              <span className="text-ink-soft">{focus ? "고른 힘" : "키울 힘"}</span>{" "}
-              <span className="text-signal-deep font-extrabold">{shownFocus}</span>
-            </p>
+          {kid && !measured ? (
+            <FirstMeasure child={kid} />
+          ) : (
+            <>
+              <FactorRadar
+                points={latest?.radar}
+                name={name}
+                focus={shownFocus}
+                legend={false}
+                className="mx-auto mt-2 max-w-72"
+              />
+              {/* 육각형 아래 통합 신체 점수(9/25). 안 쟀으면 그리지 않는다 */}
+              {kid?.latest?.overallPercentile != null && (
+                <ScoreLine score={kid.latest.overallPercentile} />
+              )}
+              {shownFocus && (
+                <p className="mt-3 text-center text-sm font-bold">
+                  <span className="text-ink-soft">{focus ? "고른 힘" : "키울 힘"}</span>{" "}
+                  <span className="text-signal-deep font-extrabold">{shownFocus}</span>
+                </p>
+              )}
+            </>
           )}
         </section>
 
@@ -210,95 +221,99 @@ function PlanForm() {
           <ChevronRight aria-hidden className="text-ink-soft size-5 shrink-0" />
         </NavLink>
 
-        <section className="card">
-          <CardHead
-            title="몇 분 할까요"
-            meta={
-              <NavLink
-                href="/settings/schedule"
-                className="press text-signal-deep inline-flex min-h-10 items-center font-bold"
-              >
-                {todaySlot
-                  ? `오늘 적어 둔 시간 ${todaySlot.minutes}분 · 바꾸기`
-                  : "운동할 수 있는 시간 적기"}
-              </NavLink>
-            }
-          />
-          <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="운동 시간">
-            {MINUTES.map((m) => (
-              <Chip key={m} on={minutes === m} onClick={() => setPicked(m)}>
-                {m}분
-              </Chip>
-            ))}
-          </div>
-        </section>
+        {!nobodyMeasured && (
+          <>
+            <section className="card">
+              <CardHead
+                title="몇 분 할까요"
+                meta={
+                  <NavLink
+                    href="/settings/schedule"
+                    className="press text-signal-deep inline-flex min-h-10 items-center font-bold"
+                  >
+                    {todaySlot
+                      ? `오늘 적어 둔 시간 ${todaySlot.minutes}분 · 바꾸기`
+                      : "운동할 수 있는 시간 적기"}
+                  </NavLink>
+                }
+              />
+              <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="운동 시간">
+                {MINUTES.map((m) => (
+                  <Chip key={m} on={minutes === m} onClick={() => setPicked(m)}>
+                    {m}분
+                  </Chip>
+                ))}
+              </div>
+            </section>
 
-        <section className="card space-y-3">
-          <div>
-            <CardHead title="어디서" />
-            <div className="mt-2 flex gap-2" role="group" aria-label="어디서">
-              <Chip on={place === "HOME"} onClick={() => setPlace("HOME")}>
-                집에서
-              </Chip>
-              <Chip on={place === "OUTDOOR"} onClick={() => setPlace("OUTDOOR")}>
-                밖에서
-              </Chip>
-            </div>
-          </div>
-          <div>
-            <CardHead title="소리" />
-            <div className="mt-2 flex gap-2" role="group" aria-label="소리">
-              <Chip on={quiet} onClick={() => setQuiet(true)}>
-                조용히 할래요
-              </Chip>
-              <Chip on={!quiet} onClick={() => setQuiet(false)}>
-                상관없어요
-              </Chip>
-            </div>
-          </div>
-        </section>
+            <section className="card space-y-3">
+              <div>
+                <CardHead title="어디서" />
+                <div className="mt-2 flex gap-2" role="group" aria-label="어디서">
+                  <Chip on={place === "HOME"} onClick={() => setPlace("HOME")}>
+                    집에서
+                  </Chip>
+                  <Chip on={place === "OUTDOOR"} onClick={() => setPlace("OUTDOOR")}>
+                    밖에서
+                  </Chip>
+                </div>
+              </div>
+              <div>
+                <CardHead title="소리" />
+                <div className="mt-2 flex gap-2" role="group" aria-label="소리">
+                  <Chip on={quiet} onClick={() => setQuiet(true)}>
+                    조용히 할래요
+                  </Chip>
+                  <Chip on={!quiet} onClick={() => setQuiet(false)}>
+                    상관없어요
+                  </Chip>
+                </div>
+              </div>
+            </section>
 
-        <section className="card">
-          <CardHead title="키우고 싶은 힘" />
-          <div className="mt-2 grid grid-cols-3 gap-2" role="group" aria-label="키우고 싶은 힘">
-            {/* 다른 고르기와 같은 칩이다. 폭을 다 채운 파랑 단추로 두었더니 아래 주 버튼과 누를 곳이 둘로 보였다 */}
-            <span className="col-span-3 flex">
-              <Chip on={focus === null} onClick={() => setFocus(null)}>
-                알아서 골라 주세요
-              </Chip>
-            </span>
-            {FACTORS.map((f) => (
-              <button
-                key={f}
-                type="button"
-                aria-pressed={focus === f}
-                onClick={() => setFocus(f)}
-                className={cn(
-                  "press flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2",
-                  focus === f ? "bg-signal-strong text-white" : "bg-sub",
-                )}
-              >
-                <FactorIcon
-                  factor={f}
-                  className={cn("size-6", focus === f ? "text-white" : "text-signal-strong")}
-                />
-                <span className="text-caption font-bold">{f}</span>
-              </button>
-            ))}
-          </div>
-        </section>
+            <section className="card">
+              <CardHead title="키우고 싶은 힘" />
+              <div className="mt-2 grid grid-cols-3 gap-2" role="group" aria-label="키우고 싶은 힘">
+                {/* 다른 고르기와 같은 칩이다. 폭을 다 채운 파랑 단추로 두었더니 아래 주 버튼과 누를 곳이 둘로 보였다 */}
+                <span className="col-span-3 flex">
+                  <Chip on={focus === null} onClick={() => setFocus(null)}>
+                    알아서 골라 주세요
+                  </Chip>
+                </span>
+                {FACTORS.map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    aria-pressed={focus === f}
+                    onClick={() => setFocus(f)}
+                    className={cn(
+                      "press flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2",
+                      focus === f ? "bg-signal-strong text-white" : "bg-sub",
+                    )}
+                  >
+                    <FactorIcon
+                      factor={f}
+                      className={cn("size-6", focus === f ? "text-white" : "text-signal-strong")}
+                    />
+                    <span className="text-caption font-bold">{f}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
 
-        <section className="card">
-          <CardHead title="누가 해요" />
-          <div className="mt-2 flex gap-2" role="group" aria-label="누가 해요">
-            <Chip on={!withParent} onClick={() => setWithParent(false)}>
-              {name} 혼자
-            </Chip>
-            <Chip on={withParent} onClick={() => setWithParent(true)}>
-              {profile?.name ?? "나"}도 같이
-            </Chip>
-          </div>
-        </section>
+            <section className="card">
+              <CardHead title="누가 해요" />
+              <div className="mt-2 flex gap-2" role="group" aria-label="누가 해요">
+                <Chip on={!withParent} onClick={() => setWithParent(false)}>
+                  {name} 혼자
+                </Chip>
+                <Chip on={withParent} onClick={() => setWithParent(true)}>
+                  {profile?.name ?? "나"}도 같이
+                </Chip>
+              </div>
+            </section>
+          </>
+        )}
 
         {error && (
           <div role="alert" className="card flex items-center justify-between gap-3">
@@ -328,19 +343,21 @@ function PlanForm() {
         )}
       </Stage>
 
-      {/* 아래에 붙는 한 단추. 조건을 다 내려 보고 나서 누른다 */}
-      <Dock>
-        <button
-          type="button"
-          onClick={() => void submit()}
-          disabled={start.isPending || !kid}
-          data-off={!kid ? "" : undefined}
-          className="press bg-signal-strong shadow-lift data-off:bg-line data-off:text-ink-soft flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white disabled:opacity-100 data-off:shadow-none"
-        >
-          <ArtIcon name="icon/menu-ai" className="size-5" />
-          {start.isPending ? "코치에게 보내는 중" : `AI에게 ${minutes}분 운동 받기`}
-        </button>
-      </Dock>
+      {/* 아래에 붙는 한 단추. 조건을 다 내려 보고 나서 누른다. 잰 사람이 없으면 할 일은 첫 측정 하나다 */}
+      {!nobodyMeasured && (
+        <Dock>
+          <button
+            type="button"
+            onClick={() => void submit()}
+            disabled={start.isPending || !kid}
+            data-off={!kid ? "" : undefined}
+            className="press bg-signal-strong shadow-lift data-off:bg-line data-off:text-ink-soft flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white disabled:opacity-100 data-off:shadow-none"
+          >
+            <ArtIcon name="icon/menu-ai" className="size-5" />
+            {start.isPending ? "코치에게 보내는 중" : `AI에게 ${minutes}분 운동 받기`}
+          </button>
+        </Dock>
+      )}
     </>
   );
 }
