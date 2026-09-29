@@ -88,7 +88,17 @@ export type MissingItem = S["MissingItem"];
 export type PeerGrade = S["PeerGrade"];
 export type RadarPoint = S["RadarPointResponse"];
 
-export type CoachRun = S["CoachRunView"];
+/**
+ * 편성 한 번. 서버가 이미 싣는데 받아 둔 스키마(schema.ts)에 아직 없는 칸을 더한다(api-contract 4장).
+ * - `failureCode`: FAILED 일 때만. 화면 문구는 `lib/coach.ts` 가 정한다
+ * - `notices`: AI 가 제안과 함께 준 알림(또래 자료가 없어 넓혀 골랐다 등). 늘 배열
+ */
+export type CoachRun = S["CoachRunView"] & {
+  profileId?: string | null;
+  date?: string | null;
+  failureCode?: string | null;
+  notices?: string[];
+};
 export type CoachProposal = S["ProposalView"];
 export type CoachApproveResult = S["ApproveCoachRunView"];
 export type CoachRejectResult = S["RejectCoachRunView"];

@@ -11,6 +11,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { StoneTrail } from "@/components/scene/stone-trail";
 import { useCoachRun } from "@/lib/api/queries";
+import { failureText } from "@/lib/coach";
 import { cn } from "@/lib/utils";
 
 /**
@@ -112,6 +113,12 @@ function PlanRun() {
           >
             {failedRun ? "짜지 못했어요" : finished ? "다 짰어요" : null}
           </p>
+          {/* 왜 못 짰는지 — 서버가 준 까닭 코드를 말로. 전에는 「짜지 못했어요」 만 떠서 다시 눌러도 되는지 몰랐다 */}
+          {failedRun && (
+            <p className="text-ink-soft mt-1 text-sm font-semibold">
+              {failureText(run?.failureCode)}
+            </p>
+          )}
           <p className="text-caption text-ink-soft mt-1">
             {finished ? " " : `${Math.min(done + 1, names.length)} / ${names.length}`}
           </p>
