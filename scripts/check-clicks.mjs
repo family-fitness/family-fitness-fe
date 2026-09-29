@@ -34,6 +34,8 @@ const ROUTES = {
     "/settings",
     "/settings/support-mode",
     "/settings/consent",
+    "/settings/privacy",
+    "/settings/terms",
     `/p/${KID}/measure`,
     `/p/${KID}/result`,
     "/start",
