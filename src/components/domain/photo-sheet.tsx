@@ -13,11 +13,14 @@ export function PhotoSheet({
   onClose,
   profileId,
   name,
+  tone,
 }: {
   open: boolean;
   onClose: () => void;
   profileId: string;
   name: string;
+  /** 사진이 없을 때 첫 글자 동그라미 색 — 부모 노랑(mark) · 아이 파랑(signal) */
+  tone: "signal" | "mark";
 }) {
   const photo = usePhoto(profileId);
   const set = usePhotoStore((s) => s.set);
@@ -29,6 +32,7 @@ export function PhotoSheet({
         <PhotoPicker
           value={photo ?? null}
           name={name}
+          tone={tone}
           onChange={(dataUrl) => {
             if (!dataUrl) return remove(profileId);
             try {

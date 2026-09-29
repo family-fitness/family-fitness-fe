@@ -165,6 +165,7 @@ function MemberRow({ profile, onInvite }: { profile: ProfileSummary; onInvite: (
             onClose={() => setPhotoOpen(false)}
             profileId={profile.profileId}
             name={profile.name ?? ""}
+            tone={profile.role === "CHILD" ? "signal" : "mark"}
           />
         )}
         <div className="min-w-0 flex-1">

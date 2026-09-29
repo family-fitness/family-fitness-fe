@@ -166,6 +166,8 @@ const identity = [
       userId: fixtures.me.userId,
       nextStep: "HOME",
       profiles: [me],
+      // ▲ 요청한 칸 — 설정의 「로그인 계정」
+      email: "eunyoung@example.com",
     });
   }),
 

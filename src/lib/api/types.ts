@@ -83,6 +83,9 @@ export type Mission = S["MissionView"];
 
 /* ─── 아직 서버에 없는 것 ──────────────────────────────────── */
 
+/** ▲ 요청: `GET /me` 에 로그인한 계정의 `email`. 설정의 「로그인 계정」 에 쓴다 — 안 오면 그 줄을 두지 않는다 */
+export type MeWithEmail = MeResponse & { email?: string | null };
+
 /**
  * **주의 — 이 아래는 생성된 스키마가 아니다.**
  * ▲ 요청: `GET /families/{familyId}/cheers?toProfileId=&size=`
