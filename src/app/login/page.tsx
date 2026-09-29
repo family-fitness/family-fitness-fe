@@ -1,9 +1,11 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 
 import { PlainScreen } from "@/components/app-shell/screen";
+import { LevelBuddy } from "@/components/domain/level-buddy";
 import { Button } from "@/components/ui/button";
 import { KiumIsland } from "@/components/scene/kium-island";
 import type { AuthResponse } from "@/lib/api/types";
@@ -38,6 +40,15 @@ const DEV_LOGIN =
   process.env.NODE_ENV === "development" ||
   process.env.NEXT_PUBLIC_API_MOCKING === "enabled" ||
   !GOOGLE_CLIENT_ID;
+
+/**
+ * 구글 키가 없는 빌드(로컬 백엔드에 붙인 개발 서버)에서 「구글로 시작하기」 가 대신 들어가는 계정.
+ * 처음 구글로 들어온 사람과 같게 — 부를 때마다 가족 없는 새 계정이라 가족 만들기부터 걷는다.
+ */
+const GOOGLE_STAND_IN = "demo-fresh";
+
+/** 대신 들어갈 때도 들어가는 화면을 한 번은 보인다 — 너무 빨라 깜빡이면 무엇이 됐는지 모른다 */
+const STAND_IN_MIN_MS = 900;
 
 /**
  * 구글에 가기 전 이 탭에 남기는 것 — 돌아올 때 맞춰 볼 표(state)와 들고 가는 초대코드.
@@ -80,6 +91,8 @@ function LoginContent() {
   const devLogin = useDevLogin();
   const googleLogin = useGoogleLogin();
   const [error, setError] = useState<string | null>(null);
+  /** 들어가는 중인 길 — 구글로 떠나는 중 · 구글에서 받은 코드를 바꾸는 중 · 구글 대신 새 계정으로 */
+  const [signing, setSigning] = useState<"google" | "exchange" | "stand-in" | null>(null);
 
   const code = params.get("code");
   const state = params.get("state");
@@ -101,6 +114,7 @@ function LoginContent() {
   useEffect(() => {
     if (!code || exchanged.current === code) return;
     exchanged.current = code;
+    setSigning("exchange");
     const saved = takeOAuth();
     const exchange =
       saved?.state && saved.state === state
@@ -115,7 +129,10 @@ function LoginContent() {
         signIn(auth);
         router.replace(after(auth, saved?.claimCode));
       })
-      .catch((e) => setError(errorMessage(e, "로그인하지 못했어요.")));
+      .catch((e) => {
+        setSigning(null);
+        setError(errorMessage(e, "로그인하지 못했어요."));
+      });
     // googleLogin 은 매 렌더 새 객체다. 코드가 바뀔 때만 돈다
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [code, state]);
@@ -134,23 +151,37 @@ function LoginContent() {
   };
 
   /** 구글 인가 요청. 코드 교환은 백엔드가 한다 — 시크릿이 브라우저에 오면 안 된다 */
-  const googleButton = (
-    <Button
-      size="block"
-      loading={googleLogin.isPending}
-      onClick={() => {
-        const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
-        url.searchParams.set("client_id", GOOGLE_CLIENT_ID);
-        url.searchParams.set("redirect_uri", `${window.location.origin}${REDIRECT_PATH}`);
-        url.searchParams.set("response_type", "code");
-        url.searchParams.set("scope", "openid email profile");
-        url.searchParams.set("state", rememberOAuth(claimCode));
-        window.location.assign(url.toString());
-      }}
-    >
-      구글로 시작하기
-    </Button>
-  );
+  const toGoogle = () => {
+    setError(null);
+    setSigning("google");
+    const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    url.searchParams.set("client_id", GOOGLE_CLIENT_ID);
+    url.searchParams.set("redirect_uri", `${window.location.origin}${REDIRECT_PATH}`);
+    url.searchParams.set("response_type", "code");
+    url.searchParams.set("scope", "openid email profile");
+    url.searchParams.set("state", rememberOAuth(claimCode));
+    window.location.assign(url.toString());
+  };
+
+  /** 구글 키가 없는 빌드 — 구글에 다녀온 셈 치고 새 계정으로 들어간다. 들어가는 화면은 구글과 같다 */
+  const standIn = async () => {
+    setError(null);
+    setSigning("stand-in");
+    try {
+      const [auth] = await Promise.all([
+        devLogin.mutateAsync({ providerUserId: GOOGLE_STAND_IN, claimCode }),
+        new Promise((done) => setTimeout(done, STAND_IN_MIN_MS)),
+      ]);
+      signIn(auth);
+      router.replace(after(auth, claimCode));
+    } catch (e) {
+      setSigning(null);
+      setError(errorMessage(e, "들어가지 못했어요."));
+    }
+  };
+
+  // 구글로 떠나는 중 · 돌아와 코드를 바꾸는 중에는 단추 대신 들어가는 화면. 두 번 누르거나 멈춘 줄 알고 닫지 않게
+  if (signing) return <SigningIn step={signing === "exchange" ? "confirm" : "enter"} />;
 
   return (
     <PlainScreen className="flex min-h-dvh flex-col justify-center gap-8">
@@ -168,28 +199,33 @@ function LoginContent() {
         <h1 className="page-title -mt-1">우리가족 체력키움</h1>
       </div>
 
-      {/* 구글 키가 없으면 구글 단추를 두지 않는다 — 눌리지 않는 회색 단추 앞에서 처음 여는 사람이 멈춘다 */}
+      {/* 구글 키가 없는 빌드에서도 단추는 선다 — 누르면 구글 대신 새 계정으로 같은 길을 걷는다 */}
       <div className="space-y-3">
-        {GOOGLE_CLIENT_ID && googleButton}
+        <Button size="block" variant="outline" onClick={GOOGLE_CLIENT_ID ? toGoogle : standIn}>
+          <GoogleMark />
+          구글로 시작하기
+        </Button>
+        {!GOOGLE_CLIENT_ID && (
+          <p className="text-ink-soft text-caption text-center">
+            구글 키가 없는 개발 빌드예요. 누르면 새 계정으로 들어가요
+          </p>
+        )}
 
         {DEV_LOGIN && (
           <div className="card space-y-2">
             <p className="text-ink-soft text-caption font-bold">개발용 · 구글 없이 들어가기</p>
-            {DEV_ACCOUNTS.map((account, i) => {
-              const primary = !GOOGLE_CLIENT_ID && i === 0;
-              return (
-                <Button
-                  key={account.id}
-                  size="md"
-                  variant={primary ? "primary" : "outline"}
-                  className="w-full"
-                  loading={devLogin.isPending}
-                  onClick={() => enter(account)}
-                >
-                  <span className="min-w-0 flex-1 text-left">{account.label}</span>
-                </Button>
-              );
-            })}
+            {DEV_ACCOUNTS.map((account) => (
+              <Button
+                key={account.id}
+                size="md"
+                variant="outline"
+                className="w-full"
+                loading={devLogin.isPending}
+                onClick={() => enter(account)}
+              >
+                <span className="min-w-0 flex-1 text-left">{account.label}</span>
+              </Button>
+            ))}
           </div>
         )}
 
@@ -200,5 +236,45 @@ function LoginContent() {
         )}
       </div>
     </PlainScreen>
+  );
+}
+
+/** 들어가는 화면 — 구글로 떠나기 직전과 돌아와 계정을 확인하는 동안 */
+function SigningIn({ step }: { step: "enter" | "confirm" }) {
+  return (
+    <PlainScreen className="flex min-h-dvh flex-col items-center justify-center gap-5 text-center">
+      <LevelBuddy stage={3} size={140} cheer />
+      <div className="space-y-1" role="status" aria-live="polite">
+        <p className="page-title">
+          {step === "enter" ? "구글 계정으로 들어가는 중" : "구글 계정을 확인하는 중"}
+        </p>
+        <p className="text-ink-soft text-body">잠깐이면 돼요</p>
+      </div>
+      <Loader2 className="text-signal-strong size-7 animate-spin" aria-hidden />
+    </PlainScreen>
+  );
+}
+
+/** 구글의 G. 브랜드 지침(네 색 그대로)을 따르느라 색 토큰을 쓰지 않는다 */
+function GoogleMark() {
+  return (
+    <svg viewBox="0 0 48 48" className="size-5 shrink-0" aria-hidden>
+      <path
+        fill="#EA4335"
+        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+      />
+      <path
+        fill="#4285F4"
+        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+      />
+      <path
+        fill="#34A853"
+        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+      />
+    </svg>
   );
 }
