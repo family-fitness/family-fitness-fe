@@ -122,8 +122,8 @@ await walk("새 가족 만들기", async (h) => {
     // 동의를 안 누르면 다음이 잠겨 있어야 한다
     const locked = await page.getByRole("button", { name: "다음", exact: true }).isDisabled();
     if (!locked) problems.push("새 가족 만들기\n    동의 없이도 다음이 열려 있다");
-    await page.getByRole("checkbox", { name: /개인정보 처리에 동의/ }).click();
-    await page.getByRole("checkbox", { name: /건강정보 처리에 동의/ }).click();
+    await page.getByRole("checkbox", { name: /개인정보 수집 · 이용에 동의/ }).click();
+    await page.getByRole("checkbox", { name: /건강정보\(민감정보\) 처리에 동의/ }).click();
     await next();
     await h.settle(900);
   });
@@ -233,8 +233,8 @@ await walk("새로고침에도 두 번 만들지 않는다", async (h) => {
     await page.getByLabel("몸무게").fill("30");
     await next();
     await next("건너뛰기"); // 사진
-    await page.getByRole("checkbox", { name: /개인정보 처리에 동의/ }).click();
-    await page.getByRole("checkbox", { name: /건강정보 처리에 동의/ }).click();
+    await page.getByRole("checkbox", { name: /개인정보 수집 · 이용에 동의/ }).click();
+    await page.getByRole("checkbox", { name: /건강정보\(민감정보\) 처리에 동의/ }).click();
     await next();
   });
   // 가족만 만들고 새로고침했다 — 참여 방식을 아직 안 골랐으니 아이 다음에 묻는다(안 물으면 영영 빈다)
