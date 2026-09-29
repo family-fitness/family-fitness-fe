@@ -123,7 +123,7 @@
   /p/[id]/measure|result   측정 · 결과
 
 AI 편성
-  /plan                    조건 고르기                             ＋
+  /plan                    조건 고르기 · 가족 중 잰 사람이 없으면 첫 측정만  ＋
   /plan/run/[runId]        짜는 과정                               ＋
   /plan/[runId]            제안 · 근거 · 세션 → 오늘 운동으로 등록  ＋
   /plan/custom             직접 짜기 — 담은 동작 · 누가 · 언제(여러 날 · 몇 주) ＋
