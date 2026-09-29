@@ -234,7 +234,9 @@ function AddMemberSheet({
             setError(
               errorMessage(
                 err,
-                { CONSENT_REQUIRED: "보호자는 만 14세부터 더할 수 있어요." },
+                // 서버가 만 14세 미만 보호자를 막는 코드는 UNDER_14_NOT_ALLOWED 다(계약 오류 표).
+                // 전에는 CONSENT_REQUIRED 로 잘못 적어 「더하지 못했어요」 만 떴다
+                { UNDER_14_NOT_ALLOWED: "보호자는 만 14세부터 더할 수 있어요." },
                 "더하지 못했어요.",
               ),
             );

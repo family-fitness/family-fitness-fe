@@ -263,6 +263,10 @@ const identity = [
     const age = ageOf(birthDate);
     if (!name || age == null) return fail(400, "INVALID_INPUT", "이름과 생일이 필요합니다");
     const consentRequired = age < 14;
+    // 서버와 같게 — 만 14세 미만은 보호자(PARENT)로 들어올 수 없다(동의보다 먼저 본다)
+    if (body.role === "PARENT" && consentRequired) {
+      return fail(422, "UNDER_14_NOT_ALLOWED", "만 14세 미만은 보호자가 될 수 없습니다");
+    }
 
     const consent = body.guardianConsent as
       { personalData?: boolean; healthData?: boolean } | undefined;

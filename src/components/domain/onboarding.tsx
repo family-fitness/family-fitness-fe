@@ -286,7 +286,14 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
         router.replace("/parent");
         return false;
       }
-      setProblem(errorMessage(e, "가족을 만들지 못했어요."));
+      setProblem(
+        errorMessage(
+          e,
+          // 만 14세 미만은 가족을 만들 수 없다 — 서버가 UNDER_14_NOT_ALLOWED 로 막는다
+          { UNDER_14_NOT_ALLOWED: "가족은 만 14세부터 만들 수 있어요. 생년월일을 확인해 주세요." },
+          "가족을 만들지 못했어요.",
+        ),
+      );
       return false;
     }
   };
