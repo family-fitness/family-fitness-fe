@@ -9,12 +9,13 @@ import { Stage } from "@/components/app-shell/stage";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
 import { ListRow } from "@/components/ui/list-row";
-import { BandChip, GradeBadge } from "@/components/ui/badge";
+import { BandChip } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorIcon } from "@/components/domain/factor-icon";
 import { FactorView } from "@/components/domain/factor-view";
+import { GradeCard } from "@/components/domain/grade-card";
 import { RecordRow } from "@/components/domain/record-bar";
 import { isFactor } from "@/lib/fitness-factors";
 import { useFamilyProfiles, useFitnessMap, useLatestFitnessTest } from "@/lib/api/queries";
@@ -143,9 +144,17 @@ export default function ResultPage() {
           </section>
         )}
 
+        {/* 등급은 종목마다가 아니라 한 사람에 하나 — 인증서처럼 */}
+        {test.certification && (
+          <GradeCard
+            certification={test.certification}
+            measureHref={measurable ? `/p/${profileId}/measure` : null}
+          />
+        )}
+
         <section className="card">
           {/* 막대 가운데 눈금이 무엇인지 글로 — 요인 표와 같은 말. 몇 항목인지는 머리에 있다 */}
-          <CardHead title="항목별" meta="국민체력100 등급 · 또래 평균 50" />
+          <CardHead title="항목별" meta="또래 평균 50" />
           <div className="divide-rows">
             {items.map((entry, index) => (
               <div key={entry.itemCode} className="py-3.5">
@@ -156,16 +165,8 @@ export default function ResultPage() {
                   caption={entry.topPercentText}
                   delay={index * 0.08}
                 />
-                {/* 등급 · 상태 — 딱지 대신 글자 한 줄 */}
-                <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5">
-                  <GradeBadge grade={entry.grade} />
-                  {entry.band && (
-                    <span aria-hidden className="text-faint text-xs">
-                      ·
-                    </span>
-                  )}
-                  <BandChip band={entry.band} />
-                </p>
+                {/* 상태 — 딱지 대신 글자 한 줄 */}
+                {entry.band && <BandChip band={entry.band} className="mt-1.5 block" />}
               </div>
             ))}
           </div>

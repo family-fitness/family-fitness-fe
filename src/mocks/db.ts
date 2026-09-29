@@ -12,6 +12,7 @@ import type {
   LeagueTier,
   ApiErrorBody,
   Band,
+  Certification,
   CoachRun,
   FamilyProfiles,
   FitnessItems,
@@ -20,6 +21,7 @@ import type {
   MeResponse,
   Mission,
   MissionSession,
+  PeerGrade,
   ProfileSummary,
 } from "@/lib/api/types";
 
@@ -49,6 +51,57 @@ export const fixtures = fixturesJson as unknown as Concrete<Fixtures>;
 
 /** 클립 목록. `db` 를 채우기 전에 있어야 한다 — 오늘 미션을 이걸로 짠다 */
 export const catalog = clipsJson as CatalogClip[];
+
+/**
+ * 국민체력100 1등급 줄이 보는 종목 — AI `grade_thresholds.csv` 에서 연령대마다 한 나이를 옮겼다.
+ * 목은 이걸로 **모자란 종목만** 말한다. 기준값 · 2 · 3등급 줄은 옮기지 않았다 — 판정은 서버가 한다.
+ * 청소년 · 어르신은 픽스처에 항목이 없어 기준 없음으로 둔다
+ */
+const FIRST_GRADE_ITEMS: Partial<Record<string, string[][]>> = {
+  유아기: [["020"], ["028"], ["009"], ["012"], ["050"], ["022"], ["051"]],
+  유소년: [["020"], ["028"], ["009"], ["012"], ["043"], ["022"], ["044"]],
+  // 035 · 037 은 둘 중 하나만 재면 된다
+  성인: [["020"], ["035", "037"], ["028"], ["019"], ["012"], ["021"], ["040"], ["022"], ["041"]],
+};
+
+/** 픽스처 항목 목록에 없는 종목 이름 */
+const MORE_LABELS: Record<string, string> = { "044": "눈-손협응력(벽패스)" };
+
+/** 같은 나이 참가자의 등급 비율 — AI `grade_distribution.csv` 의 11세 · 35세 줄(시연 가족 나이쯤) */
+const PEER_GRADES: Partial<Record<string, [number, number, number, number]>> = {
+  "유소년-M": [0.0229, 0.0806, 0.1544, 0.7421],
+  "유소년-F": [0.0322, 0.0983, 0.2282, 0.6413],
+  // 성인은 2025년 6월부터 등급 체계가 바뀌어 네 칸 합이 1 에 못 미친다
+  "성인-M": [0.0829, 0.178, 0.1951, 0.189],
+  "성인-F": [0.0911, 0.1934, 0.2079, 0.1563],
+};
+
+/** 목의 등급 카드. 1등급 줄에 모자란 종목이 있으면 NEEDS_ITEMS, 다 쟀으면 `gradeOf` 로 */
+export function mockCertification(
+  ageGroup: string,
+  sex: string,
+  measured: string[],
+  overall: number,
+): Concrete<Certification> {
+  const ratios = PEER_GRADES[`${ageGroup}-${sex}`];
+  const peers: Concrete<PeerGrade>[] = ratios
+    ? (["1등급", "2등급", "3등급", "참가"] as const).map((grade, i) => ({
+        grade,
+        ratio: ratios[i],
+      }))
+    : [];
+  const rows = FIRST_GRADE_ITEMS[ageGroup];
+  if (!rows) return { grade: null, status: "NO_CRITERIA", missingItems: [], peers };
+  const catalogue = fixtures.itemsByAgeGroup[ageGroup]?.items ?? [];
+  const labelOf = (code: string) =>
+    catalogue.find((i) => i.itemCode === code)?.itemLabel ?? MORE_LABELS[code] ?? code;
+  const missingItems = rows
+    .filter((codes) => !codes.some((code) => measured.includes(code)))
+    .map((itemCodes) => ({ itemCodes, label: itemCodes.map(labelOf).join(" 또는 ") }));
+  return missingItems.length > 0
+    ? { grade: null, status: "NEEDS_ITEMS", missingItems, peers }
+    : { grade: gradeOf(overall), status: "GRADED", missingItems: [], peers };
+}
 
 /**
  * 시연 가족 아이의 측정을 다섯 요인까지 채운다.
@@ -136,6 +189,9 @@ function parentLatest(
     percentile: i.percentile,
   });
   const factors = ["심폐지구력", "근력", "근지구력", "유연성", "민첩성", "순발력"];
+  const who = fixtures.profiles.profiles.find((p) => p.profileId === profileId) as
+    Profile | undefined;
+  const sex = who?.sex ?? "F";
   return {
     fitnessTestId: `00000000-0000-4000-8000-0000000000${profileId.slice(-2)}`,
     testedOn: test.testedOn,
@@ -147,6 +203,12 @@ function parentLatest(
     weakest: edge(sorted[0]),
     strongest: edge(sorted[sorted.length - 1]),
     coachDirection: "GROWTH",
+    certification: mockCertification(
+      "성인",
+      sex,
+      items.map((i) => i.itemCode),
+      Math.round(items.reduce((sum, i) => sum + i.percentile, 0) / items.length),
+    ),
     disclaimer: fixtures.fitnessMap.disclaimer,
   } as unknown as Concrete<LatestFitnessTest>;
 }
@@ -157,6 +219,12 @@ function demoLatest() {
   const kid = all[KID_ID];
   if (!kid) return all;
   kid.items = [...kid.items, ...(KID_EXTRA as typeof kid.items)];
+  kid.certification = mockCertification(
+    "유소년",
+    "M",
+    kid.items.map((i) => i.itemCode),
+    55,
+  );
   const byFactor: Record<string, number | null> = {
     심폐지구력: 79,
     근력: 50,

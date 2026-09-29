@@ -31,8 +31,11 @@ export type FitnessFactor =
  */
 export type Band = "strength" | "steady" | "growth";
 
-/** 국민체력100 등급. **1·2·3 과 「참가」뿐이다.** 4·5등급은 없다. */
-export type Grade = NonNullable<S["ItemResult"]["grade"]>;
+/**
+ * 국민체력100 등급. **1·2·3 과 「참가」뿐이다.** 4·5등급은 없다.
+ * 인증서처럼 한 사람에게 하나다 — 종목마다 붙지 않는다(`Certification`).
+ */
+export type Grade = NonNullable<S["Certification"]["grade"]>;
 
 export type TargetMetric = "VIDEO_DONE" | "TIMER_MINUTES" | "STEPS";
 export type VerifiedBy = "VIDEO_PROGRESS" | "TIMER" | "SELF_REPORT";
@@ -71,6 +74,18 @@ export type FitnessItem = S["Item"];
 export type FitnessTestResult = S["FitnessTestResponse"];
 export type LatestFitnessTest = S["LatestFitnessResponse"];
 export type ItemResult = S["ItemResult"];
+/**
+ * 국민체력100 등급 판정. 보호자만 받는다 — 아이 계정이거나 잰 적이 없으면 null.
+ *   GRADED       등급이 나왔다(「참가」 포함). missingItems 가 있으면 1등급 판정에 모자란 종목
+ *   NEEDS_ITEMS  기준은 있는데 모자란 종목 때문에 어느 등급도 판정하지 못했다
+ *   NO_CRITERIA  이 나이 · 성별은 기준표가 없다(만 7~10세, 65세 이상 등)
+ */
+export type Certification = S["Certification"];
+export type CertificationStatus = NonNullable<Certification["status"]>;
+/** 한 번에 재는 것 하나. 035 · 037 은 둘 중 하나만 재면 돼서 한 칸에 둘이 들어온다 */
+export type MissingItem = S["MissingItem"];
+/** 같은 나이 · 성별 참가자 가운데 그 등급을 받은 비율(0~1) */
+export type PeerGrade = S["PeerGrade"];
 export type RadarPoint = S["RadarPointResponse"];
 
 export type CoachRun = S["CoachRunView"];

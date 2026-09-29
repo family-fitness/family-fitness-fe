@@ -11,6 +11,7 @@ import {
   acting,
   bandOf,
   gradeOf,
+  mockCertification,
   db,
   fail,
   fixtures,
@@ -519,6 +520,8 @@ const fitness = [
         source: string;
         heightCm?: number;
         weightKg?: number;
+        bodyFatPct?: number;
+        waistCm?: number;
         items: { itemCode: string; value: number }[];
       };
       // 지난 날짜로 적은 회차는 이력에만 들어간다 — 가장 최근 회차가 「지금」 이다
@@ -557,10 +560,13 @@ const fitness = [
       const sorted = [...items].sort((a, b) => a.percentile - b.percentile);
       const factorOf = (code: string) =>
         catalogue?.items.find((i) => i.itemCode === code)?.factor ?? "유연성";
+      const overall = Math.round(items.reduce((s, i) => s + i.percentile, 0) / items.length);
 
       const result: Concrete<FitnessTestResult> = {
         fitnessTestId: uuid(),
         testedOn: body.testedOn,
+        bodyFatPct: body.bodyFatPct ?? null,
+        waistCm: body.waistCm ?? null,
         items,
         weakest: {
           factor: factorOf(sorted[0].itemCode),
@@ -572,10 +578,15 @@ const fitness = [
           itemCode: sorted[sorted.length - 1].itemCode,
           percentile: sorted[sorted.length - 1].percentile,
         },
+        certification: mockCertification(
+          profile.ageGroup,
+          (profile as Profile).sex ?? "F",
+          items.map((i) => i.itemCode),
+          overall,
+        ),
         disclaimer: fixtures.fitnessMap.disclaimer,
       };
 
-      const overall = Math.round(items.reduce((s, i) => s + i.percentile, 0) / items.length);
       // 레이더는 요인마다 그 요인을 잰 항목의 백분위. 안 잰 요인은 null 이다
       const radar = [...new Set((catalogue?.items ?? []).map((i) => i.factor))].map((factor) => ({
         factor,
@@ -584,6 +595,8 @@ const fitness = [
       if (newest) {
         db.latest[profileId] = {
           ...result,
+          heightCm: body.heightCm ?? null,
+          weightKg: body.weightKg ?? null,
           radar: radar as Concrete<LatestFitnessTest>["radar"],
           coachDirection: sorted[0].percentile > 75 ? "STRENGTHEN" : "GROWTH",
         };

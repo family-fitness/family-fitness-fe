@@ -53,7 +53,7 @@ export const CONSENT_TERMS: Record<ConsentKind, ConsentTerms> = {
       },
       {
         label: "이용 목적",
-        text: "또래와 비교한 백분위 · 등급 계산, AI 운동 편성, 기록 보여 주기",
+        text: "또래와 비교한 백분위, 국민체력100 기준 등급, AI 운동 편성, 기록 보여 주기",
       },
       {
         label: "AI 편성",
@@ -89,7 +89,7 @@ export const PRIVACY_POLICY: LegalDoc = {
       heading: "쓰는 곳",
       lines: [
         "로그인 · 가족 관리",
-        "또래 비교(백분위 · 등급) · 체력 육각형",
+        "또래와 비교한 백분위 · 국민체력100 기준 등급 · 체력 육각형",
         "AI 운동 편성 · 운동 기록 · 칭찬 알림 · 가족 리그",
       ],
     },

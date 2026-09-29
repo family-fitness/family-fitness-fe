@@ -105,6 +105,19 @@ for (const m of map.members.filter((x) => x.latest)) {
   );
 }
 
+// 등급은 한 사람에 하나 — 종목 줄에는 없다. 1등급 줄의 종목을 다 안 잰 아이는 모자란 종목을 받는다
+const kidLatest = (await (await get(`/profiles/${DEMO.kid}/fitness-tests/latest`)).json()) as {
+  certification?: { status?: string; missingItems?: { itemCodes?: string[] }[] } | null;
+};
+check(
+  "안 잰 종목이 있는 아이의 등급은 NEEDS_ITEMS 와 모자란 종목",
+  kidLatest.certification?.status === "NEEDS_ITEMS" &&
+    (kidLatest.certification.missingItems?.length ?? 0) > 0,
+  `${kidLatest.certification?.status} · ${kidLatest.certification?.missingItems
+    ?.map((m) => m.itemCodes?.join("/"))
+    .join(", ")}`,
+);
+
 /* ─── 1. 코치 제안은 미션이 아니다 ─────────────────────────── */
 
 check("승인 전 미션 0건", (await missionCount()) === 0, `${await missionCount()}건`);
