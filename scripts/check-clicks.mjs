@@ -83,7 +83,11 @@ async function checkRoute(mode, route) {
   for (let i = 0; i < count; i++) {
     const page = await ctx.newPage();
     const bad = [];
-    page.on("pageerror", (e) => bad.push("터짐: " + String(e).split("\n")[0].slice(0, 100)));
+    page.on("pageerror", (e) => {
+      const line = String(e).split("\n")[0];
+      // 막아 둔 영상 칸이 localStorage 를 읽으려다 내는 소리 — 우리 코드가 아니다(check:loop · journey · play · nowebgl 과 같게)
+      if (!/localStorage.*Access is denied/.test(line)) bad.push("터짐: " + line.slice(0, 100));
+    });
     page.on("console", (m) => {
       if (
         m.type() === "error" &&
