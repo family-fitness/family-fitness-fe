@@ -8,15 +8,18 @@ import { Initial } from "@/components/ui/initial";
 /**
  * 사진 한 장 고르기 — 동그란 자리를 누르면 폰의 사진첩 · 카메라가 열린다.
  * 고른 사진은 가운데를 정사각으로 잘라 320px JPEG 로 줄인다(이 기기에 두기 알맞은 크기).
+ * 사진이 없을 때 첫 글자 동그라미는 다른 화면과 같은 색 — 부모 노랑 · 아이 파랑. 회색이면 바탕에 묻혔다(9/28)
  */
 export function PhotoPicker({
   value,
   name,
   onChange,
+  tone = "signal",
 }: {
   value: string | null;
   name: string;
   onChange: (dataUrl: string | null) => void;
+  tone?: "signal" | "mark";
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [problem, setProblem] = useState<string | null>(null);
@@ -51,7 +54,7 @@ export function PhotoPicker({
           // eslint-disable-next-line @next/next/no-img-element -- 방금 고른 data URL
           <img src={value} alt="" className="size-36 rounded-full object-cover" />
         ) : (
-          <Initial name={name || "?"} size="lg" tone="sub" className="size-36 text-5xl" />
+          <Initial name={name || "?"} size="lg" tone={tone} className="size-36 text-5xl" />
         )}
         <span className="bg-signal-strong absolute right-1 bottom-1 grid size-11 place-items-center rounded-full text-white">
           <Camera aria-hidden className="size-5" />

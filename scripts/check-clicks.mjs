@@ -34,6 +34,8 @@ const ROUTES = {
     "/settings",
     "/settings/support-mode",
     "/settings/consent",
+    "/settings/privacy",
+    "/settings/terms",
     `/p/${KID}/measure`,
     `/p/${KID}/result`,
     "/start",
@@ -52,6 +54,8 @@ const found = [];
  */
 async function checkRoute(mode, route) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  // 처음 한 번 뜨는 환영 안내는 본 것으로 — 화면을 덮으면 누를 것을 못 누른다
+  await ctx.addInitScript(() => localStorage.setItem("ff-welcome", "parent,kid"));
   await ctx.addInitScript(
     ([m, kid]) => {
       // 이 기기에 남는 고른 값(소리 안내 …)은 탭끼리 나눠 쓴다 — 앞 탭에서 누른 것이
@@ -81,7 +85,11 @@ async function checkRoute(mode, route) {
   for (let i = 0; i < count; i++) {
     const page = await ctx.newPage();
     const bad = [];
-    page.on("pageerror", (e) => bad.push("터짐: " + String(e).split("\n")[0].slice(0, 100)));
+    page.on("pageerror", (e) => {
+      const line = String(e).split("\n")[0];
+      // 막아 둔 영상 칸이 localStorage 를 읽으려다 내는 소리 — 우리 코드가 아니다(check:loop · journey · play · nowebgl 과 같게)
+      if (!/localStorage.*Access is denied/.test(line)) bad.push("터짐: " + line.slice(0, 100));
+    });
     page.on("console", (m) => {
       if (
         m.type() === "error" &&

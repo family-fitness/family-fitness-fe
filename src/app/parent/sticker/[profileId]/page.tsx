@@ -183,7 +183,7 @@ function StickerForm() {
             <h2 className="text-lead font-extrabold">
               {log && log.minutes > 0
                 ? `오늘 ${withJosa(name, "은는")} ${log.minutes}분 움직였어요`
-                : `오늘 ${name}에게 붙여 줄 스티커`}
+                : name}
             </h2>
           )}
           {log && log.entries.length > 0 && (

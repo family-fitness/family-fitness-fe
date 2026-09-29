@@ -52,7 +52,6 @@ export function MeasureField({
             type="number"
             inputMode="decimal"
             step="any"
-            placeholder="숫자만"
             aria-describedby={error ? `${item.itemCode}-error` : undefined}
             aria-invalid={error ? true : undefined}
             className={cn("field pr-14", error && "border-signal-deep")}
