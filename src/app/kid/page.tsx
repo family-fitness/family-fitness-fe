@@ -17,6 +17,7 @@ import { PanelCell, PanelCells, WeekPanel } from "@/components/domain/week-panel
 import { KiumIsland } from "@/components/scene/kium-island";
 import { NotificationBell } from "@/components/domain/notification-bell";
 import { XpGauge } from "@/components/domain/xp-gauge";
+import { WelcomeSheet } from "@/components/domain/welcome-sheet";
 import type { Mission } from "@/lib/api/types";
 import type { ProfileWithSex } from "@/lib/api/types";
 import {
@@ -291,6 +292,8 @@ export default function KidHomePage() {
           </PanelCells>
         </WeekPanel>
       </Stage>
+      {/* 처음 들어올 때 한 번 — 사용법 세 줄 */}
+      <WelcomeSheet who="kid" />
     </>
   );
 }
