@@ -25,6 +25,8 @@ const ctx = await browser.newContext({
   deviceScaleFactor: SHOTS ? 2 : 1,
   locale: "ko-KR",
 });
+// 처음 한 번 뜨는 환영 안내는 본 것으로 — 화면을 덮으면 누를 것을 못 누른다
+await ctx.addInitScript(() => localStorage.setItem("ff-welcome", "parent,kid"));
 // 이 맥의 말하기 엔진은 말을 끊을 때 화면을 멈춘다 — check-play 와 같이 재운다
 await ctx.addInitScript(() => {
   if ("speechSynthesis" in window) {
