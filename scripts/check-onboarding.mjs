@@ -13,7 +13,7 @@
  *   2. 초대받은 계정 → 자리 확인 → 참여 방식 → 역할 고르기
  *   3. 첫 시작 중간에 새로고침 — 가족을 만든 뒤 · 아이를 만든 뒤. 두 번 만들지 않고 이어 간다.
  *      아이 등록 첫 칸의 뒤로 · 「지금 잴래요」 측정 화면의 뒤로가 홈으로 가는지
- *   4. 심사용 계정 → 들어가는 화면 → 역할 고르기 없이 부모 홈(360px 폰)
+ *   4. 심사용 계정 → 들어가는 화면 → 역할 고르기 없이 부모 홈. 360px 폰에서 가족 이름이 잘리지 않는지
  */
 import { chromium } from "playwright";
 
@@ -293,6 +293,16 @@ await walk(
         await h.until(/\/parent$/);
       }
       await page.getByRole("heading", { level: 1 }).waitFor({ timeout: 10000 });
+    });
+    // 진짜 서버의 체험 가족 이름(「체험 가족」)을 넣어 본다. 아이 알약 · 알림 · 설정과 한 줄에 선다
+    await h.step("360px 에서 가족 이름이 잘리지 않는다", async () => {
+      const cut = await page.getByRole("heading", { level: 1 }).evaluate(async (h1) => {
+        const span = h1.querySelector("span") ?? h1;
+        span.textContent = "체험 가족";
+        await new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done)));
+        return span.scrollWidth > span.clientWidth;
+      });
+      if (cut) problems.push("심사용 계정\n    360px 에서 가족 이름 「체험 가족」 이 잘린다");
     });
   },
   { width: 360, height: 780 },
