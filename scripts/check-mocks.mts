@@ -528,12 +528,6 @@ check(
   `${unmeasuredRun.status}`,
 );
 
-// 회원 탈퇴 ▲ 요청 — 204 로 끝나고, 토큰이 없으면 못 한다
-const unsigned = await fetch(`${BASE}/me`, { method: "DELETE" });
-check("로그인 없이는 탈퇴할 수 없다", unsigned.status === 401, `${unsigned.status}`);
-const deleted = await send("DELETE", "/me");
-check("회원 탈퇴는 204", deleted.status === 204, `${deleted.status}`);
-
 server.close();
 console.log(failed === 0 ? "\n전부 통과" : `\n${failed}건 실패`);
 process.exit(failed === 0 ? 0 : 1);

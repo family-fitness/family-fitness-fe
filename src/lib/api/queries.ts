@@ -137,14 +137,6 @@ export function useGoogleLogin() {
   });
 }
 
-/**
- * 회원 탈퇴 — 이 계정과 가족의 기록을 지운다. 성공하면 부르는 쪽이 로그아웃한다.
- * ▲ 요청: `DELETE /me`(204). 서버에 아직 없다 — 목 서버가 대신 답한다.
- */
-export function useDeleteAccount() {
-  return useMutation({ mutationFn: () => api.delete<void>("/me") });
-}
-
 /* ─── 가족 · 프로필 ────────────────────────────────────────── */
 
 /*

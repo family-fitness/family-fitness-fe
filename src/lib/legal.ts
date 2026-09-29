@@ -119,7 +119,6 @@ export const PRIVACY_POLICY: LegalDoc = {
       lines: [
         "내 정보를 보고 · 고치고 · 지우도록 요구할 수 있어요",
         "동의 철회 — 설정 → 보호자 동의",
-        "탈퇴 — 설정 → 회원 탈퇴",
       ],
     },
     {
@@ -164,7 +163,7 @@ export const TERMS_OF_SERVICE: LegalDoc = {
     },
     {
       heading: "탈퇴",
-      lines: ["설정 → 회원 탈퇴로 언제든 그만둘 수 있어요. 탈퇴하면 가족의 정보를 지워요"],
+      lines: ["언제든 탈퇴를 요청할 수 있어요. 탈퇴하면 가족의 정보를 지워요"],
     },
   ],
 };
