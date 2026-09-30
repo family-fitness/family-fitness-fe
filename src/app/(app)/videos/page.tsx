@@ -260,7 +260,20 @@ function Finder() {
         onClose={closePreview}
         title={preview?.title ?? "시범"}
       >
-        {preview && <Preview clip={preview} />}
+        {preview && (
+          <Preview
+            clip={preview}
+            // 못 틀면 목록에서 같은 단계 · 같은 요인의 다른 동작을 대신 튼다
+            alternates={clips
+              .filter(
+                (c) =>
+                  c.clipId !== preview.clipId &&
+                  c.phase === preview.phase &&
+                  c.factor === preview.factor,
+              )
+              .slice(0, 5)}
+          />
+        )}
       </Sheet>
     </>
   );
@@ -361,7 +374,7 @@ function ClipRow({
 }
 
 /** 시범 보기. 누르면 그 동작 구간만 되풀이한다 */
-function Preview({ clip }: { clip: ClipView }) {
+function Preview({ clip, alternates }: { clip: ClipView; alternates: ClipView[] }) {
   const [playing, setPlaying] = useState(false);
   return (
     <div>
@@ -371,6 +384,7 @@ function Preview({ clip }: { clip: ClipView }) {
         endSec={clip.endSec}
         mediaUrl={clip.mediaUrl}
         thumbnailUrl={clip.thumbnailUrl}
+        alternates={alternates}
         playing={playing}
         title={clip.title}
       />

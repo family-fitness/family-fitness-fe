@@ -25,6 +25,7 @@ import {
   useFamilyProfiles,
   useMissions,
   useProgress,
+  useClips,
   useSendCheer,
 } from "@/lib/api/queries";
 import { errorMessage } from "@/lib/errors";
@@ -614,14 +615,10 @@ function Step({
 
           {clip?.videoId && (
             <div className="mt-3">
-              <ClipPlayer
-                videoId={clip.videoId}
-                startSec={clip.startSec ?? 0}
-                endSec={clip.endSec ?? null}
-                mediaUrl={clip.mediaUrl}
-                thumbnailUrl={clip.thumbnailUrl}
+              <StepPlayer
+                clip={clip}
+                session={s}
                 playing={status === "running"}
-                title={s.title}
                 onBlocked={onBlocked}
               />
             </div>
@@ -732,6 +729,38 @@ function Step({
         </button>
       )}
     </li>
+  );
+}
+
+/**
+ * 지금 하는 칸의 시범 영상. 못 틀면 같은 단계 · 같은 요인의 다른 클립을 대신 틀 수 있게 넘긴다.
+ * 지금 하는 칸에서만 그리니 다른 클립 목록도 그 칸 하나만 받는다
+ */
+function StepPlayer({
+  clip,
+  session,
+  playing,
+  onBlocked,
+}: {
+  clip: NonNullable<MissionSession["clip"]>;
+  session: MissionSession;
+  playing: boolean;
+  onBlocked: () => void;
+}) {
+  const { data } = useClips({ phase: session.phase, factor: session.factor ?? null });
+  const alternates = (data?.clips ?? []).filter((c) => c.videoId !== clip.videoId).slice(0, 5);
+  return (
+    <ClipPlayer
+      videoId={clip.videoId}
+      startSec={clip.startSec ?? 0}
+      endSec={clip.endSec ?? null}
+      mediaUrl={clip.mediaUrl}
+      thumbnailUrl={clip.thumbnailUrl}
+      alternates={alternates}
+      playing={playing}
+      title={session.title}
+      onBlocked={onBlocked}
+    />
   );
 }
 

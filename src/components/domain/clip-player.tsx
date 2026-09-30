@@ -1,6 +1,6 @@
 "use client";
 
-import { Volume2 } from "lucide-react";
+import { ExternalLink, RefreshCw, Volume2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 /*
@@ -97,24 +97,112 @@ interface PlayerProps {
   title: string;
   /** 소리를 꺼도 재생이 안 됐다 */
   onBlocked?: () => void;
+  /** 못 틀었을 때 「다른 영상 보기」. 없으면 그 단추를 두지 않는다 */
+  onOther?: () => void;
+}
+
+/** 대신 틀 수 있는 영상 한 편 — 같은 동작의 다른 클립 */
+export interface AlternateClip {
+  videoId: string;
+  startSec?: number | null;
+  endSec?: number | null;
+  mediaUrl?: string | null;
+  thumbnailUrl?: string | null;
 }
 
 export function ClipPlayer({
   mediaUrl,
   thumbnailUrl,
+  alternates = [],
   ...props
-}: PlayerProps & {
+}: Omit<PlayerProps, "onOther"> & {
   /** 공단 mp4 주소. 있으면 유튜브가 아니라 이 파일을 튼다 */
   mediaUrl?: string | null;
   /** 공단 영상의 장면 이미지. 유튜브는 비어 있고 유튜브 썸네일을 쓴다 */
   thumbnailUrl?: string | null;
+  /**
+   * 이 영상을 못 틀면 대신 틀 영상들(앞에서부터). 비어 있으면 「다른 영상 보기」 를 두지 않는다.
+   * 공단 mp4 일부는 Content-Type 이 video/mg4 로 와서 iPhone Safari 가 열지 못한다
+   */
+  alternates?: readonly AlternateClip[];
 }) {
-  if (mediaUrl) return <FilePlayer {...props} src={mediaUrl} poster={thumbnailUrl ?? null} />;
-  return <YoutubePlayer {...props} />;
+  // 몇 번째 대신 영상을 트는가. 칸이 바뀌면(videoId) 처음 영상으로 돌아간다
+  const [swap, setSwap] = useState<{ from: string; index: number } | null>(null);
+  const index = swap?.from === props.videoId ? swap.index : 0;
+  const all: AlternateClip[] = [
+    {
+      videoId: props.videoId,
+      startSec: props.startSec,
+      endSec: props.endSec,
+      mediaUrl,
+      thumbnailUrl,
+    },
+    ...alternates.filter((a) => a.videoId !== props.videoId),
+  ];
+  const current = all[Math.min(index, all.length - 1)];
+  const onOther =
+    index + 1 < all.length ? () => setSwap({ from: props.videoId, index: index + 1 }) : undefined;
+  const shown = {
+    ...props,
+    videoId: current.videoId,
+    startSec: current.startSec ?? 0,
+    endSec: current.endSec ?? null,
+    onOther,
+  };
+  if (current.mediaUrl)
+    return (
+      <FilePlayer
+        key={current.mediaUrl}
+        {...shown}
+        src={current.mediaUrl}
+        poster={current.thumbnailUrl ?? null}
+      />
+    );
+  return <YoutubePlayer key={current.videoId} {...shown} />;
+}
+
+/**
+ * 영상을 못 틀었을 때 — 빈 화면 대신 까닭 한 줄, 새 창으로 열기, 다른 영상이 있으면 다른 영상 보기.
+ * 새 창에서는 브라우저가 파일을 직접 여니 앱 안에서 못 튼 영상도 열리는 때가 있다
+ */
+function PlayFailed({ href, onOther }: { href: string; onOther?: () => void }) {
+  return (
+    <div role="alert" className="bg-sub rounded-2xl px-4 py-4 text-center">
+      <p className="text-sm font-extrabold">이 기기에서 영상을 열지 못했어요</p>
+      <div className="mt-3 flex flex-wrap justify-center gap-2">
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="press bg-paper text-signal-deep flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-extrabold"
+        >
+          <ExternalLink aria-hidden className="size-4" />새 창으로 열기
+        </a>
+        {onOther && (
+          <button
+            type="button"
+            onClick={onOther}
+            className="press bg-signal-strong flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-extrabold text-white"
+          >
+            <RefreshCw aria-hidden className="size-4" />
+            다른 영상 보기
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 /** 유튜브 영상의 한 토막 */
-function YoutubePlayer({ videoId, startSec, endSec, playing, title, onBlocked }: PlayerProps) {
+function YoutubePlayer({
+  videoId,
+  startSec,
+  endSec,
+  playing,
+  title,
+  onBlocked,
+  onOther,
+}: PlayerProps) {
   const frame = useRef<HTMLIFrameElement>(null);
   const player = useRef<YtPlayer | null>(null);
   const [ready, setReady] = useState(false);
@@ -204,9 +292,14 @@ function YoutubePlayer({ videoId, startSec, endSec, playing, title, onBlocked }:
     };
   }, [ready, playing, startSec, endSec, failed]);
 
-  // 못 불러오면 한 줄로 — 동작 이름은 위(칸 · 시트 제목)에 있다. 영상 크기의 빈 상자를 세워 두지 않는다
+  // 못 불러오면 — 동작 이름은 위(칸 · 시트 제목)에 있다. 영상 크기의 빈 상자를 세워 두지 않는다
   if (failed) {
-    return <p className="text-caption text-ink-soft py-2 text-center">영상을 못 불러왔어요</p>;
+    return (
+      <PlayFailed
+        href={`https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}&t=${Math.floor(startSec)}s`}
+        onOther={onOther}
+      />
+    );
   }
 
   // 틀은 남색 — 검정으로 면을 채우지 않는다. 스크립트를 받는 동안 썸네일이 그 위에 흐리게 선다
@@ -259,6 +352,7 @@ function FilePlayer({
   playing,
   title,
   onBlocked,
+  onOther,
 }: Omit<PlayerProps, "videoId"> & { src: string; poster: string | null }) {
   const video = useRef<HTMLVideoElement>(null);
   // 못 튼 파일을 기억한다 — 같은 자리에 다른 영상이 오면(시범 보기에서 다른 동작을 누르면) 다시 틀어 본다
@@ -306,9 +400,8 @@ function FilePlayer({
     if (v) v.currentTime = startSec;
   };
 
-  if (failed) {
-    return <p className="text-caption text-ink-soft py-2 text-center">영상을 못 불러왔어요</p>;
-  }
+  // 형식(iPhone Safari 가 video/mg4 로 온 파일을 못 연다) · 네트워크 오류 모두 여기로 온다
+  if (failed) return <PlayFailed href={src} onOther={onOther} />;
 
   return (
     <div className="bg-signal-deep relative overflow-hidden rounded-2xl">
