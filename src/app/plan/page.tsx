@@ -18,6 +18,7 @@ import { FactorRadar } from "@/components/domain/factor-radar";
 import { ScoreLine } from "@/components/domain/factor-view";
 import { ErrorState } from "@/components/ui/error-state";
 import { ApiError } from "@/lib/api/client";
+import { BAND_COPY, FOCUS_COPY } from "@/lib/api/types";
 import {
   useAvailability,
   useFitnessMap,
@@ -242,9 +243,7 @@ function PlanForm() {
           )}
           {shownFocus && (
             <p className="mt-3 text-center text-sm font-bold">
-              <span className="text-ink-soft">
-                {focus ? "보호자가 키워 주고 싶은 역량" : "지금 키우기 좋은 영역"}
-              </span>{" "}
+              <span className="text-ink-soft">{focus ? FOCUS_COPY : BAND_COPY.growth}</span>{" "}
               <span className="text-signal-deep font-extrabold">{shownFocus}</span>
             </p>
           )}
@@ -315,12 +314,8 @@ function PlanForm() {
         </section>
 
         <section className="card">
-          <CardHead title="키워 주고 싶은 역량" />
-          <div
-            className="mt-2 grid grid-cols-3 gap-2"
-            role="group"
-            aria-label="키워 주고 싶은 역량"
-          >
+          <CardHead title={FOCUS_COPY} />
+          <div className="mt-2 grid grid-cols-3 gap-2" role="group" aria-label={FOCUS_COPY}>
             {/* 다른 고르기와 같은 칩이다. 폭을 다 채운 파랑 단추로 두었더니 아래 주 버튼과 누를 곳이 둘로 보였다 */}
             <span className="col-span-3 flex">
               <Chip on={focus === null} onClick={() => setFocus(null)}>

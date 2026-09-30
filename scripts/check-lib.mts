@@ -41,6 +41,10 @@ import { josa } from "@/lib/utils";
 import { afterFileFailure, fileType, finderHref, finderOwner } from "@/lib/videos";
 import { callName, guardiansName, mustAddChild, openWithoutChild } from "@/lib/family";
 
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
+import { BAND_COPY, FOCUS_COPY } from "@/lib/api/types";
+
 let failed = 0;
 function check(name: string, ok: boolean, detail = "") {
   console.log(`${ok ? "통과" : "실패"}  ${name}${detail ? ` — ${detail}` : ""}`);
@@ -649,6 +653,36 @@ check(
 );
 check("mp4 가 아니면 형식을 적지 않는다", fileType("https://x.test/a.webm") === undefined);
 check("주소가 이상해도 멈추지 않는다", fileType("not a url") === undefined);
+
+/* ─── 키울 요인을 부르는 두 이름(결정 7) ─────────────────── */
+
+check(
+  "측정으로 고른 요인은 「지금 키우기 좋은 영역」",
+  BAND_COPY.growth === "지금 키우기 좋은 영역",
+);
+check(
+  "보호자가 고른 요인은 「보호자가 키워 주고 싶은 역량」",
+  FOCUS_COPY === "보호자가 키워 주고 싶은 역량",
+);
+{
+  // 편성 화면 카드 제목이 「보호자가」 를 뺀 「키워 주고 싶은 역량」 이었다
+  const files = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory()
+        ? files(join(dir, e.name))
+        : /\.tsx?$/.test(e.name)
+          ? [join(dir, e.name)]
+          : [],
+    );
+  const bare = files("src/app")
+    .concat(files("src/components"))
+    .filter((f) => /(?<!보호자가 )키워 주고 싶은 역량/.test(readFileSync(f, "utf8")));
+  check(
+    "화면에 「보호자가」 없이 「키워 주고 싶은 역량」 만 쓴 곳이 없다",
+    bare.length === 0,
+    bare.join(", "),
+  );
+}
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);
