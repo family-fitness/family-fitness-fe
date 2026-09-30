@@ -134,7 +134,7 @@ export default function ChildDetailPage() {
             <div className="min-w-0 flex-1">
               <h2 className="text-lead font-extrabold">{name}</h2>
               <p className="text-caption text-ink-soft mt-0.5 font-bold">
-                {progress ? `Lv.${progress.level} · ${stage.name}` : " "}
+                {progress ? `Lv.${progress.level} ${stage.name}` : " "}
               </p>
               {member?.headline && (
                 <p className="text-signal-deep text-caption mt-1 font-extrabold">
@@ -145,7 +145,7 @@ export default function ChildDetailPage() {
           </div>
           <div className="border-line mt-4 border-t pt-3">
             <p className="text-caption text-ink-soft font-bold">
-              체력{testedOn && ` · ${formatDate(testedOn)} 측정`}
+              체력{testedOn && `, ${formatDate(testedOn)}에 쟀어요`}
             </p>
             {/* 잰 적이 있는지로 가른다 — 만 7~10세는 쟀어도 점수가 없을 수 있다(규칙 8) */}
             {testedOn == null && (
@@ -268,7 +268,7 @@ function BodyGrowth({
   return (
     <Card>
       <CardHead
-        title="키 · 몸무게"
+        title="키와 몸무게"
         meta={measuredOn ? `${formatDate(measuredOn)} 기준` : undefined}
       />
       {height != null && weight != null ? (

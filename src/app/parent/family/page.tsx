@@ -172,7 +172,7 @@ function MemberRow({ profile, onInvite }: { profile: ProfileSummary; onInvite: (
         <div className="min-w-0 flex-1">
           <p className="text-body font-bold">{profile.name}</p>
           <p className="text-faint mt-0.5 text-xs">
-            {profile.ageGroup} · {profile.role === "PARENT" ? "부모" : "자녀"}
+            {profile.ageGroup}, {profile.role === "PARENT" ? "부모" : "자녀"}
           </p>
         </div>
 

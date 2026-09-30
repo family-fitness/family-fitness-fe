@@ -135,7 +135,7 @@ function League() {
           familyName={map?.familyName ?? "우리 가족"}
           tier={league.tier}
           place={rank != null ? `${league.groupSize}가족 중 ${rank}등` : "아직 순위가 없어요"}
-          meta={`${monthLabel(month)} · ${league.daysLeft}일 남음`}
+          meta={`${monthLabel(month)}, ${league.daysLeft}일 남았어요`}
           kids={kids}
           progresses={kids.map((k) => progresses[kidIds.indexOf(k.profileId ?? "")]?.data)}
         />
@@ -199,7 +199,7 @@ function League() {
           <CardHead title="이번 달 순위" meta={`${league.groupSize}가족`} />
           {/* 막대는 달성률인데 줄은 점수로 선다 — 100% 가 92% 아래에 있어도 까닭을 알게 */}
           <p className="text-caption text-ink-soft mt-1">
-            달성률과 운동한 날 수를 함께 봐요. 하루만 해낸 100% 보다 꾸준히 한 집이 위에 서요.
+            달성률과 운동한 날 수를 함께 봐요. 하루만 해낸 100%보다 꾸준히 한 집이 위에 서요.
           </p>
           <ol className="mt-1">
             {league.standings.map((s, i) => {
