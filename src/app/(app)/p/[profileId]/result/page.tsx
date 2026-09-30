@@ -173,7 +173,10 @@ export default function ResultPage() {
 
         {/* 다음에 뭘 할지 */}
         <Link
-          href="/plan"
+          // 잰 아이의 운동으로 — 아이가 둘이면 홈에서 고른 아이가 아닐 수 있다
+          href={
+            profile?.role === "CHILD" ? `/plan?profileId=${encodeURIComponent(profileId)}` : "/plan"
+          }
           className="press bg-signal-strong flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
         >
           <ArtIcon name="icon/menu-ai" className="size-5" />
