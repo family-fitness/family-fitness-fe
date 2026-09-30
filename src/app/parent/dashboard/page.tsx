@@ -177,7 +177,7 @@ export default function FamilyDashboardPage() {
               className="press border-line mt-2 flex min-h-12 items-center gap-3 border-t pt-3"
             >
               <ArtIcon name="icon/menu-ai" className="size-8" />
-              <span className="min-w-0 flex-1 text-sm font-extrabold">AI 코치에게 운동 받기</span>
+              <span className="min-w-0 flex-1 text-sm font-extrabold">AI에게 운동 받기</span>
               <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
             </NavLink>
           )}
