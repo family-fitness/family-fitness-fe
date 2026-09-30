@@ -15,58 +15,24 @@ import { useEffect, useRef, useState } from "react";
   끄고 다시 틀고, 그래도 안 되면 위에 알린다(`onBlocked`) — 타이머를 멈추고 「눌러서 시작」.
 */
 
-declare global {
-  interface Window {
-    YT?: {
-      Player: new (el: HTMLElement, options: YtOptions) => YtPlayer;
-    };
-    onYouTubeIframeAPIReady?: () => void;
-  }
-}
+/**
+  유튜브 플레이어는 iframe 과 말(postMessage)로만 부린다 — 유튜브 스크립트(iframe_api)를 우리 화면에 들이면
+  그 스크립트가 저장소의 토큰 · 아이 사진을 읽을 수 있다(9/30 보안 점검). 말은 유튜브가 자기 스크립트로 주고받는
+  것과 같다: 「듣고 있어요」 로 붙고, 명령(command)을 보내고, 상태(infoDelivery · onStateChange)를 받는다.
+*/
+const YT_ORIGIN = "https://www.youtube-nocookie.com";
 
-interface YtPlayer {
-  playVideo: () => void;
-  pauseVideo: () => void;
-  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
-  getCurrentTime: () => number;
-  getPlayerState: () => number;
-  mute: () => void;
-  unMute: () => void;
-  destroy: () => void;
-}
-
-interface YtOptions {
-  events?: {
-    onReady?: () => void;
-    onStateChange?: (e: { data: number }) => void;
-    onError?: () => void;
-  };
-}
-
-const PLAYING = 1;
-/** 유튜브 플레이어 상태 — 받는 중 */
-const BUFFERING = 3;
+/** 유튜브 플레이어 상태 — 끝남 · 재생 중 · 받는 중 */
 const ENDED = 0;
+const PLAYING = 1;
+const BUFFERING = 3;
 
-/** API 스크립트는 한 번만 넣는다 */
-let apiPromise: Promise<void> | null = null;
-function loadApi(): Promise<void> {
-  if (window.YT?.Player) return Promise.resolve();
-  apiPromise ??= new Promise<void>((resolve, reject) => {
-    const previous = window.onYouTubeIframeAPIReady;
-    window.onYouTubeIframeAPIReady = () => {
-      previous?.();
-      resolve();
-    };
-    const script = document.createElement("script");
-    script.src = "https://www.youtube.com/iframe_api";
-    script.onerror = () => {
-      apiPromise = null;
-      reject(new Error("youtube api"));
-    };
-    document.head.appendChild(script);
-  });
-  return apiPromise;
+/** 붙지 못한 채 이만큼 지나면 못 불러온 것으로 본다 — 막힌 곳(학교 망 등)에서 썸네일만 영영 서 있지 않게 */
+const GIVE_UP_MS = 20_000;
+
+interface YtMessage {
+  event?: string;
+  info?: unknown;
 }
 
 /** 우리가 만드는 임베드 주소. 끝(end)은 넣지 않는다 — 되풀이를 우리가 하기 때문이다 */
@@ -79,7 +45,7 @@ function embedSrc(videoId: string, startSec: number): string {
     start: String(Math.floor(startSec)),
   });
   if (typeof window !== "undefined") params.set("origin", window.location.origin);
-  // 아이가 보는 영상이라 쿠키를 남기지 않는 주소로(9/30 보안 점검) — 조종은 같은 IFrame API 로 한다
+  // 아이가 보는 영상이라 쿠키를 남기지 않는 주소로(9/30 보안 점검) — 조종은 말(postMessage)로만 한다
   return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?${params}`;
 }
 
@@ -102,7 +68,9 @@ export function ClipPlayer({
   onBlocked?: () => void;
 }) {
   const frame = useRef<HTMLIFrameElement>(null);
-  const player = useRef<YtPlayer | null>(null);
+  /** 받은 상태 — 재생 중인지 · 몇 초인지. 유튜브가 바뀔 때마다 알려 준다 */
+  const playerState = useRef(-1);
+  const currentTime = useRef(0);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [muted, setMuted] = useState(false);
@@ -112,29 +80,76 @@ export function ClipPlayer({
     blocked.current = onBlocked;
   }, [onBlocked]);
 
-  // 플레이어 만들기. 영상이 바뀔 때만
+  /** 플레이어에게 한마디 — 붙기 전에 보낸 말은 사라진다 */
+  const send = (func: string, args: unknown[] = []) => {
+    frame.current?.contentWindow?.postMessage(
+      JSON.stringify({ event: "command", func, args, id: 1, channel: "widget" }),
+      YT_ORIGIN,
+    );
+  };
+
+  // 플레이어에 붙기. 영상이 바뀔 때만
   useEffect(() => {
-    let cancelled = false;
-    loadApi()
-      .then(() => {
-        if (cancelled || !frame.current || !window.YT) return;
-        player.current = new window.YT.Player(frame.current, {
-          events: {
-            onReady: () => setReady(true),
-            // 비공개 · 삭제 · 임베드 금지. 유튜브의 검은 상자를 그대로 두지 않는다
-            onError: () => setFailed(true),
-            onStateChange: (e) => {
-              // 영상 끝까지 가 버렸으면 클립 처음으로
-              if (e.data === ENDED) player.current?.seekTo(startSec, true);
-            },
-          },
-        });
-      })
-      .catch(() => setFailed(true));
+    let attached = false;
+    const target = () => frame.current?.contentWindow ?? null;
+    const say = (message: object) =>
+      target()?.postMessage(JSON.stringify({ ...message, id: 1, channel: "widget" }), YT_ORIGIN);
+
+    const onMessage = (e: MessageEvent) => {
+      // 이 iframe 이 보낸 유튜브의 말만 — 다른 창 · 다른 출처의 말은 듣지 않는다
+      if (e.origin !== YT_ORIGIN || e.source !== target()) return;
+      let message: YtMessage;
+      try {
+        message = (typeof e.data === "string" ? JSON.parse(e.data) : e.data) as YtMessage;
+      } catch {
+        return;
+      }
+      switch (message.event) {
+        case "onReady":
+          if (!attached) {
+            attached = true;
+            // 상태가 바뀔 때 · 못 틀 때 알려 달라고
+            say({ event: "command", func: "addEventListener", args: ["onStateChange"] });
+            say({ event: "command", func: "addEventListener", args: ["onError"] });
+            setReady(true);
+          }
+          break;
+        case "initialDelivery":
+        case "infoDelivery": {
+          const info = message.info as { playerState?: number; currentTime?: number } | null;
+          if (typeof info?.playerState === "number") playerState.current = info.playerState;
+          if (typeof info?.currentTime === "number") currentTime.current = info.currentTime;
+          break;
+        }
+        case "onStateChange":
+          if (typeof message.info === "number") {
+            playerState.current = message.info;
+            // 영상 끝까지 가 버렸으면 클립 처음으로
+            if (message.info === ENDED)
+              say({ event: "command", func: "seekTo", args: [startSec, true] });
+          }
+          break;
+        case "onError":
+          // 비공개 · 삭제 · 임베드 금지. 유튜브의 검은 상자를 그대로 두지 않는다
+          setFailed(true);
+          break;
+      }
+    };
+    window.addEventListener("message", onMessage);
+    // 붙을 때까지 「듣고 있어요」 — iframe 이 뜨기 전에 보낸 말은 사라진다
+    const hello = setInterval(() => {
+      if (attached) clearInterval(hello);
+      else say({ event: "listening" });
+    }, 250);
+    const giveUp = setTimeout(() => {
+      if (!attached) setFailed(true);
+    }, GIVE_UP_MS);
     return () => {
-      cancelled = true;
-      player.current?.destroy();
-      player.current = null;
+      window.removeEventListener("message", onMessage);
+      clearInterval(hello);
+      clearTimeout(giveUp);
+      playerState.current = -1;
+      currentTime.current = 0;
       setReady(false);
     };
   }, [videoId, startSec]);
@@ -142,14 +157,13 @@ export function ClipPlayer({
   // 켜고 끄기 · 되풀이. 못 불러온 영상은 건드리지 않는다 — 준비된 뒤에 막히면(비공개 · 임베드 금지)
   // 보는 고리가 막힌 재생으로 읽어 아이의 타이머를 세웠다
   useEffect(() => {
-    const p = player.current;
-    if (!ready || !p || failed) return;
+    if (!ready || failed) return;
     if (!playing) {
-      p.pauseVideo();
+      send("pauseVideo");
       return;
     }
 
-    p.playVideo();
+    send("playVideo");
     /*
       막혔나 본다. 소리를 끄고 한 번 더, 그래도 안 되면 위에 알린다.
       받는 중(BUFFERING)은 막힌 것이 아니다 — 느린 망에서 소리를 끄고 아이의 타이머를 멈추지 않게 조금 더
@@ -159,7 +173,7 @@ export function ClipPlayer({
     let quiet = false;
     let check: ReturnType<typeof setTimeout> | undefined;
     const look = () => {
-      const state = p.getPlayerState();
+      const state = playerState.current;
       if (state === PLAYING) return;
       if (state === BUFFERING && waits < 4) {
         waits += 1;
@@ -168,9 +182,9 @@ export function ClipPlayer({
       }
       if (!quiet) {
         quiet = true;
-        p.mute();
+        send("mute");
         setMuted(true);
-        p.playVideo();
+        send("playVideo");
         check = setTimeout(look, 1500);
         return;
       }
@@ -181,7 +195,10 @@ export function ClipPlayer({
     // 클립 끝에 닿으면 처음으로. 잡힌 시간이 클립보다 길다
     const loop = setInterval(() => {
       if (endSec == null) return;
-      if (p.getCurrentTime() >= endSec - 0.3) p.seekTo(startSec, true);
+      if (currentTime.current >= endSec - 0.3) {
+        currentTime.current = startSec;
+        send("seekTo", [startSec, true]);
+      }
     }, 300);
 
     return () => {
@@ -225,7 +242,7 @@ export function ClipPlayer({
         <button
           type="button"
           onClick={() => {
-            player.current?.unMute();
+            send("unMute");
             setMuted(false);
           }}
           className="press bg-signal-deep/80 absolute top-2 right-2 flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-sm font-bold text-white"
