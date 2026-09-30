@@ -30,6 +30,7 @@ import {
   didSomething,
   isRealDate,
   missionsOn,
+  missionTitle,
   plannedDay,
   todayLine,
 } from "@/lib/day";
@@ -364,6 +365,17 @@ check(
 check(
   "걸음수는 잡아 둔 운동이 아니다",
   plannedDay(mission("2026-09-26", "2026-09-26", "STEPS"), "2026-09-24") === null,
+);
+check(
+  "오늘 운동 화면의 제목 — 오늘 하는 운동이면 「오늘 운동」",
+  missionTitle(mission("2026-09-24", "2026-09-24"), "2026-09-24") === "오늘 운동" &&
+    missionTitle(mission("2026-09-20", "2026-09-30"), "2026-09-24") === "오늘 운동",
+);
+check(
+  "앞날 · 지난 운동의 제목은 그날 날짜 — 10월 13일 운동을 열었는데 「오늘 운동」 이었다",
+  missionTitle(mission("2026-10-13", "2026-10-13"), "2026-10-06") === "10월 13일 운동" &&
+    missionTitle(mission("2026-10-01", "2026-10-01"), "2026-10-06") === "10월 1일 운동",
+  `${missionTitle(mission("2026-10-13", "2026-10-13"), "2026-10-06")}`,
 );
 
 /* ─── 한 사람의 오늘 — 끝낸 칸은 사람마다 ─────────────────── */

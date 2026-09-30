@@ -28,6 +28,7 @@ import {
   useClips,
   useSendCheer,
 } from "@/lib/api/queries";
+import { missionTitle } from "@/lib/day";
 import { errorMessage } from "@/lib/errors";
 import { guardiansName } from "@/lib/family";
 import { stageOf } from "@/lib/levels";
@@ -384,7 +385,7 @@ export default function PlayPage() {
 
   return (
     <>
-      <AppBar backHref="/kid" title="오늘 운동" />
+      <AppBar backHref="/kid" title={missionTitle(mission, now)} />
       <Confetti fire={burst} pieces={allDone ? 120 : 50} from={allDone ? "top" : "bottom"} />
 
       {/* 위에 붙는 징검다리. 몇 칸째인지 늘 보이고, 한 칸 끝내면 키움이가 건너간다 */}
