@@ -248,7 +248,7 @@ function PlanForm() {
           className="card press flex min-h-16 items-center gap-3"
         >
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-extrabold">직접 고를래요</span>
+            <span className="block text-sm font-extrabold">직접 짜기</span>
             {gathered > 0 && (
               <span className="text-caption text-ink-soft mt-0.5 block">
                 담아 둔 동작 {gathered}개
@@ -388,7 +388,7 @@ function PlanForm() {
           className="press bg-signal-strong shadow-lift data-off:bg-line data-off:text-ink-soft flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white disabled:opacity-100 data-off:shadow-none"
         >
           <ArtIcon name="icon/menu-ai" className="size-5" />
-          {start.isPending ? "코치에게 보내는 중" : `AI에게 ${minutes}분 운동 받기`}
+          {start.isPending ? "AI에게 보내는 중" : `AI에게 ${minutes}분 운동 받기`}
         </button>
       </Dock>
     </>

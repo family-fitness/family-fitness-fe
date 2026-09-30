@@ -359,7 +359,7 @@ function TodaySection({
 
       {proposal}
 
-      {/* 운동 더하기 — 오늘 운동이 있어도 AI 코치에게 더 받거나 직접 짜서 더한다(9/25 「운동 미션을 추가하는」).
+      {/* 운동 더하기 — 오늘 운동이 있어도 AI에게 더 받거나 직접 짜서 더한다(9/25 「운동 미션을 추가하는」).
           코치가 짠 것은 등록해야 운동이 된다(규칙 1) */}
       {!waiting && !restToday && (
         <div className="border-line mt-3 grid grid-cols-2 gap-2 border-t pt-3">
@@ -368,7 +368,7 @@ function TodaySection({
             className="press bg-signal-soft text-signal-deep flex min-h-11 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold"
           >
             <ArtIcon name="icon/menu-ai" className="size-5" />
-            AI 코치에게 더 받기
+            AI에게 더 받기
           </Link>
           <Link
             href="/videos"

@@ -152,7 +152,7 @@ await step("결과에서 AI에게 운동 받기로", async () => {
   await page.waitForTimeout(1200);
 });
 await shot("plan", true);
-await step("코치에게 보내면 짜는 과정이 보이고 제안으로 넘어간다", async () => {
+await step("AI에게 보내면 짜는 과정이 보이고 제안으로 넘어간다", async () => {
   await page.getByRole("button", { name: /AI에게 \d+분 운동 받기/ }).click();
   await page.waitForURL(/\/plan\/run\//, { timeout: 15000 });
   await page.waitForTimeout(1500);
