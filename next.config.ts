@@ -10,16 +10,16 @@ const PRODUCTION = process.env.NODE_ENV === "production";
  * 스크립트 · 연결 · 그림의 출처를 좁힌다(9/30 보안 점검). 토큰과 아이 사진이 이 기기 저장소에 있어서,
  * 끼어든 스크립트가 있어도 밖으로 보내지 못하게 `connect-src 'self'` 가 먼저다.
  * Next 의 인라인 스크립트 때문에 'unsafe-inline' 은 둔다(nonce 없는 정적 화면들이다).
- * 유튜브 — IFrame API 스크립트 · 쿠키 없는 임베드 · 썸네일만 연다.
+ * 유튜브 — 쿠키 없는 임베드 · 썸네일만 연다. 유튜브 스크립트는 들이지 않는다 — 플레이어는 말(postMessage)로 부린다.
  */
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://www.youtube.com https://s.ytimg.com",
+  "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://i.ytimg.com https://img.youtube.com",
   "font-src 'self' data:",
   "connect-src 'self'",
-  "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
+  "frame-src https://www.youtube-nocookie.com",
   "worker-src 'self'",
   "manifest-src 'self'",
   "media-src 'self' blob:",
