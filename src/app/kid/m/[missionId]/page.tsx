@@ -162,6 +162,17 @@ export default function PlayPage() {
   const allDone = sessions.length > 0 && doneCount === sessions.length;
   const finished = allDone || status === "ended";
   /** 끝 칸의 제목 — 화면 읽기에도 같은 말로 */
+  /** 화면 읽기에 한 번씩 — 시작 · 멈춤 · 쉼(다음 운동) · 막힘. 초마다 바뀌는 수는 싣지 않는다 */
+  const liveLine =
+    status === "running"
+      ? `${activeSession?.title ?? "운동"} 시작`
+      : status === "paused"
+        ? "잠깐 멈췄어요"
+        : status === "rest"
+          ? `쉬는 시간 · 다음은 ${activeSession?.title ?? "운동"}`
+          : status === "blocked"
+            ? "멈췄어요 · 눌러서 시작"
+            : "";
   const finishLine = allDone
     ? moreToday
       ? "이 운동 다 했어요!"
@@ -314,6 +325,19 @@ export default function PlayPage() {
     firstScroll.current = false;
   }, [active]);
 
+  /*
+    조작 단추가 바뀌면(시작 → 멈춤 → 쉼) 누른 단추가 사라져 초점이 body 로 떨어졌다 — 자판 · 화면 읽기로는 어디 있는지
+    잃는다(9/30 점검). 누른 단추가 사라졌을 때만 지금 칸의 첫 단추로 돌린다(굴리지 않고)
+  */
+  const stepList = useRef<HTMLOListElement>(null);
+  const lastFocused = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const was = lastFocused.current;
+    if (!was || was.isConnected) return;
+    if (document.activeElement && document.activeElement !== document.body) return;
+    stepList.current?.querySelector<HTMLElement>("[data-primary]")?.focus({ preventScroll: true });
+  }, [status, active]);
+
   // 다 끝나면 끝 칸으로
   useEffect(() => {
     if (!finished) return;
@@ -431,10 +455,16 @@ export default function PlayPage() {
 
       {/* 끝났다는 말 — 자리는 늘 두고 글자만 바꾼다. 끝 칸과 같이 생기는 알림 자리는 화면 읽기가 읽지 않는다 */}
       <p className="sr-only" role="status">
-        {finished && unsaved.length === 0 && saving === 0 ? finishLine : ""}
+        {finished && unsaved.length === 0 && saving === 0 ? finishLine : liveLine}
       </p>
       <Stage wide className="pt-1">
-        <ol className="relative">
+        <ol
+          ref={stepList}
+          className="relative"
+          onFocus={(e) => {
+            lastFocused.current = e.target;
+          }}
+        >
           {sessions.map((s, i) => (
             <Step
               key={s.position}
@@ -649,6 +679,7 @@ function Step({
           {status === "blocked" ? (
             <button
               type="button"
+              data-primary
               onClick={onStart}
               className="press bg-signal-strong mt-4 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white"
             >
@@ -659,6 +690,7 @@ function Step({
             <div className={cn("mt-4 grid gap-2", onSkip && "grid-cols-[1fr_auto]")}>
               <button
                 type="button"
+                data-primary
                 onClick={onPause}
                 className="press bg-sub flex min-h-14 items-center justify-center gap-2 rounded-2xl text-lg font-extrabold"
               >
@@ -679,6 +711,7 @@ function Step({
           ) : (
             <button
               type="button"
+              data-primary
               onClick={onStart}
               className="press bg-signal-strong mt-4 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white"
             >
