@@ -182,7 +182,7 @@ function Finder() {
                 aria-pressed={phase === p.value}
                 onClick={() => setPhase(p.value)}
                 className={cn(
-                  "press min-h-10 min-w-11 rounded-full px-3 text-sm font-bold",
+                  "press min-h-11 min-w-11 rounded-full px-3 text-sm font-bold",
                   phase === p.value ? "bg-signal-strong text-white" : "text-ink-soft",
                 )}
               >
@@ -399,7 +399,7 @@ function Tray({ onClear }: { onClear: () => void }) {
           <button
             type="button"
             onClick={onClear}
-            className="press text-caption text-ink-soft -ml-1 min-h-10 px-1 font-semibold"
+            className="press text-caption text-ink-soft -ml-1 min-h-11 px-1 font-semibold"
           >
             모두 빼기
           </button>

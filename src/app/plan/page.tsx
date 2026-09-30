@@ -256,7 +256,7 @@ function PlanForm() {
             meta={
               <NavLink
                 href="/settings/schedule"
-                className="press text-signal-deep inline-flex min-h-10 items-center font-bold"
+                className="press text-signal-deep inline-flex min-h-11 items-center font-bold"
               >
                 {todaySlot
                   ? `오늘 적어 둔 시간 ${todaySlot.minutes}분 · 바꾸기`

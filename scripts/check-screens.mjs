@@ -55,7 +55,7 @@ const ROUTES = [
 ];
 
 /** 손가락이 닿는 최소 크기 */
-const MIN_TAP = 40;
+const MIN_TAP = 44;
 /**
  * 무시할 콘솔 잡음 — 남의 것(유튜브 · 썸네일 · 파비콘 · next/image)을 못 받은 것만. 우리 API 의 400 · 404 는
  * 잡음이 아니다 — 전에는 400 · 404 를 통째로 넘겨 우리 요청이 틀려도 몰랐다
@@ -161,11 +161,24 @@ for (const route of ROUTES) {
 
       const small = [...document.querySelectorAll("button, a[href], [role=tab], input")].filter(
         (el) => {
+          // 개발 서버에만 뜨는 TanStack Query 도구 단추는 앱이 아니다
+          if (
+            el.closest(".tsqd-parent-container, .tsqd-open-btn-container") ||
+            el.matches(".tsqd-open-btn")
+          )
+            return false;
           const b = el.getBoundingClientRect();
           return b.width > 0 && (b.height < minTap || b.width < minTap);
         },
       );
-      if (small.length > 0) out.push(`누르기 작은 것 ${small.length}개`);
+      if (small.length > 0) {
+        const names = small
+          .slice(0, 3)
+          .map((el) =>
+            (el.getAttribute("aria-label") || el.textContent || el.tagName).trim().slice(0, 14),
+          );
+        out.push(`누르기 작은 것 ${small.length}개: ${names.join(" · ")}`);
+      }
 
       const unnamed = [...document.querySelectorAll("button, a[href]")].filter(
         (el) => !(el.getAttribute("aria-label") || el.textContent || "").trim(),
