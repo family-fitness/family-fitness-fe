@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { SessionError } from "@/components/app-shell/session-error";
 import { ChoiceButton, WizardShell, WizardSkeleton } from "@/components/app-shell/wizard";
@@ -100,6 +100,9 @@ const SUPPORT: { value: SupportMode; title: string; art: string }[] = [
   },
   { value: "FULL", title: "매번 같이", art: "icon/mode-full" },
 ];
+
+/** 첫 시작의 칸 번호를 브라우저 기록에 얹는다 — Next 의 기록(__NA · 트리)은 그대로 둔 채 */
+type StepMark = { __step?: number } | null;
 
 export function Onboarding({ mode }: { mode: "family" | "child" }) {
   const router = useRouter();
@@ -220,9 +223,16 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       : 0,
   );
   const step = steps[Math.min(at, steps.length - 1)];
-  const go = (d: number) => {
+  /**
+   * 한 칸 앞으로 — 브라우저 기록에도 한 칸 쌓는다. 쌓지 않으면 폰의 뒤로가 첫 시작 밖으로 나가
+   * 적은 것을 다 잃었다(9/30 점검). 누른 자리에서 쌓는다 — 누르지 않고 쌓은 칸은 브라우저가 건너뛴다
+   */
+  const forward = (to: number) => {
     setProblem(null);
-    setAt((i) => Math.max(0, Math.min(steps.length - 1, i + d)));
+    const n = Math.max(0, Math.min(steps.length - 1, to));
+    if (n === at) return;
+    window.history.pushState({ ...(window.history.state ?? {}), __step: n }, "");
+    setAt(n);
   };
   // 가족 · 아이를 만든 뒤에는 그 앞으로 돌아가지 않는다(두 번 만들지 않게)
   const firstEditable = childId
@@ -232,7 +242,40 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       : 0;
   // 첫 칸에서는 들어온 곳으로 — 홈 화면에 얹은 앱에는 브라우저 뒤로가 없다
   const exit = () => router.replace(mode === "child" && roleMode !== "kid" ? "/parent" : "/start");
-  const back = at > firstEditable ? () => go(-1) : at === 0 && !childId ? exit : undefined;
+  /** 화면의 「뒤로」 — 기록에 쌓인 칸이면 폰의 뒤로와 같은 길로 간다. 둘이 어긋나면 폰의 뒤로가 한 번 헛돈다 */
+  const stepBack = () => {
+    if ((window.history.state as StepMark)?.__step === at) {
+      window.history.back();
+      return;
+    }
+    setProblem(null);
+    setAt((i) => Math.max(0, i - 1));
+  };
+  const back = at > firstEditable ? stepBack : at === 0 && !childId ? exit : undefined;
+
+  // 폰 · 브라우저의 뒤로 — 쌓아 둔 칸으로 돌아간다. 가족 · 아이를 만든 앞칸으로는 가지 않는다(두 번 만들지 않게)
+  const floor = useRef(firstEditable);
+  useEffect(() => {
+    floor.current = firstEditable;
+  }, [firstEditable]);
+  useEffect(() => {
+    window.history.replaceState({ ...(window.history.state ?? {}), __step: at }, "");
+    const onPop = () => {
+      const mark = (window.history.state as StepMark)?.__step;
+      if (typeof mark !== "number") return;
+      if (mark < floor.current) {
+        // 만든 앞칸이다 — 한 칸 앞으로 되돌려 그 자리에 남는다
+        window.history.forward();
+        return;
+      }
+      setProblem(null);
+      setAt(mark);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+    // 처음 칸을 한 번 적어 두고 듣기만 한다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 가족이 이미 있는데 가족 만들기가 처음부터 떴다 — 새로고침이다. 다시 만들면 「이미 가족이 있어요」 에 갇힌다
   const hadFamily =
@@ -308,7 +351,13 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       setChild(id || null);
       setMode("parent");
       // 새로고침해도 이 아이로 이어 가게 — 처음부터 다시 적으면 아이가 둘이 된다
-      if (id) window.history.replaceState(null, "", `?child=${encodeURIComponent(id)}`);
+      // 칸 번호는 남긴다 — 지우면 폰의 뒤로가 이 칸에서 한 번 헛돈다
+      if (id)
+        window.history.replaceState(
+          { ...(window.history.state ?? {}), __step: at },
+          "",
+          `?child=${encodeURIComponent(id)}`,
+        );
       // 이 기기에만 두는 것(키 · 몸무게 · 사진)은 따로 — 저장소가 가득 차 못 적어도 아이는 이미 만들어졌다
       try {
         // 서버가 키 · 몸무게를 따로 받지 못한다 — 첫 측정 때 같이 보낸다(BACKEND_ASKS)
@@ -326,7 +375,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       // 서버가 동의를 요구한다 — 동의 칸을 넣고 그리로(만 14세 생일 앞뒤로 날짜 셈이 다를 수 있다)
       if (e instanceof ApiError && e.code === "CONSENT_REQUIRED" && !needsConsent) {
         setForceConsent(true);
-        setAt((i) => i + 1);
+        forward(at + 1);
         return false;
       }
       setProblem(
@@ -378,7 +427,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       router.replace("/parent");
       return;
     }
-    go(1);
+    forward(at + 1);
   };
 
   // 다음으로 갈 수 있나 — 칸마다
