@@ -1,6 +1,14 @@
 "use client";
 
-import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+
+import { nextCursorOf } from "@/lib/videos";
 
 import { ApiError, api, path, query } from "./client";
 import type { ReviewKind } from "@/lib/review-login";
@@ -752,6 +760,45 @@ export function useClips(filter: {
         })}`,
       ),
     // 즐겨찾기는 누구의 것인지 알아야 한다
+    enabled: filter.list !== "FAVORITES" || Boolean(filter.profileId),
+    placeholderData: (previous) => previous,
+  });
+}
+
+/** 운동 찾기에서 한 번에 받는 수. 끝까지 내리면 다음 페이지를 이어 받는다 */
+export const CLIP_PAGE_SIZE = 40;
+
+/**
+ * 운동 찾기 목록을 한 페이지씩 받는다. 거르는 조건은 useClips 와 같고, `allAges` 를 켜면 모든 나이의 영상을 받는다
+ * (끄면 보는 사람의 나이대). 다음 페이지는 앞 페이지가 준 `nextCursor` 로 부른다.
+ */
+export function useClipPages(filter: {
+  factor?: string | null;
+  phase?: string | null;
+  quiet?: boolean;
+  q?: string;
+  list?: "ALL" | "FAVORITES";
+  profileId?: Uuid;
+  allAges?: boolean;
+}) {
+  return useInfiniteQuery({
+    queryKey: ["clips", "pages", filter] as const,
+    queryFn: ({ pageParam }) =>
+      api.get<ClipList>(
+        path`/clips${query({
+          factor: filter.factor ?? undefined,
+          phase: filter.phase ?? undefined,
+          quiet: filter.quiet ? "true" : undefined,
+          q: filter.q || undefined,
+          list: filter.list,
+          profileId: filter.profileId,
+          ageGroup: filter.allAges ? "ALL" : undefined,
+          size: String(CLIP_PAGE_SIZE),
+          cursor: pageParam,
+        })}`,
+      ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: nextCursorOf,
     enabled: filter.list !== "FAVORITES" || Boolean(filter.profileId),
     placeholderData: (previous) => previous,
   });

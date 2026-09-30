@@ -130,3 +130,43 @@ export function watchTitle(raw: string | null | undefined): string {
   const title = raw?.trim();
   return title ? title.slice(0, WATCH_TITLE_MAX) : "시범 영상";
 }
+
+/**
+ * 운동 찾기는 목록을 한 페이지씩 받는다. 받은 페이지를 차례대로 잇고, 같은 클립이 두 번 오면 처음 것만 둔다.
+ * 페이지를 받는 사이에 목록이 바뀌면(즐겨찾기를 누르는 등) 앞 페이지 끝의 클립이 다음 페이지 앞에 다시 올 수 있다
+ */
+export function joinClipPages<T extends { clipId: string }>(
+  pages: readonly { clips: readonly T[] }[] | undefined,
+): T[] {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const page of pages ?? []) {
+    for (const c of page.clips) {
+      if (seen.has(c.clipId)) continue;
+      seen.add(c.clipId);
+      out.push(c);
+    }
+  }
+  return out;
+}
+
+/** 다음 페이지를 받을 때 보낼 값. 서버가 주지 않았거나 null 이면 마지막 페이지다 */
+export function nextCursorOf(page: { nextCursor?: string | null }): string | undefined {
+  return page.nextCursor ?? undefined;
+}
+
+/** 운동 찾기 맨 위에 쓰는 영상 수 */
+export function finderCount(total: number): string {
+  return `영상 ${total.toLocaleString("ko-KR")}개`;
+}
+
+/** 영상 수 아래에 쓰는 거른 조건. 고른 힘과 나이 범위를 적는다 */
+export function finderScope({
+  factor,
+  allAges,
+}: {
+  factor: string | null;
+  allAges: boolean;
+}): string {
+  return `${factor ?? "모든 힘"}, ${allAges ? "모든 나이" : "나이에 맞는 것만"}`;
+}

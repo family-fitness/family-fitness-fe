@@ -44,6 +44,10 @@ import {
   fileType,
   finderHref,
   finderOwner,
+  finderCount,
+  finderScope,
+  joinClipPages,
+  nextCursorOf,
   kspoVideo,
   videoLink,
   watchHref,
@@ -524,6 +528,48 @@ check(
     "아이 화면은 주소를 따르지 않는다 — 다른 아이 목록으로 바뀌지 않게",
     finderOwner({ kidView: true, fromUrl: kid, childProfileId: "c", self: "me" }) === "c" &&
       finderOwner({ kidView: true, fromUrl: kid, childProfileId: null, self: "me" }) === undefined,
+  );
+}
+
+/* 운동 찾기에서 다음 페이지를 이어 받기 */
+
+{
+  const a = clip("a", "MAIN");
+  const b = clip("b", "MAIN");
+  const c = clip("c", "WARMUP");
+  check(
+    "받은 페이지를 차례대로 잇는다",
+    same(
+      joinClipPages([{ clips: [a, b] }, { clips: [c] }]).map((x) => x.clipId),
+      ["a", "b", "c"],
+    ),
+  );
+  check(
+    "다음 페이지에 같은 영상이 다시 오면 한 번만 둔다",
+    same(
+      joinClipPages([{ clips: [a, b] }, { clips: [b, c] }]).map((x) => x.clipId),
+      ["a", "b", "c"],
+    ),
+  );
+  check("받은 페이지가 없으면 빈 목록", joinClipPages(undefined).length === 0);
+  check(
+    "nextCursor 가 없으면 더 받지 않는다",
+    nextCursorOf({ nextCursor: null }) === undefined &&
+      nextCursorOf({}) === undefined &&
+      nextCursorOf({ nextCursor: "40" }) === "40",
+  );
+  check("맨 위에는 영상 수를 쓴다", finderCount(128) === "영상 128개");
+  check("천 개가 넘으면 쉼표를 찍는다", finderCount(1234) === "영상 1,234개");
+  check(
+    "기본은 나이에 맞는 것만, 켜면 모든 나이",
+    finderScope({ factor: null, allAges: false }) === "모든 힘, 나이에 맞는 것만" &&
+      finderScope({ factor: "유연성", allAges: true }) === "유연성, 모든 나이",
+  );
+  const lines = [finderCount(5), finderScope({ factor: "근력", allAges: false })];
+  check(
+    "새로 쓴 안내 글에 가운데 점이나 긴 대시가 없다",
+    lines.every((t) => !/[·–—]/.test(t)),
+    lines.join(" / "),
   );
 }
 

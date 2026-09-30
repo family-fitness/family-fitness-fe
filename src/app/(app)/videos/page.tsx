@@ -2,7 +2,7 @@
 
 import { ChevronRight, Heart, Play, Plus, Search, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Fragment, Suspense, useDeferredValue, useState } from "react";
+import { Fragment, Suspense, useDeferredValue, useEffect, useRef, useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -16,14 +16,14 @@ import { VideoThumb } from "@/components/ui/video-thumb";
 import { ClipPlayer } from "@/components/domain/clip-player";
 import { FactorIcon } from "@/components/domain/factor-icon";
 import type { ClipView, SessionPhase } from "@/lib/api/types";
-import { useClips, useToggleClipFavorite } from "@/lib/api/queries";
+import { useClipPages, useToggleClipFavorite } from "@/lib/api/queries";
 import { FACTORS, isFactor, type Factor } from "@/lib/fitness-factors";
 import { routineMinutes } from "@/lib/routine";
 import { PHASE_LABEL, clock } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { useIsKidView } from "@/lib/view-role";
-import { finderOwner } from "@/lib/videos";
+import { finderCount, finderOwner, finderScope, joinClipPages } from "@/lib/videos";
 import { useRoleStore } from "@/stores/role-store";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
@@ -84,6 +84,8 @@ function Finder() {
       : null,
   );
   const [quiet, setQuiet] = useState(false);
+  // 기본은 보고 있는 사람의 나이대. 켜면 모든 나이의 영상을 본다
+  const [allAges, setAllAges] = useState(false);
   const [q, setQ] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(params.get("list") === "favorites");
   // 담은 동작은 직접 짜기와 같이 본다 — 두 화면을 오가도 남는다
@@ -108,15 +110,30 @@ function Finder() {
   // 치는 동안은 앞 결과를 둔다 — 한 글자마다 서버에 묻지 않게
   const search = useDeferredValue(q.trim());
 
-  const { data, isPending, isFetching, error, refetch, isRefetching } = useClips({
+  const {
+    data,
+    isPending,
+    isFetching,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    error,
+    refetch,
+    isRefetching,
+  } = useClipPages({
     factor,
     phase,
     quiet,
     q: search,
     list: favoritesOnly ? "FAVORITES" : "ALL",
     profileId: owner,
+    allAges,
   });
-  const clips = data?.clips ?? [];
+  const clips = joinClipPages(data?.pages);
+  const total = data?.pages[0]?.total ?? 0;
+  const loadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+  };
   const preview = previewId ? (clips.find((c) => c.clipId === previewId) ?? null) : null;
 
   const inTray = (c: ClipView) => moves.some((m) => m.clip.clipId === c.clipId);
@@ -214,14 +231,23 @@ function Finder() {
             <Heart aria-hidden className={cn("size-4", favoritesOnly && "fill-current")} />
             즐겨찾기
           </button>
+          <button
+            type="button"
+            aria-pressed={allAges}
+            onClick={() => setAllAges((v) => !v)}
+            className={cn("chip press", allAges ? "chip-on" : OFF)}
+          >
+            모든 나이 영상 보기
+          </button>
         </div>
 
-        <p className="text-caption text-ink-soft px-1 font-bold">
-          {isPending
-            ? "찾는 중"
-            : `국민체력100 운동영상 · ${factor ?? "모든 힘"} · ${data?.total ?? 0}개`}
-          {isFetching && !isPending && " · 새로 찾는 중"}
-        </p>
+        <div className="px-1" aria-live="polite">
+          <p className="font-extrabold">{isPending ? "찾는 중이에요" : finderCount(total)}</p>
+          <p className="text-caption text-ink-soft font-bold">
+            {finderScope({ factor, allAges })}
+            {isFetching && !isPending && !isFetchingNextPage && ", 새로 찾고 있어요"}
+          </p>
+        </div>
 
         {isPending ? (
           <ListSkeleton />
@@ -234,22 +260,31 @@ function Finder() {
             title={favoritesOnly ? "아직 즐겨찾기한 동작이 없어요" : "조건에 맞는 동작이 없어요"}
           />
         ) : (
-          <ul className="card divide-rows py-1">
-            {clips.map((c) => (
-              <ClipRow
-                key={c.clipId}
-                clip={c}
-                owner={owner}
-                picked={inTray(c)}
-                canPick={!kidView}
-                onPick={() => toggleMove(c)}
-                onPreview={() => {
-                  setPreviewId(c.clipId);
-                  setPreviewOpen(true);
-                }}
-              />
-            ))}
-          </ul>
+          <>
+            <ul className="card divide-rows py-1">
+              {clips.map((c) => (
+                <ClipRow
+                  key={c.clipId}
+                  clip={c}
+                  owner={owner}
+                  picked={inTray(c)}
+                  canPick={!kidView}
+                  onPick={() => toggleMove(c)}
+                  onPreview={() => {
+                    setPreviewId(c.clipId);
+                    setPreviewOpen(true);
+                  }}
+                />
+              ))}
+            </ul>
+            <MoreClips
+              hasMore={Boolean(hasNextPage)}
+              loading={isFetchingNextPage}
+              shown={clips.length}
+              total={total}
+              onMore={loadMore}
+            />
+          </>
         )}
       </Stage>
 
@@ -276,6 +311,65 @@ function Finder() {
         )}
       </Sheet>
     </>
+  );
+}
+
+/**
+ * 목록 끝. 여기까지 내려오면 다음 페이지를 이어 받는다. 화면이 알아서 못 불러올 때를 위해 단추도 둔다
+ */
+function MoreClips({
+  hasMore,
+  loading,
+  shown,
+  total,
+  onMore,
+}: {
+  hasMore: boolean;
+  loading: boolean;
+  shown: number;
+  total: number;
+  onMore: () => void;
+}) {
+  const end = useRef<HTMLDivElement>(null);
+  // 부를 때마다 바뀌는 함수라 ref 로 들고 있는다. 관찰자를 매번 새로 달지 않게
+  const more = useRef(onMore);
+  useEffect(() => {
+    more.current = onMore;
+  });
+  useEffect(() => {
+    const el = end.current;
+    if (!el || !hasMore || typeof IntersectionObserver === "undefined") return;
+    const seen = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) more.current();
+      },
+      { rootMargin: "400px 0px" },
+    );
+    seen.observe(el);
+    return () => seen.disconnect();
+  }, [hasMore]);
+
+  if (!hasMore) {
+    return shown > 0 ? (
+      <p className="text-caption text-ink-soft py-2 text-center">
+        영상 {shown.toLocaleString("ko-KR")}개를 모두 보여 드렸어요
+      </p>
+    ) : null;
+  }
+  return (
+    <div ref={end} className="space-y-2 py-1">
+      <p className="text-caption text-ink-soft text-center">
+        {total.toLocaleString("ko-KR")}개 가운데 {shown.toLocaleString("ko-KR")}개를 보고 있어요
+      </p>
+      <button
+        type="button"
+        onClick={onMore}
+        disabled={loading}
+        className="press bg-paper shadow-card flex min-h-12 w-full items-center justify-center rounded-2xl text-sm font-bold"
+      >
+        {loading ? "더 불러오고 있어요" : "영상 더 보기"}
+      </button>
+    </div>
   );
 }
 
