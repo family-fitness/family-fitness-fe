@@ -289,7 +289,8 @@ function ClipRow({
         aria-label={`${c.title} 시범 보기`}
         className="press relative shrink-0 overflow-hidden rounded-xl"
       >
-        <VideoThumb videoId={c.videoId} className="aspect-video w-24" />
+        {/* 좁은 폰(320)에서는 썸네일을 줄이고 단추 둘을 세로로 — 동작 이름 자리가 44px 로 줄어 한 글자씩 꺾였다 */}
+        <VideoThumb videoId={c.videoId} className="aspect-video w-20 min-[360px]:w-24" />
         {/* 누르면 시범이 돈다는 표시. 검정 면 대신 남색(규칙: 검정으로 면을 채우지 않는다) */}
         <span className="absolute inset-0 grid place-items-center">
           <span className="bg-signal-deep/70 grid size-8 place-items-center rounded-full text-white">
@@ -317,7 +318,7 @@ function ClipRow({
             ))}
         </p>
       </div>
-      <div className="flex shrink-0 items-center">
+      <div className="flex shrink-0 flex-col items-center min-[360px]:flex-row">
         {owner && (
           <button
             type="button"
