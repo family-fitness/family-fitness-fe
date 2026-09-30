@@ -12,6 +12,7 @@ import type { ProfileSummary } from "@/lib/api/types";
 import { useOpenInvite } from "@/lib/api/queries";
 import { errorMessage } from "@/lib/errors";
 import { cn, formatDate } from "@/lib/utils";
+import { radioKeys } from "@/components/ui/radio-keys";
 
 /**
  * 부모가 초대코드를 만드는 곳(9/25 「부모가 초대코드 만드는 거」).
@@ -192,43 +193,47 @@ export function InviteSheet({
       ) : (
         <div className="pb-2">
           <p className="text-body font-bold">누구를 부를까요</p>
-          <ul className="divide-rows mt-1" role="radiogroup" aria-label="부를 사람">
+          <div
+            className="divide-rows mt-1"
+            role="radiogroup"
+            aria-label="부를 사람"
+            onKeyDown={radioKeys}
+          >
             {seats.map((m) => {
               const on = m.profileId === seat?.profileId;
               return (
-                <li key={m.profileId}>
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={on}
-                    onClick={() => setPicked(m.profileId ?? null)}
-                    className="press flex min-h-14 w-full items-center gap-3 text-left"
+                <button
+                  key={m.profileId}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => setPicked(m.profileId ?? null)}
+                  className="press flex min-h-14 w-full items-center gap-3 text-left"
+                >
+                  <ProfileAvatar
+                    profileId={m.profileId}
+                    name={m.name}
+                    tone={m.role === "CHILD" ? "signal" : "mark"}
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-extrabold">{m.name}</span>
+                    <span className="text-caption text-ink-soft block">
+                      {m.role === "PARENT" ? "부모" : "자녀"} · {m.ageGroup}
+                    </span>
+                  </span>
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "grid size-6 place-items-center rounded-full border-2",
+                      on ? "border-signal bg-signal text-white" : "border-line",
+                    )}
                   >
-                    <ProfileAvatar
-                      profileId={m.profileId}
-                      name={m.name}
-                      tone={m.role === "CHILD" ? "signal" : "mark"}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block font-extrabold">{m.name}</span>
-                      <span className="text-caption text-ink-soft block">
-                        {m.role === "PARENT" ? "부모" : "자녀"} · {m.ageGroup}
-                      </span>
-                    </span>
-                    <span
-                      aria-hidden
-                      className={cn(
-                        "grid size-6 place-items-center rounded-full border-2",
-                        on ? "border-signal bg-signal text-white" : "border-line",
-                      )}
-                    >
-                      {on && <Check className="size-3.5" strokeWidth={3.5} />}
-                    </span>
-                  </button>
-                </li>
+                    {on && <Check className="size-3.5" strokeWidth={3.5} />}
+                  </span>
+                </button>
               );
             })}
-          </ul>
+          </div>
           <Button
             size="block"
             className="mt-3"
