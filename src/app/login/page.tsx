@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -8,10 +8,11 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { PlainScreen } from "@/components/app-shell/screen";
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { Button } from "@/components/ui/button";
+import { Sheet } from "@/components/ui/sheet";
 import { KiumIsland } from "@/components/scene/kium-island";
-import type { AuthResponse } from "@/lib/api/types";
 import { errorMessage } from "@/lib/errors";
 import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
+import { REVIEW_WAYS, afterSignIn, reviewDestination, type ReviewKind } from "@/lib/review-login";
 import { useDevLogin, useGoogleLogin, useReviewLogin } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRoleStore } from "@/stores/role-store";
@@ -114,15 +115,8 @@ function LoginContent() {
   const state = params.get("state");
   // 초대 링크로 들어왔다가 로그인하는 경우. 코드를 같이 넘겨야 바로 프로필에 붙는다
   const claimCode = params.get("claimCode") ?? undefined;
-  /**
-   * 로그인하고 갈 곳 — 초대코드를 들고 왔고 아직 가족에 붙지 않았으면 그 코드를 넣는 화면으로.
-   * 로그인하며 서버가 코드로 붙여 줬으면(참여 방식 · 홈) 스플래시가 단계대로 보낸다 — 코드 화면으로 가면
-   * 방금 쓴 코드라며 막혔다
-   */
-  const after = (auth: AuthResponse, claim: string | undefined) =>
-    claim && auth.nextStep !== "SUPPORT_MODE" && auth.nextStep !== "HOME"
-      ? `/claim?code=${encodeURIComponent(claim)}`
-      : "/";
+  /** 심사용 계정의 세 흐름을 고르는 시트 */
+  const [picking, setPicking] = useState(false);
   /** 인가코드는 한 번만 쓸 수 있다 — 개발 모드에서 effect 가 두 번 돌아도 한 번만 바꾼다 */
   const exchanged = useRef<string | null>(null);
 
@@ -143,7 +137,7 @@ function LoginContent() {
     exchange
       .then((auth) => {
         signIn(auth);
-        router.replace(after(auth, saved?.claimCode));
+        router.replace(afterSignIn(auth, saved?.claimCode));
       })
       .catch((e) => {
         setSigning(null);
@@ -160,7 +154,7 @@ function LoginContent() {
     try {
       const auth = await devLogin.mutateAsync({ providerUserId: account.id, claimCode: claim });
       signIn(auth);
-      router.replace(after(auth, claim));
+      router.replace(afterSignIn(auth, claim));
     } catch (e) {
       setError(errorMessage(e, "들어가지 못했어요."));
     }
@@ -189,7 +183,7 @@ function LoginContent() {
         new Promise((done) => setTimeout(done, STAND_IN_MIN_MS)),
       ]);
       signIn(auth);
-      router.replace(after(auth, claimCode));
+      router.replace(afterSignIn(auth, claimCode));
     } catch (e) {
       setSigning(null);
       setError(errorMessage(e, "들어가지 못했어요."));
@@ -197,24 +191,27 @@ function LoginContent() {
   };
 
   /**
-   * 심사위원이 구글 계정 없이 둘러보는 길. 운영 서버에서도 열려 있다 — 서버가 부를 때마다 새 계정과
-   * 체험 가족을 만들어 주고, 가족이 이미 있어서 바로 홈으로 간다. 초대코드는 들고 가지 않는다.
+   * 심사위원이 구글 계정 없이 둘러보는 길. 운영 서버에서도 열려 있다 — 서버가 부를 때마다 새 계정을
+   * 만들어 준다. 시트에서 고른 흐름(kind)을 들고 간다. 초대 링크로 들고 온 코드는 들고 가지 않는다.
    *
-   * 들어온 사람은 체험 가족의 보호자라 부모 홈이 맞다. 역할을 부모로 정해 두지 않으면 처음 보는 기기에서
-   * 「누가 쓰고 있나요」 를 한 번 더 거쳤다. 정하는 건 `signIn` 뒤에 — 새 계정이 들어오면 `signIn` 이
-   * 기기에 남은 역할을 비운다.
+   *   FAMILY   체험 가족의 보호자로 바로 홈. 역할을 부모로 정해 두지 않으면 처음 보는 기기에서
+   *            「누가 쓰고 있나요」 를 한 번 더 거쳤다. 정하는 건 `signIn` 뒤에 — 새 계정이 들어오면
+   *            `signIn` 이 기기에 남은 역할을 비운다
+   *   FRESH    평소 가입과 같이 스플래시가 가족 만들기로 보낸다
+   *   INVITED  서버가 준 초대코드를 채운 합류 화면으로
    */
-  const review = async () => {
+  const review = async (kind: ReviewKind) => {
+    setPicking(false);
     setError(null);
     setSigning("review");
     try {
       const [auth] = await Promise.all([
-        reviewLogin.mutateAsync(),
+        reviewLogin.mutateAsync(kind),
         new Promise((done) => setTimeout(done, STAND_IN_MIN_MS)),
       ]);
       signIn(auth);
-      useRoleStore.getState().setMode("parent");
-      router.replace("/");
+      if (kind === "FAMILY") useRoleStore.getState().setMode("parent");
+      router.replace(reviewDestination(auth));
     } catch (e) {
       setSigning(null);
       setError(
@@ -270,11 +267,11 @@ function LoginContent() {
           </p>
         )}
 
-        {/* 심사위원이 구글 계정 없이 채워진 가족으로 둘러보는 길 — 운영 빌드에도 늘 있다 */}
+        {/* 심사위원이 구글 계정 없이 둘러보는 길 — 운영 빌드에도 늘 있다. 누르면 세 흐름 가운데 고른다 */}
         <div className="text-center">
           <button
             type="button"
-            onClick={review}
+            onClick={() => setPicking(true)}
             className="text-ink-soft text-body min-h-11 px-3 font-semibold underline underline-offset-4"
           >
             심사용 계정으로 둘러보기
@@ -307,6 +304,26 @@ function LoginContent() {
       </div>
 
       <LegalLinks />
+
+      <Sheet open={picking} onClose={() => setPicking(false)} title="어떻게 둘러볼까요">
+        <ul className="space-y-2 pb-2">
+          {REVIEW_WAYS.map((way) => (
+            <li key={way.kind}>
+              <button
+                type="button"
+                onClick={() => void review(way.kind)}
+                className="press bg-sub flex min-h-16 w-full items-center gap-3 rounded-2xl px-4 py-3 text-left"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="text-body block font-extrabold">{way.title}</span>
+                  <span className="text-caption text-ink-soft mt-0.5 block">{way.description}</span>
+                </span>
+                <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Sheet>
     </PlainScreen>
   );
 }

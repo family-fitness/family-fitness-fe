@@ -114,6 +114,12 @@ export type Mission = S["MissionView"];
 
 /* ─── 아직 서버에 없는 것 ──────────────────────────────────── */
 
+/**
+ * ▲ 요청: `POST /auth/review-login` 응답의 `inviteCode` — kind 가 INVITED 일 때 서버가 꾸며 둔
+ * 체험 가족의 초대코드. 합류 화면에 미리 채운다
+ */
+export type ReviewLoginResponse = AuthResponse & { inviteCode?: string | null };
+
 /** ▲ 요청: `GET /me` 에 로그인한 계정의 `email`. 설정의 「로그인 계정」 에 쓴다 — 안 오면 그 줄을 두지 않는다 */
 export type MeWithEmail = MeResponse & { email?: string | null };
 

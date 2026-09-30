@@ -3,9 +3,11 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError, api, path, query } from "./client";
+import type { ReviewKind } from "@/lib/review-login";
 import type {
   AgeGroup,
   AuthResponse,
+  ReviewLoginResponse,
   Availability,
   AvailabilitySlot,
   ClipList,
@@ -142,16 +144,19 @@ export function useGoogleLogin() {
 }
 
 /**
- * 심사용 계정으로 들어간다. 토큰도 몸체도 없이 부른다.
+ * 심사용 계정으로 들어간다. 토큰 없이 부르고, 본문 `{ kind }` 로 세 흐름 가운데 하나를 고른다.
  *
- * 서버가 부를 때마다 새 계정과 「체험 가족」(보호자 둘 · 아이 둘, 측정 기록까지)을 만든다 —
- * 심사위원끼리 서로의 기록을 건드리지 않게. 가족이 이미 있어서 바로 홈으로 간다.
- * 같은 곳에서 너무 자주 부르면 서버가 429 로 막는다.
+ *   FAMILY   서버가 부를 때마다 새 계정과 「체험 가족」(보호자 둘 · 아이 둘, 측정 기록까지)을 만든다 —
+ *            심사위원끼리 서로의 기록을 건드리지 않게. 가족이 이미 있어서 바로 홈으로 간다
+ *   FRESH    가족이 없는 새 계정. 가족 만들기부터 시작한다
+ *   INVITED  가족이 없는 새 계정과, 서버가 꾸며 둔 체험 가족의 초대코드(`inviteCode`)
+ *
+ * 같은 곳에서 너무 자주 부르면 서버가 429(TOO_MANY)를 돌려준다.
  */
 export function useReviewLogin() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () => api.post<AuthResponse>("/auth/review-login"),
+    mutationFn: (kind: ReviewKind) => api.post<ReviewLoginResponse>("/auth/review-login", { kind }),
     onSuccess: (auth) => seedAccount(qc, auth),
   });
 }

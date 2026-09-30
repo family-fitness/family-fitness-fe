@@ -52,6 +52,7 @@ import {
 import { callName, guardiansName, mustAddChild, openWithoutChild } from "@/lib/family";
 
 import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
+import { REVIEW_WAYS, afterSignIn, reviewDestination } from "@/lib/review-login";
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -753,6 +754,50 @@ check("주소가 이상해도 멈추지 않는다", fileType("not a url") === un
     player.includes("watchHref(") && !/PlayFailed href=\{src\}/.test(player),
   );
   check("근거 링크는 videoLink 로 고른다", citations.includes("videoLink("));
+}
+
+/* ─── 심사용 계정 — 세 흐름 ─────────────────────────────── */
+
+check(
+  "심사용 계정은 체험 가족 · 처음 가입 · 초대받은 보호자 셋 가운데 고른다",
+  same(
+    REVIEW_WAYS.map((w) => w.kind),
+    ["FAMILY", "FRESH", "INVITED"],
+  ),
+);
+check(
+  "세 줄 모두 제목과 한 줄 설명이 있다",
+  REVIEW_WAYS.every((w) => w.title.trim() && w.description.trim()),
+);
+check("체험 가족은 홈으로", reviewDestination({ nextStep: "HOME" }) === "/");
+check(
+  "처음 가입은 스플래시가 가족 만들기로 보낸다",
+  reviewDestination({ nextStep: "CREATE_FAMILY" }) === "/",
+);
+check(
+  "초대받은 보호자는 받은 초대코드를 채운 합류 화면으로",
+  reviewDestination({ nextStep: "CREATE_FAMILY", inviteCode: "K7M2QT" }) === "/claim?code=K7M2QT",
+);
+check(
+  "서버가 CLAIM 을 줘도 같은 합류 화면으로",
+  reviewDestination({ nextStep: "CLAIM", inviteCode: "K7M2QT" }) === "/claim?code=K7M2QT",
+);
+check(
+  "초대코드는 주소에 맞게 싸서 붙인다",
+  reviewDestination({ nextStep: "CLAIM", inviteCode: "A B&" }) === "/claim?code=A%20B%26",
+);
+check(
+  "이미 가족에 붙었으면(홈 · 참여 방식) 코드가 있어도 합류 화면으로 가지 않는다",
+  afterSignIn({ nextStep: "HOME" }, "K7M2QT") === "/" &&
+    afterSignIn({ nextStep: "SUPPORT_MODE" }, "K7M2QT") === "/",
+);
+{
+  const page = readFileSync("src/app/login/page.tsx", "utf8");
+  check(
+    "로그인 화면의 「심사용 계정으로 둘러보기」 는 고르는 시트를 열고 kind 를 보낸다",
+    page.includes("REVIEW_WAYS") && page.includes("reviewLogin.mutateAsync(kind)"),
+  );
+  check("개발용 로그인 묶음은 그대로 둔다", page.includes("개발용 · 구글 없이 들어가기"));
 }
 
 /* ─── 키울 요인을 부르는 두 이름(결정 7) ─────────────────── */

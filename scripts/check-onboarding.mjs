@@ -8,12 +8,14 @@
  * 결과가 다음 화면을 만드는 길**은 못 잡는다. 실제로 `POST /families` 에 목 응답이
  * 없어서 새 사용자가 첫 관문을 못 넘고 있었는데 아무 검사도 빨갛지 않았다.
  *
- * 네 길을 걷는다.
+ * 여섯 길을 걷는다.
  *   1. 가족 없는 계정 → 첫 시작(키움이 인사 · 가족 · 보호자 · 아이 · 동의 · 참여 방식 · 운동 시간 · 첫 측정) → 부모 홈
  *   2. 초대받은 계정 → 자리 확인 → 참여 방식 → 역할 고르기
  *   3. 첫 시작 중간에 새로고침 — 가족을 만든 뒤 · 아이를 만든 뒤. 두 번 만들지 않고 이어 간다.
  *      아이 등록 첫 칸의 뒤로 · 「지금 잴래요」 측정 화면의 뒤로가 홈으로 가는지
- *   4. 심사용 계정 → 들어가는 화면 → 역할 고르기 없이 부모 홈. 360px 폰에서 가족 이름이 잘리지 않는지
+ *   4. 심사용 계정 → 세 흐름을 고르는 시트 → 들어가는 화면. 360px 폰에서
+ *      체험 가족은 역할 고르기 없이 부모 홈(가족 이름이 잘리지 않는지), 처음 가입은 가족 만들기,
+ *      초대받은 보호자는 코드가 채워진 합류 화면에서 자리로 들어가 참여 방식까지
  */
 import { chromium } from "playwright";
 
@@ -272,18 +274,29 @@ await walk("새로고침에도 두 번 만들지 않는다", async (h) => {
 
 /* ─── 4. 심사위원이 심사용 계정으로 둘러본다 ─────────────── */
 
+/** 로그인 화면에서 「심사용 계정으로 둘러보기」 를 누르고 시트에서 한 줄을 고른다 */
+async function reviewAs(h, title) {
+  const { page } = h;
+  await h.step("로그인 화면", async () => {
+    await page.goto(`${BASE}/login`, { waitUntil: "load", timeout: 30000 });
+    await h.settle(2400);
+  });
+  await h.step("링크를 누르면 세 흐름을 고르는 시트가 뜬다", async () => {
+    await page.getByRole("button", { name: "심사용 계정으로 둘러보기" }).click();
+    await page.getByRole("dialog", { name: "어떻게 둘러볼까요" }).waitFor({ timeout: 3000 });
+    await h.settle(500);
+  });
+  await h.step(`「${title}」 을 고르면 들어가는 화면이 뜬다`, async () => {
+    await page.getByRole("button", { name: new RegExp(title) }).click();
+    await page.getByText("심사용 계정으로 들어가는 중").waitFor({ timeout: 3000 });
+  });
+}
+
 await walk(
-  "심사용 계정",
+  "심사용 계정 — 체험 가족",
   async (h) => {
     const { page } = h;
-    await h.step("로그인 화면", async () => {
-      await page.goto(`${BASE}/login`, { waitUntil: "load", timeout: 30000 });
-      await h.settle(2400);
-    });
-    await h.step("링크를 누르면 들어가는 화면이 뜬다", async () => {
-      await page.getByRole("button", { name: "심사용 계정으로 둘러보기" }).click();
-      await page.getByText("심사용 계정으로 들어가는 중").waitFor({ timeout: 3000 });
-    });
+    await reviewAs(h, "체험 가족으로 둘러보기");
     // 처음 보는 기기라 역할을 고른 적이 없다 — 그래도 「누가 쓰고 있나요」 를 거치지 않고 부모 홈으로 간다
     await h.step("역할 고르기 없이 부모 홈", async () => {
       await h.until(/\/(parent|start)$/);
@@ -308,10 +321,43 @@ await walk(
   { width: 360, height: 780 },
 );
 
+// 처음 가입하는 흐름 — 평소 가입과 같이 가족 만들기부터
+await walk(
+  "심사용 계정 — 처음부터 가입",
+  async (h) => {
+    const { page } = h;
+    await reviewAs(h, "처음부터 가입해 보기");
+    await h.step("가족 만들기로 간다", async () => {
+      await h.until(/\/start\/family/);
+      await page.getByRole("heading", { name: /저는 키움이에요/ }).waitFor({ timeout: 8000 });
+    });
+  },
+  { width: 360, height: 780 },
+);
+
+// 초대받아 들어오는 흐름 — 서버가 준 초대코드가 미리 채워진 합류 화면으로
+await walk(
+  "심사용 계정 — 초대받은 보호자",
+  async (h) => {
+    const { page } = h;
+    await reviewAs(h, "초대받은 보호자로 들어가 보기");
+    await h.step("초대코드가 채워진 합류 화면", async () => {
+      await h.until(/\/claim\?code=/);
+      const code = await page.getByLabel("초대코드 여섯 자리").inputValue();
+      if (code !== "K7M2QT") problems.push(`심사용 계정 — 초대\n    코드 칸이 「${code}」`);
+    });
+    await h.step("자리로 들어가 참여 방식까지", async () => {
+      await page.getByRole("button", { name: /자리로 들어가기/ }).click();
+      await h.until(/support-mode/);
+    });
+  },
+  { width: 360, height: 780 },
+);
+
 await browser.close();
 
 if (problems.length > 0) {
   console.error("가입 경로 문제:\n  " + problems.join("\n  "));
   process.exit(1);
 }
-console.log(`가입 경로 네 갈래 · 단계 ${steps}개 이상 없음`);
+console.log(`가입 경로 여섯 갈래 · 단계 ${steps}개 이상 없음`);
