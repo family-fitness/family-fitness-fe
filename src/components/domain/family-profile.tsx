@@ -100,7 +100,10 @@ export function FamilyProfile({
               </p>
             )}
           </div>
-          <ul className="mt-2 flex flex-wrap gap-2" aria-label={`얻은 업적 ${badges.length}개`}>
+          <ul
+            className="mt-2 flex flex-wrap justify-center gap-2"
+            aria-label={`얻은 업적 ${badges.length}개`}
+          >
             {badges.map((b) => (
               <li key={b.code} title={b.title}>
                 <ArtIcon name={badgeArt(b.code)} className="size-12" />

@@ -34,7 +34,7 @@ const GUIDE: Record<Who, { title: string; rows: { art: string; name: string; tex
       {
         art: "icon/menu-cheer",
         name: "칭찬하기",
-        text: "아이가 다 하면 알림이 와요. 스티커를 고르면 바로 보내져요",
+        text: "아이가 다 하면 알림이 와요. 스티커를 골라 붙여 주세요",
       },
     ],
   },

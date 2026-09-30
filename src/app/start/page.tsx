@@ -76,8 +76,8 @@ export default function StartPage() {
     return (
       <Stage className="flex min-h-dvh flex-col justify-center gap-6">
         <Skeleton className="h-8 w-56" />
-        <Skeleton className="h-48 w-full rounded-3xl" />
-        <Skeleton className="h-48 w-full rounded-3xl" />
+        <Skeleton className="h-28 w-full rounded-3xl" />
+        <Skeleton className="h-28 w-full rounded-3xl" />
       </Stage>
     );
   }

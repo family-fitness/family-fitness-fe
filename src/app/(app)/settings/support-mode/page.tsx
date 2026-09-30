@@ -99,7 +99,7 @@ function SupportModePageContent() {
                     }
                   }}
                   className={cn(
-                    "press card flex w-full items-start gap-3 text-left",
+                    "press card flex w-full items-center gap-3 text-left",
                     on && "ring-signal ring-2",
                   )}
                 >
@@ -109,7 +109,7 @@ function SupportModePageContent() {
                   </span>
                   <span
                     className={cn(
-                      "mt-0.5 grid size-6 shrink-0 place-items-center rounded-full border",
+                      "grid size-6 shrink-0 place-items-center rounded-full border",
                       on ? "bg-signal-strong border-signal-strong text-white" : "border-line",
                     )}
                     aria-hidden

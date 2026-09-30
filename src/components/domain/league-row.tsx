@@ -34,7 +34,7 @@ export function LeagueRow({
   // 셀 날이 아직 없으면 0% 가 아니라 비어 있다
   const note =
     league.rate != null
-      ? `이번 달 달성률 ${league.rate}% · ${league.daysLeft}일 남음`
+      ? `이번 달 달성률 ${league.rate}% · ${league.daysLeft > 0 ? `${league.daysLeft}일 남음` : "오늘까지"}`
       : "아직 순위가 없어요";
   return (
     <NavLink
