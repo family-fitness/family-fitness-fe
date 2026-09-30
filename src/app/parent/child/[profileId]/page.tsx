@@ -14,8 +14,8 @@ import { MonthStats, RecentDays } from "@/components/domain/child-stats";
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { AchievementGrid } from "@/components/domain/achievement-grid";
 import { FactorTable } from "@/components/domain/factor-table";
-import { HeightTrend } from "@/components/domain/height-trend";
 import { IslandCard } from "@/components/domain/island-card";
+import { GrowthRuler } from "@/components/scene/growth-ruler";
 import { ScoreTrend } from "@/components/domain/score-trend";
 import { REMEASURE_DAYS } from "@/lib/remeasure";
 import type { FitnessTestSummary } from "@/lib/api/types";
@@ -212,11 +212,11 @@ export default function ChildDetailPage() {
 }
 
 /**
- * 키 · 몸무게. 마지막 값, 잴 때마다의 키 흐름, 잰 기록 줄(9/29 「기록으로 더 보기 편하게」).
+ * 키 · 몸무게. 마지막 값, 키 자(잰 날마다 눈금 · 키 · 몸무게 · 날짜), 잰 기록 줄.
  *
  * 서버가 이력을 주면 이력으로, 아직이면 최근 회차나 기기에 둔 값으로.
  * 다시 재기는 덮어쓰기가 아니라 추가다 — 지난 값이 남아야 자란 걸 보여 준다(규칙 11).
- * 입체 키 자와 옆에 선 키움이는 걷었다 — 기록이 읽히는 것이 먼저다.
+ * 키 자 옆의 키움이만 뺐다(9/29 「캐릭터 세워 두진 말고」 · 9/30 「통으로 없애냐」) — 입체 자는 둔다.
  */
 function BodyGrowth({
   profileId,
@@ -249,6 +249,12 @@ function BodyGrowth({
   const due = (daysSince(lastTestedOn) ?? 0) >= REMEASURE_DAYS;
   // 잰 기록 줄은 최근 것부터
   const newestFirst = [...withBody].reverse();
+  // 키 자의 눈금 — 이력이 아직 없으면 최근 회차나 기기에 적어 둔 한 번이라도
+  const rulerRecords = withBody.length
+    ? withBody.map((t) => ({ date: t.testedOn, heightCm: t.heightCm, weightKg: t.weightKg }))
+    : fallback
+      ? [{ date: fallback.measuredOn, heightCm: fallback.heightCm, weightKg: fallback.weightKg }]
+      : [];
 
   return (
     <Card>
@@ -277,18 +283,17 @@ function BodyGrowth({
         <p className="text-ink-soft mt-1 text-sm">아직 안 적었어요</p>
       )}
 
-      {/* 두 번 넘게 쟀을 때만 — 한 번은 위 값 칸이 말한다 */}
+      {/* 키 자 — 잰 날마다 눈금 하나, 옆에 키 · 몸무게 · 날짜(9/30 다시). 한 번만 쟀어도 선다 */}
+      {rulerRecords.length > 0 && <GrowthRuler records={rulerRecords} className="mt-3" />}
+      {grew != null && grew > 0 && first && (
+        <p className="text-caption text-ink-soft mt-1 font-semibold">
+          {formatDate(first.testedOn)}보다 <b className="text-ink">{grew}cm</b> 자랐어요
+        </p>
+      )}
+
+      {/* 잰 기록 줄 — 두 번 넘게 쟀을 때만. 한 번은 위 값 칸이 말한다 */}
       {withBody.length > 1 && (
         <>
-          <p className="text-caption text-ink-soft mt-4 font-bold">키(cm)</p>
-          <HeightTrend
-            records={withBody.map((t) => ({ date: t.testedOn, heightCm: t.heightCm }))}
-          />
-          {grew != null && grew > 0 && first && (
-            <p className="text-caption text-ink-soft mt-1 font-semibold">
-              {formatDate(first.testedOn)}보다 <b className="text-ink">{grew}cm</b> 자랐어요
-            </p>
-          )}
           <ul className="divide-rows border-line mt-3 border-t" aria-label="잰 기록">
             {newestFirst.map((t, i) => {
               const before = newestFirst[i + 1];
