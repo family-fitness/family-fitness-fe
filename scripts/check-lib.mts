@@ -18,6 +18,7 @@ import {
   zoneOf,
 } from "@/lib/league";
 import { NO_PEER_NORMS_NOTE, memberNoPeerNormsNote, noPeerNormsNote } from "@/lib/fitness-factors";
+import { VERIFIED_COPY } from "@/lib/mission";
 import { projectOrtho } from "@/lib/ortho";
 import { withJosa } from "@/lib/utils";
 import {
@@ -1128,6 +1129,13 @@ check("리그가 열흘 남으면 10일 남았어요", daysLeftText(10) === "10�
     /<FactorRadar[^>]*note=\{memberNoPeerNormsNote\(kid\)\}/.test(plan),
   );
 }
+
+// 칸은 영상을 튼 채 잡힌 시간만큼 하면 끝난다. 시범 영상이 짧아 되풀이돼도 「끝까지 봤다」 고 하지 않는다
+check(
+  "영상 재생 시간으로 인정한 칸은 끝까지 봤다고 말하지 않는다",
+  !VERIFIED_COPY.VIDEO_PROGRESS.includes("끝까지"),
+  VERIFIED_COPY.VIDEO_PROGRESS,
+);
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);
