@@ -194,6 +194,11 @@ export default function MeasurePage() {
   const onSubmit = handleSubmit(async (form) => {
     setServerError(null);
 
+    // 앞날에 잰 기록은 없다 — 직접 쳐 넣으면 달력의 max 를 지나 들어온다
+    if (!testedOn || testedOn > today()) {
+      setServerError("측정한 날짜를 다시 봐 주세요.");
+      return;
+    }
     // 키 · 몸무게가 범위를 벗어났으면 보내지 않는다 — 빼고 보내면 적은 줄 알았던 키가 사라진다
     if (heightProblem || weightProblem) {
       setServerError("키 · 몸무게를 다시 봐 주세요.");
@@ -270,9 +275,11 @@ export default function MeasurePage() {
             </p>
             <input
               type="date"
+              required
               value={testedOn}
               max={today()}
-              onChange={(e) => setTestedOn(e.target.value)}
+              // 폰 달력의 「지우기」 로 비우면 날짜 없이 보내 서버가 받지 않는다 — 비우는 것은 받지 않고 고른 날에 둔다
+              onChange={(e) => e.target.value && setTestedOn(e.target.value)}
               aria-label="측정한 날짜"
               className="field"
             />
