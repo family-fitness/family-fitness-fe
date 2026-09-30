@@ -411,7 +411,7 @@ export default function PlayPage() {
         )}
         <div className="relative flex items-center justify-center">
           <p className="text-caption text-ink-soft text-center font-bold">
-            {doneCount} / {sessions.length}칸 · {totalMin}분 중 {doneMin}분
+            {doneCount} / {sessions.length}개 · {totalMin}분 중 {doneMin}분
           </p>
           <button
             type="button"
