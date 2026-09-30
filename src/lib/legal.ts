@@ -71,6 +71,13 @@ export const CONSENT_TERMS: Record<ConsentKind, ConsentTerms> = {
   },
 };
 
+/**
+ * 개인정보처리방침 · 이용약관 주소. 로그인하지 않아도 열린다(`src/app/privacy` · `src/app/terms`).
+ * 구글 로그인(OAuth) 앱 심사가 로그인 전에도 볼 수 있는 곳에 두 링크를 요구해서, 로그인 화면 아래와 설정 두 곳에서 이 주소로 연다
+ */
+export const PRIVACY_HREF = "/privacy";
+export const TERMS_HREF = "/terms";
+
 export const PRIVACY_POLICY: LegalDoc = {
   title: "개인정보처리방침",
   effective: "2026년 9월 28일",

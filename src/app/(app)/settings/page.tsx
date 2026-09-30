@@ -12,6 +12,7 @@ import { ListRow } from "@/components/ui/list-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFamilyProfiles, useMe } from "@/lib/api/queries";
 import type { MeWithEmail } from "@/lib/api/types";
+import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
 import { useSession, useSignOut } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 
@@ -134,8 +135,8 @@ export default function SettingsPage() {
         </ul>
 
         <ul className="card divide-rows py-1">
-          <ListRow href="/settings/privacy" title="개인정보처리방침" />
-          <ListRow href="/settings/terms" title="이용약관" />
+          <ListRow href={PRIVACY_HREF} title="개인정보처리방침" />
+          <ListRow href={TERMS_HREF} title="이용약관" />
         </ul>
 
         <section className="card">

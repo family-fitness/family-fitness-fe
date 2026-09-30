@@ -41,7 +41,9 @@ import { josa } from "@/lib/utils";
 import { afterFileFailure, fileType, finderHref, finderOwner } from "@/lib/videos";
 import { callName, guardiansName, mustAddChild, openWithoutChild } from "@/lib/family";
 
-import { readFileSync, readdirSync } from "node:fs";
+import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
+
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { BAND_COPY, FOCUS_COPY } from "@/lib/api/types";
 
@@ -635,6 +637,31 @@ check(
     (p) => !openWithoutChild(p),
   ),
 );
+
+/* ─── 개인정보처리방침 · 이용약관 — 로그인하지 않아도 열린다 ─────────────────── */
+
+// 구글 로그인(OAuth) 앱 심사는 로그인 전에도 볼 수 있는 곳에 두 링크를 요구한다.
+// 전에는 설정(/settings/privacy · /settings/terms)에만 있어 로그인해야 들어갈 수 있었다
+check("개인정보처리방침 주소는 /privacy", PRIVACY_HREF === "/privacy");
+check("이용약관 주소는 /terms", TERMS_HREF === "/terms");
+check(
+  "두 문서는 로그인이 필요한 묶음((app) · parent · kid · plan) 밖, 앱 맨 위에 있다",
+  [PRIVACY_HREF, TERMS_HREF].every(
+    (href) => typeof href === "string" && existsSync(join("src/app", href, "page.tsx")),
+  ),
+);
+{
+  const login = readFileSync("src/app/login/page.tsx", "utf8");
+  const settings = readFileSync("src/app/(app)/settings/page.tsx", "utf8");
+  check(
+    "로그인 화면에 두 문서 링크가 있다",
+    login.includes("PRIVACY_HREF") && login.includes("TERMS_HREF"),
+  );
+  check(
+    "설정 화면도 같은 주소로 연다",
+    settings.includes("PRIVACY_HREF") && settings.includes("TERMS_HREF"),
+  );
+}
 
 /* ─── 공단 mp4 를 못 틀었을 때 — 같은 주소를 한 번만 다시 불러 본다 ─────────────────── */
 

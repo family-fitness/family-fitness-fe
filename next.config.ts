@@ -61,6 +61,17 @@ const nextConfig: NextConfig = {
   },
 
   /**
+   * 개인정보처리방침 · 이용약관은 로그인하지 않아도 열리게 앱 맨 위(/privacy · /terms)로 옮겼다.
+   * 예전 설정 안 주소로 들어와도 같은 글이 열리게 보낸다
+   */
+  async redirects() {
+    return [
+      { source: "/settings/privacy", destination: "/privacy", permanent: false },
+      { source: "/settings/terms", destination: "/terms", permanent: false },
+    ];
+  },
+
+  /**
    * 보안 머리말.
    *
    * 아이 건강 정보를 다루는 화면이라 기본값에 기대지 않는다.

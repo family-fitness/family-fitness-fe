@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { KiumIsland } from "@/components/scene/kium-island";
 import type { AuthResponse } from "@/lib/api/types";
 import { errorMessage } from "@/lib/errors";
+import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
 import { useDevLogin, useGoogleLogin, useReviewLogin } from "@/lib/api/queries";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRoleStore } from "@/stores/role-store";
@@ -236,8 +238,9 @@ function LoginContent() {
   }
 
   return (
-    <PlainScreen className="flex min-h-dvh flex-col justify-center gap-8">
-      <div className="flex flex-col items-center text-center">
+    <PlainScreen className="flex min-h-dvh flex-col gap-8">
+      {/* 섬과 단추는 남는 높이의 가운데(위아래 auto 여백), 두 문서 링크는 맨 아래 */}
+      <div className="mt-auto flex flex-col items-center text-center">
         <KiumIsland
           stage={3}
           level={9}
@@ -252,7 +255,7 @@ function LoginContent() {
       </div>
 
       {/* 구글 키가 없는 빌드에서도 단추는 선다 — 누르면 구글 대신 새 계정으로 같은 길을 걷는다 */}
-      <div className="space-y-3">
+      <div className="mb-auto space-y-3">
         <Button
           size="block"
           variant="outline"
@@ -302,7 +305,28 @@ function LoginContent() {
           </p>
         )}
       </div>
+
+      <LegalLinks />
     </PlainScreen>
+  );
+}
+
+/**
+ * 개인정보처리방침 · 이용약관. 구글 로그인(OAuth) 앱 심사가 로그인 전에도 볼 수 있는 곳에 두 링크를 요구한다 —
+ * 전에는 로그인한 뒤 설정에서만 열렸다. 두 문서는 로그인하지 않아도 열린다
+ */
+function LegalLinks() {
+  const link = "inline-flex min-h-11 items-center px-2 underline-offset-4 hover:underline";
+  return (
+    <nav aria-label="약관" className="text-ink-soft text-caption flex items-center justify-center">
+      <Link href={PRIVACY_HREF} className={link}>
+        개인정보처리방침
+      </Link>
+      <span aria-hidden>·</span>
+      <Link href={TERMS_HREF} className={link}>
+        이용약관
+      </Link>
+    </nav>
   );
 }
 
