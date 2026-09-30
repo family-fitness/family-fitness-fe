@@ -525,7 +525,7 @@ function PlannedRows({
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-bold">{s.title}</span>
               <span className="text-caption text-ink-soft block">
-                {PHASE_LABEL[s.phase]} · {stepMinutes(s)}분
+                {PHASE_LABEL[s.phase]} {stepMinutes(s)}분
               </span>
             </span>
           </li>
