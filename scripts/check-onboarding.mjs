@@ -156,6 +156,61 @@ await walk("새 가족 만들기", async (h) => {
   });
 });
 
+/*
+  만 14세가 안 된 보호자. 안내가 생년월일 칸 밑에만 있어 360×740 에서는 「다음」 단추 영역에,
+  360×640 에서는 생년월일 칸째로 가려졌다. 단추 바로 위 안내 문구 자리에서 보여야 한다
+*/
+for (const viewport of [
+  { width: 360, height: 640 },
+  { width: 360, height: 740 },
+]) {
+  const where = `${viewport.width}×${viewport.height}`;
+  await walk(
+    `만 14세 안내 ${where}`,
+    async (h) => {
+      const { page } = h;
+      await h.step("가족 없는 계정으로 가족 화면까지", async () => {
+        await page.goto(`${BASE}/login`, { waitUntil: "load", timeout: 30000 });
+        await h.settle(2400);
+        await page.getByRole("button", { name: /새 계정/ }).click();
+        await h.until(/\/start\/family/);
+      });
+      await h.step("만 14세가 안 된 생년월일을 고른다", async () => {
+        await page.getByLabel("가족 이름").fill("어린네");
+        await page.getByLabel("보호자 이름").fill("하루");
+        await page.getByRole("radio", { name: /여성/ }).click();
+        await pickDate(page, "보호자 생년월일", "2015-03-01");
+        await h.settle(400);
+      });
+      await h.step("화면을 맨 위로 올려도 안내가 가려지지 않고 보인다", async () => {
+        const shown = await page.evaluate((copy) => {
+          // 달력을 열려고 내린 자리가 아니라 처음 보는 자리에서도 보여야 한다
+          for (const el of [document.scrollingElement, ...document.querySelectorAll("*")]) {
+            if (el && el.scrollTop > 0) el.scrollTop = 0;
+          }
+          const nodes = [...document.querySelectorAll("p, span")].filter(
+            (n) => n.children.length === 0 && n.textContent?.trim() === copy,
+          );
+          return nodes.some((n) => {
+            const r = n.getBoundingClientRect();
+            if (r.width === 0 || r.bottom <= 0 || r.top >= innerHeight) return false;
+            const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+            return top != null && (top === n || n.contains(top));
+          });
+        }, "가족은 만 14세부터 만들 수 있어요");
+        if (!shown) {
+          problems.push(
+            `만 14세 안내 ${where}\n    「가족은 만 14세부터 만들 수 있어요」 가 가려지거나 없다`,
+          );
+        }
+        const locked = await page.getByRole("button", { name: "다음", exact: true }).isDisabled();
+        if (!locked) problems.push(`만 14세 안내 ${where}\n    다음이 열려 있다`);
+      });
+    },
+    viewport,
+  );
+}
+
 /* ─── 2. 초대받은 사람이 자기 자리로 들어간다 ─────────────── */
 
 await walk("초대 수락", async (h) => {

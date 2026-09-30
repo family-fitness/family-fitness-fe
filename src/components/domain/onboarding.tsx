@@ -26,7 +26,12 @@ import { type DateRule, childBirthRule, guardianBirthRule } from "@/lib/date-pic
 import { errorMessage } from "@/lib/errors";
 import { NEED_CHILD_COPY } from "@/lib/family";
 import type { ConsentKind } from "@/lib/legal";
-import { CREATE_AT, GUARDIAN_MIN_AGE, guardianOldEnough, onboardingSteps } from "@/lib/onboarding";
+import {
+  CREATE_AT,
+  guardianAgeProblem,
+  guardianOldEnough,
+  onboardingSteps,
+} from "@/lib/onboarding";
 import type { OnboardingStep } from "@/lib/onboarding";
 import { useSession } from "@/lib/session";
 import { ageOf, daysBefore, today } from "@/lib/today";
@@ -359,10 +364,18 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
     done: true,
   };
 
+  // 가족 화면의 만 14세 안내. 생년월일 칸 밑에도 있지만 360px 폰에서는 단추 영역에 가려진다
+  const ageProblem = step === "family" ? guardianAgeProblem(meBirth) : null;
   // 못 한 까닭은 단추 바로 위에 글자로 — 떠 있는 둥근 면에 넣지 않는다
-  const problemLine = problem && (
-    <p role="alert" className="text-signal-deep mb-2 text-center text-sm font-semibold">
-      {problem}
+  const reason = problem ?? ageProblem;
+  const problemLine = reason && (
+    <p
+      // 만 14세 안내는 칸 밑 글이 이미 읽어 준다. 두 번 읽지 않게 여기서는 소리를 내지 않는다
+      role={problem ? "alert" : undefined}
+      aria-hidden={problem ? undefined : true}
+      className="text-signal-deep mb-2 text-center text-sm font-semibold"
+    >
+      {reason}
     </p>
   );
   const action =
@@ -444,14 +457,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
                 <ChoiceButton selected={meSex === "M"} onClick={() => setMeSex("M")} title="남성" />
               </div>
             </Field>
-            <Field
-              label="보호자님 생년월일"
-              problem={
-                meBirthOk && !guardianOldEnough(meBirth)
-                  ? `가족은 만 ${GUARDIAN_MIN_AGE}세부터 만들 수 있어요`
-                  : null
-              }
-            >
+            <Field label="보호자님 생년월일" problem={ageProblem}>
               <DateInput
                 label="보호자 생년월일"
                 value={meBirth}

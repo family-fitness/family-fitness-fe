@@ -1,4 +1,4 @@
-import { ageOf } from "./today";
+import { ageOf, today } from "./today";
 
 /**
  * 첫 시작(가입)과 아이 더하기의 화면 차례.
@@ -38,4 +38,17 @@ export const GUARDIAN_MIN_AGE = 14;
 export function guardianOldEnough(birthDate: string, on?: string): boolean {
   const age = ageOf(birthDate, on);
   return age != null && age >= GUARDIAN_MIN_AGE;
+}
+
+/**
+ * 가족 화면에서 넘어가지 못하는 까닭(만 14세). 생년월일이 비었거나 오늘 뒤면 나이를 말하지 않는다.
+ *
+ * 이 글은 생년월일 칸 밑에만 있어 360px 폰에서 「다음」 단추 영역에 가려졌다.
+ * 첫 시작 화면은 같은 글을 단추 바로 위 안내 문구 자리에도 띄운다.
+ */
+export function guardianAgeProblem(birthDate: string, on: string = today()): string | null {
+  if (birthDate === "" || birthDate > on) return null;
+  return guardianOldEnough(birthDate, on)
+    ? null
+    : `가족은 만 ${GUARDIAN_MIN_AGE}세부터 만들 수 있어요`;
 }

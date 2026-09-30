@@ -54,7 +54,12 @@ import {
   watchTitle,
 } from "@/lib/videos";
 import { callName, guardiansName, mustAddChild, openWithoutChild } from "@/lib/family";
-import { CREATE_AT, guardianOldEnough, onboardingSteps } from "@/lib/onboarding";
+import {
+  CREATE_AT,
+  guardianAgeProblem,
+  guardianOldEnough,
+  onboardingSteps,
+} from "@/lib/onboarding";
 
 import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
 import { REVIEW_WAYS, afterSignIn, reviewDestination } from "@/lib/review-login";
@@ -732,6 +737,29 @@ check(
     !guardianOldEnough("2012-10-01", "2026-09-30"),
   );
   check("생년월일이 비면 넘어가지 않는다", !guardianOldEnough("", "2026-09-30"));
+
+  // 가족 화면의 만 14세 안내는 생년월일 칸 밑에만 있어 360px 폰에서 「다음」 단추 영역에 가려졌다.
+  // 같은 글을 단추 바로 위 안내 문구 자리에도 띄운다
+  check(
+    "만 14세가 안 된 보호자에게는 「가족은 만 14세부터 만들 수 있어요」",
+    guardianAgeProblem("2015-03-01", "2026-09-30") === "가족은 만 14세부터 만들 수 있어요",
+  );
+  check(
+    "만 14세 보호자에게는 안내가 없다",
+    guardianAgeProblem("2012-09-30", "2026-09-30") === null,
+  );
+  check("생년월일이 비면 안내가 없다", guardianAgeProblem("", "2026-09-30") === null);
+  check(
+    "오늘 뒤의 생년월일에는 나이 안내를 띄우지 않는다",
+    guardianAgeProblem("2027-01-01", "2026-09-30") === null,
+  );
+  const wizard = readFileSync("src/components/domain/onboarding.tsx", "utf8");
+  check(
+    "가족 화면의 만 14세 안내를 단추 위 안내 문구 자리(problemLine)에도 띄운다",
+    /const ageProblem = step === "family" \? guardianAgeProblem\(meBirth\) : null;/.test(wizard) &&
+      /const reason = problem \?\? ageProblem;/.test(wizard) &&
+      /const problemLine = reason &&/.test(wizard),
+  );
 }
 
 /* ─── 개인정보처리방침 · 이용약관 — 로그인하지 않아도 열린다 ─────────────────── */
