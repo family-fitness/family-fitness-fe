@@ -18,7 +18,7 @@ import { FactorIcon } from "@/components/domain/factor-icon";
 import type { ClipView, SessionPhase } from "@/lib/api/types";
 import { useClips, useToggleClipFavorite } from "@/lib/api/queries";
 import { FACTORS, isFactor, type Factor } from "@/lib/fitness-factors";
-import { routineMinutes } from "@/lib/routine";
+import { MAX_MOVES, routineMinutes } from "@/lib/routine";
 import { PHASE_LABEL, clock } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -235,6 +235,7 @@ function Finder() {
                 owner={owner}
                 picked={inTray(c)}
                 canPick={!kidView}
+                full={moves.length >= MAX_MOVES}
                 onPick={() => toggleMove(c)}
                 onPreview={() => {
                   setPreviewId(c.clipId);
@@ -264,6 +265,7 @@ function ClipRow({
   owner,
   picked,
   canPick,
+  full,
   onPick,
   onPreview,
 }: {
@@ -271,6 +273,8 @@ function ClipRow({
   owner: string | undefined;
   picked: boolean;
   canPick: boolean;
+  /** 열 개를 다 담았다 — 더 담는 단추는 눌러도 아무 일이 없으니 꺼 둔다. 빼기는 된다 */
+  full: boolean;
   onPick: () => void;
   onPreview: () => void;
 }) {
@@ -334,9 +338,10 @@ function ClipRow({
             type="button"
             aria-pressed={picked}
             aria-label={picked ? `${c.title} 빼기` : `${c.title} 담기`}
+            disabled={!picked && full}
             onClick={onPick}
             className={cn(
-              "press grid size-11 place-items-center rounded-full",
+              "press grid size-11 place-items-center rounded-full disabled:opacity-30",
               picked ? "bg-signal-strong text-white" : "bg-sub text-ink",
             )}
           >
@@ -394,7 +399,7 @@ function Tray({ onClear }: { onClear: () => void }) {
       <div className="card-hero flex items-center gap-3 py-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-extrabold">
-            담은 동작 {moves.length}개 · {minutes}분
+            담은 동작 {moves.length}개 · {minutes}분{moves.length >= MAX_MOVES && " · 다 담았어요"}
           </p>
           <button
             type="button"
