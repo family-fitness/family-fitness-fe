@@ -52,6 +52,7 @@ export function FactorRadar({
   points,
   name,
   focus,
+  note,
   legend = true,
   className,
 }: {
@@ -60,6 +61,8 @@ export function FactorRadar({
   name: string;
   /** 이 요인의 이름에 옅은 칸을 씌운다. AI 편성이 무엇을 키우려는지 보여 줄 때(축은 늘 옅게) */
   focus?: Factor | null;
+  /** 또래와 견줄 수 없는 까닭(만 7~10세). 있으면 육각형 위에 한 줄로 쓰고, 칸마다 「없어요」는 숨긴다 */
+  note?: string | null;
   legend?: boolean;
   className?: string;
 }) {
@@ -89,6 +92,9 @@ export function FactorRadar({
       : [];
 
   // 화면의 「—」 와 같은 말 — 「안 잰」 이라 읽으면 쟀는데 비교 기준이 없는 나이의 값까지 안 잰 것이 된다
+  // 까닭을 한 줄로 말했으면 칸마다 「없어요」를 되풀이하지 않는다
+  const hideMissing = Boolean(note) && !compared;
+
   const summary = hex
     .map((p) =>
       p.percentile == null
@@ -99,12 +105,17 @@ export function FactorRadar({
 
   return (
     <div className={cn("relative", className)}>
+      {hideMissing && <p className="text-ink-soft mb-2 text-center text-sm">{note}</p>}
       <div className="relative">
         <svg
           viewBox={`0 0 ${W} ${H}`}
           className="block w-full"
           role="img"
-          aria-label={`${name}의 체력 육각형. ${summary}. 또래 평균은 50`}
+          aria-label={
+            hideMissing
+              ? `${name}의 체력 육각형. ${note}`
+              : `${name}의 체력 육각형. ${summary}. 또래 평균은 50`
+          }
         >
           {/* 눈금 — 25 · 75 · 100. 한 겹 옅은 실선 */}
           {[25, 75, 100].map((v) => (
@@ -216,7 +227,9 @@ export function FactorRadar({
               {/* 값이 없으면 「—」 — 안 잰 것일 수도, 잰 나이에 비교 기준이 없는 것일 수도 있다(규칙 8).
                   어느 쪽인지는 요인 표가 항목과 같이 말한다 */}
               {missing ? (
-                <span className="text-micro text-faint mt-0.5 font-semibold">없어요</span>
+                !hideMissing && (
+                  <span className="text-micro text-faint mt-0.5 font-semibold">없어요</span>
+                )
               ) : (
                 <span className="text-ink text-base font-extrabold tabular-nums">
                   {p.percentile}

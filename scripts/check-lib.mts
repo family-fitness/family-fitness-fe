@@ -17,6 +17,7 @@ import {
   prevTier,
   zoneOf,
 } from "@/lib/league";
+import { NO_PEER_NORMS_NOTE, noPeerNormsNote } from "@/lib/fitness-factors";
 import { projectOrtho } from "@/lib/ortho";
 import { withJosa } from "@/lib/utils";
 import {
@@ -1070,6 +1071,29 @@ check(
 check("리그가 오늘 끝나면 오늘 끝나요", daysLeftText(0) === "오늘 끝나요", daysLeftText(0));
 check("리그가 하루 남으면 1일 남았어요", daysLeftText(1) === "1일 남았어요", daysLeftText(1));
 check("리그가 열흘 남으면 10일 남았어요", daysLeftText(10) === "10일 남았어요", daysLeftText(10));
+
+// 만 7~10세는 또래 분포 표가 비어 백분위가 모두 없다. 칸마다 「없어요」 대신 까닭을 한 줄로
+{
+  const note = noPeerNormsNote({ ageGroup: "유소년", measured: true, compared: false });
+  check(
+    "쟀는데 또래 백분위가 하나도 없는 유소년은 까닭을 말한다",
+    note === NO_PEER_NORMS_NOTE && note.includes("만 7~10세"),
+    String(note),
+  );
+  check(
+    "백분위가 하나라도 있으면 까닭을 말하지 않는다",
+    noPeerNormsNote({ ageGroup: "유소년", measured: true, compared: true }) === null,
+  );
+  check(
+    "아직 안 쟀으면 까닭을 말하지 않는다",
+    noPeerNormsNote({ ageGroup: "유소년", measured: false, compared: false }) === null,
+  );
+  check(
+    "유소년이 아니면 만 7~10세 까닭을 말하지 않는다",
+    noPeerNormsNote({ ageGroup: "유아기", measured: true, compared: false }) === null &&
+      noPeerNormsNote({ ageGroup: undefined, measured: true, compared: false }) === null,
+  );
+}
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);

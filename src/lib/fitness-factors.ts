@@ -67,3 +67,28 @@ export function itemsByFactor(
 export function isFactor(v: string | null | undefined): v is Factor {
   return (FACTORS as readonly string[]).includes(v ?? "");
 }
+
+/** 만 7~10세에 또래 백분위가 모두 비었을 때 보여 주는 까닭 한 줄 */
+export const NO_PEER_NORMS_NOTE =
+  "만 7~10세는 국민체력100 또래 기준이 없어 점수를 비교할 수 없어요. 적은 기록은 그대로 남아요";
+
+/**
+ * 쟀는데 또래와 견줄 값이 하나도 없는 까닭을 한 줄로 돌려준다. 말할 게 없으면 null.
+ *
+ * 국민체력100 또래 분포 표에는 유소년 만 7~10세 줄이 없다. 그 나이는 재도 백분위가 모두 비어서,
+ * 칸마다 「없어요」만 뜨면 측정이 잘못된 것처럼 보인다. FE 는 생일을 받지 않고 연령대만 알아서
+ * 「유소년인데 백분위가 하나도 없다」로 가른다(유소년 만 11세 이상은 기준이 있다).
+ */
+export function noPeerNormsNote({
+  ageGroup,
+  measured,
+  compared,
+}: {
+  ageGroup: string | null | undefined;
+  /** 한 번이라도 쟀나 */
+  measured: boolean;
+  /** 또래 백분위가 하나라도 있나 */
+  compared: boolean;
+}): string | null {
+  return measured && !compared && ageGroup === "유소년" ? NO_PEER_NORMS_NOTE : null;
+}

@@ -17,7 +17,7 @@ import { FactorIcon } from "@/components/domain/factor-icon";
 import { FactorView } from "@/components/domain/factor-view";
 import { GradeCard } from "@/components/domain/grade-card";
 import { RecordRow } from "@/components/domain/record-bar";
-import { isFactor } from "@/lib/fitness-factors";
+import { isFactor, noPeerNormsNote } from "@/lib/fitness-factors";
 import { useFamilyProfiles, useFitnessMap, useLatestFitnessTest } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
@@ -102,6 +102,12 @@ export default function ResultPage() {
   const weakest = test.weakest;
   // 항목 하나만 쟀으면 강한 영역과 약한 영역이 같은 것으로 온다
   const onlyOneFactor = Boolean(strongest && weakest && strongest.factor === weakest.factor);
+  // 만 7~10세는 또래 기준이 없어 백분위가 모두 빈다. 칸마다 「없어요」 대신 까닭을 한 줄로
+  const normsNote = noPeerNormsNote({
+    ageGroup: profile?.ageGroup ?? member?.ageGroup,
+    measured: true,
+    compared: radar.some((p) => p.percentile != null) || items.some((e) => e.percentile != null),
+  });
 
   return (
     <>
@@ -127,6 +133,7 @@ export default function ResultPage() {
               name={profile?.name ?? "나"}
               pending={false}
               score={member?.latest?.overallPercentile ?? null}
+              note={normsNote}
             />
           </section>
         )}
