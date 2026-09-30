@@ -83,13 +83,13 @@ function stepSummary(
   const minutes = plan.reduce((sum, s) => sum + s.minutes, 0);
   switch (name) {
     case "assess":
-      return `${who} · 측정 ${latest?.items?.length ?? 0}항목 · ${p.focusFactor ? `보호자가 키워 주고 싶은 역량 ${focus}` : `지금 키우기 좋은 영역 ${focus}`}`;
+      return `${who}, 측정 ${latest?.items?.length ?? 0}항목, ${p.focusFactor ? `보호자가 키워 주고 싶은 역량 ${focus}` : `지금 키우기 좋은 영역 ${focus}`}`;
     case "retrieve":
-      return `국민체력100 운동처방 ${focus} 12건 · 클립 ${catalog.length}개 중 ${pool.length}개${p.quiet ? " · 조용한 것 먼저" : ""}`;
+      return `국민체력100 운동처방 ${focus} 12건, 클립 ${catalog.length}개 중 ${pool.length}개${p.quiet ? ", 조용한 것 먼저" : ""}`;
     case "compose":
-      return `준비 ${count("WARMUP")} · 본 ${count("MAIN")} · 정리 ${count("COOLDOWN")} · ${minutes}분`;
+      return `준비 ${count("WARMUP")}, 본 ${count("MAIN")}, 정리 ${count("COOLDOWN")}, 모두 ${minutes}분`;
     case "verify":
-      return "인용 2건 · 금지 어휘 0건";
+      return "인용 2건, 금지 어휘 0건";
   }
 }
 
@@ -124,7 +124,7 @@ function proposalFor(p: PlanParams, focus: string, runId: string) {
     citations: [
       {
         index: 1,
-        label: `국민체력100 운동처방 · ${ageGroup}`,
+        label: `국민체력100 운동처방 (${ageGroup})`,
         chunkId: `prescription:${ageGroup}-${focus}`,
         url: null,
       },
@@ -132,13 +132,13 @@ function proposalFor(p: PlanParams, focus: string, runId: string) {
       first?.clip.mediaUrl
         ? {
             index: 2,
-            label: `국민체력100 동영상 정보 · ${first.title}`,
+            label: `국민체력100 동영상 정보: ${first.title}`,
             chunkId: `kspo:${first.clip.videoId}`,
             url: first.clip.mediaUrl,
           }
         : {
             index: 2,
-            label: `국민체력100 운동영상 · ${first?.title ?? "기초체력"}`,
+            label: `국민체력100 운동영상: ${first?.title ?? "기초체력"}`,
             chunkId: `video:${first?.clip.videoId ?? ""}`,
             url: first
               ? `https://www.youtube.com/watch?v=${first.clip.videoId}&t=${first.clip.startSec}s`

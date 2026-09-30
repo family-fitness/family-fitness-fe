@@ -88,7 +88,7 @@ function notificationsFor(profileId: string): NotificationView[] {
       items.push({
         notificationId: `remeasure-${kid.profileId}-${last}`,
         kind: "REMEASURE",
-        title: `${kid.name} 키 · 몸무게를 새로 재 볼까요`,
+        title: `${kid.name} 키와 몸무게를 새로 재 볼까요`,
         body: days != null ? `지난번에 잰 지 ${days}일` : "",
         aboutProfileId: kid.profileId ?? null,
         missionId: null,
@@ -151,7 +151,7 @@ function notificationsFor(profileId: string): NotificationView[] {
       items.push({
         notificationId: `badge-${profileId}-${a.code}`,
         kind: "ACHIEVEMENT",
-        title: `새 업적 — ${a.title}`,
+        title: `새 업적을 받았어요: ${a.title}`,
         body: earned(a.description),
         aboutProfileId: profileId,
         missionId: null,

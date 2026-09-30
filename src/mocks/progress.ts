@@ -123,7 +123,7 @@ export function progressOf(profileId: string): ProgressView {
       at: c.createdAt,
     })),
     ...tests.slice(0, -1).map((t) => ({
-      reason: "키 · 몸무게를 새로 쟀어요",
+      reason: "키와 몸무게를 새로 쟀어요",
       amount: XP.MEASURE,
       at: timeOn(t.testedOn),
     })),
@@ -238,7 +238,7 @@ function achievementsOf(
     {
       code: "FULL_SET",
       title: "준비부터 정리까지",
-      description: "준비 · 본 · 정리를 한 번에 다 해요",
+      description: "준비운동부터 정리운동까지 한 번에 다 해요",
       earnedAt: at(fullSet),
     },
     {
@@ -274,7 +274,7 @@ function achievementsOf(
     {
       code: "REMEASURE",
       title: "자란 만큼 다시",
-      description: "키 · 몸무게를 새로 재요",
+      description: "키와 몸무게를 새로 재요",
       earnedAt: at(remeasuredOn),
     },
     {

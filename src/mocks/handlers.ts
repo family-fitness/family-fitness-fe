@@ -202,7 +202,7 @@ const identity = [
     if (kind === "FAMILY") return HttpResponse.json(signIn(undefined));
     if (kind === "FRESH") return HttpResponse.json(signIn(FRESH_ID));
     if (kind === "INVITED") return HttpResponse.json({ ...signIn(CLAIM_ID), inviteCode: "K7M2QT" });
-    return fail(400, "INVALID_REQUEST", "kind 는 FAMILY · FRESH · INVITED 가운데 하나입니다");
+    return fail(400, "INVALID_REQUEST", "kind 는 FAMILY, FRESH, INVITED 가운데 하나입니다");
   }),
 
   /**
@@ -505,7 +505,7 @@ const fitness = [
         s.minutes <= 120,
     );
     if (slots.length !== (body.slots ?? []).length) {
-      return fail(400, "INVALID_SLOT", "요일 · 시각 · 시간 중 맞지 않는 값이 있습니다");
+      return fail(400, "INVALID_SLOT", "요일, 시각, 시간 가운데 맞지 않는 값이 있습니다");
     }
     db.availability[String(params.profileId)] = slots;
     saveExtra("availability");
