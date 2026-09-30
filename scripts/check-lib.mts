@@ -760,6 +760,21 @@ check(
       /const reason = problem \?\? ageProblem;/.test(wizard) &&
       /const problemLine = reason &&/.test(wizard),
   );
+
+  // 아이 등록 요청이 화면이 그려질 때의 familyId 를 쓰면, 가족을 만든 직후 같은 흐름에서
+  // /families//profiles 로 나갈 수 있었다. makeFamily 가 돌려준 familyId 로 주소를 만든다
+  const queries = readFileSync("src/lib/api/queries.ts", "utf8");
+  check(
+    "아이 등록 요청은 부를 때 받은 familyId 로 주소를 만든다",
+    /mutationFn: \(\{\s*familyId: target = familyId,\s*\.\.\.body\s*\}/.test(queries) &&
+      queries.includes("path`/families/${target}/profiles`"),
+  );
+  check(
+    "makeFamily 는 새 familyId 를 돌려주고 makeChild 는 그 값으로 아이를 만든다",
+    /const made = await makeFamily\(\);/.test(wizard) &&
+      /await makeChild\(made\)/.test(wizard) &&
+      /createProfile\.mutateAsync\(\{\s*familyId: targetFamily,/.test(wizard),
+  );
 }
 
 /* ─── 개인정보처리방침 · 이용약관 — 로그인하지 않아도 열린다 ─────────────────── */

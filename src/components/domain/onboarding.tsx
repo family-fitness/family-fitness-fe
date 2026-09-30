@@ -222,9 +222,17 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
     updateSupport.isPending ||
     saveAvailability.isPending;
 
-  /** 키, 몸무게 화면을 넘길 때 아이보다 먼저 — 가족과 보호자 프로필을 만든다 */
-  const makeFamily = async () => {
-    if (mode !== "family" || ownerId || newFamilyId) return true;
+  /**
+   * 키, 몸무게 화면을 넘길 때 아이보다 먼저 — 가족과 보호자 프로필을 만든다.
+   * 아이를 만들 가족의 id 를 돌려준다. 못 만들었으면 null.
+   * 방금 만든 id 는 setNewFamilyId 가 다시 그려지기 전이라 fid 에 아직 없다. 그래서 값으로 넘긴다
+   */
+  const makeFamily = async (): Promise<string | null> => {
+    if (mode !== "family" || ownerId || newFamilyId) {
+      // 아이 더하기인데 내 가족을 아직 모른다 — 빈 주소로 보내지 않는다
+      if (!fid) setProblem("가족 정보를 아직 받지 못했어요. 잠시 뒤 다시 눌러 주세요.");
+      return fid || null;
+    }
     try {
       const res = await createFamily.mutateAsync({
         familyName: familyName.trim(),
@@ -233,29 +241,34 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       setOwnerId(res.ownerProfile?.profileId ?? null);
       setNewFamilyId(res.familyId ?? null);
       setMode("parent");
-      return true;
+      if (!res.familyId) {
+        setProblem("가족을 만들지 못했어요.");
+        return null;
+      }
+      return res.familyId;
     } catch (e) {
       // 이미 가족이 있다 — 홈으로 보낸다. 여기 남겨 두면 앞으로도 뒤로도 못 간다
       if (e instanceof ApiError && e.code === "ALREADY_IN_FAMILY") {
         router.replace("/parent");
-        return false;
+        return null;
       }
       // 만 14세 미만은 가족을 만들 수 없다 — 서버가 UNDER_14_NOT_ALLOWED 로 막는다. 생년월일은 가족 화면에 있다
       if (e instanceof ApiError && e.code === "UNDER_14_NOT_ALLOWED") {
         setAt(steps.indexOf("family"));
         setProblem("가족은 만 14세부터 만들 수 있어요. 생년월일을 확인해 주세요.");
-        return false;
+        return null;
       }
       setProblem(errorMessage(e, "가족을 만들지 못했어요."));
-      return false;
+      return null;
     }
   };
 
-  /** 키, 몸무게 화면을 넘길 때 가족 다음에 — 아이 프로필을 만든다 */
-  const makeChild = async () => {
+  /** 키, 몸무게 화면을 넘길 때 가족 다음에 — makeFamily 가 돌려준 가족에 아이 프로필을 만든다 */
+  const makeChild = async (targetFamily: string) => {
     if (childId !== null) return true;
     try {
       const created = await createProfile.mutateAsync({
+        familyId: targetFamily,
         name: kidName.trim(),
         birthDate: kidBirth,
         sex: kidSex ?? "F",
@@ -314,7 +327,10 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
 
   const next = async () => {
     setProblem(null);
-    if (step === CREATE_AT && !((await makeFamily()) && (await makeChild()))) return;
+    if (step === CREATE_AT) {
+      const made = await makeFamily();
+      if (made === null || !(await makeChild(made))) return;
+    }
     if (step === "together") {
       if (asksSupport && support) {
         try {

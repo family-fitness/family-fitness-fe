@@ -196,21 +196,30 @@ export function useCreateFamily() {
   });
 }
 
+/**
+ * 가족에 프로필을 더한다. familyId 는 부를 때 넘길 수 있다.
+ * 첫 시작은 가족을 만든 바로 그 흐름에서 아이를 만든다. 그때 훅이 그려질 때 받은 familyId 는 아직 빈 값이라
+ * /families//profiles 로 나갈 수 있었다
+ */
 export function useCreateProfile(familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: {
+    mutationFn: ({
+      familyId: target = familyId,
+      ...body
+    }: {
+      familyId?: Uuid;
       name: string;
       birthDate: string;
       sex: "M" | "F";
       role: "PARENT" | "CHILD";
       // 만 14세 미만은 이게 없으면 422 CONSENT_REQUIRED. 서버가 자동으로 찍지 않는다
       guardianConsent?: { personalData: boolean; healthData: boolean };
-    }) => api.post<ProfileSummary>(path`/families/${familyId}/profiles`, body),
-    onSuccess: () => {
+    }) => api.post<ProfileSummary>(path`/families/${target}/profiles`, body),
+    onSuccess: (_, { familyId: target = familyId }) => {
       // 지금 안 떠 있는 홈의 것까지 다시 받는다 — 안 그러면 홈에 옛 가족이 먼저 뜨고 새 아이 대신 첫째가 잠깐 선다
-      qc.invalidateQueries({ queryKey: qk.family.profiles(familyId), refetchType: "all" });
-      qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId), refetchType: "all" });
+      qc.invalidateQueries({ queryKey: qk.family.profiles(target), refetchType: "all" });
+      qc.invalidateQueries({ queryKey: qk.family.fitnessMap(target), refetchType: "all" });
       // `/me` 는 이 계정이 관리하는 프로필이다 — 계정 없는 아이가 늘었다
       qc.invalidateQueries({ queryKey: qk.me() });
     },
