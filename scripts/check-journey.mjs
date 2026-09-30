@@ -35,7 +35,7 @@ await ctx.addInitScript(() => {
   }
 });
 // 유튜브는 막는다. 없어도 타이머로 끝까지 가야 한다
-await ctx.route(/youtube\.com|ytimg\.com/, (r) => r.abort());
+await ctx.route(/youtube(-nocookie)?\.com|ytimg\.com/, (r) => r.abort());
 const page = await ctx.newPage();
 const errs = [];
 page.on("pageerror", (e) => {

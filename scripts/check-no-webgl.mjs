@@ -46,7 +46,7 @@ async function open(mode, route) {
     },
     [mode, KID],
   );
-  await ctx.route(/youtube\.com|ytimg\.com/, (r) => r.abort());
+  await ctx.route(/youtube(-nocookie)?\.com|ytimg\.com/, (r) => r.abort());
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => {
