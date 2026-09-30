@@ -364,14 +364,15 @@ function TodaySection({
         <div className="border-line mt-3 grid grid-cols-2 gap-2 border-t pt-3">
           <Link
             href="/plan"
-            className="press bg-signal-soft text-signal-deep flex min-h-11 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold"
+            className="press bg-signal-soft text-signal-deep flex min-h-11 items-center justify-center gap-1 rounded-2xl px-1.5 text-sm font-extrabold whitespace-nowrap"
           >
-            <ArtIcon name="icon/menu-ai" className="size-5" />
-            AI 코치에게 더 받기
+            {/* 360px 에서 반 칸이 140px 남짓이라 「AI 코치에게 더 받기」 는 두 줄로 꺾였다. 320px 폰에서는 그림을 빼야 한 줄에 들어간다 */}
+            <ArtIcon name="icon/menu-ai" className="size-5 shrink-0 max-[339px]:hidden" />
+            AI 코치에게 받기
           </Link>
           <Link
             href="/videos"
-            className="press bg-sub flex min-h-11 items-center justify-center rounded-2xl text-sm font-extrabold"
+            className="press bg-sub flex min-h-11 items-center justify-center rounded-2xl px-1.5 text-sm font-extrabold whitespace-nowrap"
           >
             직접 짜서 더하기
           </Link>

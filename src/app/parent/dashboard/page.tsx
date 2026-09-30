@@ -323,6 +323,12 @@ function MemberLine({
         <span className="flex items-center gap-1.5">
           <span className="truncate font-extrabold">{member.name}</span>
           {me && <span className="text-ink-soft text-caption font-bold">나</span>}
+          {/* 이름 옆에 둔다. 줄 오른쪽 끝에 두었더니 360px 에서 「자녀 · 유소년 · 오늘 다 …」 가 잘렸다 */}
+          {progress && progress.streakDays > 1 && (
+            <span className="text-caption shrink-0">
+              <StreakChip days={progress.streakDays} />
+            </span>
+          )}
         </span>
         <span className="text-caption text-ink-soft block truncate">
           {child ? "자녀" : "부모"} · {member.ageGroup}
@@ -337,11 +343,6 @@ function MemberLine({
         </span>
         <WeekDots days={week.days} logs={logs} />
       </span>
-      {progress && progress.streakDays > 1 && (
-        <span className="text-caption shrink-0">
-          <StreakChip days={progress.streakDays} />
-        </span>
-      )}
     </>
   );
 

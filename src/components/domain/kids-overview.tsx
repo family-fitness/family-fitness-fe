@@ -143,8 +143,16 @@ function KidLine({
           <ProfileAvatar profileId={kid.profileId} name={kid.name} tone="signal" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className={cn("block truncate font-extrabold", selected && "text-signal-deep")}>
-            {kid.name}
+          {/* 「N일째 이어서」 는 이름 옆에 둔다. 오늘 줄 끝에 붙였더니 360px 에서 한 줄 말줄임에 통째로 잘렸다 */}
+          <span className="flex items-baseline gap-1.5">
+            <span className={cn("truncate font-extrabold", selected && "text-signal-deep")}>
+              {kid.name}
+            </span>
+            {progress && progress.streakDays > 1 && (
+              <span className="text-caption shrink-0">
+                <StreakChip days={progress.streakDays} />
+              </span>
+            )}
           </span>
           <span className="text-caption text-ink-soft block truncate">
             {status ??
@@ -153,12 +161,6 @@ function KidLine({
               ) : (
                 <span className="skeleton inline-block h-3 w-16 rounded align-middle" />
               ))}
-            {progress && progress.streakDays > 1 && (
-              <>
-                {" · "}
-                <StreakChip days={progress.streakDays} />
-              </>
-            )}
           </span>
           <WeekDots days={days} logs={logs} />
         </span>
