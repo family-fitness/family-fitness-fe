@@ -16,6 +16,7 @@ import { VERIFIED_COPY } from "@/lib/mission";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { daysSince, monthOf, today } from "@/lib/today";
 import { cn, formatDate, withJosa } from "@/lib/utils";
+import { childFinderHref } from "@/lib/videos";
 
 /**
  * 부모 홈의 첫 묶음 — 「우리 아이」. 아이가 어디쯤인지와 오늘 무엇을 하는지를 한 덩어리로.
@@ -241,7 +242,7 @@ function TodaySection({
               AI에게 운동 받기
             </Link>
             <Link
-              href="/videos"
+              href={childFinderHref(childProfileId)}
               className="press bg-sub flex min-h-12 items-center justify-center rounded-2xl px-4 text-sm font-extrabold"
             >
               직접 짜기
@@ -371,7 +372,7 @@ function TodaySection({
             AI 코치에게 받기
           </Link>
           <Link
-            href="/videos"
+            href={childFinderHref(childProfileId)}
             className="press bg-sub flex min-h-11 items-center justify-center rounded-2xl px-1.5 text-sm font-extrabold whitespace-nowrap"
           >
             직접 짜서 더하기

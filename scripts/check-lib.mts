@@ -45,6 +45,7 @@ import {
   finderHref,
   finderOwner,
   finderCount,
+  childFinderHref,
   finderScope,
   joinClipPages,
   nextCursorOf,
@@ -531,6 +532,14 @@ check(
   check(
     "힘도 아이도 모르면 본운동만 건다",
     finderHref({ factor: null, profileId: undefined }) === "/videos?phase=MAIN",
+  );
+  check(
+    "아이 칸과 AI 편성 화면의 직접 짜기는 그 아이를 주소에 싣는다",
+    childFinderHref(kid) === `/videos?profileId=${kid}`,
+  );
+  check(
+    "아이를 모르면 주소에 아무것도 싣지 않는다",
+    childFinderHref(undefined) === "/videos" && childFinderHref("") === "/videos",
   );
   check(
     "부모 화면은 주소의 아이를 먼저 본다 — 아이를 고른 적 없이 첫째를 보던 홈에서 와도 같은 목록",

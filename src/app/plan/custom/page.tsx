@@ -35,6 +35,7 @@ import { PHASE_LABEL } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { WEEKDAY, monthOf, today, weekdayCode } from "@/lib/today";
 import { cn } from "@/lib/utils";
+import { childFinderHref } from "@/lib/videos";
 import { useRoleStore } from "@/stores/role-store";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
@@ -200,7 +201,7 @@ function CustomPlan() {
             title="아직 담은 동작이 없어요"
             action={
               <NavLink
-                href="/videos"
+                href={childFinderHref(firstKid?.profileId)}
                 className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"
               >
                 동작 고르러 가기
@@ -311,7 +312,7 @@ function CustomPlan() {
           </ol>
           {moves.length < MAX_MOVES && (
             <NavLink
-              href="/videos"
+              href={childFinderHref(firstKid?.profileId)}
               className="press text-signal-deep mt-1 flex min-h-11 items-center justify-center text-sm font-extrabold"
             >
               동작 더 담기

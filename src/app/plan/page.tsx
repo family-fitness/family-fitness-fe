@@ -31,6 +31,7 @@ import { FACTORS, isFactor, type Factor } from "@/lib/fitness-factors";
 import { useSession } from "@/lib/session";
 import { today, weekdayCode } from "@/lib/today";
 import { cn } from "@/lib/utils";
+import { childFinderHref } from "@/lib/videos";
 import { useRoleStore } from "@/stores/role-store";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
@@ -251,7 +252,7 @@ function PlanForm() {
 
         {/* AI 말고 직접 — 운동 찾기에서 동작을 담아 짠다 */}
         <NavLink
-          href={gathered > 0 ? "/plan/custom" : "/videos"}
+          href={gathered > 0 ? "/plan/custom" : childFinderHref(kid?.profileId)}
           className="card press flex min-h-16 items-center gap-3"
         >
           <span className="min-w-0 flex-1">

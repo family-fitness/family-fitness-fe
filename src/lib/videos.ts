@@ -26,6 +26,16 @@ export function finderHref({
 }
 
 /**
+ * 아이 칸의 「직접 짜기」, /plan 의 「직접 고를래요」, 직접 짜기의 「동작 고르러 가기」 가 여는 운동 찾기 주소.
+ * 그 화면들은 아이를 고른 적이 없으면 첫째를 보여 주는데, 주소에 아이가 없으면 운동 찾기는 부모 목록을 열었다
+ * (부모 나이대 영상이 뜨고 하트도 부모 즐겨찾기에 들어갔다). 영상 줄과 달리 본운동으로 거르지 않는다
+ */
+export function childFinderHref(profileId: string | undefined): string {
+  if (!profileId) return "/videos";
+  return `/videos?${new URLSearchParams({ profileId }).toString()}`;
+}
+
+/**
  * 운동 찾기에서 목록 · 즐겨찾기의 주인.
  * 아이 화면은 이 기기의 아이만 — 주소로 다른 아이 목록이 열리지 않게. 부모 화면은 주소의 아이 → 고른 아이 → 나.
  */
