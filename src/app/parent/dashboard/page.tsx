@@ -3,6 +3,7 @@
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -206,7 +207,7 @@ export default function FamilyDashboardPage() {
             <button
               type="button"
               onClick={() => setInviting(null)}
-              className="press bg-signal-soft text-signal-deep flex min-h-11 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold"
+              className="press bg-sub flex min-h-11 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold"
             >
               <ArtIcon name="icon/menu-invite" className="size-5" />
               초대하기
@@ -359,13 +360,10 @@ function MemberLine({
         <div className="flex min-h-16 items-center gap-3 py-3">
           {body}
           {hasAccount === false && (
-            <button
-              type="button"
-              onClick={onInvite}
-              className="press bg-sub grid min-h-11 shrink-0 place-items-center rounded-xl px-3 text-sm font-extrabold"
-            >
+            // 구성원 줄의 초대는 가족 관리와 같은 테두리 단추 — 네 가지 모양으로 그려져 있었다(9/30 점검)
+            <Button size="md" variant="outline" onClick={onInvite} className="shrink-0">
               초대하기
-            </button>
+            </Button>
           )}
         </div>
       )}

@@ -250,93 +250,96 @@ function PlanForm() {
           <ChevronRight aria-hidden className="text-ink-soft size-5 shrink-0" />
         </NavLink>
 
-        <section className="card">
-          <CardHead
-            title="몇 분 할까요"
-            meta={
-              <NavLink
-                href="/settings/schedule"
-                className="press text-signal-deep inline-flex min-h-11 items-center font-bold"
-              >
-                {todaySlot
-                  ? `오늘 적어 둔 시간 ${todaySlot.minutes}분 · 바꾸기`
-                  : "운동할 수 있는 시간 적기"}
-              </NavLink>
-            }
-          />
-          <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="운동 시간">
-            {MINUTES.map((m) => (
-              <Chip key={m} on={minutes === m} onClick={() => setPicked(m)}>
-                {m}분
-              </Chip>
-            ))}
-          </div>
-        </section>
-
-        <section className="card space-y-3">
-          <div>
-            <CardHead title="어디서" />
-            <div className="mt-2 flex gap-2" role="group" aria-label="어디서">
-              <Chip on={place === "HOME"} onClick={() => setPlace("HOME")}>
-                집에서
-              </Chip>
-              <Chip on={place === "OUTDOOR"} onClick={() => setPlace("OUTDOOR")}>
-                밖에서
-              </Chip>
+        {/* 고르는 것 넷은 한 카드 안에 선으로 — 같은 무게의 카드 넷을 줄줄이 세우지 않는다(9/30 점검 · AGENTS 「피할 목록」) */}
+        <section className="card divide-rows py-1">
+          <div className="py-3.5">
+            <CardHead
+              title="몇 분 할까요"
+              meta={
+                <NavLink
+                  href="/settings/schedule"
+                  className="press text-signal-deep inline-flex min-h-11 items-center font-bold"
+                >
+                  {todaySlot
+                    ? `오늘 적어 둔 시간 ${todaySlot.minutes}분 · 바꾸기`
+                    : "운동할 수 있는 시간 적기"}
+                </NavLink>
+              }
+            />
+            <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="운동 시간">
+              {MINUTES.map((m) => (
+                <Chip key={m} on={minutes === m} onClick={() => setPicked(m)}>
+                  {m}분
+                </Chip>
+              ))}
             </div>
           </div>
-          <div>
-            <CardHead title="소리" />
-            <div className="mt-2 flex gap-2" role="group" aria-label="소리">
-              <Chip on={quiet} onClick={() => setQuiet(true)}>
-                조용히 할래요
-              </Chip>
-              <Chip on={!quiet} onClick={() => setQuiet(false)}>
-                상관없어요
-              </Chip>
+
+          <div className="space-y-3 py-3.5">
+            <div>
+              <CardHead title="어디서" />
+              <div className="mt-2 flex gap-2" role="group" aria-label="어디서">
+                <Chip on={place === "HOME"} onClick={() => setPlace("HOME")}>
+                  집에서
+                </Chip>
+                <Chip on={place === "OUTDOOR"} onClick={() => setPlace("OUTDOOR")}>
+                  밖에서
+                </Chip>
+              </div>
+            </div>
+            <div>
+              <CardHead title="소리" />
+              <div className="mt-2 flex gap-2" role="group" aria-label="소리">
+                <Chip on={quiet} onClick={() => setQuiet(true)}>
+                  조용히 할래요
+                </Chip>
+                <Chip on={!quiet} onClick={() => setQuiet(false)}>
+                  상관없어요
+                </Chip>
+              </div>
             </div>
           </div>
-        </section>
 
-        <section className="card">
-          <CardHead title="키우고 싶은 힘" />
-          <div className="mt-2 grid grid-cols-3 gap-2" role="group" aria-label="키우고 싶은 힘">
-            {/* 다른 고르기와 같은 칩이다. 폭을 다 채운 파랑 단추로 두었더니 아래 주 버튼과 누를 곳이 둘로 보였다 */}
-            <span className="col-span-3 flex">
-              <Chip on={focus === null} onClick={() => setFocus(null)}>
-                알아서 골라 주세요
-              </Chip>
-            </span>
-            {FACTORS.map((f) => (
-              <button
-                key={f}
-                type="button"
-                aria-pressed={focus === f}
-                onClick={() => setFocus(f)}
-                className={cn(
-                  "press flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2",
-                  focus === f ? "bg-signal-strong text-white" : "bg-sub",
-                )}
-              >
-                <FactorIcon
-                  factor={f}
-                  className={cn("size-6", focus === f ? "text-white" : "text-signal-strong")}
-                />
-                <span className="text-caption font-bold">{f}</span>
-              </button>
-            ))}
+          <div className="py-3.5">
+            <CardHead title="키우고 싶은 힘" />
+            <div className="mt-2 grid grid-cols-3 gap-2" role="group" aria-label="키우고 싶은 힘">
+              {/* 다른 고르기와 같은 칩이다. 폭을 다 채운 파랑 단추로 두었더니 아래 주 버튼과 누를 곳이 둘로 보였다 */}
+              <span className="col-span-3 flex">
+                <Chip on={focus === null} onClick={() => setFocus(null)}>
+                  알아서 골라 주세요
+                </Chip>
+              </span>
+              {FACTORS.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  aria-pressed={focus === f}
+                  onClick={() => setFocus(f)}
+                  className={cn(
+                    "press flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2",
+                    focus === f ? "bg-signal-strong text-white" : "bg-sub",
+                  )}
+                >
+                  <FactorIcon
+                    factor={f}
+                    className={cn("size-6", focus === f ? "text-white" : "text-signal-strong")}
+                  />
+                  <span className="text-caption font-bold">{f}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </section>
 
-        <section className="card">
-          <CardHead title="누가 해요" />
-          <div className="mt-2 flex gap-2" role="group" aria-label="누가 해요">
-            <Chip on={!withParent} onClick={() => setWithParent(false)}>
-              {name} 혼자
-            </Chip>
-            <Chip on={withParent} onClick={() => setWithParent(true)}>
-              {profile?.name ?? "나"}도 같이
-            </Chip>
+          <div className="py-3.5">
+            <CardHead title="누가 해요" />
+            <div className="mt-2 flex gap-2" role="group" aria-label="누가 해요">
+              <Chip on={!withParent} onClick={() => setWithParent(false)}>
+                {name} 혼자
+              </Chip>
+              <Chip on={withParent} onClick={() => setWithParent(true)}>
+                {profile?.name ?? "나"}도 같이
+              </Chip>
+            </div>
           </div>
         </section>
         {error && (
