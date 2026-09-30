@@ -208,11 +208,21 @@ function Thanks({ item, to, until }: { item: NotificationView; to: string; until
     }
   };
 
-  if (!kidId || isPending) return null;
+  if (!kidId) return null;
+  // 보냈는지 받는 동안은 자리만 — 다 받고 줄이 생기면 알림 목록이 한 칸씩 아래로 밀렸다
+  if (isPending) {
+    return (
+      <div aria-hidden className="-mt-1 pb-3 pl-15">
+        <div className="flex min-h-11 items-center">
+          <Skeleton className="h-4 w-24" />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="-mt-1 pb-3 pl-15">
       {sent ? (
-        <p className="text-caption text-done flex min-h-10 items-center gap-1 font-bold">
+        <p className="text-caption text-done flex min-h-11 items-center gap-1 font-bold">
           <Check aria-hidden className="size-4" strokeWidth={3} />
           고마워요를 보냈어요
         </p>
