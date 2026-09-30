@@ -12,7 +12,7 @@ import { REMEASURE_DAYS } from "@/lib/remeasure";
 import type { FitnessMapMember, Mission } from "@/lib/api/types";
 import { useCheers, useLatestCoachRun, useLatestFitnessTest, useRestDays } from "@/lib/api/queries";
 import { missionsOn } from "@/lib/day";
-import { VERIFIED_COPY } from "@/lib/mission";
+import { verifiedLabel } from "@/lib/mission";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { daysSince, monthOf, today } from "@/lib/today";
 import { cn, formatDate, withJosa } from "@/lib/utils";
@@ -340,7 +340,9 @@ function TodaySection({
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">{m.title}</p>
               <p className="text-caption text-ink-soft mt-0.5">
-                {p?.verifiedBy ? VERIFIED_COPY[p.verifiedBy] : "아직 안 적었어요"}
+                {p?.verifiedBy
+                  ? verifiedLabel(p.verifiedBy, p.needsGuardianCheck)
+                  : "아직 안 적었어요"}
               </p>
             </div>
             {p?.needsGuardianCheck && (
