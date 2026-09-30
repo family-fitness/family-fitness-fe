@@ -80,6 +80,8 @@ export function ClipPlayer({
   const [ready, setReady] = useState(false);
   /** 지금 정말 돌고 있나 — 「소리 켜기」 는 돌 때만 */
   const [rolling, setRolling] = useState(false);
+  /** 못 받은 썸네일(막힌 망) — 깨진 그림 표시 대신 남색 틀만 둔다 */
+  const [thumbFailed, setThumbFailed] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [muted, setMuted] = useState(false);
 
@@ -240,13 +242,15 @@ export function ClipPlayer({
         />
       </div>
 
-      {/* 유튜브 스크립트를 받는 동안 — 그 영상의 썸네일이 자리를 잡는다. 회색 상자로 멈춰 있으면 아이는 고장으로 본다 */}
-      {!ready && (
+      {/* 플레이어가 붙는 동안 — 그 영상의 썸네일이 자리를 잡는다. 회색 상자로 멈춰 있으면 아이는 고장으로 본다.
+          썸네일도 못 받으면(막힌 망) 깨진 그림 표시 대신 남색 틀만 */}
+      {!ready && thumbFailed !== videoId && (
         <div className="absolute inset-0" aria-hidden>
           {/* eslint-disable-next-line @next/next/no-img-element -- 유튜브 썸네일은 외부 주소라 최적화가 안 된다 */}
           <img
             src={`https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`}
             alt=""
+            onError={() => setThumbFailed(videoId)}
             className="size-full object-cover opacity-70"
           />
         </div>
