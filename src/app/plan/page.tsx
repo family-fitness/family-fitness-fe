@@ -29,6 +29,7 @@ import { FACTORS, isFactor, type Factor } from "@/lib/fitness-factors";
 import { useSession } from "@/lib/session";
 import { today, weekdayCode } from "@/lib/today";
 import { cn } from "@/lib/utils";
+import { useBodyStore } from "@/stores/body-store";
 import { useRoleStore } from "@/stores/role-store";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
@@ -71,6 +72,8 @@ function PlanForm() {
   const kids = (map?.members ?? []).filter((m) => m.role === "CHILD");
   const kid = kids.find((k) => k.profileId === childProfileId) ?? kids[0];
   const { data: latest } = useLatestFitnessTest(kid?.profileId);
+  // 안 잰 아이는 연령대 · 성별 · 키 · 몸무게로 짠다(9/30 시연) — 키 · 몸무게는 가입 때 이 기기에 적은 값
+  const deviceBody = useBodyStore((s) => (kid?.profileId ? s.byProfile[kid.profileId] : undefined));
   const start = useStartCoachRun(familyId ?? "");
   // 이미 짜고 있거나 받아 둔 제안 — 다시 짜 달라고 했다가 막히면 그리로 간다
   const { data: current } = useLatestCoachRun(familyId);
@@ -128,6 +131,10 @@ function PlanForm() {
   const given = latest?.weakest?.factor;
   const weakest = isFactor(given) ? given : undefined;
   const shownFocus = focus ?? weakest ?? null;
+  // 이 아이를 잰 적이 있나. 없으면 빈 육각형 대신 연령대 · 키 · 몸무게와 「아직 재지 않았어요」(규칙 4)
+  const measured = Boolean(kid?.latest?.testedOn);
+  const heightCm = latest?.heightCm ?? deviceBody?.heightCm;
+  const weightKg = latest?.weightKg ?? deviceBody?.weightKg;
 
   const submit = async () => {
     if (!kid?.profileId) return;
@@ -143,6 +150,8 @@ function PlanForm() {
         place,
         focusFactor: focus,
         withParent,
+        // ▲ 요청: 서버가 받게 되면 안 잰 아이도 이걸로 짠다(BACKEND_API)
+        ...(heightCm && weightKg ? { heightCm, weightKg } : {}),
       });
       router.push(`/plan/run/${run.coachRunId}`);
     } catch (e) {
@@ -160,7 +169,7 @@ function PlanForm() {
             RUN_IN_PROGRESS: "짜고 있는 제안이 있어요.",
             CONSENT_REQUIRED: "보호자 동의가 필요해요.",
             TEMPORARILY_UNAVAILABLE: "코치가 잠깐 쉬고 있어요.",
-            // 가족 중 잰 사람이 없으면 서버가 짜지 않는다(422)
+            // 지금 서버는 가족 중 잰 사람이 없으면 짜지 않는다(422) — 신체 정보로 짜 달라고 요청해 두었다
             NO_MEASURED_MEMBER: "아직 재지 않았어요.",
           },
           "짜 달라고 하지 못했어요.",
@@ -175,22 +184,53 @@ function PlanForm() {
       <Stage wide className="space-y-3 pb-28">
         <section className="card-hero">
           <p className="text-lead font-extrabold">{name}의 체력</p>
-          <FactorRadar
-            points={latest?.radar}
-            name={name}
-            focus={shownFocus}
-            legend={false}
-            className="mx-auto mt-2 max-w-72"
-          />
-          {/* 육각형 아래 통합 신체 점수(9/25). 안 쟀으면 그리지 않는다 */}
-          {kid?.latest?.overallPercentile != null && (
-            <ScoreLine score={kid.latest.overallPercentile} />
-          )}
-          {shownFocus && (
-            <p className="mt-3 text-center text-sm font-bold">
-              <span className="text-ink-soft">{focus ? "고른 힘" : "키울 힘"}</span>{" "}
-              <span className="text-signal-deep font-extrabold">{shownFocus}</span>
-            </p>
+          {kid && !measured ? (
+            <>
+              {/* 안 쟀어도 AI 는 연령대 · 성별 · 키 · 몸무게로 짠다(9/30). 체력은 모른다 — 0점으로 그리지 않는다(규칙 10) */}
+              <dl className="mt-3 grid grid-cols-3 gap-2">
+                <BodyTile label="연령대" value={kid.ageGroup} />
+                <BodyTile label="키" value={heightCm} unit="cm" />
+                <BodyTile label="몸무게" value={weightKg} unit="kg" />
+              </dl>
+              <div className="mt-2 flex min-h-11 items-center justify-between gap-3">
+                <p className="text-ink-soft text-sm font-bold">아직 재지 않았어요</p>
+                {/* 만 4세 미만은 잴 수 없다 — 길을 두지 않는다(규칙 4) */}
+                {kid.measurable !== false && (
+                  <NavLink
+                    href={`/p/${kid.profileId}/measure`}
+                    className="press text-signal-strong inline-flex min-h-11 items-center text-sm font-extrabold"
+                  >
+                    첫 측정 하기
+                  </NavLink>
+                )}
+              </div>
+              {focus && (
+                <p className="mt-1 text-center text-sm font-bold">
+                  <span className="text-ink-soft">고른 힘</span>{" "}
+                  <span className="text-signal-deep font-extrabold">{focus}</span>
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <FactorRadar
+                points={latest?.radar}
+                name={name}
+                focus={shownFocus}
+                legend={false}
+                className="mx-auto mt-2 max-w-72"
+              />
+              {/* 육각형 아래 통합 신체 점수(9/25). 안 쟀으면 그리지 않는다 */}
+              {kid?.latest?.overallPercentile != null && (
+                <ScoreLine score={kid.latest.overallPercentile} />
+              )}
+              {shownFocus && (
+                <p className="mt-3 text-center text-sm font-bold">
+                  <span className="text-ink-soft">{focus ? "고른 힘" : "키울 힘"}</span>{" "}
+                  <span className="text-signal-deep font-extrabold">{shownFocus}</span>
+                </p>
+              )}
+            </>
           )}
         </section>
 
@@ -299,7 +339,6 @@ function PlanForm() {
             </Chip>
           </div>
         </section>
-
         {error && (
           <div role="alert" className="card flex items-center justify-between gap-3">
             <p className="text-signal-deep text-sm font-semibold">{error}</p>
@@ -342,6 +381,27 @@ function PlanForm() {
         </button>
       </Dock>
     </>
+  );
+}
+
+/** 연령대 · 키 · 몸무게 한 칸. 모르면 비워 둔다 */
+function BodyTile({
+  label,
+  value,
+  unit,
+}: {
+  label: string;
+  value: number | string | null | undefined;
+  unit?: string;
+}) {
+  return (
+    <div className="tile">
+      <dt className="metric-label">{label}</dt>
+      <dd className="metric-value text-metric mt-1">
+        {value ?? "–"}
+        {value != null && unit && <span className="metric-unit">{unit}</span>}
+      </dd>
+    </div>
   );
 }
 
