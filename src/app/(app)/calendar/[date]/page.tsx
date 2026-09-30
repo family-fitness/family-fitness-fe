@@ -19,7 +19,7 @@ import type { DayLog, Mission, ProfileWithSex } from "@/lib/api/types";
 import { useCalendar, useFamilyProfiles, useFitnessMap, useMissions } from "@/lib/api/queries";
 import { daySummary, didSomething, isRealDate, plannedDay, plannedOn } from "@/lib/day";
 import { callName } from "@/lib/family";
-import { VERIFIED_COPY } from "@/lib/mission";
+import { verifiedLabel } from "@/lib/mission";
 import { PHASE_LABEL, sessionsOf, stepMinutes, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { stickerOf } from "@/lib/stickers";
@@ -125,6 +125,14 @@ function Day() {
   const doneEntries = (log?.entries ?? []).filter(didSomething);
   // 스티커는 그날 한 운동에 붙인다 — 직접 적은 기록이 먼저다. 스티커가 곧 보호자 확인이다(규칙 2)
   const cheerFor = doneEntries.find((e) => e.verifiedBy === "SELF_REPORT") ?? doneEntries.at(-1);
+  // 직접 적은 기록을 부모가 확인했나 — 그날 기록에는 없어 운동 목록에서 찾는다. 모르면 확인 필요로 둔다
+  const needsCheckOf = (missionId: string) =>
+    all?.missions
+      ?.find((m) => m.missionId === missionId)
+      ?.participants?.find((p) => p.profileId === who.profileId)?.needsGuardianCheck;
+  const selfNeedsCheck = doneEntries.some(
+    (e) => e.verifiedBy === "SELF_REPORT" && needsCheckOf(e.missionId) !== false,
+  );
   // 쉬기로 한 날에는 할 운동을 늘어놓지 않는다 — 쉬는 날에 운동을 권하지 않는다(규칙 15).
   // 그날 기록이 오기 전에도 — 이미 한 운동 · 쉬기로 한 날인지 모르는 채 「할 운동」 이 먼저 번쩍였다
   const planned =
@@ -315,7 +323,7 @@ function Day() {
                     />
                   ))}
                 {summary.verified.map((v) => (
-                  <Leader key={v} label="확인" value={VERIFIED_COPY[v]} />
+                  <Leader key={v} label="확인" value={verifiedLabel(v, selfNeedsCheck)} />
                 ))}
               </dl>
             )}
@@ -331,6 +339,7 @@ function Day() {
                   key={entry.missionId}
                   entry={entry}
                   mission={all?.missions?.find((m) => m.missionId === entry.missionId)}
+                  needsCheck={needsCheckOf(entry.missionId)}
                 />
               ))}
             </ul>
@@ -437,7 +446,16 @@ function Thumb({ videoId }: { videoId?: string | null }) {
 }
 
 /** 그날 한 운동 한 개 — 칸마다 한 줄. 칸 없이 직접 적은 것(걷기 등)은 무엇으로 확인했는지만 */
-function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; mission?: Mission }) {
+function EntryRows({
+  entry,
+  mission,
+  needsCheck,
+}: {
+  entry: DayLog["entries"][number];
+  mission?: Mission;
+  /** 직접 적은 기록을 부모가 아직 확인하지 않았나. 모르면 undefined */
+  needsCheck?: boolean;
+}) {
   // 칸 이름과 영상만 쓴다 — 끝냈는지는 그날 기록(`entry.sessions`)이 말한다
   const clips = sessionsOf(mission, null);
   if (!entry.sessions || entry.sessions.length === 0) {
@@ -448,7 +466,7 @@ function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; missi
           <span className="text-caption text-ink-soft block">
             {[
               entry.minutes > 0 && `${entry.minutes}분`,
-              entry.verifiedBy && VERIFIED_COPY[entry.verifiedBy],
+              entry.verifiedBy && verifiedLabel(entry.verifiedBy, needsCheck),
             ]
               .filter(Boolean)
               .join(" · ")}
