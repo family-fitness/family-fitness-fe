@@ -13,6 +13,8 @@
  *   2. 초대받은 계정 → 자리 확인 → 참여 방식 → 역할 고르기
  *   3. 첫 시작 중간에 새로고침 — 가족을 만든 뒤 · 아이를 만든 뒤. 두 번 만들지 않고 이어 간다.
  *      아이 등록 첫 칸의 뒤로 · 「지금 잴래요」 측정 화면의 뒤로가 홈으로 가는지
+ *   4. 첫 시작 중간에 폰 · 브라우저의 뒤로 — 한 칸 앞으로 가고 적은 것이 남는다.
+ *      가족을 만든 뒤에는 그 앞으로 가지 않는다
  */
 import { chromium } from "playwright";
 
@@ -279,10 +281,64 @@ await walk("새로고침에도 두 번 만들지 않는다", async (h) => {
   });
 });
 
+/* ─── 4. 첫 시작 중간에 폰의 뒤로 ─────────────────────────── */
+
+await walk("폰의 뒤로는 한 칸 앞으로", async (h) => {
+  const { page } = h;
+  const next = async (name = "다음") => {
+    await page.getByRole("button", { name, exact: true }).click();
+    await h.settle(700);
+  };
+  const back = async () => {
+    await page.goBack({ waitUntil: "commit" }).catch(() => {});
+    await h.settle(900);
+  };
+  await h.step("가족 이름까지 적는다", async () => {
+    await page.goto(`${BASE}/login`, { waitUntil: "load", timeout: 30000 });
+    await h.settle(2400);
+    await page.getByRole("button", { name: /새 계정/ }).click();
+    await h.until(/\/start\/family/);
+    await next("좋아요");
+    await page.getByLabel("가족 이름").fill("바다네");
+    await next();
+    await page.getByLabel("보호자 이름").waitFor({ timeout: 8000 });
+  });
+  await h.step("뒤로 — 가족 이름 칸으로, 적은 것이 남아 있다", async () => {
+    await back();
+    if (!/\/start\/family/.test(page.url())) {
+      problems.push(`폰의 뒤로는 한 칸 앞으로\n    첫 시작 밖으로 나갔다 — ${page.url()}`);
+      return;
+    }
+    const name = await page.getByLabel("가족 이름").inputValue({ timeout: 8000 });
+    if (name !== "바다네")
+      problems.push(`폰의 뒤로는 한 칸 앞으로\n    적은 가족 이름이 사라졌다 — 「${name}」`);
+  });
+  await h.step("다시 다음 — 보호자 칸부터 가족을 만든다", async () => {
+    await next();
+    await page.getByLabel("보호자 이름").fill("수진");
+    await next();
+    await page.getByRole("radio", { name: /여성/ }).click();
+    await next();
+    await page.getByLabel("보호자 생년월일").fill("1987-06-15");
+    await next();
+    await next("건너뛰기"); // 사진 → 가족이 생긴다
+    await page.getByLabel("아이 이름").waitFor({ timeout: 8000 });
+  });
+  await h.step("가족을 만든 뒤 뒤로 — 아이 이름 칸에 남는다", async () => {
+    await back();
+    const onKid = await page.getByLabel("아이 이름").count();
+    if (!/\/start\/family/.test(page.url()) || onKid === 0) {
+      problems.push(
+        `폰의 뒤로는 한 칸 앞으로\n    가족을 만든 뒤 뒤로가 앞칸으로 갔다 — ${page.url()}`,
+      );
+    }
+  });
+});
+
 await browser.close();
 
 if (problems.length > 0) {
   console.error("가입 경로 문제:\n  " + problems.join("\n  "));
   process.exit(1);
 }
-console.log(`가입 경로 세 갈래 · 단계 ${steps}개 이상 없음`);
+console.log(`가입 경로 네 갈래 · 단계 ${steps}개 이상 없음`);
