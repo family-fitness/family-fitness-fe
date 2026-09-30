@@ -35,6 +35,13 @@ function unlockScroll(id: string) {
   if (openSheets.length === 0) document.documentElement.style.overflow = savedOverflow;
 }
 
+/** 초점을 돌려줄 곳이 없을 때 — 이 화면의 제목(h1). 누를 수 없는 제목도 초점만은 받게 한다 */
+function pageHeading(): HTMLElement | null {
+  const heading = document.querySelector<HTMLElement>("h1");
+  if (heading && !heading.hasAttribute("tabindex")) heading.tabIndex = -1;
+  return heading;
+}
+
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -110,8 +117,10 @@ export function Sheet({
       cancelAnimationFrame(focus);
       window.removeEventListener("keydown", onKey);
       unlockScroll(id);
-      // 연 자리가 그사이 사라졌으면(고른 뒤 목록이 바뀜) 거기로 돌리지 않는다
-      if (before?.isConnected) before.focus({ preventScroll: true });
+      // 연 자리가 그사이 사라졌으면(고른 뒤 단추가 「보냈어요」 로 바뀜) · 저절로 열렸으면 화면 제목으로 —
+      // 초점이 body 로 떨어지면 화면 읽기가 화면을 처음부터 다시 읽는다
+      const back = before?.isConnected && before !== document.body ? before : pageHeading();
+      back?.focus({ preventScroll: true });
     };
   }, [open, id]);
 

@@ -161,6 +161,12 @@ export default function PlayPage() {
   const doneCount = sessions.filter((s) => s.completed).length;
   const allDone = sessions.length > 0 && doneCount === sessions.length;
   const finished = allDone || status === "ended";
+  /** 끝 칸의 제목 — 화면 읽기에도 같은 말로 */
+  const finishLine = allDone
+    ? moreToday
+      ? "이 운동 다 했어요!"
+      : "오늘 거 다 했어요!"
+    : `${doneCount}개 했어요!`;
 
   /** 다음에 할 칸. 지금 칸 뒤에서 먼저 찾고, 없으면 앞에 남은 칸 */
   const nextOpen = (after: number, done: number[]) => {
@@ -423,6 +429,10 @@ export default function PlayPage() {
         </div>
       </div>
 
+      {/* 끝났다는 말 — 자리는 늘 두고 글자만 바꾼다. 끝 칸과 같이 생기는 알림 자리는 화면 읽기가 읽지 않는다 */}
+      <p className="sr-only" role="status">
+        {finished && unsaved.length === 0 && saving === 0 ? finishLine : ""}
+      </p>
       <Stage wide className="pt-1">
         <ol className="relative">
           {sessions.map((s, i) => (
@@ -485,6 +495,7 @@ export default function PlayPage() {
               <Skeleton className="h-80 w-full rounded-3xl" />
             ) : finished ? (
               <Finish
+                title={finishLine}
                 allDone={allDone}
                 moreToday={moreToday}
                 doneCount={doneCount}
@@ -715,6 +726,7 @@ const FEEL_LINE: Record<Feel, string> = {
 
 /** 끝 칸 — 다 했어요 · 경험치 · 어땠어요 · 알리기 */
 function Finish({
+  title,
   allDone,
   moreToday,
   doneCount,
@@ -728,6 +740,7 @@ function Finish({
   toldNow,
   onTold,
 }: {
+  title: string;
   allDone: boolean;
   /** 오늘 할 운동이 더 남았다 — 이 운동만 끝났다 */
   moreToday: boolean;
@@ -792,7 +805,7 @@ function Finish({
   };
 
   return (
-    <section className="card-hero text-center" aria-live="polite">
+    <section className="card-hero text-center">
       <KiumIsland
         stage={stage.stage}
         level={progress?.level}
@@ -805,13 +818,7 @@ function Finish({
         label={`${stage.name}의 섬`}
         className="-mt-3 -mb-1"
       />
-      <h2 className="page-title mt-1">
-        {allDone
-          ? moreToday
-            ? "이 운동 다 했어요!"
-            : "오늘 거 다 했어요!"
-          : `${doneCount}개 했어요!`}
-      </h2>
+      <h2 className="page-title mt-1">{title}</h2>
       <p className="text-caption text-ink-soft mt-1 font-semibold">{minutes}분 움직였어요</p>
 
       {progress && (
