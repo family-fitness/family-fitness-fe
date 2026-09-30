@@ -171,7 +171,7 @@ function Day() {
           <NavLink
             href={`/calendar?month=${monthOf(date)}${suffix ? `&${suffix.slice(1)}` : ""}`}
             aria-label="달력"
-            className="press text-ink-soft grid size-10 place-items-center rounded-full"
+            className="press text-ink-soft grid size-11 place-items-center rounded-full"
           >
             <CalendarDays aria-hidden className="size-5" />
           </NavLink>
@@ -465,9 +465,14 @@ function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; missi
           return (
             <li key={`${s.title}-${i}`} className="flex items-center gap-3">
               <Thumb videoId={mission ? clip?.videoId : null} />
-              <span className={cn("min-w-0 flex-1", !s.done && "opacity-50")}>
-                <span className="block truncate text-sm font-bold">{s.title}</span>
-                <span className="text-caption text-ink-soft block">
+              {/* 아직 안 한 동작은 흐리게 — 반투명으로 흐리면 대비가 3.4:1 로 떨어졌다(9/30 점검). 글자색으로 */}
+              <span className="min-w-0 flex-1">
+                <span
+                  className={cn("block truncate text-sm font-bold", !s.done && "text-ink-soft")}
+                >
+                  {s.title}
+                </span>
+                <span className={cn("text-caption block", s.done ? "text-ink-soft" : "text-faint")}>
                   {PHASE_LABEL[s.phase]} · {stepMinutes(s)}분
                 </span>
               </span>

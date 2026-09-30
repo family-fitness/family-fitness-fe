@@ -385,7 +385,7 @@ export default function PlayPage() {
             onClick={() => setVoiceOn(!voiceOn)}
             aria-pressed={voiceOn}
             aria-label={voiceOn ? "소리 안내 끄기" : "소리 안내 켜기"}
-            className="press text-ink-soft absolute right-0 grid size-10 place-items-center rounded-full"
+            className="press text-ink-soft absolute right-0 grid size-11 place-items-center rounded-full"
           >
             {voiceOn ? (
               <Volume2 aria-hidden className="size-5" />
@@ -542,9 +542,10 @@ function Step({
         aria-hidden
         className={cn(
           "absolute top-4 left-0 grid size-8 place-items-center rounded-full text-sm font-extrabold",
-          s.completed && "bg-signal text-white",
+          // 다 한 칸은 체크만 — 파랑 동그라미 안의 흰 체크는 「둥근 바탕 안 표시」 였다(9/30 점검)
+          s.completed && "bg-ground text-signal",
           !s.completed && active && "bg-paper ring-signal text-signal-deep ring-2",
-          !s.completed && !active && "bg-paper text-ink-soft shadow-card",
+          !s.completed && !active && "bg-ground text-ink-soft",
         )}
       >
         {s.completed ? <Check className="size-4" strokeWidth={3.2} /> : index + 1}
@@ -568,7 +569,10 @@ function Step({
             </div>
           )}
 
-          <div className="mt-4 flex items-center gap-4">
+          {/* 쉬는 동안만 오른쪽에 「+10초 더 쉬기」. 그 밖에는 링 하나 — 옆의 「N분」 은 타이머를 되풀이했다 */}
+          <div
+            className={cn("mt-4 flex items-center gap-4", status !== "rest" && "justify-center")}
+          >
             <Ring
               value={status === "rest" ? restTotal - restLeft : elapsed}
               max={status === "rest" ? restTotal : planned}
@@ -590,18 +594,17 @@ function Step({
                 </span>
               )}
             </Ring>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold">{stepMinutes(s)}분</p>
-              {status === "rest" && (
+            {status === "rest" && (
+              <div className="min-w-0 flex-1">
                 <button
                   type="button"
                   onClick={onMoreRest}
-                  className="press bg-sub mt-2 inline-flex min-h-10 items-center rounded-full px-4 text-sm font-extrabold"
+                  className="press bg-sub inline-flex min-h-11 items-center rounded-full px-4 text-sm font-extrabold"
                 >
                   +{REST_MORE}초 더 쉬기
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {status === "blocked" ? (
@@ -650,10 +653,7 @@ function Step({
           type="button"
           onClick={onPick}
           disabled={s.completed}
-          className={cn(
-            "card press flex w-full items-center gap-3 text-left",
-            s.completed && "opacity-70",
-          )}
+          className={cn("card press flex w-full items-center gap-3 text-left")}
         >
           {clip?.videoId ? (
             <VideoThumb videoId={clip.videoId} className="aspect-video w-24 shrink-0 rounded-xl" />
@@ -661,7 +661,7 @@ function Step({
             <span className="bg-sub aspect-video w-24 shrink-0 rounded-xl" />
           )}
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-extrabold">{s.title}</span>
+            <span className="line-clamp-2 text-sm font-extrabold">{s.title}</span>
             <span className="text-caption text-ink-soft mt-0.5 block">
               {PHASE_LABEL[s.phase]} · {stepMinutes(s)}분{s.completed && " · 했어요"}
             </span>
