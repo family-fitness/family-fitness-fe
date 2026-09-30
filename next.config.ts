@@ -16,6 +16,9 @@ const nextConfig: NextConfig = {
    * 를 띄울 때 환경에서 다시 읽고, 브라우저 쪽 번들은 undefined 로 본다. 그래서 운영 서버를
    * NEXT_PUBLIC_API_MOCKING=enabled 로 띄우면 서버만 목이 켜진 줄 알고 body 를 비운 채 렌더링했고,
    * 브라우저에서 hydration 오류(#418)가 났다. 없으면 빈 문자열로 박아 두 쪽이 늘 같은 값을 보게 한다.
+   *
+   * 값이 박혀야 MswProvider 의 `import("@/mocks/browser")` 와 로그인 화면의 개발용 계정 목록이 죽은
+   * 코드가 되어 운영 번들에서 빠진다. 확인은 운영 빌드 뒤 `npm run check:bundle`.
    */
   env: {
     NEXT_PUBLIC_API_MOCKING: process.env.NEXT_PUBLIC_API_MOCKING ?? "",

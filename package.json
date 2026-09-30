@@ -15,6 +15,7 @@
     "prepare": "husky",
     "check:mocks": "tsx scripts/check-mocks.mts",
     "check:lib": "tsx scripts/check-lib.mts",
+    "check:bundle": "node scripts/check-bundle.mjs",
     "shot": "node scripts/screenshot.mjs",
     "assets": "node scripts/prepare-assets.mjs",
     "api:types": "openapi-typescript http://localhost:8080/v3/api-docs -o src/lib/api/schema.ts",

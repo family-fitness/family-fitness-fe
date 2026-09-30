@@ -36,11 +36,15 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 /**
  * 개발용 계정을 내는가 — 개발 서버, 목 서버를 켠 빌드, 구글 키가 없는 빌드. 구글 키가 없으면
  * 구글 단추가 없어 들어갈 길이 하나도 없다(로컬 백엔드에 붙인 빌드). 운영 서버는 개발 로그인을 막는다.
+ *
+ * 세 조건 모두 process.env 를 그대로 쓴다. 빌드가 이 값을 false 로 풀어야 개발용 계정 목록과
+ * 「구글 없이 들어가기」 가 운영 번들에서 빠진다. GOOGLE_CLIENT_ID 변수를 거치면 압축기가 풀지 못해
+ * 화면에는 안 보여도 번들에 남았다.
  */
 const DEV_LOGIN =
   process.env.NODE_ENV === "development" ||
   process.env.NEXT_PUBLIC_API_MOCKING === "enabled" ||
-  !GOOGLE_CLIENT_ID;
+  !process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
 /**
  * 구글 키가 없는 빌드(로컬 백엔드에 붙인 개발 서버)에서 「구글로 시작하기」 가 대신 들어가는 계정.
@@ -249,11 +253,15 @@ function LoginContent() {
 
       {/* 구글 키가 없는 빌드에서도 단추는 선다 — 누르면 구글 대신 새 계정으로 같은 길을 걷는다 */}
       <div className="space-y-3">
-        <Button size="block" variant="outline" onClick={GOOGLE_CLIENT_ID ? toGoogle : standIn}>
+        <Button
+          size="block"
+          variant="outline"
+          onClick={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? toGoogle : standIn}
+        >
           <GoogleMark />
           구글로 시작하기
         </Button>
-        {!GOOGLE_CLIENT_ID && (
+        {!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
           <p className="text-ink-soft text-caption text-center">
             구글 키가 없는 개발 빌드예요. 누르면 새 계정으로 들어가요
           </p>
