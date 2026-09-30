@@ -2,7 +2,7 @@
  * AI 편성 — 오늘 운동을 짜는 회차.
  *
  * 챗봇을 없앴으니 추천은 **버튼으로** 받는다(9/23 회의). 부모가 조건을 고르면
- * 회차가 하나 생기고, 코치가 AI 파트의 네 단계를 하나씩 밟는다 — assess(측정 기록 읽기) ·
+ * 회차가 하나 생기고, 코치가 AI 파트의 네 단계를 하나씩 밟는다 — assess(신체 · 체력 기록 읽기) ·
  * retrieve(국민체력100 처방 · 영상 찾기) · compose(순서 짜기) · verify(근거 확인하기).
  * 목은 단계마다 1.1초씩 걸리게 흉내 낸다.
  * 다 짜면 **제안**이 된다. 부모가 「오늘 운동으로 등록」 해야 미션이 생긴다(규칙 1).
@@ -40,6 +40,9 @@ interface PlanParams {
   /** 부모가 고른 힘. 없으면 코치가 가장 낮은 요인을 고른다 */
   focusFactor: string | null;
   withParent: boolean;
+  /** 가입 때 적은 키 · 몸무게 — 안 잰 아이는 이것과 연령대로 짠다(9/30 시연) */
+  heightCm?: number | null;
+  weightKg?: number | null;
 }
 
 type Run = CoachRun & { params?: PlanParams; startedAt?: number };
@@ -52,13 +55,21 @@ function nameOf(profileId: string) {
   return db.profiles.profiles.find((p) => p.profileId === profileId)?.name ?? "아이";
 }
 
-/** 가장 낮은 요인. 서버가 준 weakest 를 먼저 보고, 없으면 레이더에서 */
+/**
+ * 가장 낮은 요인. 서버가 준 weakest 를 먼저 보고, 없으면 레이더에서.
+ * 안 잰 아이는 약한 곳을 모른다 — 온몸을 쓰는 심폐지구력부터(9/30 시연 「신체 정보만으로 추천」)
+ */
 function weakestOf(profileId: string): string {
   const latest = db.latest[profileId];
   if (latest?.weakest?.factor) return latest.weakest.factor;
   const measured = (latest?.radar ?? []).filter((r) => r.percentile != null);
   measured.sort((a, b) => (a.percentile ?? 0) - (b.percentile ?? 0));
-  return measured[0]?.factor ?? "유연성";
+  return measured[0]?.factor ?? "심폐지구력";
+}
+
+/** 잰 적이 있나 — 없으면 연령대 · 키 · 몸무게로 짠다 */
+function measuredOf(profileId: string) {
+  return Boolean(db.latest[profileId]?.fitnessTestId);
 }
 
 /** 짜는 칸들 — 단계 줄과 제안이 같은 칸을 말하게 한 곳에서 */
@@ -82,8 +93,15 @@ function stepSummary(
   const count = (phase: string) => plan.filter((s) => s.phase === phase).length;
   const minutes = plan.reduce((sum, s) => sum + s.minutes, 0);
   switch (name) {
-    case "assess":
-      return `${who} · 측정 ${latest?.items?.length ?? 0}항목 · ${p.focusFactor ? `키울 힘 ${focus}(부모가 고름)` : `대상 요인 = ${focus}`}`;
+    case "assess": {
+      const target = p.focusFactor ? `키울 힘 ${focus}(부모가 고름)` : `대상 요인 = ${focus}`;
+      if (measuredOf(p.profileId))
+        return `${who} · 측정 ${latest?.items?.length ?? 0}항목 · ${target}`;
+      const group =
+        db.profiles.profiles.find((x) => x.profileId === p.profileId)?.ageGroup ?? "유소년";
+      const body = p.heightCm && p.weightKg ? ` · 키 ${p.heightCm}cm · 몸무게 ${p.weightKg}kg` : "";
+      return `${who} · 측정 없음 · ${group}${body} · ${target}`;
+    }
     case "retrieve":
       return `국민체력100 운동처방 ${focus} 12건 · 클립 ${catalog.length}개 중 ${pool.length}개${p.quiet ? " · 조용한 것 먼저" : ""}`;
     case "compose":
@@ -109,7 +127,9 @@ function proposalFor(p: PlanParams, focus: string, runId: string) {
     title: `${focus} 키우기 ${minutes}분`,
     rationale: p.focusFactor
       ? `고르신 ${focus}을 본운동에 넣고, 몸을 푸는 동작을 앞뒤에 붙였어요.`
-      : `${kid}의 ${focus}이 또래보다 가장 낮아요. ${focus}을 기르는 동작을 본운동에 넣고, 늘이는 동작으로 시작과 끝을 잡았어요.`,
+      : measuredOf(p.profileId)
+        ? `${kid}의 ${focus}이 또래보다 가장 낮아요. ${focus}을 기르는 동작을 본운동에 넣고, 늘이는 동작으로 시작과 끝을 잡았어요.`
+        : `${kid}의 연령대와 키 · 몸무게에 맞춰 온몸을 쓰는 ${focus} 동작을 본운동에 넣었어요.`,
     targetMetric: "TIMER_MINUTES",
     targetValue: minutes,
     startDate: p.date,
@@ -204,10 +224,7 @@ export const coaching = [
   http.post(`${BASE}/families/:familyId/coach/runs`, async ({ request }) => {
     const me = acting();
     if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자만 편성을 받을 수 있습니다");
-    // 잰 사람이 하나도 없으면 짤 근거가 없다 — 실제 서버와 같은 422
-    if (!db.profiles.profiles.some((p) => db.latest[p.profileId ?? ""]?.fitnessTestId)) {
-      return fail(422, "NO_MEASURED_MEMBER", "측정 기록이 있는 구성원이 없습니다");
-    }
+    // ▲ 요청: 잰 사람이 없어도 연령대 · 성별 · 키 · 몸무게로 짠다(9/30 시연). 지금 서버는 422 NO_MEASURED_MEMBER 다
     const body = ((await request.json().catch(() => ({}))) ?? {}) as Partial<PlanParams> & {
       minutesPerSession?: number;
     };
@@ -233,6 +250,9 @@ export const coaching = [
         place: body.place ?? "HOME",
         focusFactor: body.focusFactor ?? null,
         withParent: body.withParent ?? false,
+        // 편성 요청에 실어 온 값이 먼저, 없으면 가입 때 받아 둔 값
+        heightCm: body.heightCm ?? db.body[kid]?.heightCm ?? null,
+        weightKg: body.weightKg ?? db.body[kid]?.weightKg ?? null,
       },
       startedAt: Date.now(),
     };
