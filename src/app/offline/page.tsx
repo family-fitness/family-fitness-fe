@@ -1,5 +1,7 @@
 import { PlainScreen } from "@/components/app-shell/screen";
 
+import { OfflineRetry } from "./retry";
+
 /** 끊겼을 때 그리는 그림 — 서비스워커가 미리 받아 둔다(`public/sw.js`) */
 const ART = "/assets/scene/kiumi-rest.png";
 
@@ -15,6 +17,7 @@ export default function OfflinePage() {
       {/* eslint-disable-next-line @next/next/no-img-element -- 끊긴 채로도 떠야 한다. 워커가 받아 둔 파일 그대로 */}
       <img src={ART} alt="" width={150} height={150} className="object-contain" />
       <h1 className="page-title">인터넷이 끊겼어요</h1>
+      <OfflineRetry />
     </PlainScreen>
   );
 }
