@@ -93,6 +93,19 @@ export function useToonScene(
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let disposed = false;
     let teardown = () => {};
+    /*
+      만든 렌더러 — 떠날 때 teardown 을 못 단 채로 끝났어도(짓다 넘어짐) 컨텍스트는 돌려준다. 폰은 컨텍스트 수가 적다.
+      아이 기록의 키 자를 오가면 떨어져 나간 캔버스의 컨텍스트가 잃지 않은 채 남았다(9/30 성능 점검)
+    */
+    let made: T.WebGLRenderer | null = null;
+    let released = false;
+    const release = () => {
+      if (!made || released) return;
+      released = true;
+      made.dispose();
+      made.forceContextLoss();
+      made.domElement.remove();
+    };
 
     void (async () => {
       let loaded;
@@ -112,6 +125,7 @@ export function useToonScene(
       } catch {
         return; // WebGL 이 없다
       }
+      made = renderer;
       renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
       renderer.setClearColor(0x000000, 0);
       const canvas = renderer.domElement;
@@ -188,11 +202,13 @@ export function useToonScene(
 
       /** 세우지 못했다 — 컨텍스트까지 돌려주고 비킨다. 대신 세워 둔 것이 그대로 남는다 */
       const giveUp = () => {
-        handle?.dispose?.();
-        kit.dispose();
-        renderer.dispose();
-        renderer.forceContextLoss();
-        canvas.remove();
+        // 장면을 치우다 넘어져도 컨텍스트는 꼭 돌려준다 — 뒤의 줄에 닿지 못하면 컨텍스트가 남았다
+        try {
+          handle?.dispose?.();
+          kit.dispose();
+        } finally {
+          release();
+        }
       };
       try {
         handle = make(ctx);
@@ -229,7 +245,6 @@ export function useToonScene(
       };
 
       canvas.classList.replace("opacity-0", "opacity-100");
-      ready(true);
 
       let visible = true;
       waker.current = () => {
@@ -269,12 +284,15 @@ export function useToonScene(
         canvas.removeEventListener("webglcontextlost", lost);
         giveUp();
       };
+      // 치울 길을 단 뒤에 섰다고 알린다
+      ready(true);
     })();
 
     return () => {
       disposed = true;
       ready(false);
       teardown();
+      release();
     };
     // 카메라는 처음 값으로 고정한다. 장면이 바뀌어야 하면 deps 로 다시 짓는다
     // eslint-disable-next-line react-hooks/exhaustive-deps
