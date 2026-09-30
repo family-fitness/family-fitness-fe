@@ -112,13 +112,20 @@ export function GrowthRuler({
       pole.add(new THREE.Mesh(kit.hullGeometry(whole), kit.hull));
       pole.add(edges(whole));
 
-      /* 잰 눈금 — 지난 것은 연하게, 마지막은 노랑 */
+      /* 잰 눈금 — 지난 것은 연하게, 마지막은 노랑. 자 옆면에 딱 붙인다.
+         자 안으로 파고들게 두면 눈금의 외곽선 껍데기가 자 앞면에 까만 흠집으로 비쳤다(9/30) — 껍데기 대신 선으로 두른다 */
       const tab = keep(new THREE.BoxGeometry(TAB, 0.06, 0.4));
+      tab.translate(THICK / 2 + TAB / 2, 0, 0);
+      const tabLines = keep(
+        new addons.LineSegmentsGeometry().fromEdgesGeometry(keep(new THREE.EdgesGeometry(tab, 25))),
+      );
       const pale = toon(palette.base, palette.baseShade, true, -1);
       const yellow = toon(palette.yellow, palette.yellowShade, true);
       records.forEach((r, i) => {
-        const mark = solid(tab, i === records.length - 1 ? yellow : pale);
-        mark.position.set(THICK / 2 + TAB / 2 - 0.02, at(r.heightCm), 0);
+        const mark = new THREE.Group();
+        mark.position.set(0, at(r.heightCm), 0);
+        mark.add(new THREE.Mesh(tab, i === records.length - 1 ? yellow : pale));
+        mark.add(new addons.LineSegments2(tabLines, navy));
         pole.add(mark);
       });
 
