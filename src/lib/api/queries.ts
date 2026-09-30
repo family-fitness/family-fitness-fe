@@ -328,6 +328,12 @@ interface PlanRequest {
   focusFactor: string | null;
   /** 부모도 같이 하나. 참여 방식에서 기본값이 온다 */
   withParent: boolean;
+  /**
+   * 가입 때 적은 키 · 몸무게. 안 잰 아이는 이것과 나이 · 성별로 짠다(9/30 시연).
+   * ▲ 요청: 지금 서버는 받지 않는다(BACKEND_API) — 받게 되면 그대로 쓴다
+   */
+  heightCm?: number;
+  weightKg?: number;
 }
 
 export function useStartCoachRun(familyId: Uuid) {
