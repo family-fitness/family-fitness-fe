@@ -101,6 +101,16 @@ export default function ResultPage() {
   const weakest = test.weakest;
   // 항목 하나만 쟀으면 강한 영역과 약한 영역이 같은 것으로 온다
   const onlyOneFactor = Boolean(strongest && weakest && strongest.factor === weakest.factor);
+  /*
+    「잘하고 있는 영역」 · 「지금 키우기 좋은 영역」 은 band 의 말이다(BAND_COPY). 요약은 그 항목의 band 가 같은 말일 때만 한다 —
+    또래 평균(50)에 선 요인을 「잘하고 있는」, 줄에는 「꾸준히 하고 있는 영역」 이라 적힌 요인을 「지금 키우기 좋은」 이라 불러
+    한 화면이 서로 다른 말을 했다(9/30 점검). band 는 서버가 정한 그대로 본다
+  */
+  const bandOf = (code: string | undefined) => items.find((i) => i.itemCode === code)?.band;
+  const showStrong = onlyOneFactor
+    ? Boolean(strongest)
+    : bandOf(strongest?.itemCode) === "strength";
+  const showWeak = !onlyOneFactor && bandOf(weakest?.itemCode) === "growth";
 
   return (
     <>
@@ -131,15 +141,15 @@ export default function ResultPage() {
         )}
 
         {/* 잘하는 것을 먼저 말한다 */}
-        {(strongest || weakest) && (
+        {(showStrong || showWeak) && (
           <section className="card divide-rows py-1">
-            <FactorLine
-              label={onlyOneFactor ? "지금 재 본 영역" : "잘하고 있는 영역"}
-              factor={strongest?.factor}
-            />
-            {!onlyOneFactor && weakest && (
-              <FactorLine label="지금 키우기 좋은 영역" factor={weakest.factor} />
+            {showStrong && (
+              <FactorLine
+                label={onlyOneFactor ? "지금 재 본 영역" : "잘하고 있는 영역"}
+                factor={strongest?.factor}
+              />
             )}
+            {showWeak && <FactorLine label="지금 키우기 좋은 영역" factor={weakest?.factor} />}
           </section>
         )}
 
