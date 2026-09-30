@@ -22,6 +22,10 @@ function startWorker() {
   return startPromise;
 }
 
+// 받기는 이 파일이 읽히는 순간 시작한다 — effect(하이드레이션 뒤)에서야 118KB 를 받기 시작해 목 빌드의 첫 그림이
+// 1.2~1.5초로 늦었다(9/30 성능 점검). 실제 서버 빌드는 startWorker 가 곧바로 돌아온다
+if (typeof window !== "undefined") void startWorker().catch(() => {});
+
 export function MswProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(!MOCKING_ENABLED);
 
