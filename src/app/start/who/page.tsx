@@ -62,7 +62,7 @@ export default function WhoPage() {
     <>
       <AppBar back />
       <Stage className="space-y-4">
-        <h1 className="text-[1.6rem] leading-tight font-extrabold">누구야?</h1>
+        <h1 className="page-title">누구야?</h1>
 
         {kids.length === 0 && (
           <EmptyState
