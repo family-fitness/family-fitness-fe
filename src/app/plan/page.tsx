@@ -153,7 +153,7 @@ function PlanForm() {
     );
   }
 
-  const name = kid.name;
+  const name = kid.name ?? "아이";
   // 서버가 준 가장 낮은 요인. 보호자가 키워 주고 싶은 역량을 고르지 않으면 코치가 이걸 키운다 — 육각형 밖(협응력 · 평형성)이면 두지 않는다
   const given = latest?.weakest?.factor;
   const weakest = isFactor(given) ? given : undefined;
