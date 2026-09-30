@@ -427,6 +427,9 @@ export interface Availability {
  * ▲ 요청: `GET /clips?factor=&phase=&quiet=&q=&list=&profileId=` · `POST /clips/{clipId}/favorite`
  * 지금 계약의 영상(`VideoView`)은 한 편 단위라, 한 편 안에 든 여러 동작을 따로 고를 수 없다.
  * AI 쪽이 이미 영상 48편을 491개 클립으로 끊어 두었다(`video_clips.csv`) — 그 표를 그대로 주세요.
+ *
+ * 목록은 페이지로 나눠 받는다. `cursor`(앞 페이지가 준 `nextCursor`), `size`(한 페이지에 몇 개), `ageGroup`(ALL 이면
+ * 모든 나이, 없으면 보는 사람의 나이대)를 더 보낸다.
  */
 export interface ClipView {
   clipId: string;
@@ -452,8 +455,10 @@ export interface ClipView {
 
 export interface ClipList {
   clips: ClipView[];
-  /** 조건에 맞는 전체 수. 목록은 앞의 일부만 온다 */
+  /** 조건에 맞는 전체 수. 목록은 한 페이지씩 온다 */
   total: number;
+  /** 다음 페이지를 받을 때 `cursor` 로 되돌려 보내는 값. 마지막 페이지면 null */
+  nextCursor?: string | null;
 }
 
 /* ─── 오류 ─────────────────────────────────────────────────── */

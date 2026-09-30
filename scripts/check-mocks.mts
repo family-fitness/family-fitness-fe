@@ -589,6 +589,70 @@ check(
   ),
 );
 
+/* 운동 찾기: 페이지 나누기, 전체 수, 모든 나이 */
+{
+  type Page = {
+    clips: { clipId: string; title: string }[];
+    total: number;
+    nextCursor: string | null;
+  };
+  const page = async (qs: string) => (await (await get(`/clips?${qs}`)).json()) as Page;
+  /** nextCursor 를 따라 끝까지 받는다 */
+  async function all(qs: string) {
+    const ids: string[] = [];
+    let cursor: string | null = null;
+    let total = 0;
+    for (let i = 0; i < 100; i++) {
+      const p: Page = await page(`${qs}${cursor ? `&cursor=${cursor}` : ""}`);
+      if (i === 0) total = p.total;
+      ids.push(...p.clips.map((c) => c.clipId));
+      cursor = p.nextCursor;
+      if (!cursor) break;
+    }
+    return { ids, total };
+  }
+
+  const kid = `profileId=${DEMO.kid}`;
+  const first = await page(`${kid}&size=20`);
+  check(
+    "운동 찾기 첫 페이지는 size 만큼 오고 nextCursor 가 있다",
+    first.clips.length === 20 && first.total > 20 && typeof first.nextCursor === "string",
+    `${first.clips.length}개, 전체 ${first.total}, 다음 ${first.nextCursor}`,
+  );
+  const mine = await all(`${kid}&size=30`);
+  check(
+    "다음 페이지를 끝까지 받으면 전체 수만큼 겹치지 않고 모인다",
+    mine.ids.length === mine.total && new Set(mine.ids).size === mine.ids.length,
+    `${mine.ids.length}개 / 전체 ${mine.total}`,
+  );
+  const every = await all(`${kid}&size=100&ageGroup=ALL`);
+  check(
+    "모든 나이로 보면 아이 나이대보다 많고 수백 개다",
+    every.total > mine.total && every.total >= 300 && every.ids.length === every.total,
+    `아이 나이대 ${mine.total}, 모든 나이 ${every.total}`,
+  );
+  const quiet = await page(`${kid}&ageGroup=ALL&quiet=true&factor=${encodeURIComponent("유연성")}`);
+  check(
+    "모든 나이에서도 요인과 조용한 운동 거르기가 그대로 걸린다",
+    quiet.total > 0 && quiet.total < every.total,
+    `${quiet.total}`,
+  );
+  const big = await page(`${kid}&ageGroup=ALL&size=500`);
+  check("한 페이지는 100개를 넘지 않는다", big.clips.length === 100, `${big.clips.length}`);
+  const bad = await get(`/clips?${kid}&cursor=abc`);
+  check(
+    "알아볼 수 없는 cursor 는 400 INVALID_INPUT",
+    bad.status === 400 && (await codeOf(bad)) === "INVALID_INPUT",
+    `${bad.status}`,
+  );
+  const badAge = await get(`/clips?${kid}&ageGroup=KID`);
+  check(
+    "모르는 나이대는 400 INVALID_INPUT",
+    badAge.status === 400 && (await codeOf(badAge)) === "INVALID_INPUT",
+    `${badAge.status}`,
+  );
+}
+
 // 새 가족 — 브론즈에서, 셀 날이 없으면 달성률 · 순위가 비어 있다(0% · 꼴찌가 아니다)
 await post("/auth/dev-login", { providerUserId: "demo-fresh" });
 const freshFamily = (await (
