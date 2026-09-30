@@ -270,6 +270,30 @@ one emblem in the center in yellow #FFB800 and white #FFFFFF, no ribbon, no text
 
 ---
 
+## 8. 키움이 동작 — 9장 (9/30 새로)
+
+키움이가 **같은 서 있는 그림뿐이라 밋밋하다**(9/30). 운동하는 모습 · 쉬는 모습을 더한다.
+레벨 단계와 상관없는 「운동하는 키움이」 라 **모두 새싹 키움이(`level/level-2`) 모습으로** 뽑는다 — 동작만 다르다.
+
+**참고 그림:** `public/assets/level/level-2.png` 를 함께 올려 **같은 캐릭터 · 같은 비율 · 같은 선 없는 면**으로 뽑아 주세요.
+위 「키움이 기본 프롬프트」 뒤에 아래 한 줄을 바꿔 붙입니다.
+
+| 파일                  | 동작                   | 붙일 줄                                                                               | 쓰는 곳                  |
+| --------------------- | ---------------------- | ------------------------------------------------------------------------------------- | ------------------------ |
+| `pose/kiumi-run`      | 달리기 (심폐지구력)    | running happily, one foot lifted, arms swinging, side three-quarter view              | 오늘 운동 카드 · 옆 배너 |
+| `pose/kiumi-squat`    | 스쿼트 (근력)          | doing a squat, knees bent, both arms stretched forward                                | 오늘 운동 카드 · 옆 배너 |
+| `pose/kiumi-jumprope` | 줄넘기 (근지구력)      | jumping rope, a simple navy jump rope looping over the head, both feet off the ground | 오늘 운동 카드 · 옆 배너 |
+| `pose/kiumi-stretch`  | 옆구리 늘이기 (유연성) | side stretch, one arm reaching over the head, body leaning to one side                | 오늘 운동 카드 · 옆 배너 |
+| `pose/kiumi-jump`     | 제자리 점프 (순발력)   | jumping high in place, both arms up, small motion lines under the feet in navy        | 오늘 운동 카드 · 옆 배너 |
+| `pose/kiumi-sidestep` | 옆으로 뛰기 (민첩성)   | quick side step, body leaning sideways, one foot kicking out                          | 오늘 운동 카드           |
+| `pose/kiumi-water`    | 물 마시기 (쉬는 시간)  | holding a small white water bottle with both hands, drinking, relaxed                 | (다음 차례) 쉬는 칸      |
+| `pose/kiumi-wave`     | 손 흔들기 (반기기)     | waving one arm high, cheerful                                                         | 옆 배너                  |
+| `pose/kiumi-ball`     | 공놀이                 | holding a yellow ball above the head with both arms, playful                          | 옆 배너                  |
+
+> 한 장에 키움이 하나. 운동 도구(줄 · 공 · 물병)는 **다섯 색 안에서** 단순한 모양으로만.
+> 파일을 넣고 `npm run assets -- <원본폴더>` 를 돌리면 오늘 운동 카드(본운동이 기르는 힘의 동작)와 데스크톱 옆 배너에 바로 선다 —
+> 들어오기 전에는 카드에 자리가 없고, 배너에는 레벨 캐릭터가 대신 선다.
+
 ## 7. 이번에 쓰지 않는 것
 
 지난 주문의 조립 아바타(몸통 · 머리 · 표정 · 옷), 동작 프레임(`anim/`), 바탕 장면(`bg/`),

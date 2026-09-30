@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { DesktopBanner } from "@/components/app-shell/desktop-banner";
 
 import { MswProvider } from "@/providers/msw-provider";
 import { PwaProvider } from "@/providers/pwa-provider";
@@ -46,6 +47,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <MswProvider>
           <QueryProvider>
             <div className="app-frame relative z-[1]">{children}</div>
+            {/* 데스크톱 옆 빈자리 배너 — 넓은 화면에서만 */}
+            <DesktopBanner />
           </QueryProvider>
         </MswProvider>
       </body>

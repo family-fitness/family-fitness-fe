@@ -140,6 +140,7 @@ npx openapi-typescript http://localhost:8080/v3/api-docs -o src/lib/api/schema.t
 - Tailwind. 디자인 토큰은 `src/app/globals.css` 의 `@theme` 에 둔다
 - 색은 토큰으로만 쓴다. `text-[#3b82f6]` 같은 임의값 금지
 - 모바일 우선. 데스크톱은 가운데 정렬된 폰 너비 컨테이너로 본다
+- 넓은 화면(1240px~)의 양옆 빈자리에는 꾸밈 배너(`DesktopBanner`)만 둔다 — 키움이들이 판을 둘러싸고 논다(9/30). 좁으면 없다
 - 안전 영역(노치·홈 인디케이터)은 `env(safe-area-inset-*)` 로 처리한다
 
 ## UI 에서 하지 말 것
