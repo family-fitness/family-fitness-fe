@@ -2,7 +2,7 @@
 
 import { ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { ParentOnly } from "@/components/app-shell/parent-only";
@@ -97,6 +97,11 @@ function PlanForm() {
   const [existing, setExisting] = useState(false);
   /** 막힌 까닭이 「잰 사람이 없다」 면 첫 측정으로 가는 길(규칙 4) */
   const [unmeasured, setUnmeasured] = useState(false);
+  // 막힌 까닭 카드는 폼 맨 끝(단추 바로 위)에 그려진다. 나타나면 그리로 내려 준다 — 화면 위쪽은 그대로라 눌러도 아무 일 없는 줄 알았다
+  const errorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (error) errorRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [error]);
 
   const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
@@ -153,6 +158,10 @@ function PlanForm() {
   const given = latest?.weakest?.factor;
   const weakest = isFactor(given) ? given : undefined;
   const shownFocus = focus ?? weakest ?? null;
+  // 측정할 수 있는 나이(만 4세 이상)인데 아직 한 번도 안 쟀으면 코치가 짜지 않는다(422 NO_MEASURED_MEMBER).
+  // 단추를 누르고 나서 알리지 않고 처음부터 위쪽에 알리고, 아래 단추도 첫 측정으로 바꾼다
+  const needsFirst = kid.measurable !== false && !kid.latest?.testedOn;
+  const measureHref = `/p/${kid.profileId}/measure`;
 
   const submit = async () => {
     if (!kid.profileId) return;
@@ -200,6 +209,24 @@ function PlanForm() {
     <>
       <AppBar backHref="/parent" title="오늘 운동 짜기" />
       <Stage wide className="space-y-3 pb-28">
+        {needsFirst && (
+          <div className="card flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-signal-deep text-sm font-extrabold">
+                {name}의 체력을 아직 재지 않았어요
+              </p>
+              <p className="text-caption text-ink-soft mt-0.5">
+                한 번 재면 AI 코치가 운동을 짜 줘요
+              </p>
+            </div>
+            <NavLink
+              href={measureHref}
+              className="press text-signal-strong min-h-11 shrink-0 content-center text-sm font-extrabold"
+            >
+              첫 측정 하기
+            </NavLink>
+          </div>
+        )}
         <section className="card-hero">
           <p className="text-lead font-extrabold">{name}의 체력</p>
           <FactorRadar
@@ -332,7 +359,7 @@ function PlanForm() {
         </section>
 
         {error && (
-          <div role="alert" className="card flex items-center justify-between gap-3">
+          <div ref={errorRef} role="alert" className="card flex items-center justify-between gap-3">
             <p className="text-signal-deep text-sm font-semibold">{error}</p>
             {existing && current?.coachRunId && (
               <NavLink
@@ -349,7 +376,7 @@ function PlanForm() {
             {/* 만 4세 미만이면 측정 길을 두지 않는다(규칙 4) */}
             {unmeasured && kid.profileId && kid.measurable !== false && (
               <NavLink
-                href={`/p/${kid.profileId}/measure`}
+                href={measureHref}
                 className="press text-signal-strong min-h-11 shrink-0 content-center text-sm font-extrabold"
               >
                 첫 측정 하기
@@ -361,15 +388,24 @@ function PlanForm() {
 
       {/* 아래에 붙는 한 단추. 조건을 다 내려 보고 나서 누른다 */}
       <Dock>
-        <button
-          type="button"
-          onClick={() => void submit()}
-          disabled={start.isPending}
-          className="press bg-signal-strong shadow-lift data-off:bg-line data-off:text-ink-soft flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white disabled:opacity-100 data-off:shadow-none"
-        >
-          <ArtIcon name="icon/menu-ai" className="size-5" />
-          {start.isPending ? "코치에게 보내는 중" : `AI에게 ${minutes}분 운동 받기`}
-        </button>
+        {needsFirst ? (
+          <NavLink
+            href={measureHref}
+            className="press bg-signal-strong shadow-lift flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white"
+          >
+            첫 측정 하기
+          </NavLink>
+        ) : (
+          <button
+            type="button"
+            onClick={() => void submit()}
+            disabled={start.isPending}
+            className="press bg-signal-strong shadow-lift flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white disabled:opacity-100"
+          >
+            <ArtIcon name="icon/menu-ai" className="size-5" />
+            {start.isPending ? "코치에게 보내는 중" : `AI에게 ${minutes}분 운동 받기`}
+          </button>
+        )}
       </Dock>
     </>
   );
