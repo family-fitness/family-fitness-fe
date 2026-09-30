@@ -352,8 +352,11 @@ export function useStartCoachRun(familyId: Uuid) {
   });
 }
 
-/** RUNNING 인 동안 0.7초마다 묻는다(서버가 시작할 때 준 pollAfterMs 와 같은 값) */
-export function useCoachRun(runId: Uuid | undefined) {
+/**
+ * RUNNING 인 동안 0.7초마다 묻는다(서버가 시작할 때 준 pollAfterMs 와 같은 값).
+ * `poll` 이 false 면 묻기를 쉰다 — 단계가 한참 안 움직이면 화면이 멈춘다(서버가 RUNNING 에 멈추면 끝없이 물었다)
+ */
+export function useCoachRun(runId: Uuid | undefined, poll = true) {
   return useQuery({
     queryKey: qk.coach.run(runId ?? ""),
     queryFn: () => api.get<CoachRun>(path`/coach/runs/${runId}`),
@@ -364,7 +367,7 @@ export function useCoachRun(runId: Uuid | undefined) {
       const e = q.state.error;
       const settled =
         e instanceof ApiError && e.status < 500 && e.status !== 408 && e.status !== 429;
-      return q.state.data?.status === "RUNNING" && !settled ? 700 : false;
+      return poll && q.state.data?.status === "RUNNING" && !settled ? 700 : false;
     },
   });
 }
