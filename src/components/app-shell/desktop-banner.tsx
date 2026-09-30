@@ -45,11 +45,8 @@ export function DesktopBanner() {
             <p className="text-signal-deep mt-1 text-[2.1rem] leading-none font-extrabold">
               체력키움
             </p>
-            <p className="text-ink-soft mt-4 text-sm leading-relaxed font-semibold">
-              국민체력100 데이터로 그리는
-              <br />
-              우리 가족 체력 지도
-            </p>
+            {/* 이름만 — 「…그리는 우리 가족 체력 지도」 같은 소개 줄은 설명 문구다(앱 정보에서도 걷었다) */}
+            <p className="text-ink-soft mt-4 text-sm font-semibold">국민체력100</p>
           </div>
           <Art
             name={kiumi("jumprope", "level/level-5-cheer")}
