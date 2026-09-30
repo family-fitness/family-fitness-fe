@@ -35,7 +35,7 @@ export function AchievementGrid({ achievements }: { achievements: AchievementVie
                   setOpen(true);
                 }}
                 className="press bg-sub flex w-full flex-col items-center gap-1.5 rounded-2xl px-1.5 py-3"
-                aria-label={`${a.title}${got ? " · 받았어요" : " · 아직"}`}
+                aria-label={`${a.title}, ${got ? "받았어요" : "아직 못 받았어요"}`}
               >
                 <ArtIcon
                   name={badgeArt(a.code)}

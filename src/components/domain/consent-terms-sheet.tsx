@@ -17,7 +17,7 @@ export function ConsentTermsSheet({
 }) {
   const terms = kind ? CONSENT_TERMS[kind] : null;
   return (
-    <Sheet open={open} onClose={onClose} title={terms?.title ?? "상세내용"}>
+    <Sheet open={open} onClose={onClose} title={terms?.title ?? "자세한 내용"}>
       {terms && (
         <dl className="divide-rows pb-2">
           {terms.rows.map((row) => (
@@ -38,10 +38,10 @@ export function TermsLink({ onClick, label }: { onClick: () => void; label: stri
     <button
       type="button"
       onClick={onClick}
-      aria-label={`${label} 상세내용 보기`}
+      aria-label={`${label} 자세히 보기`}
       className="press text-signal-strong ml-auto flex min-h-11 items-center px-1 text-sm font-bold"
     >
-      상세내용 보기
+      자세히 보기
     </button>
   );
 }
@@ -53,11 +53,11 @@ export function TermsRow({ title, onClick }: { title: string; onClick: () => voi
       <button
         type="button"
         onClick={onClick}
-        aria-label={`${title} 상세내용 보기`}
+        aria-label={`${title} 자세히 보기`}
         className="press flex min-h-14 w-full items-center gap-3 py-3 text-left"
       >
         <span className="min-w-0 flex-1 text-sm font-bold">{title}</span>
-        <span className="text-signal-strong text-sm font-bold">상세내용 보기</span>
+        <span className="text-signal-strong text-sm font-bold">자세히 보기</span>
         <ChevronRight className="text-faint size-4 shrink-0" aria-hidden />
       </button>
     </li>

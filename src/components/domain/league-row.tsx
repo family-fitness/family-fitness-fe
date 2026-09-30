@@ -30,17 +30,17 @@ export function LeagueRow({
   if (!league) return null;
 
   const art = tierArt(league.tier);
-  const place = league.rank != null ? ` · ${league.groupSize}가족 중 ${league.rank}등` : "";
+  const place = league.rank != null ? `, ${league.groupSize}가족 중 ${league.rank}등` : "";
   // 셀 날이 아직 없으면 0% 가 아니라 비어 있다
   const note =
     league.rate != null
-      ? `이번 달 달성률 ${league.rate}% · ${league.daysLeft}일 남음`
+      ? `이번 달 달성률 ${league.rate}%, ${league.daysLeft}일 남았어요`
       : "아직 순위가 없어요";
   return (
     <NavLink
       href="/parent/league"
       className={cn("press flex min-h-14 items-center gap-3", className)}
-      aria-label={`${tierName(league.tier)} 리그${place} · ${note}`}
+      aria-label={`${tierName(league.tier)} 리그${place}. ${note}`}
     >
       {artFor(art) && <ArtIcon name={art} className="size-10" />}
       <span className="min-w-0 flex-1">

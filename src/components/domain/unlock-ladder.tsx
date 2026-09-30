@@ -2,7 +2,7 @@ import { Check } from "lucide-react";
 
 import { Card, CardHead } from "@/components/ui/card";
 import { UNLOCKS } from "@/lib/unlocks";
-import { cn } from "@/lib/utils";
+import { cn, withJosa } from "@/lib/utils";
 
 /**
  * 레벨마다 열리는 것 — 레벨이 오를수록 앱이 넓어진다는 걸 한눈에.
@@ -43,7 +43,7 @@ export function UnlockLadder({ level }: { level: number }) {
                   !open && !next && "text-ink-soft",
                 )}
               >
-                섬 · {u.name}
+                섬에 {withJosa(u.name, "이가")} 생겨요
               </p>
             </li>
           );

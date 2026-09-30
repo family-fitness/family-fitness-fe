@@ -185,7 +185,7 @@ export function InviteSheet({
           {canShare && (
             <Button size="block" className="mt-2 gap-2" onClick={() => void share()}>
               <Share2 aria-hidden className="size-4" />
-              카카오톡 · 문자로 보내기
+              카카오톡이나 문자로 보내기
             </Button>
           )}
         </div>
@@ -212,7 +212,8 @@ export function InviteSheet({
                     <span className="min-w-0 flex-1">
                       <span className="block font-extrabold">{m.name}</span>
                       <span className="text-caption text-ink-soft block">
-                        {m.role === "PARENT" ? "부모" : "자녀"} · {m.ageGroup}
+                        {m.role === "PARENT" ? "부모" : "자녀"}
+                        {m.ageGroup && <span className="ml-2">{m.ageGroup}</span>}
                       </span>
                     </span>
                     <span
