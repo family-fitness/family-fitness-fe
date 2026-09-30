@@ -248,9 +248,10 @@ function Labels({
   const guideEnd = projectOrtho(SPEC, [GAP * 3.5, guide, 0], width, height);
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 z-10">
-      {/* 눈금 이름 — 점선 오른쪽 끝 위. 범례 대신 이름이 무엇인지 말한다 */}
+      {/* 눈금 이름 — 점선 오른쪽 끝의 바깥. 범례 대신 이름이 무엇인지 말한다.
+          끝 위에 두면 일요일 기둥이 30분 언저리일 때 그 숫자 위에 겹쳐 찍혔다(주말 30분이 이 앱이 권하는 운동이다) */}
       <span
-        className="text-micro text-ink-soft absolute -translate-x-full -translate-y-full pb-0.5 font-bold"
+        className="text-micro text-ink-soft absolute -translate-y-1/2 pl-1 font-bold whitespace-nowrap"
         style={{ left: guideEnd.x, top: guideEnd.y }}
       >
         30분
