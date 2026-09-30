@@ -58,6 +58,17 @@ import { CREATE_AT, guardianOldEnough, onboardingSteps } from "@/lib/onboarding"
 
 import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
 import { REVIEW_WAYS, afterSignIn, reviewDestination } from "@/lib/review-login";
+import {
+  childBirthRule,
+  guardianBirthRule,
+  inRule,
+  koreanDate,
+  measuredRule,
+  openingDate,
+  parseDate,
+  yearsBefore,
+} from "@/lib/date-pick";
+import { daysBefore } from "@/lib/today";
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -902,6 +913,53 @@ check(
     bare.length === 0,
     bare.join(", "),
   );
+}
+
+/* ─── 날짜 고르기: 범위와 표시 ─────────────────────────────── */
+{
+  check(
+    "2018-03-05 를 「2018년 3월 5일」 로 적는다",
+    koreanDate("2018-03-05") === "2018년 3월 5일",
+  );
+  check("틀린 날짜는 그대로 돌려준다", koreanDate("2018-02-30") === "2018-02-30");
+  check("빈 값은 날짜로 읽지 않는다", parseDate("") === undefined);
+  const march = parseDate("2018-03-05");
+  check(
+    "YYYY-MM-DD 를 기기 시간대 자정으로 읽는다",
+    !!march &&
+      march.getFullYear() === 2018 &&
+      march.getMonth() === 2 &&
+      march.getDate() === 5 &&
+      march.getHours() === 0,
+  );
+  check("윤일에서 8년 전은 윤년이면 같은 날", yearsBefore(8, "2024-02-29") === "2016-02-29");
+  check("윤일에서 1년 전은 2월 28일", yearsBefore(1, "2024-02-29") === "2023-02-28");
+
+  const on = "2026-09-30";
+  const kid = childBirthRule(on);
+  check(
+    "아이 생일은 가입 폼과 같이 365*19+5일 전부터 오늘까지",
+    kid.min === daysBefore(365 * 19 + 5, on) && kid.max === on,
+    JSON.stringify(kid),
+  );
+  check("아이 생일 달력은 8년 전 달에서 열린다", openingDate(kid, "") === "2018-09-30");
+  check("고른 생일이 있으면 그 달에서 열린다", openingDate(kid, "2015-01-02") === "2015-01-02");
+  check("범위 밖 값이면 처음 보여 줄 달로 연다", openingDate(kid, "1990-01-01") === "2018-09-30");
+  check("아이 생일에 내일은 고를 수 없다", !inRule(kid, daysBefore(-1, on)));
+  check("아이 생일에 20년 전은 고를 수 없다", !inRule(kid, "2006-09-30"));
+
+  const guardian = guardianBirthRule(on);
+  check(
+    "보호자 생일은 100년 전부터 오늘까지",
+    guardian.min === "1926-09-30" && guardian.max === on,
+  );
+  check("보호자 생일 달력은 35년 전 달에서 열린다", openingDate(guardian, "") === "1991-09-30");
+
+  const measured = measuredRule(on);
+  check("측정 날짜는 오늘까지, 5년 전부터", measured.max === on && measured.min === "2021-09-30");
+  check("측정 날짜 달력은 이번 달에서 열린다", openingDate(measured, "") === on);
+  check("측정 날짜에 미래는 고를 수 없다", !inRule(measured, "2026-10-01"));
+  check("측정 날짜에 오늘은 고를 수 있다", inRule(measured, on));
 }
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);

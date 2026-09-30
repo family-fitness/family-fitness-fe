@@ -15,6 +15,20 @@
  */
 import { chromium } from "playwright";
 
+/**
+ * 날짜 칸에서 날을 고른다. 칸을 누르면 바닥 시트 달력이 열리고, 연도와 월 드롭다운으로 간 뒤 그날을 누른다.
+ * 날짜 칸이 브라우저 기본 칸이 아니라서 fill 로 넣을 수 없다.
+ */
+async function pickDate(page, label, date) {
+  const [y, m, d] = date.split("-").map(Number);
+  await page.getByRole("button", { name: new RegExp(`^${label},`) }).click();
+  const sheet = page.getByRole("dialog", { name: label });
+  await sheet.getByRole("combobox", { name: "연도 선택" }).selectOption(String(y));
+  await sheet.getByRole("combobox", { name: "월 선택" }).selectOption(String(m - 1));
+  await sheet.getByRole("button", { name: new RegExp(`${y}년 ${m}월 ${d}일`) }).click();
+  await sheet.waitFor({ state: "detached", timeout: 5000 });
+}
+
 const B = `http://localhost:${process.argv[2] ?? "3001"}`;
 const SHOTS = process.env.SHOTS;
 const HIDE = "nextjs-portal,[data-nextjs-toast],.tsqd-parent-container{display:none!important}";
@@ -96,13 +110,13 @@ await step("첫 시작을 끝까지 — 지금 잴래요", async () => {
   await next();
   await page.getByRole("radio", { name: /여성/ }).click();
   await next();
-  await page.getByLabel("보호자 생년월일").fill("1988-04-12");
+  await pickDate(page, "보호자 생년월일", "1988-04-12");
   await next();
   await next("건너뛰기"); // 사진 건너뜀
   await page.waitForTimeout(1200);
   await page.getByLabel("아이 이름").fill("민서");
   await next();
-  await page.getByLabel("아이 생일").fill("2017-08-03");
+  await pickDate(page, "아이 생일", "2017-08-03");
   await next();
   await page.getByRole("radio", { name: "여자아이" }).click();
   await next();
@@ -347,7 +361,7 @@ await step("부모 홈 알약 → 아이 등록하기 → 둘째 아이 첫 시�
   await shot("child-wizard-first");
   await page.getByLabel("아이 이름").fill("민준");
   await next();
-  await page.getByLabel("아이 생일").fill("2020-02-10");
+  await pickDate(page, "아이 생일", "2020-02-10");
   await next();
   await page.getByRole("radio", { name: "남자아이" }).click();
   await next();

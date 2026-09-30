@@ -9,6 +9,7 @@ import { ArtIcon } from "@/components/ui/art-icon";
 import { useBackSheet } from "@/components/ui/use-back-sheet";
 import { Illustration } from "@/components/ui/illustration";
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/ui/date-field";
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { ConsentTermsSheet, TermsLink } from "@/components/domain/consent-terms-sheet";
 import type { SupportMode, Weekday } from "@/lib/api/types";
@@ -21,6 +22,7 @@ import {
   useUpdateSupportMode,
 } from "@/lib/api/queries";
 import { bodyError, bodyValue, rangeHint } from "@/lib/body";
+import { type DateRule, childBirthRule, guardianBirthRule } from "@/lib/date-pick";
 import { errorMessage } from "@/lib/errors";
 import { NEED_CHILD_COPY } from "@/lib/family";
 import type { ConsentKind } from "@/lib/legal";
@@ -450,7 +452,12 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
                   : null
               }
             >
-              <DateInput label="보호자 생년월일" value={meBirth} onChange={setMeBirth} />
+              <DateInput
+                label="보호자 생년월일"
+                value={meBirth}
+                onChange={setMeBirth}
+                rule={guardianBirthRule()}
+              />
             </Field>
           </div>
         </WizardShell>
@@ -479,7 +486,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
                 label="아이 생일"
                 value={kidBirth}
                 onChange={setKidBirth}
-                min={KID_OLDEST()}
+                rule={childBirthRule()}
               />
             </Field>
             <Field label="성별" as="div">
@@ -716,27 +723,25 @@ function BigInput({
   );
 }
 
-/** 날짜 한 칸 — 폰의 날짜 고르기가 열린다 */
+/** 날짜 한 칸. 누르면 연도와 월을 고르는 달력이 바닥 시트로 열린다 */
 function DateInput({
   label,
   value,
   onChange,
-  min,
+  rule,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
-  min?: string;
+  rule: DateRule;
 }) {
   return (
-    <input
-      type="date"
-      aria-label={label}
+    <DateField
+      label={label}
       value={value}
-      min={min}
-      max={today()}
-      onChange={(e) => onChange(e.target.value)}
-      className="field text-xl font-bold"
+      onChange={onChange}
+      rule={rule}
+      className="text-xl font-bold"
     />
   );
 }

@@ -14,12 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { DateField } from "@/components/ui/date-field";
 import { Field } from "@/components/ui/field";
 import { errorMessage } from "@/lib/errors";
 import type { ProfileSummary } from "@/lib/api/types";
 import { useCreateProfile, useFamilyProfiles } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
-import { today } from "@/lib/today";
+import { guardianBirthRule } from "@/lib/date-pick";
 import { cn } from "@/lib/utils";
 import { useRoleStore } from "@/stores/role-store";
 import { PhotoSheet } from "@/components/domain/photo-sheet";
@@ -252,12 +253,11 @@ function AddMemberSheet({
         </Field>
 
         <Field label="생년월일">
-          <input
-            type="date"
+          <DateField
+            label="생년월일"
             value={birthDate}
-            max={today()}
-            onChange={(e) => setBirthDate(e.target.value)}
-            className="field"
+            onChange={setBirthDate}
+            rule={guardianBirthRule()}
           />
         </Field>
 

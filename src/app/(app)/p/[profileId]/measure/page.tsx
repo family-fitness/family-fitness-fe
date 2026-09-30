@@ -11,6 +11,7 @@ import { Stage } from "@/components/app-shell/stage";
 import { CardHead } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { DateField } from "@/components/ui/date-field";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MeasureField } from "@/components/domain/measure-field";
@@ -19,6 +20,7 @@ import type { AgeGroup, FitnessItem, FitnessTestSource } from "@/lib/api/types";
 import { useCreateFitnessTest, useFamilyProfiles, useFitnessItems } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { REMEASURE_DAYS } from "@/lib/remeasure";
+import { measuredRule } from "@/lib/date-pick";
 import { daysSince, today } from "@/lib/today";
 import { bodyError, bodyValue, rangeHint } from "@/lib/body";
 import { useBodyStore } from "@/stores/body-store";
@@ -297,13 +299,11 @@ export default function MeasurePage() {
             <p aria-hidden className="card-head">
               언제 쟀나요
             </p>
-            <input
-              type="date"
+            <DateField
+              label="측정한 날짜"
               value={testedOn}
-              max={today()}
-              onChange={(e) => setTestedOn(e.target.value)}
-              aria-label="측정한 날짜"
-              className="field"
+              onChange={setTestedOn}
+              rule={measuredRule()}
             />
 
             <div className="flex gap-2">

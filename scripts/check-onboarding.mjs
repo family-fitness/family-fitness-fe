@@ -23,6 +23,20 @@ const PORT = process.argv[2] ?? "3001";
 const BASE = `http://localhost:${PORT}`;
 const HIDE = "nextjs-portal,[data-nextjs-toast],.tsqd-parent-container{display:none!important}";
 
+/**
+ * 날짜 칸에서 날을 고른다. 칸을 누르면 바닥 시트 달력이 열리고, 연도와 월 드롭다운으로 간 뒤 그날을 누른다.
+ * 날짜 칸이 브라우저 기본 칸이 아니라서 fill 로 넣을 수 없다.
+ */
+async function pickDate(page, label, date) {
+  const [y, m, d] = date.split("-").map(Number);
+  await page.getByRole("button", { name: new RegExp(`^${label},`) }).click();
+  const sheet = page.getByRole("dialog", { name: label });
+  await sheet.getByRole("combobox", { name: "연도 선택" }).selectOption(String(y));
+  await sheet.getByRole("combobox", { name: "월 선택" }).selectOption(String(m - 1));
+  await sheet.getByRole("button", { name: new RegExp(`${y}년 ${m}월 ${d}일`) }).click();
+  await sheet.waitFor({ state: "detached", timeout: 5000 });
+}
+
 const problems = [];
 let steps = 0;
 
@@ -92,12 +106,12 @@ await walk("새 가족 만들기", async (h) => {
     await page.getByLabel("가족 이름").fill("민서네");
     await page.getByLabel("보호자 이름").fill("지영");
     await page.getByRole("radio", { name: /여성/ }).click();
-    await page.getByLabel("보호자 생년월일").fill("1988-04-12");
+    await pickDate(page, "보호자 생년월일", "1988-04-12");
     await next();
   });
   await h.step("아이 이름, 생일, 성별이 한 화면", async () => {
     await page.getByLabel("아이 이름").fill("민서");
-    await page.getByLabel("아이 생일").fill("2017-08-03");
+    await pickDate(page, "아이 생일", "2017-08-03");
     await page.getByRole("radio", { name: "여자아이" }).click();
     await next();
   });
@@ -184,12 +198,12 @@ await walk("중간에 닫아도 아이 없는 가족이 생기지 않고 두 번
     await page.getByLabel("가족 이름").fill("하늘네");
     await page.getByLabel("보호자 이름").fill("도현");
     await page.getByRole("radio", { name: /남성/ }).click();
-    await page.getByLabel("보호자 생년월일").fill("1984-02-20");
+    await pickDate(page, "보호자 생년월일", "1984-02-20");
     await next();
   };
   const child = async () => {
     await page.getByLabel("아이 이름").fill("하늘");
-    await page.getByLabel("아이 생일").fill("2016-05-01");
+    await pickDate(page, "아이 생일", "2016-05-01");
     await page.getByRole("radio", { name: "남자아이" }).click();
     await next();
   };
