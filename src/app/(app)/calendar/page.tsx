@@ -245,7 +245,7 @@ function Calendar() {
               onClick={() => void refetchCalendar()}
               className="press text-ink-soft mt-3 min-h-10 w-full text-sm font-bold"
             >
-              기록을 불러오지 못했어요. 눌러서 다시 불러와요
+              기록을 불러오지 못했어요. 누르면 다시 불러와요
             </button>
           )}
         </section>
@@ -360,7 +360,14 @@ function MonthTile({
             state === "pending" && "opacity-40",
           )}
         >
-          {state === "error" ? <span aria-label="불러오지 못했어요">?</span> : 0}
+          {state === "error" ? (
+            <>
+              <span aria-hidden="true">?</span>
+              <span className="sr-only">불러오지 못했어요</span>
+            </>
+          ) : (
+            0
+          )}
         </p>
       )}
     </div>

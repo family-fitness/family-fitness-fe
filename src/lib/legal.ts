@@ -36,7 +36,7 @@ export const CONSENT_TERMS: Record<ConsentKind, ConsentTerms> = {
       { label: "보유 기간", text: "회원 탈퇴 또는 동의 철회 때까지. 탈퇴하면 바로 지워요" },
       {
         label: "만 14세 미만",
-        text: "아이 정보는 보호자(법정대리인)의 동의를 받고 모아요",
+        text: "아이 정보는 보호자(법정대리인)의 동의를 받아야 모으고 쓸 수 있어요",
       },
       {
         label: "거부할 권리",
@@ -124,7 +124,7 @@ export const PRIVACY_POLICY: LegalDoc = {
     {
       heading: "이용자의 권리",
       lines: [
-        "내 정보를 보여 달라고, 고치거나 지워 달라고 요청할 수 있어요",
+        "내 정보를 보여 주거나 고치거나 지워 달라고 요청할 수 있어요",
         "동의는 설정의 보호자 동의에서 철회할 수 있어요",
       ],
     },
