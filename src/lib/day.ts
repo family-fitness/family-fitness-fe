@@ -104,6 +104,19 @@ export function plannedDay(mission: Mission, now: string): string | null {
   return start > now ? start : end >= now ? now : null;
 }
 
+/**
+ * 운동 화면 앱 바의 제목. 오늘 하는 운동이면 「오늘 운동」, 앞날 · 지난 운동이면 「10월 13일 운동」.
+ * 10월 13일 운동을 10월 6일에 열었는데 제목이 「오늘 운동」 이라 본문 「10월 13일 화요일에 하는 운동이에요」 와 어긋났다.
+ */
+export function missionTitle(mission: Mission, now: string): string {
+  const start = mission.startDate ?? "";
+  const end = mission.endDate ?? start;
+  if (!start || (start <= now && end >= now)) return "오늘 운동";
+  const d = new Date(`${start}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return "오늘 운동";
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 운동`;
+}
+
 /** 이 아이가 그날 할 운동 */
 export function plannedOn(
   missions: Mission[],

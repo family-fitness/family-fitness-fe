@@ -12,10 +12,12 @@ import { ListRow } from "@/components/ui/list-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFamilyProfiles, useMe } from "@/lib/api/queries";
 import type { MeWithEmail } from "@/lib/api/types";
+import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
 import { useSession, useSignOut } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 
-import { version } from "../../../../package.json";
+/** 빌드할 때 next.config.ts 가 package.json 의 version 만 박는다. package.json 을 import 하면 통째로 번들에 들어간다 */
+const version = process.env.NEXT_PUBLIC_APP_VERSION;
 
 /**
  * 설정 — 로그인 계정 · 누가 쓰는지 · 동의 · 약관 · 앱 정보 · 로그아웃(9/28 「설정에 이런 식으로」).
@@ -116,9 +118,11 @@ export default function SettingsPage() {
             <div className="min-w-0 flex-1">
               <p className="text-lead truncate font-extrabold">{profile?.name ?? "나"}</p>
               {email && <p className="text-caption text-ink-soft mt-0.5 truncate">{email}</p>}
-              <p className="text-caption text-ink-soft mt-0.5">
-                {family?.familyName ?? "우리집"} ·{" "}
-                {parentView ? "부모 화면" : `아이 화면${kid?.name ? ` · ${kid.name}` : ""}`}
+              <p className="text-caption text-ink-soft mt-0.5 flex flex-wrap gap-x-2">
+                <span>{family?.familyName ?? "우리집"}</span>
+                <span>
+                  {parentView ? "부모 화면" : `아이 화면${kid?.name ? `(${kid.name})` : ""}`}
+                </span>
               </p>
             </div>
           </div>
@@ -133,8 +137,8 @@ export default function SettingsPage() {
         </ul>
 
         <ul className="card divide-rows py-1">
-          <ListRow href="/settings/privacy" title="개인정보처리방침" />
-          <ListRow href="/settings/terms" title="이용약관" />
+          <ListRow href={PRIVACY_HREF} title="개인정보처리방침" />
+          <ListRow href={TERMS_HREF} title="이용약관" />
         </ul>
 
         <section className="card">

@@ -159,7 +159,7 @@ export function GrowthPole({
     <div
       ref={host}
       role="img"
-      aria-label={`키가 자란 자취 — ${records.map((r) => `${r.date.slice(5).replace("-", "월 ")}일 ${r.heightCm}cm`).join(", ")}`}
+      aria-label={`키 기록: ${records.map((r) => `${r.date.slice(5).replace("-", "월 ")}일 ${r.heightCm}cm`).join(", ")}`}
       className={cn("relative w-full select-none", className)}
       style={{ aspectRatio: `${REF_WIDTH} / ${height}` }}
     >

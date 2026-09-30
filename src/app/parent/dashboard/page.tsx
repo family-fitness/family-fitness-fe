@@ -264,7 +264,7 @@ function FamilyStat({
       {state === "pending" ? (
         <Skeleton className="mt-2 h-8 w-16" />
       ) : state === "error" ? (
-        <p className="metric-value text-metric text-faint mt-1">—</p>
+        <p className="text-faint mt-1 text-sm font-bold">못 불러왔어요</p>
       ) : (
         <p className="metric-value text-metric mt-1">
           {value}
@@ -309,7 +309,7 @@ function MemberLine({
   const today_ = missions
     ? todayLine(dayWork(missions, member.profileId, now), rest)
     : missionsFailed
-      ? "—"
+      ? "오늘 기록을 못 불러왔어요"
       : null;
 
   const body = (
@@ -323,25 +323,26 @@ function MemberLine({
         <span className="flex items-center gap-1.5">
           <span className="truncate font-extrabold">{member.name}</span>
           {me && <span className="text-ink-soft text-caption font-bold">나</span>}
+          {/* 이름 옆에 둔다. 줄 오른쪽 끝에 두었더니 360px 에서 「자녀 · 유소년 · 오늘 다 …」 가 잘렸다 */}
+          {progress && progress.streakDays > 1 && (
+            <span className="text-caption shrink-0">
+              <StreakChip days={progress.streakDays} />
+            </span>
+          )}
         </span>
         <span className="text-caption text-ink-soft block truncate">
-          {child ? "자녀" : "부모"} · {member.ageGroup}
+          {child ? "자녀" : "부모"}, {member.ageGroup}
           {/* 아이는 부모 폰을 빌려 쓰는 게 기본이라 계정이 없어도 오늘을 적는다. 부모 자리만 「아직 안 들어옴」 */}
           {!child && hasAccount === false ? (
-            " · 아직 안 들어옴"
+            ", 아직 안 들어왔어요"
           ) : today_ ? (
-            ` · ${today_}`
+            `, ${today_}`
           ) : (
             <span className="skeleton ml-1 inline-block h-3 w-14 rounded align-middle" />
           )}
         </span>
         <WeekDots days={week.days} logs={logs} />
       </span>
-      {progress && progress.streakDays > 1 && (
-        <span className="text-caption shrink-0">
-          <StreakChip days={progress.streakDays} />
-        </span>
-      )}
     </>
   );
 

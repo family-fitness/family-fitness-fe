@@ -116,7 +116,7 @@ function ClaimContent() {
             />
             <span className="min-w-0 flex-1">
               <span className="text-body block font-extrabold">
-                {seat.familyName} · {seat.profileName} 자리
+                {seat.familyName} {seat.profileName} 자리
               </span>
               <span className="text-ink-soft text-caption mt-0.5 block">
                 {seat.invitedByName ? `${seat.invitedByName}님이 보냈어요` : "초대를 받았어요"}

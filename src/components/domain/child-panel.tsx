@@ -8,6 +8,7 @@ import { CardHead } from "@/components/ui/card";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorView, FirstMeasure } from "@/components/domain/factor-view";
+import { memberNoPeerNormsNote } from "@/lib/fitness-factors";
 import { REMEASURE_DAYS } from "@/lib/remeasure";
 import type { FitnessMapMember, Mission } from "@/lib/api/types";
 import { useCheers, useLatestCoachRun, useLatestFitnessTest, useRestDays } from "@/lib/api/queries";
@@ -16,6 +17,7 @@ import { VERIFIED_COPY } from "@/lib/mission";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { daysSince, monthOf, today } from "@/lib/today";
 import { cn, formatDate, withJosa } from "@/lib/utils";
+import { childFinderHref } from "@/lib/videos";
 
 /**
  * 부모 홈의 첫 묶음 — 「우리 아이」. 아이가 어디쯤인지와 오늘 무엇을 하는지를 한 덩어리로.
@@ -65,6 +67,7 @@ export function ChildPanel({
             pending={isPending}
             score={score}
             headline={child.headline}
+            note={memberNoPeerNormsNote(child, testedOn)}
             className="mx-auto mt-2 max-w-80"
           />
         </>
@@ -75,7 +78,7 @@ export function ChildPanel({
         <PanelRow
           href={`/p/${child.profileId}/measure`}
           art="icon/menu-measure"
-          title="키 · 몸무게를 새로 잴 때예요"
+          title="키와 몸무게를 새로 잴 때예요"
           note={`지난번에 잰 지 ${since}일`}
         />
       )}
@@ -144,7 +147,8 @@ function TodaySection({
   onRetryMissions: () => void;
 }) {
   const { data: given } = useCheers(familyId, childProfileId);
-  const { data: run } = useLatestCoachRun(familyId);
+  // 이 아이를 짠 것만 — 형제의 새 편성이 이 아이의 기다리는 제안을 가리지 않게
+  const { data: run } = useLatestCoachRun(familyId, childProfileId || undefined);
   // 쉬는 날 카드를 쓴 날 — 「아직 시작 전」 이 아니라 「쉬는 날」
   const { data: rest } = useRestDays(familyId, monthOf(today()));
   const stickerHref = (missionId?: string) =>
@@ -240,7 +244,7 @@ function TodaySection({
               AI에게 운동 받기
             </Link>
             <Link
-              href="/videos"
+              href={childFinderHref(childProfileId)}
               className="press bg-sub flex min-h-12 items-center justify-center rounded-2xl px-4 text-sm font-extrabold"
             >
               직접 짜기
@@ -279,7 +283,7 @@ function TodaySection({
     .map((p) => [p, sessions.filter((s) => s.phase === p).length] as const)
     .filter(([, n]) => n > 0)
     .map(([p, n]) => `${PHASE_LABEL[p].replace("운동", "")} ${n}`)
-    .join(" · ");
+    .join(", ");
 
   return (
     <>
@@ -293,7 +297,7 @@ function TodaySection({
             )}
           </p>
           <p className="text-caption text-ink-soft mt-0.5">
-            {sessions.length}개 · {minutes}분{phases && ` · ${phases}`}
+            {sessions.length}개, {minutes}분{phases && ` (${phases})`}
           </p>
           <p
             className={cn(
@@ -305,7 +309,7 @@ function TodaySection({
             {finished
               ? `${withJosa(childName, "이가")} 다 했어요`
               : doneCount > 0
-                ? `${doneCount}개 했어요 · ${sessions.length - doneCount}개 남음`
+                ? `${doneCount}개 했어요. ${sessions.length - doneCount}개 남았어요`
                 : restToday
                   ? "오늘은 쉬는 날이에요"
                   : "아직 시작 전이에요"}
@@ -363,14 +367,15 @@ function TodaySection({
         <div className="border-line mt-3 grid grid-cols-2 gap-2 border-t pt-3">
           <Link
             href="/plan"
-            className="press bg-signal-soft text-signal-deep flex min-h-11 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold"
+            className="press bg-signal-soft text-signal-deep flex min-h-11 items-center justify-center gap-1 rounded-2xl px-1.5 text-sm font-extrabold whitespace-nowrap"
           >
-            <ArtIcon name="icon/menu-ai" className="size-5" />
-            AI 코치에게 더 받기
+            {/* 360px 에서 반 칸이 140px 남짓이라 「AI 코치에게 더 받기」 는 두 줄로 꺾였다. 320px 폰에서는 그림을 빼야 한 줄에 들어간다 */}
+            <ArtIcon name="icon/menu-ai" className="size-5 shrink-0 max-[339px]:hidden" />
+            AI 코치에게 받기
           </Link>
           <Link
-            href="/videos"
-            className="press bg-sub flex min-h-11 items-center justify-center rounded-2xl text-sm font-extrabold"
+            href={childFinderHref(childProfileId)}
+            className="press bg-sub flex min-h-11 items-center justify-center rounded-2xl px-1.5 text-sm font-extrabold whitespace-nowrap"
           >
             직접 짜서 더하기
           </Link>

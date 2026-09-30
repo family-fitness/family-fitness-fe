@@ -88,7 +88,7 @@ function notificationsFor(profileId: string): NotificationView[] {
       items.push({
         notificationId: `remeasure-${kid.profileId}-${last}`,
         kind: "REMEASURE",
-        title: `${kid.name} 키 · 몸무게를 새로 재 볼까요`,
+        title: `${kid.name} 키와 몸무게를 새로 재 볼까요`,
         body: days != null ? `지난번에 잰 지 ${days}일` : "",
         aboutProfileId: kid.profileId ?? null,
         missionId: null,
@@ -98,14 +98,13 @@ function notificationsFor(profileId: string): NotificationView[] {
       });
     }
   } else {
-    // 받은 스티커 · 칭찬. 아이에게는 「엄마가」 · 「아빠가」 — 이름으로 부르지 않는다
+    // 받은 스티커 · 칭찬. 보호자는 프로필 이름으로(「은영이 스티커를 붙여 줬어요」), 모르면 「보호자」
     for (const c of db.cheers) {
       if (c.toProfileId !== profileId) continue;
       const sticker = stickerOf(c.stickerId);
       const from = callName(
         people.find((p) => p.profileId === c.fromProfileId) as Profile | undefined,
         c.fromName,
-        true,
       );
       items.push({
         notificationId: `praise-${c.cheerId}`,
@@ -152,7 +151,7 @@ function notificationsFor(profileId: string): NotificationView[] {
       items.push({
         notificationId: `badge-${profileId}-${a.code}`,
         kind: "ACHIEVEMENT",
-        title: `새 업적 — ${a.title}`,
+        title: `새 업적을 받았어요: ${a.title}`,
         body: earned(a.description),
         aboutProfileId: profileId,
         missionId: null,

@@ -238,7 +238,7 @@ export const history = [
     const from = params.get("from");
     const to = params.get("to");
     if (!profileId || !from || !to) {
-      return fail(400, "BAD_REQUEST", "profileId · from · to 가 필요합니다");
+      return fail(400, "BAD_REQUEST", "profileId, from, to 가 필요합니다");
     }
 
     const days = datesBetween(from, to)

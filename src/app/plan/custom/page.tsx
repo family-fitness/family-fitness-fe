@@ -14,7 +14,12 @@ import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { NavLink } from "@/components/ui/nav-link";
 import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAvailability, useCreateMission, useFamilyProfiles } from "@/lib/api/queries";
+import {
+  useAvailability,
+  useCreateMission,
+  useFamilyProfiles,
+  useRestDaysIn,
+} from "@/lib/api/queries";
 import type { Uuid } from "@/lib/api/types";
 import { errorMessage } from "@/lib/errors";
 import {
@@ -28,8 +33,9 @@ import {
 } from "@/lib/routine";
 import { PHASE_LABEL } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
-import { WEEKDAY, today, weekdayCode } from "@/lib/today";
+import { WEEKDAY, monthOf, today, weekdayCode } from "@/lib/today";
 import { cn } from "@/lib/utils";
+import { childFinderHref } from "@/lib/videos";
 import { useRoleStore } from "@/stores/role-store";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
@@ -97,10 +103,22 @@ function CustomPlan() {
   }, []);
 
   const minutes = routineMinutes(moves);
-  const dates = repeatDates(days, Number(weeks));
+  const upcoming = upcomingDays(now);
+  /*
+    쉬는 날 카드를 쓴 날에는 운동을 넣지 않는다. 쉬는 날이 이어서 한 날 · 리그에서 빠지는 날인데
+    직접 짜기로 운동을 넣으면 아이 홈은 「오늘은 쉬는 날이에요」 이고 운동은 걸려 있는 날이 된다.
+    고를 날 · 되풀이한 날이 든 달의 쉬는 날을 모두 받는다(4주 되풀이면 달을 넘는다)
+  */
+  const span = repeatDates(upcoming, Number(weeks));
+  const rest = useRestDaysIn(familyId ?? undefined, [...new Set(span.map(monthOf))]);
+  const repeated = repeatDates(
+    days.filter((d) => !rest.has(d)),
+    Number(weeks),
+  );
+  const dates = repeated.filter((d) => !rest.has(d));
+  const skippedRest = repeated.length - dates.length;
   const pending = dates.filter((d) => !created.includes(d));
   const free = new Set((availability?.slots ?? []).map((s) => s.day));
-  const upcoming = upcomingDays(now);
 
   const toggleWho = (id: Uuid) =>
     setWho(chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id]);
@@ -140,7 +158,7 @@ function CustomPlan() {
         { NOT_A_PARENT: "보호자만 운동을 만들 수 있어요." },
         "등록하지 못했어요.",
       );
-      setProblem(made.length > 0 ? `${made.length}일은 등록됐어요 · ${reason}` : reason);
+      setProblem(made.length > 0 ? `${made.length}일은 등록했어요. ${reason}` : reason);
     } finally {
       if (here.current) setSaving(false);
     }
@@ -183,7 +201,7 @@ function CustomPlan() {
             title="아직 담은 동작이 없어요"
             action={
               <NavLink
-                href="/videos"
+                href={childFinderHref(firstKid?.profileId)}
                 className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"
               >
                 동작 고르러 가기
@@ -196,11 +214,13 @@ function CustomPlan() {
   }
 
   const label =
-    dates.length === 1 && dates[0] === now
-      ? "오늘 운동으로 등록"
-      : created.length > 0
-        ? `남은 ${pending.length}일 등록`
-        : `${dates.length}일에 등록`;
+    dates.length === 0
+      ? "할 날을 골라 주세요"
+      : dates.length === 1 && dates[0] === now
+        ? "오늘 운동으로 등록"
+        : created.length > 0
+          ? `남은 ${pending.length}일 등록`
+          : `${dates.length}일에 등록`;
 
   return (
     <>
@@ -209,7 +229,7 @@ function CustomPlan() {
         {/* 1. 동작 — 하는 차례대로. 위아래로 옮기고 시간을 정한다 */}
         <Card hero>
           <CardHead
-            title={`동작 ${moves.length}개 · ${minutes}분`}
+            title={`동작 ${moves.length}개, ${minutes}분`}
             meta={
               <button
                 type="button"
@@ -292,7 +312,7 @@ function CustomPlan() {
           </ol>
           {moves.length < MAX_MOVES && (
             <NavLink
-              href="/videos"
+              href={childFinderHref(firstKid?.profileId)}
               className="press text-signal-deep mt-1 flex min-h-11 items-center justify-center text-sm font-extrabold"
             >
               동작 더 담기
@@ -300,7 +320,7 @@ function CustomPlan() {
           )}
         </Card>
 
-        {/* 2. 누가 — 아이 혼자 · 엄마랑 같이 */}
+        {/* 2. 누가 — 아이 혼자 · 보호자와 같이 */}
         <Card>
           <CardHead title="누가 할까요" meta={`${chosen.length}명`} />
           {/* 가족을 못 받으면 고를 사람이 비어 보인다 — 비었다고 두지 않고 못 불러왔다고 */}
@@ -349,41 +369,55 @@ function CustomPlan() {
           <CardHead title="언제 할까요" meta={`${dates.length}일`} />
           <ul className="mt-3 grid grid-cols-7 gap-1.5">
             {upcoming.map((d) => {
-              const on = days.includes(d);
+              const resting = rest.has(d);
+              const on = days.includes(d) && !resting;
               return (
                 <li key={d}>
                   <button
                     type="button"
                     aria-pressed={on}
-                    aria-label={`${Number(d.slice(8))}일 ${WEEKDAY[new Date(`${d}T00:00:00`).getDay()]}요일${free.has(weekdayCode(d)) ? " · 운동할 수 있는 날" : ""}`}
+                    disabled={resting}
+                    aria-label={`${Number(d.slice(8))}일 ${WEEKDAY[new Date(`${d}T00:00:00`).getDay()]}요일${resting ? ", 쉬는 날" : free.has(weekdayCode(d)) ? ", 운동할 수 있는 날" : ""}`}
                     onClick={() => toggleDay(d)}
                     className={cn(
                       "press flex min-h-16 w-full flex-col items-center justify-center gap-0.5 rounded-2xl text-xs font-extrabold",
                       on ? "bg-signal-strong text-white" : "bg-sub",
+                      resting && "text-faint opacity-60",
                     )}
                   >
                     <span className={cn(!on && "text-ink-soft")}>
                       {d === now ? "오늘" : WEEKDAY[new Date(`${d}T00:00:00`).getDay()]}
                     </span>
                     <span className="text-sm tabular-nums">{Number(d.slice(8))}</span>
-                    <span
-                      aria-hidden
-                      className={cn(
-                        "size-1.5 rounded-full",
-                        free.has(weekdayCode(d))
-                          ? on
-                            ? "bg-white"
-                            : "bg-signal"
-                          : "bg-transparent",
-                      )}
-                    />
+                    {resting ? (
+                      <span aria-hidden className="text-micro leading-none">
+                        쉬는 날
+                      </span>
+                    ) : (
+                      <span
+                        aria-hidden
+                        className={cn(
+                          "size-1.5 rounded-full",
+                          free.has(weekdayCode(d))
+                            ? on
+                              ? "bg-white"
+                              : "bg-signal"
+                            : "bg-transparent",
+                        )}
+                      />
+                    )}
                   </button>
                 </li>
               );
             })}
           </ul>
+          {skippedRest > 0 && (
+            <p className="text-caption text-ink-soft mt-2 font-semibold">
+              쉬는 날 {skippedRest}일은 빼고 넣어요
+            </p>
+          )}
           <p className="text-caption text-ink-soft mt-2">
-            점 · 운동할 수 있는 날 ·{" "}
+            점이 찍힌 날은 운동할 수 있는 날이에요.{" "}
             <NavLink href="/settings/schedule" className="text-signal-deep font-bold">
               바꾸기
             </NavLink>
@@ -398,14 +432,14 @@ function CustomPlan() {
       <Dock>
         <div className="card-hero py-3">
           <p className="text-caption text-ink-soft text-center font-semibold">
-            {moves.length}개 · {minutes}분 ·{" "}
+            {moves.length}개, {minutes}분.{" "}
             {/* 가족을 받는 동안은 「아무도 안 골랐어요」 가 아니다 */}
             {familyLoading
               ? "…"
               : people
                   .filter((p) => chosen.includes(p.profileId ?? ""))
                   .map((p) => p.name)
-                  .join(" · ") || "아무도 안 골랐어요"}
+                  .join(", ") || "아무도 안 골랐어요"}
           </p>
           {problem && (
             <p role="alert" className="text-signal-deep mt-1 text-center text-sm font-semibold">

@@ -1,7 +1,7 @@
 import { FactorIcon } from "@/components/domain/factor-icon";
 import type { RadarPoint } from "@/lib/api/types";
 import { FACTORS, toHexagon, type Factor, type FactorPointView } from "@/lib/fitness-factors";
-import { cn } from "@/lib/utils";
+import { cn, withJosa } from "@/lib/utils";
 
 /*
   체력 육각형 — 부모가 보는 그래프 하나.
@@ -52,6 +52,7 @@ export function FactorRadar({
   points,
   name,
   focus,
+  note,
   legend = true,
   className,
 }: {
@@ -60,6 +61,8 @@ export function FactorRadar({
   name: string;
   /** 이 요인의 이름에 옅은 칸을 씌운다. AI 편성이 무엇을 키우려는지 보여 줄 때(축은 늘 옅게) */
   focus?: Factor | null;
+  /** 또래와 견줄 수 없는 까닭(만 7~10세). 있으면 육각형 위에 한 줄로 쓰고, 칸마다 「없어요」는 숨긴다 */
+  note?: string | null;
   legend?: boolean;
   className?: string;
 }) {
@@ -68,6 +71,9 @@ export function FactorRadar({
   const measured = hex
     .map((p, i) => ({ ...p, i }))
     .filter((p): p is FactorPointView & { i: number; percentile: number } => p.percentile != null);
+
+  /** 또래와 견준 값이 하나라도 있나. 없으면 파랑 선도 또래 평균 점선도 없다 */
+  const compared = measured.length > 0;
 
   const vertex = (p: { i: number; percentile: number }) => at(p.i, p.percentile);
 
@@ -86,18 +92,30 @@ export function FactorRadar({
       : [];
 
   // 화면의 「—」 와 같은 말 — 「안 잰」 이라 읽으면 쟀는데 비교 기준이 없는 나이의 값까지 안 잰 것이 된다
+  // 까닭을 한 줄로 말했으면 칸마다 「없어요」를 되풀이하지 않는다
+  const hideMissing = Boolean(note) && !compared;
+
   const summary = hex
-    .map((p) => `${p.factor} ${p.percentile == null ? "값 없음" : `또래 백분위 ${p.percentile}`}`)
-    .join(", ");
+    .map((p) =>
+      p.percentile == null
+        ? `${withJosa(p.factor, "은는")} 값이 없어요`
+        : `${p.factor} 또래 백분위 ${p.percentile}`,
+    )
+    .join(". ");
 
   return (
     <div className={cn("relative", className)}>
+      {hideMissing && <p className="text-ink-soft mb-2 text-center text-sm">{note}</p>}
       <div className="relative">
         <svg
           viewBox={`0 0 ${W} ${H}`}
           className="block w-full"
           role="img"
-          aria-label={`${name}의 체력 육각형. ${summary}. 또래 평균은 50`}
+          aria-label={
+            hideMissing
+              ? `${name}의 체력 육각형. ${note}`
+              : `${name}의 체력 육각형. ${summary}. 또래 평균은 50`
+          }
         >
           {/* 눈금 — 25 · 75 · 100. 한 겹 옅은 실선 */}
           {[25, 75, 100].map((v) => (
@@ -109,7 +127,7 @@ export function FactorRadar({
               strokeWidth={1}
             />
           ))}
-          {/* 축은 늘 옅게. 고른 요인을 파랑 축으로 그렸더니 값 선처럼 읽혔다 — 고른 것은 이름이 말한다 */}
+          {/* 축은 늘 옅게. 키울 요인(보호자가 키워 주고 싶은 역량, 없으면 가장 낮은 요인)을 파랑 축으로 그렸더니 값 선처럼 읽혔다 — 키울 요인은 이름이 말한다 */}
           {FACTORS.map((f, i) => {
             const [x, y] = at(i, 100);
             return (
@@ -125,15 +143,18 @@ export function FactorRadar({
             );
           })}
 
-          {/* 또래 평균 — 점선. 눈금이 아니라 견줄 기준이다. 범례에 이름이 있다 */}
-          <polygon
-            points={ring(50)}
-            fill="none"
-            stroke="var(--color-baseline)"
-            strokeWidth={1.5}
-            strokeDasharray="5 4"
-            strokeLinejoin="round"
-          />
+          {/* 또래 평균 — 점선. 눈금이 아니라 견줄 기준이다. 범례에 이름이 있다.
+              견줄 값이 하나도 없으면(만 7~10세처럼 또래 기준이 없는 나이) 긋지 않는다 */}
+          {compared && (
+            <polygon
+              points={ring(50)}
+              fill="none"
+              stroke="var(--color-baseline)"
+              strokeWidth={1.5}
+              strokeDasharray="5 4"
+              strokeLinejoin="round"
+            />
+          )}
 
           {/* 아이 — 가운데에서 차오른다 */}
           <g className="radar-grow" style={{ transformOrigin: `${CX}px ${CY}px` }}>
@@ -206,7 +227,9 @@ export function FactorRadar({
               {/* 값이 없으면 「—」 — 안 잰 것일 수도, 잰 나이에 비교 기준이 없는 것일 수도 있다(규칙 8).
                   어느 쪽인지는 요인 표가 항목과 같이 말한다 */}
               {missing ? (
-                <span className="text-micro text-faint mt-0.5 font-semibold">—</span>
+                !hideMissing && (
+                  <span className="text-micro text-faint mt-0.5 font-semibold">없어요</span>
+                )
               ) : (
                 <span className="text-ink text-base font-extrabold tabular-nums">
                   {p.percentile}
@@ -217,13 +240,14 @@ export function FactorRadar({
         })}
       </div>
 
-      {legend && (
+      {/* 범례는 그린 선이 있을 때만 — 선이 없는데 「또래 백분위」 · 「또래 평균」 을 달면 찾게 된다 */}
+      {legend && compared && (
         <ul className="text-caption text-ink-soft mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 font-semibold">
           <li className="flex items-center gap-1.5">
             <span aria-hidden className="bg-signal relative h-0.5 w-4 rounded-full">
               <span className="bg-signal absolute top-1/2 left-1/2 size-2 -translate-1/2 rounded-full" />
             </span>
-            {name} · 또래 백분위
+            {name}의 또래 백분위
           </li>
           <li className="flex items-center gap-1.5">
             <svg aria-hidden width="16" height="2" className="overflow-visible">

@@ -2,7 +2,7 @@
 
 import { ChevronRight, Heart, Play, Plus, Search, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Fragment, Suspense, useDeferredValue, useState } from "react";
+import { Fragment, Suspense, useDeferredValue, useEffect, useRef, useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -16,13 +16,14 @@ import { VideoThumb } from "@/components/ui/video-thumb";
 import { ClipPlayer } from "@/components/domain/clip-player";
 import { FactorIcon } from "@/components/domain/factor-icon";
 import type { ClipView, SessionPhase } from "@/lib/api/types";
-import { useClips, useToggleClipFavorite } from "@/lib/api/queries";
+import { useClipPages, useToggleClipFavorite } from "@/lib/api/queries";
 import { FACTORS, isFactor, type Factor } from "@/lib/fitness-factors";
 import { routineMinutes } from "@/lib/routine";
 import { PHASE_LABEL, clock } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { useIsKidView } from "@/lib/view-role";
+import { finderCount, finderOwner, finderScope, joinClipPages } from "@/lib/videos";
 import { useRoleStore } from "@/stores/role-store";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
@@ -62,8 +63,14 @@ function Finder() {
   const kidView = useIsKidView();
   const { profile } = useSession();
   const childProfileId = useRoleStore((s) => s.childProfileId);
-  // 즐겨찾기는 누구의 것인가. 아이 화면이면 아이, 부모 화면이면 보고 있는 아이
-  const owner = kidView ? (childProfileId ?? undefined) : (childProfileId ?? profile?.profileId);
+  // 목록 · 즐겨찾기는 누구의 것인가. 아이 화면이면 아이, 부모 화면이면 홈이 주소에 실어 보낸 아이 → 보고 있는 아이.
+  // 홈은 아이를 고른 적이 없으면 첫째를 보여 준다 — 주소가 없으면 여기서는 부모 목록이 되어 누른 클립이 없었다
+  const owner = finderOwner({
+    kidView,
+    fromUrl: params.get("profileId"),
+    childProfileId,
+    self: profile?.profileId,
+  });
 
   const initialFactor = params.get("factor");
   const [factor, setFactor] = useState<Factor | null>(
@@ -77,6 +84,8 @@ function Finder() {
       : null,
   );
   const [quiet, setQuiet] = useState(false);
+  // 기본은 보고 있는 사람의 나이대. 켜면 모든 나이의 영상을 본다
+  const [allAges, setAllAges] = useState(false);
   const [q, setQ] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(params.get("list") === "favorites");
   // 담은 동작은 직접 짜기와 같이 본다 — 두 화면을 오가도 남는다
@@ -101,15 +110,30 @@ function Finder() {
   // 치는 동안은 앞 결과를 둔다 — 한 글자마다 서버에 묻지 않게
   const search = useDeferredValue(q.trim());
 
-  const { data, isPending, isFetching, error, refetch, isRefetching } = useClips({
+  const {
+    data,
+    isPending,
+    isFetching,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+    error,
+    refetch,
+    isRefetching,
+  } = useClipPages({
     factor,
     phase,
     quiet,
     q: search,
     list: favoritesOnly ? "FAVORITES" : "ALL",
     profileId: owner,
+    allAges,
   });
-  const clips = data?.clips ?? [];
+  const clips = joinClipPages(data?.pages);
+  const total = data?.pages[0]?.total ?? 0;
+  const loadMore = () => {
+    if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+  };
   const preview = previewId ? (clips.find((c) => c.clipId === previewId) ?? null) : null;
 
   const inTray = (c: ClipView) => moves.some((m) => m.clip.clipId === c.clipId);
@@ -173,7 +197,7 @@ function Finder() {
           <div
             className="bg-paper shadow-card flex rounded-full p-1"
             role="group"
-            aria-label="준비 · 본 · 정리"
+            aria-label="준비, 본, 정리"
           >
             {PHASES.map((p) => (
               <button
@@ -207,14 +231,23 @@ function Finder() {
             <Heart aria-hidden className={cn("size-4", favoritesOnly && "fill-current")} />
             즐겨찾기
           </button>
+          <button
+            type="button"
+            aria-pressed={allAges}
+            onClick={() => setAllAges((v) => !v)}
+            className={cn("chip press", allAges ? "chip-on" : OFF)}
+          >
+            모든 나이 영상 보기
+          </button>
         </div>
 
-        <p className="text-caption text-ink-soft px-1 font-bold">
-          {isPending
-            ? "찾는 중"
-            : `국민체력100 운동영상 · ${factor ?? "모든 힘"} · ${data?.total ?? 0}개`}
-          {isFetching && !isPending && " · 새로 찾는 중"}
-        </p>
+        <div className="px-1" aria-live="polite">
+          <p className="font-extrabold">{isPending ? "찾는 중이에요" : finderCount(total)}</p>
+          <p className="text-caption text-ink-soft font-bold">
+            {finderScope({ factor, allAges })}
+            {isFetching && !isPending && !isFetchingNextPage && ", 새로 찾고 있어요"}
+          </p>
+        </div>
 
         {isPending ? (
           <ListSkeleton />
@@ -227,22 +260,31 @@ function Finder() {
             title={favoritesOnly ? "아직 즐겨찾기한 동작이 없어요" : "조건에 맞는 동작이 없어요"}
           />
         ) : (
-          <ul className="card divide-rows py-1">
-            {clips.map((c) => (
-              <ClipRow
-                key={c.clipId}
-                clip={c}
-                owner={owner}
-                picked={inTray(c)}
-                canPick={!kidView}
-                onPick={() => toggleMove(c)}
-                onPreview={() => {
-                  setPreviewId(c.clipId);
-                  setPreviewOpen(true);
-                }}
-              />
-            ))}
-          </ul>
+          <>
+            <ul className="card divide-rows py-1">
+              {clips.map((c) => (
+                <ClipRow
+                  key={c.clipId}
+                  clip={c}
+                  owner={owner}
+                  picked={inTray(c)}
+                  canPick={!kidView}
+                  onPick={() => toggleMove(c)}
+                  onPreview={() => {
+                    setPreviewId(c.clipId);
+                    setPreviewOpen(true);
+                  }}
+                />
+              ))}
+            </ul>
+            <MoreClips
+              hasMore={Boolean(hasNextPage)}
+              loading={isFetchingNextPage}
+              shown={clips.length}
+              total={total}
+              onMore={loadMore}
+            />
+          </>
         )}
       </Stage>
 
@@ -253,9 +295,81 @@ function Finder() {
         onClose={closePreview}
         title={preview?.title ?? "시범"}
       >
-        {preview && <Preview clip={preview} />}
+        {preview && (
+          <Preview
+            clip={preview}
+            // 못 틀면 목록에서 같은 단계 · 같은 요인의 다른 동작을 대신 튼다
+            alternates={clips
+              .filter(
+                (c) =>
+                  c.clipId !== preview.clipId &&
+                  c.phase === preview.phase &&
+                  c.factor === preview.factor,
+              )
+              .slice(0, 5)}
+          />
+        )}
       </Sheet>
     </>
+  );
+}
+
+/**
+ * 목록 끝. 여기까지 내려오면 다음 페이지를 이어 받는다. 화면이 알아서 못 불러올 때를 위해 단추도 둔다
+ */
+function MoreClips({
+  hasMore,
+  loading,
+  shown,
+  total,
+  onMore,
+}: {
+  hasMore: boolean;
+  loading: boolean;
+  shown: number;
+  total: number;
+  onMore: () => void;
+}) {
+  const end = useRef<HTMLDivElement>(null);
+  // 부를 때마다 바뀌는 함수라 ref 로 들고 있는다. 관찰자를 매번 새로 달지 않게
+  const more = useRef(onMore);
+  useEffect(() => {
+    more.current = onMore;
+  });
+  useEffect(() => {
+    const el = end.current;
+    if (!el || !hasMore || typeof IntersectionObserver === "undefined") return;
+    const seen = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) more.current();
+      },
+      { rootMargin: "400px 0px" },
+    );
+    seen.observe(el);
+    return () => seen.disconnect();
+  }, [hasMore]);
+
+  if (!hasMore) {
+    return shown > 0 ? (
+      <p className="text-caption text-ink-soft py-2 text-center">
+        영상 {shown.toLocaleString("ko-KR")}개를 모두 보여 드렸어요
+      </p>
+    ) : null;
+  }
+  return (
+    <div ref={end} className="space-y-2 py-1">
+      <p className="text-caption text-ink-soft text-center">
+        {total.toLocaleString("ko-KR")}개 가운데 {shown.toLocaleString("ko-KR")}개를 보고 있어요
+      </p>
+      <button
+        type="button"
+        onClick={onMore}
+        disabled={loading}
+        className="press bg-paper shadow-card flex min-h-12 w-full items-center justify-center rounded-2xl text-sm font-bold"
+      >
+        {loading ? "더 불러오고 있어요" : "영상 더 보기"}
+      </button>
+    </div>
   );
 }
 
@@ -285,7 +399,7 @@ function ClipRow({
         aria-label={`${c.title} 시범 보기`}
         className="press relative shrink-0 overflow-hidden rounded-xl"
       >
-        <VideoThumb videoId={c.videoId} className="aspect-video w-24" />
+        <VideoThumb videoId={c.videoId} src={c.thumbnailUrl} className="aspect-video w-20" />
         {/* 누르면 시범이 돈다는 표시. 검정 면 대신 남색(규칙: 검정으로 면을 채우지 않는다) */}
         <span className="absolute inset-0 grid place-items-center">
           <span className="bg-signal-deep/70 grid size-8 place-items-center rounded-full text-white">
@@ -295,7 +409,7 @@ function ClipRow({
       </button>
       <div className="min-w-0 flex-1">
         <p className="line-clamp-2 text-sm leading-snug font-bold">{c.title}</p>
-        {/* 꼬리표는 통째로 줄을 넘긴다 — 「도구 / 필요」 로 쪼개지지 않게. 「·」 는 앞 꼬리표에 붙는다 */}
+        {/* 꼬리표는 통째로 줄을 넘긴다 — 「도구 / 필요」 로 쪼개지지 않게. 쉼표는 앞 꼬리표에 붙는다 */}
         <p className="text-caption text-ink-soft mt-0.5">
           {[
             PHASE_LABEL[c.phase],
@@ -307,13 +421,14 @@ function ClipRow({
             .filter((t): t is string => Boolean(t))
             .map((t, i) => (
               <Fragment key={t}>
-                {i > 0 && "\u00a0· "}
+                {i > 0 && ", "}
                 <span className="whitespace-nowrap">{t}</span>
               </Fragment>
             ))}
         </p>
       </div>
-      <div className="flex shrink-0 items-center">
+      {/* 즐겨찾기 · 담기는 위아래로 — 옆으로 두면 360px 에서 이름 칸이 100px 남짓으로 줄어 두 글자씩 끊겼다 */}
+      <div className="-my-1 flex shrink-0 flex-col items-center">
         {owner && (
           <button
             type="button"
@@ -321,7 +436,7 @@ function ClipRow({
             aria-label={c.favorited ? `${c.title} 즐겨찾기 빼기` : `${c.title} 즐겨찾기`}
             disabled={favorite.isPending}
             onClick={() => favorite.mutate({ clipId: c.clipId, favorited: !c.favorited })}
-            className="press grid size-11 place-items-center"
+            className="press grid size-10 place-items-center"
           >
             <Heart
               aria-hidden
@@ -336,7 +451,7 @@ function ClipRow({
             aria-label={picked ? `${c.title} 빼기` : `${c.title} 담기`}
             onClick={onPick}
             className={cn(
-              "press grid size-11 place-items-center rounded-full",
+              "press grid size-10 place-items-center rounded-full",
               picked ? "bg-signal-strong text-white" : "bg-sub text-ink",
             )}
           >
@@ -353,7 +468,7 @@ function ClipRow({
 }
 
 /** 시범 보기. 누르면 그 동작 구간만 되풀이한다 */
-function Preview({ clip }: { clip: ClipView }) {
+function Preview({ clip, alternates }: { clip: ClipView; alternates: ClipView[] }) {
   const [playing, setPlaying] = useState(false);
   return (
     <div>
@@ -361,12 +476,15 @@ function Preview({ clip }: { clip: ClipView }) {
         videoId={clip.videoId}
         startSec={clip.startSec}
         endSec={clip.endSec}
+        mediaUrl={clip.mediaUrl}
+        thumbnailUrl={clip.thumbnailUrl}
+        alternates={alternates}
         playing={playing}
         title={clip.title}
       />
       <p className="text-caption text-ink-soft mt-2">
         {PHASE_LABEL[clip.phase]}
-        {clip.factor && ` · ${clip.factor}`} · {clock(clip.endSec - clip.startSec)}
+        {clip.factor && `, ${clip.factor}`}, {clock(clip.endSec - clip.startSec)}
       </p>
       <button
         type="button"
@@ -394,7 +512,7 @@ function Tray({ onClear }: { onClear: () => void }) {
       <div className="card-hero flex items-center gap-3 py-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-extrabold">
-            담은 동작 {moves.length}개 · {minutes}분
+            담은 동작 {moves.length}개, {minutes}분
           </p>
           <button
             type="button"
@@ -421,7 +539,7 @@ function ListSkeleton() {
     <div className="card space-y-4">
       {[0, 1, 2, 3].map((i) => (
         <div key={i} className="flex items-center gap-3">
-          <Skeleton className="aspect-video w-24 rounded-xl" />
+          <Skeleton className="aspect-video w-20 rounded-xl" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-32" />
             <Skeleton className="h-3 w-24" />

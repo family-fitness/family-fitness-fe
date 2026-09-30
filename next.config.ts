@@ -1,4 +1,15 @@
+import { readFileSync } from "node:fs";
 import type { NextConfig } from "next";
+
+/**
+ * 설정 화면에 보이는 버전. 화면에서 package.json 을 import 하면 devDependencies 목록까지
+ * 통째로 브라우저 번들에 들어가서, 빌드할 때 버전 글자 하나만 읽어 박는다.
+ */
+const APP_VERSION = (
+  JSON.parse(readFileSync(`${process.cwd()}/package.json`, "utf8")) as {
+    version: string;
+  }
+).version;
 
 const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN ?? "http://localhost:8080";
 
@@ -8,6 +19,26 @@ const nextConfig: NextConfig = {
    * 두 파일이 없으면 `next dev` 가 새로 만들어, 모르고 커밋하면 문서가 다시 올라간다.
    */
   agentRules: false,
+
+  /** 응답에 X-Powered-By: Next.js 를 붙이지 않는다 — 아래 보안 헤더를 넣을 때 이것만 빠져 있었다 */
+  poweredByHeader: false,
+
+  /**
+   * 목 서버 스위치와 구글 키를 빌드할 때 값으로 못 박는다.
+   *
+   * `NEXT_PUBLIC_*` 은 빌드할 때 값이 있어야 번들에 박힌다. 값이 없으면 서버 쪽 코드는 `next start`
+   * 를 띄울 때 환경에서 다시 읽고, 브라우저 쪽 번들은 undefined 로 본다. 그래서 운영 서버를
+   * NEXT_PUBLIC_API_MOCKING=enabled 로 띄우면 서버만 목이 켜진 줄 알고 body 를 비운 채 렌더링했고,
+   * 브라우저에서 hydration 오류(#418)가 났다. 없으면 빈 문자열로 박아 두 쪽이 늘 같은 값을 보게 한다.
+   *
+   * 값이 박혀야 MswProvider 의 `import("@/mocks/browser")` 와 로그인 화면의 개발용 계정 목록이 죽은
+   * 코드가 되어 운영 번들에서 빠진다. 확인은 운영 빌드 뒤 `npm run check:bundle`.
+   */
+  env: {
+    NEXT_PUBLIC_API_MOCKING: process.env.NEXT_PUBLIC_API_MOCKING ?? "",
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "",
+    NEXT_PUBLIC_APP_VERSION: APP_VERSION,
+  },
 
   /**
    * 브라우저에게는 /api/v1/... 이 프론트와 같은 출처로 보이고,
@@ -26,6 +57,17 @@ const nextConfig: NextConfig = {
         source: "/api/v1/:path*",
         destination: `${BACKEND_ORIGIN}/api/v1/:path*`,
       },
+    ];
+  },
+
+  /**
+   * 개인정보처리방침 · 이용약관은 로그인하지 않아도 열리게 앱 맨 위(/privacy · /terms)로 옮겼다.
+   * 예전 설정 안 주소로 들어와도 같은 글이 열리게 보낸다
+   */
+  async redirects() {
+    return [
+      { source: "/settings/privacy", destination: "/privacy", permanent: false },
+      { source: "/settings/terms", destination: "/terms", permanent: false },
     ];
   },
 

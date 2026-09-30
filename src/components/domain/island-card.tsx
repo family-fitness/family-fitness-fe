@@ -20,7 +20,7 @@ export function IslandCard({ profileId, name }: { profileId: string; name: strin
     <Card>
       <CardHead
         title={`${name}의 섬`}
-        meta={progress ? `Lv.${progress.level} · 나무 ${trees}그루` : undefined}
+        meta={progress ? `Lv.${progress.level}, 나무 ${trees}그루` : undefined}
       />
       <KiumIsland
         stage={stage.stage}

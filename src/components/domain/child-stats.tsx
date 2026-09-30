@@ -134,7 +134,7 @@ function Stat({
       {state === "pending" ? (
         <Skeleton className="mt-2 h-8 w-16" />
       ) : state === "error" ? (
-        <p className="metric-value text-metric text-faint mt-1">—</p>
+        <p className="text-caption text-faint mt-2 font-bold">불러오지 못했어요</p>
       ) : (
         <p className="metric-value text-metric mt-1">
           {value}
@@ -180,7 +180,7 @@ export function RecentDays({
           onClick={() => void refetch()}
           className="press text-ink-soft mt-1 min-h-10 text-sm font-bold"
         >
-          불러오지 못했어요 · 다시
+          불러오지 못했어요. 다시 불러오기
         </button>
       ) : days.length === 0 ? (
         <p className="text-ink-soft mt-1 text-sm">최근 기록이 없어요</p>
@@ -189,14 +189,14 @@ export function RecentDays({
           {days.map((d) => {
             const s = daySummary(d);
             const [, m, day] = d.date.split("-").map(Number);
-            const titles = d.entries.map((e) => e.title).join(" · ");
+            const titles = d.entries.map((e) => e.title).join(", ");
             const got = d.stickers[0] ? stickerOf(d.stickers[0].stickerId) : undefined;
             return (
               <li key={d.date}>
                 <NavLink
                   href={`/calendar/${d.date}?profileId=${encodeURIComponent(profileId)}`}
                   className="press flex items-center gap-3 py-2.5"
-                  aria-label={`${m}월 ${day}일 · ${titles} · ${d.minutes}분${got ? ` · ${got.label} 스티커` : ""}`}
+                  aria-label={`${m}월 ${day}일, ${titles}, ${d.minutes}분${got ? `, ${got.label} 스티커` : ""}`}
                 >
                   <span className="w-9 shrink-0 text-center leading-tight">
                     <span className="block text-base font-extrabold tabular-nums">{day}</span>

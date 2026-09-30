@@ -552,6 +552,8 @@ export interface components {
       source: "SELF_INPUT" | "CENTER_SHEET" | null;
       heightCm?: number | null;
       weightKg?: number | null;
+      bodyFatPct?: number | null;
+      waistCm?: number | null;
       items: components["schemas"]["ItemInput"][] | null;
     };
     FactorPoint: {
@@ -567,9 +569,12 @@ export interface components {
       fitnessTestId?: string;
       /** Format: date */
       testedOn?: string;
+      bodyFatPct?: number | null;
+      waistCm?: number | null;
       items?: components["schemas"]["ItemResult"][];
       weakest?: components["schemas"]["FactorPoint"] | null;
       strongest?: components["schemas"]["FactorPoint"] | null;
+      certification?: components["schemas"]["Certification"] | null;
       disclaimer?: string;
     };
     ItemResult: {
@@ -580,10 +585,26 @@ export interface components {
       /** Format: int32 */
       percentile?: number | null;
       /** @enum {string|null} */
-      grade?: "1등급" | "2등급" | "3등급" | "참가" | null;
-      /** @enum {string|null} */
       band?: "strength" | "steady" | "growth" | null;
       topPercentText?: string | null;
+    };
+    Certification: {
+      /** @enum {string|null} */
+      grade?: "1등급" | "2등급" | "3등급" | "참가" | null;
+      /** @enum {string} */
+      status?: "GRADED" | "NEEDS_ITEMS" | "NO_CRITERIA";
+      missingItems?: components["schemas"]["MissingItem"][];
+      peers?: components["schemas"]["PeerGrade"][];
+    };
+    MissingItem: {
+      itemCodes?: string[];
+      label?: string;
+    };
+    PeerGrade: {
+      /** @enum {string} */
+      grade?: "1등급" | "2등급" | "3등급" | "참가";
+      /** Format: double */
+      ratio?: number;
     };
     ClaimRequest: {
       claimCode: string;
@@ -890,10 +911,15 @@ export interface components {
       fitnessTestId?: string | null;
       /** Format: date */
       testedOn?: string | null;
+      heightCm?: number | null;
+      weightKg?: number | null;
+      bodyFatPct?: number | null;
+      waistCm?: number | null;
       radar?: components["schemas"]["RadarPointResponse"][];
       items?: components["schemas"]["ItemResult"][];
       weakest?: components["schemas"]["FactorPoint"] | null;
       strongest?: components["schemas"]["FactorPoint"] | null;
+      certification?: components["schemas"]["Certification"] | null;
       /** @enum {string} */
       coachDirection?: "STRENGTHEN" | "GROWTH";
       disclaimer?: string;

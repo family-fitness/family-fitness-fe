@@ -60,7 +60,7 @@ export function FamilyProfile({
         <div className="min-w-0 flex-1">
           <h2 className="text-metric truncate leading-tight font-extrabold">{familyName}</h2>
           <p className="text-signal-deep text-body mt-0.5 font-extrabold">
-            {tierName(tier)} 리그 · {place}
+            {tierName(tier)} 리그, {place}
           </p>
         </div>
       </div>

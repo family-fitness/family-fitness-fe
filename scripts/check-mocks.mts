@@ -81,6 +81,61 @@ check(
   "로그인 자체는 토큰 없이 된다",
   (await fetch(`${BASE}/auth/dev-login`, { method: "POST" })).ok,
 );
+{
+  // 심사용 계정은 가족이 있는 채로 들어와 바로 홈으로 간다
+  const res = await fetch(`${BASE}/auth/review-login`, { method: "POST" });
+  const auth = (await res.json().catch(() => ({}))) as { accessToken?: string; nextStep?: string };
+  check(
+    "심사용 계정은 토큰 없이 들어와 홈으로 간다",
+    res.ok && !!auth.accessToken && auth.nextStep === "HOME",
+    `${res.status} ${auth.nextStep}`,
+  );
+}
+{
+  // 심사자가 세 흐름 가운데 고른다. 본문이 없으면 체험 가족(예전 화면도 된다)
+  const reviewAs = async (body?: unknown) => {
+    const res = await fetch(`${BASE}/auth/review-login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const auth = (await res.json().catch(() => ({}))) as {
+      accessToken?: string;
+      nextStep?: string;
+      inviteCode?: string | null;
+      code?: string;
+    };
+    return { status: res.status, ...auth };
+  };
+  const family = await reviewAs({ kind: "FAMILY" });
+  check(
+    "심사용 FAMILY 는 체험 가족으로 홈에",
+    family.status === 200 && family.nextStep === "HOME" && !family.inviteCode,
+    `${family.status} ${family.nextStep}`,
+  );
+  const noKind = await reviewAs({});
+  check("심사용 kind 가 없으면 FAMILY", noKind.nextStep === "HOME", `${noKind.nextStep}`);
+  const fresh = await reviewAs({ kind: "FRESH" });
+  check(
+    "심사용 FRESH 는 가족 없는 새 계정 — 가족 만들기부터",
+    fresh.status === 200 && fresh.nextStep === "CREATE_FAMILY" && !fresh.inviteCode,
+    `${fresh.status} ${fresh.nextStep}`,
+  );
+  const meFresh = (await (await get("/me")).json()) as { nextStep?: string };
+  check("FRESH 로 들어오면 /me 도 가족 만들기", meFresh.nextStep === "CREATE_FAMILY");
+  const invited = await reviewAs({ kind: "INVITED" });
+  check(
+    "심사용 INVITED 는 가족 없는 계정과 체험 가족의 초대코드를 준다",
+    invited.status === 200 && !!invited.accessToken && invited.inviteCode === "K7M2QT",
+    `${invited.status} ${invited.nextStep} ${invited.inviteCode}`,
+  );
+  const seat = await get(`/invites/${invited.inviteCode}`);
+  check("INVITED 의 초대코드로 자리를 미리 볼 수 있다", seat.ok, `${seat.status}`);
+  const odd = await reviewAs({ kind: "GUEST" });
+  check("심사용 kind 를 모르면 400", odd.status === 400, `${odd.status}`);
+  // 뒤 검사는 서준이네 보호자로 본다
+  await reviewAs({ kind: "FAMILY" });
+}
 
 /* ─── 0-1. 두 화면이 같은 말을 한다 ─────────────────────────── */
 
@@ -104,6 +159,19 @@ for (const m of map.members.filter((x) => x.latest)) {
     `${m.latest?.weakest?.factor}/${latest.weakest?.factor} · ${m.latest?.strongest?.factor}/${latest.strongest?.factor}`,
   );
 }
+
+// 등급은 한 사람에 하나 — 종목 줄에는 없다. 1등급 줄의 종목을 다 안 잰 아이는 모자란 종목을 받는다
+const kidLatest = (await (await get(`/profiles/${DEMO.kid}/fitness-tests/latest`)).json()) as {
+  certification?: { status?: string; missingItems?: { itemCodes?: string[] }[] } | null;
+};
+check(
+  "안 잰 종목이 있는 아이의 등급은 NEEDS_ITEMS 와 모자란 종목",
+  kidLatest.certification?.status === "NEEDS_ITEMS" &&
+    (kidLatest.certification.missingItems?.length ?? 0) > 0,
+  `${kidLatest.certification?.status} · ${kidLatest.certification?.missingItems
+    ?.map((m) => m.itemCodes?.join("/"))
+    .join(", ")}`,
+);
 
 /* ─── 1. 코치 제안은 미션이 아니다 ─────────────────────────── */
 
@@ -279,7 +347,7 @@ check(
 // 아이와 같이 하는 보호자 둘 — 아이가 끝낸 칸은 같이 끝나고, 보호자가 끝낸 칸은 그 보호자 것뿐이다
 const together = (await (
   await post(`/families/${DEMO.familyId}/missions`, {
-    title: "엄마랑 같이",
+    title: "보호자와 같이",
     startDate: today,
     endDate: today,
     targetMetric: "TIMER_MINUTES",
@@ -490,7 +558,13 @@ res = await send("DELETE", `/families/${DEMO.familyId}/rest-days/${today}`);
 check("아이는 쉬는 날을 되돌릴 수 없다", (await codeOf(res)) === "NOT_A_PARENT");
 setActingProfile(DEMO.mom);
 
-type League = { tier: string; rate: number | null; rank: number | null };
+type League = {
+  tier: string;
+  rate: number | null;
+  score?: number | null;
+  rank: number | null;
+  standings: { rate: number | null; score?: number | null; me: boolean }[];
+};
 const demoLeague = (await (await get(`/families/${DEMO.familyId}/league`)).json()) as League;
 check(
   "시연 가족 리그 — 달성률 · 순위가 있다",
@@ -500,6 +574,84 @@ check(
     demoLeague.rank != null,
   `${demoLeague.tier} ${demoLeague.rate}% ${demoLeague.rank}등`,
 );
+const scores = demoLeague.standings.map((s) => s.score ?? -1);
+check(
+  "리그 줄은 순위 점수 순이다",
+  scores.every((v, i) => i === 0 || scores[i - 1] >= v) &&
+    demoLeague.standings.every((s) => s.rate == null || (s.score != null && s.score <= 1)),
+  scores.join(" "),
+);
+check(
+  "하루만 해낸 100% 집은 달성률이 더 낮은 집보다 아래에 선다",
+  demoLeague.standings.some(
+    (s, i) =>
+      s.rate === 100 && demoLeague.standings.slice(0, i).some((above) => (above.rate ?? 101) < 100),
+  ),
+);
+
+/* 운동 찾기: 페이지 나누기, 전체 수, 모든 나이 */
+{
+  type Page = {
+    clips: { clipId: string; title: string }[];
+    total: number;
+    nextCursor: string | null;
+  };
+  const page = async (qs: string) => (await (await get(`/clips?${qs}`)).json()) as Page;
+  /** nextCursor 를 따라 끝까지 받는다 */
+  async function all(qs: string) {
+    const ids: string[] = [];
+    let cursor: string | null = null;
+    let total = 0;
+    for (let i = 0; i < 100; i++) {
+      const p: Page = await page(`${qs}${cursor ? `&cursor=${cursor}` : ""}`);
+      if (i === 0) total = p.total;
+      ids.push(...p.clips.map((c) => c.clipId));
+      cursor = p.nextCursor;
+      if (!cursor) break;
+    }
+    return { ids, total };
+  }
+
+  const kid = `profileId=${DEMO.kid}`;
+  const first = await page(`${kid}&size=20`);
+  check(
+    "운동 찾기 첫 페이지는 size 만큼 오고 nextCursor 가 있다",
+    first.clips.length === 20 && first.total > 20 && typeof first.nextCursor === "string",
+    `${first.clips.length}개, 전체 ${first.total}, 다음 ${first.nextCursor}`,
+  );
+  const mine = await all(`${kid}&size=30`);
+  check(
+    "다음 페이지를 끝까지 받으면 전체 수만큼 겹치지 않고 모인다",
+    mine.ids.length === mine.total && new Set(mine.ids).size === mine.ids.length,
+    `${mine.ids.length}개 / 전체 ${mine.total}`,
+  );
+  const every = await all(`${kid}&size=100&ageGroup=ALL`);
+  check(
+    "모든 나이로 보면 아이 나이대보다 많고 수백 개다",
+    every.total > mine.total && every.total >= 300 && every.ids.length === every.total,
+    `아이 나이대 ${mine.total}, 모든 나이 ${every.total}`,
+  );
+  const quiet = await page(`${kid}&ageGroup=ALL&quiet=true&factor=${encodeURIComponent("유연성")}`);
+  check(
+    "모든 나이에서도 요인과 조용한 운동 거르기가 그대로 걸린다",
+    quiet.total > 0 && quiet.total < every.total,
+    `${quiet.total}`,
+  );
+  const big = await page(`${kid}&ageGroup=ALL&size=500`);
+  check("한 페이지는 100개를 넘지 않는다", big.clips.length === 100, `${big.clips.length}`);
+  const bad = await get(`/clips?${kid}&cursor=abc`);
+  check(
+    "알아볼 수 없는 cursor 는 400 INVALID_INPUT",
+    bad.status === 400 && (await codeOf(bad)) === "INVALID_INPUT",
+    `${bad.status}`,
+  );
+  const badAge = await get(`/clips?${kid}&ageGroup=KID`);
+  check(
+    "모르는 나이대는 400 INVALID_INPUT",
+    badAge.status === 400 && (await codeOf(badAge)) === "INVALID_INPUT",
+    `${badAge.status}`,
+  );
+}
 
 // 새 가족 — 브론즈에서, 셀 날이 없으면 달성률 · 순위가 비어 있다(0% · 꼴찌가 아니다)
 await post("/auth/dev-login", { providerUserId: "demo-fresh" });

@@ -30,6 +30,7 @@ export function SessionList({ sessions }: { sessions: MissionSession[] }) {
                 {s.clip?.videoId ? (
                   <VideoThumb
                     videoId={s.clip.videoId}
+                    src={s.clip.thumbnailUrl}
                     className="aspect-video w-24 shrink-0 rounded-xl"
                   />
                 ) : (
@@ -38,7 +39,7 @@ export function SessionList({ sessions }: { sessions: MissionSession[] }) {
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-bold">{s.title}</span>
                   <span className="text-caption text-ink-soft block">
-                    {s.factor ? `${s.factor} · ` : ""}
+                    {s.factor && <span className="mr-2">{s.factor}</span>}
                     {stepMinutes(s)}분
                   </span>
                 </span>

@@ -9,12 +9,19 @@ let startPromise: Promise<void> | null = null;
 
 function startWorker() {
   startPromise ??= (async () => {
-    const { worker } = await import("@/mocks/browser");
-    await worker.start({
-      // 우리가 정의하지 않은 요청(폰트, 이미지 등)까지 경고하지 않는다
-      onUnhandledRequest: "bypass",
-      quiet: true,
-    });
+    /*
+      import 바로 앞에서 process.env 를 그대로 다시 본다. 빌드가 이 조건을 거짓으로 풀어야
+      목 조각(MSW · 목 데이터 · 개발용 계정)을 운영 번들에 만들지 않는다. MOCKING_ENABLED 처럼
+      변수를 한 번 거치면 Turbopack 이 풀지 못해, 부르지도 않는 목 조각이 .next/static 에 남았다.
+    */
+    if (process.env.NEXT_PUBLIC_API_MOCKING === "enabled") {
+      const { worker } = await import("@/mocks/browser");
+      await worker.start({
+        // 우리가 정의하지 않은 요청(폰트, 이미지 등)까지 경고하지 않는다
+        onUnhandledRequest: "bypass",
+        quiet: true,
+      });
+    }
   })();
   return startPromise;
 }

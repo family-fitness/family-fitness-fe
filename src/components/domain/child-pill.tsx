@@ -15,6 +15,9 @@ import { cn } from "@/lib/utils";
  * 아이가 여럿이면 여기서 바로 바꾼다. 하나여도 알약은 선다 — 누가 화면의 주인공인지,
  * 아이를 더하려면 어디를 누르는지가 늘 같은 자리에 있어야 한다. 고른 아이는 이 기기에 남아
  * 캘린더 · 운동 짜기 · 운동 찾기도 그 아이로 연다(`role-store`).
+ *
+ * 폭이 380px 아래인 폰(갤럭시 360px)에서는 얼굴을 빼고 이름만 둔다. 알약 · 알림 · 설정이 한 줄에 서면
+ * 가족 이름 자리가 90px 남짓이라 「체험 가족」 도 「체험 ...」 으로 잘렸다. 누구를 보는지는 이름으로 충분하다.
  */
 export function ChildPill({
   kids,
@@ -35,15 +38,15 @@ export function ChildPill({
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        aria-label={`보고 있는 아이 ${current.name ?? ""} · 바꾸기`}
-        className="press bg-signal-soft text-signal-deep mr-1 flex min-h-11 items-center gap-1.5 rounded-full py-1 pr-2.5 pl-1.5 text-sm font-extrabold"
+        aria-label={`보고 있는 아이 ${current.name ?? ""}, 바꾸기`}
+        className="press bg-signal-soft text-signal-deep mr-1 flex min-h-11 items-center gap-1.5 rounded-full py-1 pr-2.5 pl-1.5 text-sm font-extrabold max-[380px]:pl-3"
       >
         <ProfileAvatar
           profileId={current.profileId}
           name={current.name}
           size="sm"
           tone="sub"
-          className="bg-paper text-signal-deep"
+          className="bg-paper text-signal-deep max-[380px]:hidden"
         />
         <span className="max-w-20 truncate">{current.name}</span>
         <ChevronDown aria-hidden className="size-4" strokeWidth={2.6} />

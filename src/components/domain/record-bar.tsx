@@ -17,7 +17,7 @@ function RecordBar({
 }) {
   if (percentile == null) {
     return (
-      <div className={cn("record-rail", className)} role="img" aria-label="비교 기준 없음">
+      <div className={cn("record-rail", className)} role="img" aria-label="비교할 기준이 없어요">
         <span className="record-dash" aria-hidden />
       </div>
     );

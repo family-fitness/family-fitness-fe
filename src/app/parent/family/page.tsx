@@ -14,12 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { DateField } from "@/components/ui/date-field";
 import { Field } from "@/components/ui/field";
 import { errorMessage } from "@/lib/errors";
 import type { ProfileSummary } from "@/lib/api/types";
 import { useCreateProfile, useFamilyProfiles } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
-import { today } from "@/lib/today";
+import { guardianBirthRule } from "@/lib/date-pick";
 import { cn } from "@/lib/utils";
 import { useRoleStore } from "@/stores/role-store";
 import { PhotoSheet } from "@/components/domain/photo-sheet";
@@ -171,7 +172,7 @@ function MemberRow({ profile, onInvite }: { profile: ProfileSummary; onInvite: (
         <div className="min-w-0 flex-1">
           <p className="text-body font-bold">{profile.name}</p>
           <p className="text-faint mt-0.5 text-xs">
-            {profile.ageGroup} · {profile.role === "PARENT" ? "부모" : "자녀"}
+            {profile.ageGroup}, {profile.role === "PARENT" ? "부모" : "자녀"}
           </p>
         </div>
 
@@ -234,7 +235,9 @@ function AddMemberSheet({
             setError(
               errorMessage(
                 err,
-                { CONSENT_REQUIRED: "보호자는 만 14세부터 더할 수 있어요." },
+                // 서버가 만 14세 미만 보호자를 막는 코드는 UNDER_14_NOT_ALLOWED 다(계약 오류 표).
+                // 전에는 CONSENT_REQUIRED 로 잘못 적어 「더하지 못했어요」 만 떴다
+                { UNDER_14_NOT_ALLOWED: "보호자는 만 14세부터 더할 수 있어요." },
                 "더하지 못했어요.",
               ),
             );
@@ -250,12 +253,11 @@ function AddMemberSheet({
         </Field>
 
         <Field label="생년월일">
-          <input
-            type="date"
+          <DateField
+            label="생년월일"
             value={birthDate}
-            max={today()}
-            onChange={(e) => setBirthDate(e.target.value)}
-            className="field"
+            onChange={setBirthDate}
+            rule={guardianBirthRule()}
           />
         </Field>
 

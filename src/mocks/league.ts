@@ -12,6 +12,7 @@
 import { HttpResponse, http, type PathParams } from "msw";
 
 import type { FamilyLeague, RestDays } from "@/lib/api/types";
+import { leagueScore } from "@/lib/league";
 import { daysBefore, monthOf, today, weekdayCode } from "@/lib/today";
 
 import { BASE, DEMO_SCHEDULE, acting, db, fail, saveRestDays } from "./db";
@@ -76,48 +77,74 @@ function planned(profileId: string, date: string): boolean {
   return (DEMO_SCHEDULE[profileId] ?? []).some((slot) => slot.day === weekdayCode(date));
 }
 
-/** 우리 가족의 이번 달 달성률(%) — 아이마다 (해낸 날 ÷ 잡힌 날, 쉬는 날 뺌) 의 평균. 셀 날이 없으면 null */
-function familyRate(): number | null {
+/**
+ * 이번 달 지난 날 — 쉬는 날을 빼고, 오늘은 운동한 날일 때만 센다(BE `AchievementRate` 와 같은 셈).
+ * 잡힌 날이 아닌 날도 센다 — 빼면 늦게 시작해 하루 해낸 가족이 다시 1등이 된다
+ */
+function elapsedDays(done: Set<string>): number {
+  const now = today();
+  const rest = new Set(db.restDays);
+  return monthDates(now).filter((d) => !rest.has(d) && (d < now || done.has(d))).length;
+}
+
+/**
+ * 우리 가족의 이번 달 달성률(%)과 순위 점수 — 달성률은 아이마다 (해낸 날 ÷ 잡힌 날, 쉬는 날 뺌) 의 평균.
+ * 셀 날이 없으면 둘 다 null
+ */
+function familyStanding(): { rate: number | null; score: number | null } {
   const now = today();
   const kids = (db.profiles.profiles ?? []).filter((p) => p.role === "CHILD");
   const rest = new Set(db.restDays);
+  // 운동한 날 — 셀 아이 가운데 누구든 해낸 날. 가족마다 하루는 한 번
+  const done = new Set<string>();
   const rates = kids.flatMap((kid) => {
     const id = kid.profileId ?? "";
     const moved = (d: string) => (dayLogFor(id, d)?.minutes ?? 0) > 0;
-    // 오늘은 아직 하는 중이다 — 오늘 해냈으면 세고, 아직이면 빼고 센다
     const counted = monthDates(now).filter(
       (d) => !rest.has(d) && planned(id, d) && (d < now || moved(d)),
     );
-    // 셀 날이 없는 아이는 평균에 넣지 않는다 — 0 으로 세면 식구 수가 불리해진다
     if (counted.length === 0) return [];
+    for (const d of counted) if (moved(d)) done.add(d);
     return [counted.filter(moved).length / counted.length];
   });
-  if (rates.length === 0) return null;
-  return Math.round((rates.reduce((a, b) => a + b, 0) / rates.length) * 100);
+  if (rates.length === 0) return { rate: null, score: null };
+  const fraction = rates.reduce((a, b) => a + b, 0) / rates.length;
+  return {
+    rate: Math.round(fraction * 100),
+    score: leagueScore(fraction, done.size, elapsedDays(done)),
+  };
 }
 
 function leagueOf(month: string): FamilyLeague {
   const tier = db.leagueTier;
-  const mine = familyRate();
+  const { rate: mine, score: myScore } = familyStanding();
+  // 이웃 가족도 우리와 같은 날 수를 지났다고 본다. 오늘 한 집이라 치고 센다
+  const elapsed = Math.max(1, elapsedDays(new Set([today()])));
   // 이웃 가족의 달성률은 이름과 달로 정해진다 — 새로고침마다 순위가 뒤섞이지 않게
   const others = NEIGHBORS.map((name, i) => {
     const wobble = ((name.charCodeAt(0) + i * 7 + Number(month.slice(5))) % 29) - 14;
+    // 마지막 집은 늦게 들어와 하루만 해냈다 — 달성률 100% 인데 점수로는 아래에 선다
+    const lateStarter = i === NEIGHBORS.length - 1;
+    const rate = lateStarter ? 100 : Math.max(5, Math.min(100, BASE_RATE[tier] + wobble));
+    const done = lateStarter ? 1 : Math.max(1, Math.round((elapsed * rate) / 100));
     return {
       familyName: name,
-      rate: Math.max(5, Math.min(100, BASE_RATE[tier] + wobble)),
+      rate,
+      score: leagueScore(rate / 100, Math.min(done, elapsed), elapsed),
       me: false,
     };
   });
-  // 달성률이 아직 없는 집은 맨 아래 — 순위를 매기지 않는다
+  // 점수 순. 달성률이 아직 없는 집은 맨 아래 — 순위를 매기지 않는다
   const standings: FamilyLeague["standings"] = [
     ...others,
-    { familyName: db.profiles.familyName ?? "우리 가족", rate: mine, me: true },
-  ].sort((a, b) => (b.rate ?? -1) - (a.rate ?? -1) || (a.me ? -1 : b.me ? 1 : 0));
+    { familyName: db.profiles.familyName ?? "우리 가족", rate: mine, score: myScore, me: true },
+  ].sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || (a.me ? -1 : b.me ? 1 : 0));
   const rank = mine == null ? null : standings.findIndex((s) => s.me) + 1;
   return {
     month,
     tier,
     rate: mine,
+    score: myScore,
     rank,
     groupSize: standings.length,
     promote: tier === "DIAMOND" ? 0 : MOVE,

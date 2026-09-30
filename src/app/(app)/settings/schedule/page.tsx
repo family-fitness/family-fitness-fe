@@ -255,7 +255,7 @@ function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
                   {d.label}요일
                   {s && (
                     <span className="text-ink-soft ml-1.5 font-semibold">
-                      {timeLabel(s.start)} · {s.minutes}분
+                      {timeLabel(s.start)}부터 {s.minutes}분
                     </span>
                   )}
                 </p>

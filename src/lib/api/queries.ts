@@ -1,11 +1,21 @@
 "use client";
 
-import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+
+import { nextCursorOf } from "@/lib/videos";
 
 import { ApiError, api, path, query } from "./client";
+import type { ReviewKind } from "@/lib/review-login";
 import type {
   AgeGroup,
   AuthResponse,
+  ReviewLoginResponse,
   Availability,
   AvailabilitySlot,
   ClipList,
@@ -50,8 +60,8 @@ const qk = {
     fitnessMap: (familyId: Uuid) => ["family", familyId, "fitness-map"] as const,
     missions: (familyId: Uuid, scope?: string, status?: string) =>
       ["family", familyId, "missions", scope ?? "ALL", status ?? "ALL"] as const,
-    cheers: (familyId: Uuid, toProfileId?: Uuid) =>
-      ["family", familyId, "cheers", toProfileId ?? "all"] as const,
+    cheers: (familyId: Uuid, toProfileId?: Uuid, missionId?: Uuid) =>
+      ["family", familyId, "cheers", toProfileId ?? "all", missionId ?? "all"] as const,
     /** 앞 세 칸으로 무효화한다 — 한 일이 생기면 그 가족의 달력은 다 다시 받는다 */
     calendar: (familyId: Uuid, profileId?: Uuid, from?: string, to?: string) =>
       ["family", familyId, "calendar", profileId ?? "-", from ?? "-", to ?? "-"] as const,
@@ -70,7 +80,11 @@ const qk = {
   },
   coach: {
     run: (runId: Uuid) => ["coach", "runs", runId] as const,
-    latest: (familyId: Uuid) => ["coach", "runs", "latest", familyId] as const,
+    /** 아이를 주면 그 아이 것만. 가족 id 로 무효화하면 아이마다의 것도 같이 지워진다(앞 키가 같다) */
+    latest: (familyId: Uuid, profileId?: Uuid) =>
+      profileId
+        ? (["coach", "runs", "latest", familyId, profileId] as const)
+        : (["coach", "runs", "latest", familyId] as const),
   },
   clips: (filter: Record<string, string | boolean | null | undefined>) =>
     ["clips", filter] as const,
@@ -137,6 +151,24 @@ export function useGoogleLogin() {
   });
 }
 
+/**
+ * 심사용 계정으로 들어간다. 토큰 없이 부르고, 본문 `{ kind }` 로 세 흐름 가운데 하나를 고른다.
+ *
+ *   FAMILY   서버가 부를 때마다 새 계정과 「체험 가족」(보호자 둘 · 아이 둘, 측정 기록까지)을 만든다 —
+ *            심사위원끼리 서로의 기록을 건드리지 않게. 가족이 이미 있어서 바로 홈으로 간다
+ *   FRESH    가족이 없는 새 계정. 가족 만들기부터 시작한다
+ *   INVITED  가족이 없는 새 계정과, 서버가 꾸며 둔 체험 가족의 초대코드(`inviteCode`)
+ *
+ * 같은 곳에서 너무 자주 부르면 서버가 429(TOO_MANY)를 돌려준다.
+ */
+export function useReviewLogin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (kind: ReviewKind) => api.post<ReviewLoginResponse>("/auth/review-login", { kind }),
+    onSuccess: (auth) => seedAccount(qc, auth),
+  });
+}
+
 /* ─── 가족 · 프로필 ────────────────────────────────────────── */
 
 /*
@@ -164,21 +196,30 @@ export function useCreateFamily() {
   });
 }
 
+/**
+ * 가족에 프로필을 더한다. familyId 는 부를 때 넘길 수 있다.
+ * 첫 시작은 가족을 만든 바로 그 흐름에서 아이를 만든다. 그때 훅이 그려질 때 받은 familyId 는 아직 빈 값이라
+ * /families//profiles 로 나갈 수 있었다
+ */
 export function useCreateProfile(familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: {
+    mutationFn: ({
+      familyId: target = familyId,
+      ...body
+    }: {
+      familyId?: Uuid;
       name: string;
       birthDate: string;
       sex: "M" | "F";
       role: "PARENT" | "CHILD";
       // 만 14세 미만은 이게 없으면 422 CONSENT_REQUIRED. 서버가 자동으로 찍지 않는다
       guardianConsent?: { personalData: boolean; healthData: boolean };
-    }) => api.post<ProfileSummary>(path`/families/${familyId}/profiles`, body),
-    onSuccess: () => {
+    }) => api.post<ProfileSummary>(path`/families/${target}/profiles`, body),
+    onSuccess: (_, { familyId: target = familyId }) => {
       // 지금 안 떠 있는 홈의 것까지 다시 받는다 — 안 그러면 홈에 옛 가족이 먼저 뜨고 새 아이 대신 첫째가 잠깐 선다
-      qc.invalidateQueries({ queryKey: qk.family.profiles(familyId), refetchType: "all" });
-      qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId), refetchType: "all" });
+      qc.invalidateQueries({ queryKey: qk.family.profiles(target), refetchType: "all" });
+      qc.invalidateQueries({ queryKey: qk.family.fitnessMap(target), refetchType: "all" });
       // `/me` 는 이 계정이 관리하는 프로필이다 — 계정 없는 아이가 늘었다
       qc.invalidateQueries({ queryKey: qk.me() });
     },
@@ -324,7 +365,7 @@ interface PlanRequest {
   /** 아랫집이 신경 쓰이면 뛰는 동작을 뺀다 */
   quiet: boolean;
   place: "HOME" | "OUTDOOR";
-  /** 부모가 고른 힘. null 이면 코치가 가장 낮은 요인을 고른다 */
+  /** 보호자가 키워 주고 싶은 역량(focus_factor). null 이면 코치가 가장 낮은 요인을 고른다 */
   focusFactor: string | null;
   /** 부모도 같이 하나. 참여 방식에서 기본값이 온다 */
   withParent: boolean;
@@ -371,13 +412,15 @@ export function useCoachRun(runId: Uuid | undefined) {
  * 승인 기다리는 제안이 있는데도 없는 것처럼 보이는 게 이 서비스에서 가장
  * 나쁜 상태다 — 승인 게이트가 통째로 사라진다.
  *
- * ▲ 요청: `GET /families/{familyId}/coach/runs/latest`.
- * 아직 없으면 404 가 오고, 그때는 기기에 든 값만으로 지금처럼 돈다.
+ * 아이를 주면(`?profileId=`) 그 아이를 짠 것 가운데 가장 최근 것이다. 편성은 아이 한 명의 하루라서,
+ * 가족 전체의 최근 한 건만 보면 둘째를 나중에 짜는 순간 첫째의 기다리는 제안이 가려졌다
+ * (첫째 칸에 「AI 제안이 와 있어요」 가 사라지고 AI 받기 단추가 다시 떴다). 없으면 404 `COACH_RUN_NOT_FOUND`.
  */
-export function useLatestCoachRun(familyId: Uuid | undefined) {
+export function useLatestCoachRun(familyId: Uuid | undefined, profileId?: Uuid) {
   return useQuery({
-    queryKey: qk.coach.latest(familyId ?? ""),
-    queryFn: () => api.get<CoachRun>(path`/families/${familyId}/coach/runs/latest`),
+    queryKey: qk.coach.latest(familyId ?? "", profileId),
+    queryFn: () =>
+      api.get<CoachRun>(path`/families/${familyId}/coach/runs/latest${query({ profileId })}`),
     enabled: Boolean(familyId),
     retry: false,
   });
@@ -550,13 +593,15 @@ export function useSendCheer(familyId: Uuid) {
 
 /**
  * 받은 칭찬.
- * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
+ *
+ * 서버는 최근 20건만 준다. 「이 운동에 벌써 알렸나 · 칭찬했나」 를 보려면 `missionId` 로 좁혀 받는다 —
+ * 가족 전체 20건 안에서 찾으면 응원이 쌓인 뒤에는 그 운동의 것이 목록 밖으로 밀려 없는 것처럼 보였다.
  */
-export function useCheers(familyId: Uuid | undefined, toProfileId?: Uuid) {
+export function useCheers(familyId: Uuid | undefined, toProfileId?: Uuid, missionId?: Uuid) {
   return useQuery({
-    queryKey: qk.family.cheers(familyId ?? "", toProfileId),
+    queryKey: qk.family.cheers(familyId ?? "", toProfileId, missionId),
     queryFn: () =>
-      api.get<CheerLogList>(path`/families/${familyId}/cheers${query({ toProfileId })}`),
+      api.get<CheerLogList>(path`/families/${familyId}/cheers${query({ toProfileId, missionId })}`),
     enabled: Boolean(familyId),
   });
 }
@@ -729,6 +774,45 @@ export function useClips(filter: {
   });
 }
 
+/** 운동 찾기에서 한 번에 받는 수. 끝까지 내리면 다음 페이지를 이어 받는다 */
+export const CLIP_PAGE_SIZE = 40;
+
+/**
+ * 운동 찾기 목록을 한 페이지씩 받는다. 거르는 조건은 useClips 와 같고, `allAges` 를 켜면 모든 나이의 영상을 받는다
+ * (끄면 보는 사람의 나이대). 다음 페이지는 앞 페이지가 준 `nextCursor` 로 부른다.
+ */
+export function useClipPages(filter: {
+  factor?: string | null;
+  phase?: string | null;
+  quiet?: boolean;
+  q?: string;
+  list?: "ALL" | "FAVORITES";
+  profileId?: Uuid;
+  allAges?: boolean;
+}) {
+  return useInfiniteQuery({
+    queryKey: ["clips", "pages", filter] as const,
+    queryFn: ({ pageParam }) =>
+      api.get<ClipList>(
+        path`/clips${query({
+          factor: filter.factor ?? undefined,
+          phase: filter.phase ?? undefined,
+          quiet: filter.quiet ? "true" : undefined,
+          q: filter.q || undefined,
+          list: filter.list,
+          profileId: filter.profileId,
+          ageGroup: filter.allAges ? "ALL" : undefined,
+          size: String(CLIP_PAGE_SIZE),
+          cursor: pageParam,
+        })}`,
+      ),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: nextCursorOf,
+    enabled: filter.list !== "FAVORITES" || Boolean(filter.profileId),
+    placeholderData: (previous) => previous,
+  });
+}
+
 export function useToggleClipFavorite(profileId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
@@ -790,6 +874,21 @@ export function useRestDays(familyId: Uuid | undefined, month: string) {
     queryKey: qk.family.restDays(familyId ?? "", month),
     queryFn: () => api.get<RestDays>(path`/families/${familyId}/rest-days${query({ month })}`),
     enabled: Boolean(familyId),
+  });
+}
+
+/**
+ * 여러 달의 쉬는 날을 한꺼번에 — 직접 짜기가 몇 주 되풀이할 때 달을 넘는다. 키가 `useRestDays` 와 같아 캐시를 나눠 쓴다.
+ * 쓴 날(YYYY-MM-DD)을 한 묶음으로 돌려준다. 못 받은 달은 비어 있다
+ */
+export function useRestDaysIn(familyId: Uuid | undefined, months: string[]) {
+  return useQueries({
+    queries: months.map((month) => ({
+      queryKey: qk.family.restDays(familyId ?? "", month),
+      queryFn: () => api.get<RestDays>(path`/families/${familyId}/rest-days${query({ month })}`),
+      enabled: Boolean(familyId),
+    })),
+    combine: (results) => new Set(results.flatMap((r) => r.data?.days ?? [])),
   });
 }
 

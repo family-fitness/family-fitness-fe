@@ -38,8 +38,7 @@ export function MeasureField({
         <p className="text-ink-soft mt-0.5 text-xs">
           {item.factor}
           {range && (
-            <span className="text-ink-soft">
-              {" · "}
+            <span className="text-ink-soft ml-2">
               {range.min}~{range.max}
               {item.unit}
             </span>

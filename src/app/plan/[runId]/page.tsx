@@ -22,10 +22,11 @@ import {
   useFamilyProfiles,
   useRejectCoachRun,
 } from "@/lib/api/queries";
+import { failureText } from "@/lib/coach";
 import { errorMessage } from "@/lib/errors";
 import { PHASE_LABEL, proposalSessions, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
-import { cn } from "@/lib/utils";
+import { cn, withJosa } from "@/lib/utils";
 
 /**
  * AI 편성 — 제안 · 근거 · 순서.
@@ -100,7 +101,7 @@ function Proposal() {
     .map((p) => [p, sessions.filter((s) => s.phase === p).length] as const)
     .filter(([, n]) => n > 0)
     .map(([p, n]) => `${PHASE_LABEL[p].replace("운동", "")} ${n}`)
-    .join(" · ");
+    .join(", ");
 
   const approved = run.status === "APPROVED";
   const rejected = run.status === "REJECTED";
@@ -140,12 +141,18 @@ function Proposal() {
             scene="rest"
             title="제안을 짜지 못했어요"
             action={
-              <Link
-                href="/plan"
-                className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"
-              >
-                다시 짜기
-              </Link>
+              <>
+                {/* 왜 못 짰는지 — 서버가 준 까닭 코드를 말로 */}
+                <p className="text-ink-soft text-sm font-semibold">
+                  {failureText(run.failureCode)}
+                </p>
+                <Link
+                  href="/plan"
+                  className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"
+                >
+                  다시 짜기
+                </Link>
+              </>
             }
           />
         ) : (
@@ -165,10 +172,24 @@ function Proposal() {
               {/* 서버가 지은 이름을 그대로 */}
               <h2 className="page-title">{proposal?.title ?? "오늘 운동"}</h2>
               <p className="text-caption text-ink-soft mt-1 font-semibold">
-                {sessions.length}개 · {minutes}분{phases && ` · ${phases}`}
-                {people.length > 0 && ` · ${people.join(" · ")}`}
+                {sessions.length}개, {minutes}분{phases && ` (${phases})`}
+                {people.length > 0 && `. ${withJosa(people.join(", "), "이가")} 해요`}
               </p>
             </section>
+
+            {/* AI 가 제안과 함께 준 알림 — 또래 자료가 없어 다른 연령대 자료 · 영상도 골랐다 등. 등록 전에 보고 정하게 */}
+            {(run.notices ?? []).length > 0 && (
+              <section className="card" aria-label="알려 드려요">
+                <CardHead title="알려 드려요" />
+                <ul className="mt-1 space-y-1.5">
+                  {(run.notices ?? []).map((n) => (
+                    <li key={n} className="text-ink-soft text-sm leading-relaxed">
+                      {n}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             <section className="card">
               <CardHead title="근거" meta="국민체력100" />

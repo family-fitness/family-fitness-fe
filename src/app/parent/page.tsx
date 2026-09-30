@@ -226,7 +226,10 @@ export default function ParentHomePage() {
           </PanelCells>
         </WeekPanel>
 
-        <ClipShelf factor={isFactor(weakest) ? weakest : null} />
+        <ClipShelf
+          factor={isFactor(weakest) ? weakest : null}
+          profileId={child.profileId ?? undefined}
+        />
       </Stage>
       <InviteSheet
         open={inviting}
@@ -258,13 +261,13 @@ function ParentHomeSkeleton() {
 /** 「이번 주」 머리 곁말 — 합친 분 · 운동한 날 */
 function weekMeta(days: string[], logs: Parameters<typeof weekTotals>[1]) {
   const t = weekTotals(days, logs);
-  return `${t.minutes}분 · ${t.active}일 운동`;
+  return `${t.active}일, ${t.minutes}분 운동`;
 }
 
 /** 「가족 리그」 칸 곁말 — 메달 그림이 있으면 티어 · 등수, 없으면(이름이 그림 자리에 선다) 등수만. 셀 날이 없으면 비운다 */
 function leagueNote(league: FamilyLeague | undefined) {
   if (!league || league.rank == null) return undefined;
   return artFor(tierArt(league.tier))
-    ? `${tierName(league.tier)} · ${league.rank}등`
+    ? `${tierName(league.tier)}, ${league.rank}등`
     : `${league.rank}등`;
 }

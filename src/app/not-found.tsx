@@ -11,7 +11,7 @@ export default function NotFound() {
   return (
     <PlainScreen className="flex min-h-dvh flex-col items-center justify-center gap-3 text-center">
       <Illustration name="scene/kiumi-no-record" size={140} />
-      <h1 className="page-title">없는 화면이에요</h1>
+      <h1 className="page-title">찾는 화면이 없어요</h1>
       <Link
         href="/"
         className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"

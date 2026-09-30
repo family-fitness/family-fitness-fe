@@ -15,7 +15,7 @@ import { VideoThumb } from "@/components/ui/video-thumb";
 import { ChildSwitch } from "@/components/domain/child-switch";
 import { DayRings } from "@/components/domain/day-rings";
 import { StickerArt } from "@/components/domain/sticker-art";
-import type { DayLog, Mission, ProfileWithSex } from "@/lib/api/types";
+import type { DayLog, Mission, ProfileWithSex, VideoClip } from "@/lib/api/types";
 import { useCalendar, useFamilyProfiles, useFitnessMap, useMissions } from "@/lib/api/queries";
 import { daySummary, didSomething, isRealDate, plannedDay, plannedOn } from "@/lib/day";
 import { callName } from "@/lib/family";
@@ -156,7 +156,6 @@ function Day() {
     callName(
       family?.profiles?.find((p) => p.profileId === profileId) as ProfileWithSex | undefined,
       fallback,
-      kidView,
     );
   const suffix = asked && asked === who.profileId ? `?profileId=${encodeURIComponent(asked)}` : "";
   const go = (d: string) => router.replace(`/calendar/${d}${suffix}`, { scroll: false });
@@ -227,7 +226,7 @@ function Day() {
                   onClick={() => go(d)}
                   disabled={!open(d)}
                   aria-current={d === date ? "date" : undefined}
-                  aria-label={`${longDate(d)}${day && day.minutes > 0 ? ` · ${day.minutes}분` : ""}${got ? ` · ${got.label} 스티커` : ""}`}
+                  aria-label={`${longDate(d)}${day && day.minutes > 0 ? `, ${day.minutes}분` : ""}${got ? `, ${got.label} 스티커` : ""}`}
                   className="press flex w-full flex-col items-center gap-1 disabled:opacity-40"
                 >
                   <span
@@ -429,9 +428,15 @@ function Leader({ label, value }: { label: string; value: string }) {
  * 둥근 바탕 안의 글자가 되고(9/25), 바로 아래 줄(「준비운동 · 1분」)과 같은 말을 한 번 더 한다.
  * 한 운동의 칸은 모두 영상이 있거나 모두 없어서 줄이 어긋나지 않는다.
  */
-function Thumb({ videoId }: { videoId?: string | null }) {
-  if (!videoId) return null;
-  return <VideoThumb videoId={videoId} className="aspect-video w-20 shrink-0 rounded-xl" />;
+function Thumb({ clip }: { clip?: VideoClip | null }) {
+  if (!clip?.videoId) return null;
+  return (
+    <VideoThumb
+      videoId={clip.videoId}
+      src={clip.thumbnailUrl}
+      className="aspect-video w-20 shrink-0 rounded-xl"
+    />
+  );
 }
 
 /** 그날 한 운동 한 개 — 칸마다 한 줄. 칸 없이 직접 적은 것(걷기 등)은 무엇으로 확인했는지만 */
@@ -449,7 +454,7 @@ function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; missi
               entry.verifiedBy && VERIFIED_COPY[entry.verifiedBy],
             ]
               .filter(Boolean)
-              .join(" · ")}
+              .join(", ")}
           </span>
         </span>
         {entry.completed && <Done />}
@@ -464,11 +469,11 @@ function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; missi
           const clip = clips.find((c) => c.title === s.title)?.clip ?? clips[i]?.clip;
           return (
             <li key={`${s.title}-${i}`} className="flex items-center gap-3">
-              <Thumb videoId={mission ? clip?.videoId : null} />
+              <Thumb clip={mission ? clip : null} />
               <span className={cn("min-w-0 flex-1", !s.done && "opacity-50")}>
                 <span className="block truncate text-sm font-bold">{s.title}</span>
                 <span className="text-caption text-ink-soft block">
-                  {PHASE_LABEL[s.phase]} · {stepMinutes(s)}분
+                  {PHASE_LABEL[s.phase]} {stepMinutes(s)}분
                 </span>
               </span>
               {s.done && <Done />}
@@ -510,17 +515,17 @@ function PlannedRows({
         <p className="text-caption text-ink-soft mt-0.5 font-semibold">
           {(mission.participants ?? [])
             .map((p) => nameOf(p.profileId ?? "", p.name ?? ""))
-            .join(" · ")}
+            .join(", ")}
         </p>
       )}
       <ul className="mt-2 space-y-2">
         {sessions.map((s) => (
           <li key={s.position} className="flex items-center gap-3">
-            <Thumb videoId={s.clip?.videoId} />
+            <Thumb clip={s.clip} />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-bold">{s.title}</span>
               <span className="text-caption text-ink-soft block">
-                {PHASE_LABEL[s.phase]} · {stepMinutes(s)}분
+                {PHASE_LABEL[s.phase]} {stepMinutes(s)}분
               </span>
             </span>
           </li>

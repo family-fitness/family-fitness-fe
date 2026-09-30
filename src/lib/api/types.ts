@@ -31,8 +31,11 @@ export type FitnessFactor =
  */
 export type Band = "strength" | "steady" | "growth";
 
-/** 국민체력100 등급. **1·2·3 과 「참가」뿐이다.** 4·5등급은 없다. */
-export type Grade = NonNullable<S["ItemResult"]["grade"]>;
+/**
+ * 국민체력100 등급. **1·2·3 과 「참가」뿐이다.** 4·5등급은 없다.
+ * 인증서처럼 한 사람에게 하나다 — 종목마다 붙지 않는다(`Certification`).
+ */
+export type Grade = NonNullable<S["Certification"]["grade"]>;
 
 export type TargetMetric = "VIDEO_DONE" | "TIMER_MINUTES" | "STEPS";
 export type VerifiedBy = "VIDEO_PROGRESS" | "TIMER" | "SELF_REPORT";
@@ -50,6 +53,12 @@ export const BAND_COPY: Record<Band, string> = {
   steady: "꾸준히 하고 있는 영역",
   growth: "지금 키우기 좋은 영역",
 };
+
+/**
+ * 보호자가 고른 키울 요인(focus_factor)을 부르는 이름. 측정으로 고른 것은 `BAND_COPY.growth` 다.
+ * 두 이름만 쓴다(결정 7) — 편성 화면 카드 제목이 「보호자가」 를 뺀 「키워 주고 싶은 역량」 이었다.
+ */
+export const FOCUS_COPY = "보호자가 키워 주고 싶은 역량";
 
 /* ─── 생성된 스키마에 이름 붙이기 ──────────────────────────── */
 /* 오른쪽 이름은 서버가 정한 것이다. 바뀌면 여기서 타입 에러로 드러난다 */
@@ -71,9 +80,31 @@ export type FitnessItem = S["Item"];
 export type FitnessTestResult = S["FitnessTestResponse"];
 export type LatestFitnessTest = S["LatestFitnessResponse"];
 export type ItemResult = S["ItemResult"];
+/**
+ * 국민체력100 등급 판정. 보호자만 받는다 — 아이 계정이거나 잰 적이 없으면 null.
+ *   GRADED       등급이 나왔다(「참가」 포함). missingItems 가 있으면 1등급 판정에 모자란 종목
+ *   NEEDS_ITEMS  기준은 있는데 모자란 종목 때문에 어느 등급도 판정하지 못했다
+ *   NO_CRITERIA  이 나이 · 성별은 기준표가 없다(만 7~10세, 65세 이상 등)
+ */
+export type Certification = S["Certification"];
+export type CertificationStatus = NonNullable<Certification["status"]>;
+/** 한 번에 재는 것 하나. 035 · 037 은 둘 중 하나만 재면 돼서 한 칸에 둘이 들어온다 */
+export type MissingItem = S["MissingItem"];
+/** 같은 나이 · 성별 참가자 가운데 그 등급을 받은 비율(0~1) */
+export type PeerGrade = S["PeerGrade"];
 export type RadarPoint = S["RadarPointResponse"];
 
-export type CoachRun = S["CoachRunView"];
+/**
+ * 편성 한 번. 서버가 이미 싣는데 받아 둔 스키마(schema.ts)에 아직 없는 칸을 더한다(api-contract 4장).
+ * - `failureCode`: FAILED 일 때만. 화면 문구는 `lib/coach.ts` 가 정한다
+ * - `notices`: AI 가 제안과 함께 준 알림(또래 자료가 없어 넓혀 골랐다 등). 늘 배열
+ */
+export type CoachRun = S["CoachRunView"] & {
+  profileId?: string | null;
+  date?: string | null;
+  failureCode?: string | null;
+  notices?: string[];
+};
 export type CoachProposal = S["ProposalView"];
 export type CoachApproveResult = S["ApproveCoachRunView"];
 export type CoachRejectResult = S["RejectCoachRunView"];
@@ -82,6 +113,12 @@ export type MissionList = S["MissionListView"];
 export type Mission = S["MissionView"];
 
 /* ─── 아직 서버에 없는 것 ──────────────────────────────────── */
+
+/**
+ * ▲ 요청: `POST /auth/review-login` 응답의 `inviteCode` — kind 가 INVITED 일 때 서버가 꾸며 둔
+ * 체험 가족의 초대코드. 합류 화면에 미리 채운다
+ */
+export type ReviewLoginResponse = AuthResponse & { inviteCode?: string | null };
 
 /** ▲ 요청: `GET /me` 에 로그인한 계정의 `email`. 설정의 「로그인 계정」 에 쓴다 — 안 오면 그 줄을 두지 않는다 */
 export type MeWithEmail = MeResponse & { email?: string | null };
@@ -175,6 +212,12 @@ export interface VideoClip {
   endSec?: number | null;
   title?: string | null;
   url?: string | null;
+  /**
+   * 공단 오픈API 「국민체력100 동영상 정보」 영상이면 mp4 주소. 유튜브 영상이면 비어 있다.
+   * 있으면 플레이어가 유튜브가 아니라 이 파일을 튼다
+   */
+  mediaUrl?: string | null;
+  /** 공단 영상의 장면 이미지. 유튜브 영상이면 비어 있고 화면이 유튜브 썸네일을 쓴다 */
   thumbnailUrl?: string | null;
 }
 
@@ -384,6 +427,9 @@ export interface Availability {
  * ▲ 요청: `GET /clips?factor=&phase=&quiet=&q=&list=&profileId=` · `POST /clips/{clipId}/favorite`
  * 지금 계약의 영상(`VideoView`)은 한 편 단위라, 한 편 안에 든 여러 동작을 따로 고를 수 없다.
  * AI 쪽이 이미 영상 48편을 491개 클립으로 끊어 두었다(`video_clips.csv`) — 그 표를 그대로 주세요.
+ *
+ * 목록은 페이지로 나눠 받는다. `cursor`(앞 페이지가 준 `nextCursor`), `size`(한 페이지에 몇 개), `ageGroup`(ALL 이면
+ * 모든 나이, 없으면 보는 사람의 나이대)를 더 보낸다.
  */
 export interface ClipView {
   clipId: string;
@@ -401,12 +447,18 @@ export interface ClipView {
   /** 도구가 필요한가 */
   props: boolean;
   favorited: boolean;
+  /** 공단 영상이면 mp4 주소. 유튜브 클립이면 비어 있다 — `VideoClip.mediaUrl` 과 같다 */
+  mediaUrl?: string | null;
+  /** 공단 영상의 장면 이미지. 유튜브 클립이면 비어 있다 */
+  thumbnailUrl?: string | null;
 }
 
 export interface ClipList {
   clips: ClipView[];
-  /** 조건에 맞는 전체 수. 목록은 앞의 일부만 온다 */
+  /** 조건에 맞는 전체 수. 목록은 한 페이지씩 온다 */
   total: number;
+  /** 다음 페이지를 받을 때 `cursor` 로 되돌려 보내는 값. 마지막 페이지면 null */
+  nextCursor?: string | null;
 }
 
 /* ─── 오류 ─────────────────────────────────────────────────── */
@@ -473,6 +525,8 @@ export type LeagueTier = "BRONZE" | "SILVER" | "GOLD" | "PLATINUM" | "DIAMOND";
  * 가족 리그 — 이번 달 우리 가족이 있는 리그와 순위.
  *
  * 겨루는 값은 체력이 아니라 **목표 달성률**이다(잡힌 운동 날 중 해낸 날, 쉬는 날 뺌, 아이들 평균).
+ * 줄은 달성률과 운동한 날 수를 함께 본 **순위 점수(`score`)** 로 세운다 — 하루만 해낸 100% 가 1등이 되지 않게
+ * 운동한 날 수에 로그를 씌운다(`leagueScore`). 그래서 달성률 100% 가 92% 보다 아래에 설 수 있다.
  * 운동 잘하는 집도 식구 많은 집도 유리하지 않다. 가족 단위로만 겨룬다 — 집 안에서 누가 더 했는지는
  * 어디에도 나오지 않는다(규칙 10). 달이 바뀌면 위 `promote` 집은 한 티어 올라가고 아래 `demote` 집은 내려간다.
  *
@@ -486,7 +540,9 @@ export interface FamilyLeague {
    * 0 으로 주면 「0% · 꼴찌 · 내려가요」 가 된다. 비어 있음은 비어 있게(규칙 8)
    */
   rate: number | null;
-  /** 이 리그 묶음에서 우리 가족 자리(1부터). 달성률이 없으면 null */
+  /** 우리 가족 순위 점수(0~1). 셀 날이 없으면 null. 옛 서버는 주지 않는다 */
+  score?: number | null;
+  /** 이 리그 묶음에서 우리 가족 자리(1부터). 순위 점수 순. 달성률이 없으면 null */
   rank: number | null;
   groupSize: number;
   /** 달이 바뀌면 올라가는 · 내려가는 자리 수. 맨 위 · 맨 아래 티어는 0 */
@@ -494,8 +550,8 @@ export interface FamilyLeague {
   demote: number;
   /** 이 달이 끝나기까지 남은 날 */
   daysLeft: number;
-  /** 달성률 순. 이름은 가족 이름만. 달성률이 아직 없는 집은 맨 아래 */
-  standings: { familyName: string; rate: number | null; me: boolean }[];
+  /** 순위 점수 순(점수가 없는 옛 응답은 달성률 순). 이름은 가족 이름만. 달성률이 아직 없는 집은 맨 아래 */
+  standings: { familyName: string; rate: number | null; score?: number | null; me: boolean }[];
 }
 
 /**

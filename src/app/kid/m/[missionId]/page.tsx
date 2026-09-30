@@ -25,14 +25,18 @@ import {
   useFamilyProfiles,
   useMissions,
   useProgress,
+  useClips,
   useSendCheer,
 } from "@/lib/api/queries";
+import { missionTitle } from "@/lib/day";
 import { errorMessage } from "@/lib/errors";
+import { guardiansName } from "@/lib/family";
 import { stageOf } from "@/lib/levels";
 import { newlyUnlocked } from "@/lib/unlocks";
 import { PHASE_LABEL, clock, sessionsOf, stepMinutes, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
-import { cn } from "@/lib/utils";
+import { longDate, today } from "@/lib/today";
+import { cn, withJosa } from "@/lib/utils";
 import { useVoice } from "@/lib/voice";
 import { usePrefsStore } from "@/stores/prefs-store";
 import { useRoleStore } from "@/stores/role-store";
@@ -94,6 +98,22 @@ export default function PlayPage() {
   const complete = useCompleteSession(missionId, familyId ?? "");
 
   const mission = missions?.missions?.find((m) => m.missionId === missionId);
+  /*
+    오늘 이 아이가 할 수 있는 운동인가. 앞날 운동 · 지난 운동 · 형제의 운동은 서버가 칸 끝을 받지 않는다
+    (422 MISSION_NOT_ACTIVE · 403 NOT_A_PARTICIPANT). 전에는 그래도 「시작하기」 가 눌려서, 저장은 안 됐는데
+    칸이 끝난 것처럼 체크되고 마지막에 까닭 없이 「기록을 남기지 못했어요」 가 떴다. 볼 수만 있게 막는다
+  */
+  const now = today();
+  const mine = mission?.participants?.some((p) => p.profileId === kidId) ?? false;
+  const lockedBy: "other" | "later" | "over" | null = !mission
+    ? null
+    : !mine
+      ? "other"
+      : mission.startDate && mission.startDate > now
+        ? "later"
+        : mission.endDate && mission.endDate < now
+          ? "over"
+          : null;
 
   /** 이 화면에서 방금 끝낸 칸. 서버 응답을 기다리지 않고 바로 체크한다 */
   const [doneHere, setDoneHere] = useState<number[]>([]);
@@ -117,7 +137,7 @@ export default function PlayPage() {
   const { say } = useVoice(voiceOn);
   const [burst, setBurst] = useState(0);
   const [xp, setXp] = useState(0);
-  /** 엄마 · 아빠한테 알렸나 — 끝 칸이 다시 그려져도(다시 받는 동안 뼈대로 내려갔다 올라와도) 잊지 않게 여기에 둔다 */
+  /** 보호자한테 알렸나 — 끝 칸이 다시 그려져도(다시 받는 동안 뼈대로 내려갔다 올라와도) 잊지 않게 여기에 둔다 */
   const [told, setTold] = useState(false);
   const startedAt = useRef<string | null>(null);
   /** 시작할 때의 레벨. 끝나고 올랐는지 견준다 */
@@ -141,7 +161,7 @@ export default function PlayPage() {
       )
     : [];
   const firstOpen = sessions.find((s) => !s.completed)?.position ?? null;
-  const active = status === "ended" ? null : (current ?? firstOpen);
+  const active = status === "ended" || lockedBy ? null : (current ?? firstOpen);
   const activeSession = sessions.find((s) => s.position === active);
   const activeIndex = sessions.findIndex((s) => s.position === active);
   const plannedSec = plannedSecOf(activeSession);
@@ -171,9 +191,13 @@ export default function PlayPage() {
       .then((res) => setXp((x) => x + (res.xpGained ?? 0)))
       .catch((e: unknown) => {
         setUnsaved((list) => [...list, step]);
-        // 망 · 서버 탓이 아니면(4xx) 다시 보내도 같다
+        // 망 · 서버 탓이 아니면(4xx) 다시 보내도 같다. 서버가 받지 않은 칸은 끝낸 칸으로 두지 않고
+        // 다음 칸으로 넘어가지도 않는다 — 다음 칸도 같은 까닭으로 거절된다
         if (e instanceof ApiError && e.status < 500 && e.status !== 408 && e.status !== 429) {
           setStuckTo(e.status === 401 ? "/login" : "/kid");
+          setDoneHere((list) => list.filter((p) => p !== step.position));
+          setCurrent(null);
+          setStatus("ended");
         }
         setSaveError(
           errorMessage(
@@ -181,6 +205,9 @@ export default function PlayPage() {
             {
               CONSENT_REQUIRED: "지금은 기록을 남길 수 없어요.",
               CONSENT_WITHDRAWN: "지금은 기록을 남길 수 없어요.",
+              MISSION_NOT_ACTIVE: "오늘 하는 운동이 아니라서 기록을 남기지 못했어요.",
+              NOT_A_PARTICIPANT: "내 운동이 아니라서 기록을 남기지 못했어요.",
+              TOO_SHORT: "너무 짧게 해서 기록을 남기지 못했어요.",
             },
             "기록을 남기지 못했어요.",
           ),
@@ -358,7 +385,7 @@ export default function PlayPage() {
 
   return (
     <>
-      <AppBar backHref="/kid" title="오늘 운동" />
+      <AppBar backHref="/kid" title={missionTitle(mission, now)} />
       <Confetti fire={burst} pieces={allDone ? 120 : 50} from={allDone ? "top" : "bottom"} />
 
       {/* 위에 붙는 징검다리. 몇 칸째인지 늘 보이고, 한 칸 끝내면 키움이가 건너간다 */}
@@ -378,7 +405,7 @@ export default function PlayPage() {
         )}
         <div className="relative flex items-center justify-center">
           <p className="text-caption text-ink-soft text-center font-bold">
-            {doneCount} / {sessions.length}칸 · {totalMin}분 중 {doneMin}분
+            {sessions.length}칸 중 {doneCount}칸, {totalMin}분 중 {doneMin}분
           </p>
           <button
             type="button"
@@ -397,6 +424,32 @@ export default function PlayPage() {
       </div>
 
       <Stage wide className="pt-1">
+        {lockedBy && !allDone && (
+          // 볼 수만 있는 운동 — 시작 단추 대신 까닭을 맨 위에
+          <section className="card-hero mb-3 text-center" role="status">
+            <p className="text-lead font-extrabold">
+              {lockedBy === "later"
+                ? `${longDate(mission.startDate)}에 하는 운동이에요`
+                : lockedBy === "over"
+                  ? "지난 운동이에요"
+                  : `${ownerNames(mission.participants)} 운동이에요`}
+            </p>
+            <p className="text-caption text-ink-soft mt-1 font-semibold">
+              {lockedBy === "later"
+                ? "그날 와서 시작해요"
+                : lockedBy === "over"
+                  ? "지난 운동은 볼 수만 있어요"
+                  : "내 운동이 아니라서 볼 수만 있어요"}
+            </p>
+            <NavLink
+              href="/kid"
+              transitionTypes={["nav-back"]}
+              className="press text-ink-soft mt-2 inline-flex min-h-11 items-center px-4 text-sm font-bold"
+            >
+              홈으로
+            </NavLink>
+          </section>
+        )}
         <ol className="relative">
           {sessions.map((s, i) => (
             <Step
@@ -422,7 +475,7 @@ export default function PlayPage() {
                 setStatus("blocked");
               }}
               onPick={() => {
-                if (s.completed || status === "running") return;
+                if (s.completed || status === "running" || lockedBy) return;
                 setCurrent(s.position);
                 setElapsed(0);
                 setStatus("idle");
@@ -456,7 +509,7 @@ export default function PlayPage() {
               </section>
             ) : finished && saving > 0 ? (
               <Skeleton className="h-80 w-full rounded-3xl" />
-            ) : finished ? (
+            ) : lockedBy && !allDone ? null : finished ? (
               <Finish
                 allDone={allDone}
                 doneCount={doneCount}
@@ -487,6 +540,12 @@ export default function PlayPage() {
       </Stage>
     </>
   );
+}
+
+/** 운동을 받은 사람들 — 「서준 · 하윤의」 */
+function ownerNames(participants: { name?: string | null }[] | undefined): string {
+  const names = (participants ?? []).map((p) => p.name).filter(Boolean);
+  return names.length > 0 ? `${names.join(", ")}의` : "다른 사람";
 }
 
 /** 한 칸. 지금 칸만 펼친다 */
@@ -557,12 +616,10 @@ function Step({
 
           {clip?.videoId && (
             <div className="mt-3">
-              <ClipPlayer
-                videoId={clip.videoId}
-                startSec={clip.startSec ?? 0}
-                endSec={clip.endSec ?? null}
+              <StepPlayer
+                clip={clip}
+                session={s}
                 playing={status === "running"}
-                title={s.title}
                 onBlocked={onBlocked}
               />
             </div>
@@ -579,7 +636,7 @@ function Step({
               {status === "rest" ? (
                 <span className="text-center leading-none">
                   <span className="text-metric-lg block font-extrabold">{restLeft}</span>
-                  <span className="text-micro text-ink-soft font-bold">쉬어요 · 곧 시작</span>
+                  <span className="text-micro text-ink-soft font-bold">곧 시작해요</span>
                 </span>
               ) : (
                 <span className="text-center leading-none">
@@ -656,19 +713,55 @@ function Step({
           )}
         >
           {clip?.videoId ? (
-            <VideoThumb videoId={clip.videoId} className="aspect-video w-24 shrink-0 rounded-xl" />
+            <VideoThumb
+              videoId={clip.videoId}
+              src={clip.thumbnailUrl}
+              className="aspect-video w-24 shrink-0 rounded-xl"
+            />
           ) : (
             <span className="bg-sub aspect-video w-24 shrink-0 rounded-xl" />
           )}
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-extrabold">{s.title}</span>
             <span className="text-caption text-ink-soft mt-0.5 block">
-              {PHASE_LABEL[s.phase]} · {stepMinutes(s)}분{s.completed && " · 했어요"}
+              {PHASE_LABEL[s.phase]} {stepMinutes(s)}분{s.completed && ", 다 했어요"}
             </span>
           </span>
         </button>
       )}
     </li>
+  );
+}
+
+/**
+ * 지금 하는 칸의 시범 영상. 못 틀면 같은 단계 · 같은 요인의 다른 클립을 대신 틀 수 있게 넘긴다.
+ * 지금 하는 칸에서만 그리니 다른 클립 목록도 그 칸 하나만 받는다
+ */
+function StepPlayer({
+  clip,
+  session,
+  playing,
+  onBlocked,
+}: {
+  clip: NonNullable<MissionSession["clip"]>;
+  session: MissionSession;
+  playing: boolean;
+  onBlocked: () => void;
+}) {
+  const { data } = useClips({ phase: session.phase, factor: session.factor ?? null });
+  const alternates = (data?.clips ?? []).filter((c) => c.videoId !== clip.videoId).slice(0, 5);
+  return (
+    <ClipPlayer
+      videoId={clip.videoId}
+      startSec={clip.startSec ?? 0}
+      endSec={clip.endSec ?? null}
+      mediaUrl={clip.mediaUrl}
+      thumbnailUrl={clip.thumbnailUrl}
+      alternates={alternates}
+      playing={playing}
+      title={session.title}
+      onBlocked={onBlocked}
+    />
   );
 }
 
@@ -678,7 +771,7 @@ const FEELS = [
   { id: "hard", label: "힘들었어요" },
 ] as const;
 type Feel = (typeof FEELS)[number]["id"];
-/** 엄마 · 아빠한테 가는 말에 붙는 한 줄 */
+/** 보호자한테 가는 말에 붙는 한 줄 */
 const FEEL_LINE: Record<Feel, string> = {
   easy: "쉬웠어요.",
   good: "딱 좋았어요.",
@@ -723,13 +816,18 @@ function Finish({
     알렸는지 받는 동안은 알리기를 내지 않는다(누르는 틈에 두 번 갔다). 못 받으면 알리기를 둔다 — 막히지 않게.
     부모가 벌써 스티커를 붙였으면 「기다리는 중」 이 아니다(규칙 12)
   */
-  const { data: sent, isLoading: checking } = useCheers(fresh ? undefined : familyId);
+  // 이 운동에 오간 것만 받는다(missionId) — 가족 전체 최근 20건에서 찾으면 응원이 쌓인 뒤 「알리기」 가 다시 떴다
+  const { data: sent, isLoading: checking } = useCheers(
+    fresh ? undefined : familyId,
+    undefined,
+    missionId,
+  );
   const aboutThis = (sent?.cheers ?? []).filter((c) => c.missionId === missionId);
   const toldBefore = !fresh && aboutThis.some((c) => c.fromProfileId === kidId);
   const answered = !fresh && aboutThis.some((c) => c.toProfileId === kidId && c.stickerId);
   const told = toldNow || toldBefore;
   const [error, setError] = useState<string | null>(null);
-  /** 어땠어요 — 고르면 엄마 · 아빠한테 가는 말에 붙는다. 안 골라도 된다 */
+  /** 어땠어요 — 고르면 보호자한테 가는 말에 붙는다. 안 골라도 된다 */
   const [feel, setFeel] = useState<Feel | null>(null);
 
   const stage = stageOf(progress?.level);
@@ -742,7 +840,7 @@ function Finish({
   const tell = async () => {
     setError(null);
     try {
-      // 엄마 · 아빠 모두에게. 아이에게 누구에게 알릴지 고르게 하지 않는다
+      // 보호자 모두에게. 아이에게 누구에게 알릴지 고르게 하지 않는다
       await Promise.all(
         parents.map((p) =>
           send.mutateAsync({
@@ -791,13 +889,13 @@ function Finish({
           {/* 레벨이 올라 새로 열린 것 — 위 섬에 방금 섰다 */}
           {opened.map((u) => (
             <p key={u.id} className="border-line mt-3 border-t pt-3 text-sm font-extrabold">
-              새로 열렸어요 · {u.name}
+              {withJosa(u.name, "이가")} 새로 열렸어요
             </p>
           ))}
         </div>
       )}
 
-      {/* 어땠어요 — 한 번 누르면 끝. 고르면 엄마 · 아빠한테 가는 말에 붙는다 */}
+      {/* 어땠어요 — 한 번 누르면 끝. 고르면 보호자한테 가는 말에 붙는다 */}
       {!told && !checking && (
         <div className="mt-4" role="group" aria-label="오늘 운동 어땠어요">
           <p className="text-sm font-extrabold">어땠어요?</p>
@@ -824,7 +922,7 @@ function Finish({
       {told ? (
         <p className="text-done mt-4 flex min-h-12 items-center justify-center gap-1.5 text-sm font-extrabold">
           <Check aria-hidden className="size-4" strokeWidth={3} />
-          {answered ? "알렸어요" : "알렸어요 · 기다리는 중"}
+          {answered ? "알렸어요" : "알렸어요. 답을 기다리는 중이에요"}
         </p>
       ) : checking ? (
         <Skeleton className="mt-4 h-14 w-full rounded-2xl" />
@@ -836,7 +934,7 @@ function Finish({
             disabled={send.isPending}
             className="press bg-signal-strong mt-4 flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white"
           >
-            {send.isPending ? "알리는 중" : "엄마 · 아빠한테 알리기"}
+            {send.isPending ? "알리는 중" : `${guardiansName(parents)}한테 알리기`}
           </button>
         )
       )}

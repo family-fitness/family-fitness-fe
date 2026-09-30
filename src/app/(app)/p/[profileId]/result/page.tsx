@@ -9,14 +9,15 @@ import { Stage } from "@/components/app-shell/stage";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
 import { ListRow } from "@/components/ui/list-row";
-import { BandChip, GradeBadge } from "@/components/ui/badge";
+import { BandChip } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorIcon } from "@/components/domain/factor-icon";
 import { FactorView } from "@/components/domain/factor-view";
+import { GradeCard } from "@/components/domain/grade-card";
 import { RecordRow } from "@/components/domain/record-bar";
-import { isFactor } from "@/lib/fitness-factors";
+import { isFactor, noPeerNormsNote } from "@/lib/fitness-factors";
 import { useFamilyProfiles, useFitnessMap, useLatestFitnessTest } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { formatDate } from "@/lib/utils";
@@ -101,6 +102,12 @@ export default function ResultPage() {
   const weakest = test.weakest;
   // 항목 하나만 쟀으면 강한 영역과 약한 영역이 같은 것으로 온다
   const onlyOneFactor = Boolean(strongest && weakest && strongest.factor === weakest.factor);
+  // 만 7~10세는 또래 기준이 없어 백분위가 모두 빈다. 칸마다 「없어요」 대신 까닭을 한 줄로
+  const normsNote = noPeerNormsNote({
+    ageGroup: profile?.ageGroup ?? member?.ageGroup,
+    measured: true,
+    compared: radar.some((p) => p.percentile != null) || items.some((e) => e.percentile != null),
+  });
 
   return (
     <>
@@ -126,6 +133,7 @@ export default function ResultPage() {
               name={profile?.name ?? "나"}
               pending={false}
               score={member?.latest?.overallPercentile ?? null}
+              note={normsNote}
             />
           </section>
         )}
@@ -136,16 +144,33 @@ export default function ResultPage() {
             <FactorLine
               label={onlyOneFactor ? "지금 재 본 영역" : "잘하고 있는 영역"}
               factor={strongest?.factor}
+              withRadar={radar.length > 0}
             />
             {!onlyOneFactor && weakest && (
-              <FactorLine label="지금 키우기 좋은 영역" factor={weakest.factor} />
+              <FactorLine
+                label="지금 키우기 좋은 영역"
+                factor={weakest.factor}
+                withRadar={radar.length > 0}
+              />
             )}
           </section>
         )}
 
+        {/* 등급은 종목마다가 아니라 한 사람에 하나 — 인증서처럼 */}
+        {test.certification && (
+          <GradeCard
+            certification={test.certification}
+            measureHref={measurable ? `/p/${profileId}/measure` : null}
+          />
+        )}
+
         <section className="card">
           {/* 막대 가운데 눈금이 무엇인지 글로 — 요인 표와 같은 말. 몇 항목인지는 머리에 있다 */}
-          <CardHead title="항목별" meta="국민체력100 등급 · 또래 평균 50" />
+          {/* 막대(또래 백분위)가 하나도 없으면 가운데 눈금도 없다 — 만 7~10세는 또래 기준이 없다 */}
+          <CardHead
+            title="항목별"
+            meta={items.some((e) => e.percentile != null) ? "또래 평균 50" : undefined}
+          />
           <div className="divide-rows">
             {items.map((entry, index) => (
               <div key={entry.itemCode} className="py-3.5">
@@ -156,16 +181,8 @@ export default function ResultPage() {
                   caption={entry.topPercentText}
                   delay={index * 0.08}
                 />
-                {/* 등급 · 상태 — 딱지 대신 글자 한 줄 */}
-                <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5">
-                  <GradeBadge grade={entry.grade} />
-                  {entry.band && (
-                    <span aria-hidden className="text-faint text-xs">
-                      ·
-                    </span>
-                  )}
-                  <BandChip band={entry.band} />
-                </p>
+                {/* 상태 — 딱지 대신 글자 한 줄 */}
+                {entry.band && <BandChip band={entry.band} className="mt-1.5 block" />}
               </div>
             ))}
           </div>
@@ -213,7 +230,15 @@ function ResultSkeleton() {
 }
 
 /** 한 요인 한 줄 — 요인 그림과 이름. 육각형 밖의 요인(협응력 · 평형성)은 그림이 없어 자리만 둔다 */
-function FactorLine({ label, factor }: { label: string; factor: string | undefined }) {
+function FactorLine({
+  label,
+  factor,
+  withRadar,
+}: {
+  label: string;
+  factor: string | undefined;
+  withRadar: boolean;
+}) {
   return (
     <div className="flex items-center gap-3 py-3">
       <span aria-hidden className="grid size-10 shrink-0 place-items-center">
@@ -222,6 +247,10 @@ function FactorLine({ label, factor }: { label: string; factor: string | undefin
       <div className="min-w-0">
         <p className="text-caption text-ink-soft font-bold">{label}</p>
         <p className="text-body font-extrabold">{factor ?? "-"}</p>
+        {/* 위 육각형은 여섯 요인만 그린다. 협응력 · 평형성이 여기 오면 육각형에서 찾을 수 없어 한 줄 적는다 */}
+        {withRadar && factor && !isFactor(factor) && (
+          <p className="text-caption text-ink-soft mt-0.5">위 육각형에는 없는 영역이에요</p>
+        )}
       </div>
     </div>
   );

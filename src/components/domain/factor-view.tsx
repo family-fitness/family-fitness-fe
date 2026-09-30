@@ -19,8 +19,11 @@ export function ScoreLine({ score }: { score: number }) {
           {score}
           <span className="metric-unit">점</span>
         </p>
-        <p className="text-caption text-ink-soft pb-1 text-right font-semibold">
-          신체 점수 · 또래 평균 <b className="text-ink">50</b>
+        <p className="text-caption text-ink-soft flex gap-2 pb-1 font-semibold">
+          <span>신체 점수,</span>
+          <span>
+            또래 평균 <b className="text-ink">50</b>
+          </span>
         </p>
       </div>
       <div
@@ -66,6 +69,7 @@ export function FactorView({
   pending,
   score,
   headline,
+  note,
   className,
 }: {
   points: Parameters<typeof FactorRadar>[0]["points"];
@@ -75,6 +79,8 @@ export function FactorView({
   score?: number | null;
   /** 서버가 준 한 줄(「유소년 상위 45%」) — 점수 바로 아래에 그대로(규칙 9) */
   headline?: string | null;
+  /** 또래와 견줄 수 없는 까닭(만 7~10세). 육각형 위에 한 줄로 쓴다 */
+  note?: string | null;
   className?: string;
 }) {
   return (
@@ -82,7 +88,7 @@ export function FactorView({
       {pending ? (
         <Skeleton className="mx-auto aspect-[320/290] w-full rounded-3xl" />
       ) : (
-        <FactorRadar points={points} name={name} />
+        <FactorRadar points={points} name={name} note={note} />
       )}
       {score != null && <ScoreLine score={score} />}
       {headline && (

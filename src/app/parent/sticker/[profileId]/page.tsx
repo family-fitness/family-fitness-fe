@@ -188,7 +188,7 @@ function StickerForm() {
           )}
           {log && log.entries.length > 0 && (
             <p className="text-caption text-ink-soft mt-1">
-              {log.entries.map((e) => e.title).join(" · ")}
+              {log.entries.map((e) => e.title).join(", ")}
             </p>
           )}
           {/* 고른 것 하나가 크게 — 둥근 회색 면에 담지 않는다 */}

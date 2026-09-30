@@ -32,7 +32,7 @@ export const STICKERS: readonly Sticker[] = [
 ];
 
 /**
- * 아이가 엄마 · 아빠한테 돌려보내는 고마워요 스티커 넷.
+ * 아이가 보호자한테 돌려보내는 고마워요 스티커 넷.
  * 칭찬은 부모가 보낸다(규칙 12) — 아이가 보내는 건 칭찬이 아니라 「고마워요」 다.
  */
 export const THANKS_STICKERS: readonly Sticker[] = ["heart", "kiumi", "star", "clap"].flatMap(

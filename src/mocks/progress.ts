@@ -106,11 +106,10 @@ export function progressOf(profileId: string): ProgressView {
   const active = new Set(logs.map((l) => l.date));
   const tests = db.tests[profileId] ?? [];
   const stickers = db.cheers.filter((c) => c.toProfileId === profileId && c.stickerId);
-  // 이 경험치 줄은 그 사람이 읽는다. 아이에게 부모는 엄마 · 아빠다
+  // 이 경험치 줄은 그 사람이 읽는다. 보호자는 프로필 이름으로 부른다
   const people = db.profiles.profiles ?? [];
-  const forKid = people.find((p) => p.profileId === profileId)?.role === "CHILD";
   const fromOf = (id: string, fallback: string) =>
-    callName(people.find((p) => p.profileId === id) as Profile | undefined, fallback, forKid);
+    callName(people.find((p) => p.profileId === id) as Profile | undefined, fallback);
 
   const events: XpEvent[] = [
     ...logs.map((l) => ({
@@ -124,7 +123,7 @@ export function progressOf(profileId: string): ProgressView {
       at: c.createdAt,
     })),
     ...tests.slice(0, -1).map((t) => ({
-      reason: "키 · 몸무게를 새로 쟀어요",
+      reason: "키와 몸무게를 새로 쟀어요",
       amount: XP.MEASURE,
       at: timeOn(t.testedOn),
     })),
@@ -239,7 +238,7 @@ function achievementsOf(
     {
       code: "FULL_SET",
       title: "준비부터 정리까지",
-      description: "준비 · 본 · 정리를 한 번에 다 해요",
+      description: "준비운동부터 정리운동까지 한 번에 다 해요",
       earnedAt: at(fullSet),
     },
     {
@@ -263,7 +262,7 @@ function achievementsOf(
     {
       code: "TOGETHER",
       title: "가족과 함께",
-      description: "엄마 · 아빠와 같은 날 운동해요",
+      description: "보호자와 같은 날 운동해요",
       earnedAt: at(together),
     },
     {
@@ -275,7 +274,7 @@ function achievementsOf(
     {
       code: "REMEASURE",
       title: "자란 만큼 다시",
-      description: "키 · 몸무게를 새로 재요",
+      description: "키와 몸무게를 새로 재요",
       earnedAt: at(remeasuredOn),
     },
     {

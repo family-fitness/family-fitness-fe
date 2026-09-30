@@ -11,6 +11,7 @@ import {
   acting,
   bandOf,
   gradeOf,
+  mockCertification,
   db,
   fail,
   fixtures,
@@ -30,6 +31,7 @@ import {
   participantOf,
   saveRestDays,
   sessionsOfRow,
+  withMedia,
 } from "./db";
 
 import { clips } from "./clips";
@@ -184,6 +186,26 @@ const identity = [
   }),
 
   /**
+   * 심사용 계정으로 들어간다. 토큰 없이 부르고, 본문 `{ kind }` 로 세 흐름 가운데 하나를 고른다.
+   *
+   *   FAMILY(본문이 없거나 kind 가 없을 때도)  체험 가족의 보호자로 홈에. 진짜 서버는 부를 때마다 새 계정과
+   *                                          「체험 가족」 을 만든다. 목은 식구와 측정 기록이 다 차 있는 서준이네로 들어간다
+   *   FRESH    가족이 없는 새 계정 — 개발용 「새 계정 · 가족 없음」 과 같다(nextStep CREATE_FAMILY)
+   *   INVITED  가족이 없는 새 계정과, 체험 가족의 초대코드(`inviteCode`). 개발용 「초대받은 계정」 과 같게
+   *            서준이네 아빠 자리 코드(K7M2QT)를 준다
+   *
+   * 모르는 kind 는 400.
+   */
+  http.post(`${BASE}/auth/review-login`, async ({ request }) => {
+    const body = (await request.json().catch(() => ({}))) as { kind?: unknown } | null;
+    const kind = body?.kind ?? "FAMILY";
+    if (kind === "FAMILY") return HttpResponse.json(signIn(undefined));
+    if (kind === "FRESH") return HttpResponse.json(signIn(FRESH_ID));
+    if (kind === "INVITED") return HttpResponse.json({ ...signIn(CLAIM_ID), inviteCode: "K7M2QT" });
+    return fail(400, "INVALID_REQUEST", "kind 는 FAMILY, FRESH, INVITED 가운데 하나입니다");
+  }),
+
+  /**
    * 구글에서 받은 인가코드를 토큰으로 바꾼다.
    *
    * 목에 이게 없어서 요청이 브라우저를 빠져나가 `localhost:8080` 으로 나갔다.
@@ -253,6 +275,10 @@ const identity = [
     const age = ageOf(birthDate);
     if (!name || age == null) return fail(400, "INVALID_INPUT", "이름과 생일이 필요합니다");
     const consentRequired = age < 14;
+    // 서버와 같게 — 만 14세 미만은 보호자(PARENT)로 들어올 수 없다(동의보다 먼저 본다)
+    if (body.role === "PARENT" && consentRequired) {
+      return fail(422, "UNDER_14_NOT_ALLOWED", "만 14세 미만은 보호자가 될 수 없습니다");
+    }
 
     const consent = body.guardianConsent as
       { personalData?: boolean; healthData?: boolean } | undefined;
@@ -420,9 +446,12 @@ const identity = [
    * 칭찬을 보내는 길은 있는데 받은 걸 보는 길이 없어서 기능이 성립하지 않는다.
    */
   http.get(`${BASE}/families/:familyId/cheers`, ({ request }) => {
-    const to = new URL(request.url).searchParams.get("toProfileId");
-    const cheers = (to ? db.cheers.filter((c) => c.toProfileId === to) : db.cheers)
-      .slice()
+    const params = new URL(request.url).searchParams;
+    const to = params.get("toProfileId");
+    // 서버와 같게 — missionId 로 좁혀 읽는다(「벌써 알렸나」)
+    const mission = params.get("missionId");
+    const cheers = db.cheers
+      .filter((c) => (!to || c.toProfileId === to) && (!mission || c.missionId === mission))
       .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
     return HttpResponse.json({ cheers });
   }),
@@ -476,7 +505,7 @@ const fitness = [
         s.minutes <= 120,
     );
     if (slots.length !== (body.slots ?? []).length) {
-      return fail(400, "INVALID_SLOT", "요일 · 시각 · 시간 중 맞지 않는 값이 있습니다");
+      return fail(400, "INVALID_SLOT", "요일, 시각, 시간 가운데 맞지 않는 값이 있습니다");
     }
     db.availability[String(params.profileId)] = slots;
     saveExtra("availability");
@@ -519,6 +548,8 @@ const fitness = [
         source: string;
         heightCm?: number;
         weightKg?: number;
+        bodyFatPct?: number;
+        waistCm?: number;
         items: { itemCode: string; value: number }[];
       };
       // 지난 날짜로 적은 회차는 이력에만 들어간다 — 가장 최근 회차가 「지금」 이다
@@ -557,10 +588,13 @@ const fitness = [
       const sorted = [...items].sort((a, b) => a.percentile - b.percentile);
       const factorOf = (code: string) =>
         catalogue?.items.find((i) => i.itemCode === code)?.factor ?? "유연성";
+      const overall = Math.round(items.reduce((s, i) => s + i.percentile, 0) / items.length);
 
       const result: Concrete<FitnessTestResult> = {
         fitnessTestId: uuid(),
         testedOn: body.testedOn,
+        bodyFatPct: body.bodyFatPct ?? null,
+        waistCm: body.waistCm ?? null,
         items,
         weakest: {
           factor: factorOf(sorted[0].itemCode),
@@ -572,10 +606,15 @@ const fitness = [
           itemCode: sorted[sorted.length - 1].itemCode,
           percentile: sorted[sorted.length - 1].percentile,
         },
+        certification: mockCertification(
+          profile.ageGroup,
+          (profile as Profile).sex ?? "F",
+          items.map((i) => i.itemCode),
+          overall,
+        ),
         disclaimer: fixtures.fitnessMap.disclaimer,
       };
 
-      const overall = Math.round(items.reduce((s, i) => s + i.percentile, 0) / items.length);
       // 레이더는 요인마다 그 요인을 잰 항목의 백분위. 안 잰 요인은 null 이다
       const radar = [...new Set((catalogue?.items ?? []).map((i) => i.factor))].map((factor) => ({
         factor,
@@ -584,6 +623,8 @@ const fitness = [
       if (newest) {
         db.latest[profileId] = {
           ...result,
+          heightCm: body.heightCm ?? null,
+          weightKg: body.weightKg ?? null,
           radar: radar as Concrete<LatestFitnessTest>["radar"],
           coachDirection: sorted[0].percentile > 75 ? "STRENGTHEN" : "GROWTH",
         };
@@ -699,7 +740,9 @@ const missions = [
         ? {
             sessions: body.sessions.map((s) => {
               const { completed: _c, verifiedBy: _v, ...rest } = s as Record<string, unknown>;
-              return rest;
+              // 서버처럼 칸의 영상에 공단 mp4 주소를 채운다 — 보낸 쪽은 아이디 · 구간만 싣는다
+              const clip = rest.clip as { videoId?: string | null } | null | undefined;
+              return clip ? { ...rest, clip: withMedia(clip) } : rest;
             }),
           }
         : {}),

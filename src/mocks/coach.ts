@@ -37,7 +37,7 @@ interface PlanParams {
   minutes: number;
   quiet: boolean;
   place: "HOME" | "OUTDOOR";
-  /** 부모가 고른 힘. 없으면 코치가 가장 낮은 요인을 고른다 */
+  /** 보호자가 키워 주고 싶은 역량(focus_factor). 없으면 코치가 가장 낮은 요인을 고른다 */
   focusFactor: string | null;
   withParent: boolean;
 }
@@ -83,13 +83,13 @@ function stepSummary(
   const minutes = plan.reduce((sum, s) => sum + s.minutes, 0);
   switch (name) {
     case "assess":
-      return `${who} · 측정 ${latest?.items?.length ?? 0}항목 · ${p.focusFactor ? `키울 힘 ${focus}(부모가 고름)` : `대상 요인 = ${focus}`}`;
+      return `${who}, 측정 ${latest?.items?.length ?? 0}항목, ${p.focusFactor ? `보호자가 키워 주고 싶은 역량 ${focus}` : `지금 키우기 좋은 영역 ${focus}`}`;
     case "retrieve":
-      return `국민체력100 운동처방 ${focus} 12건 · 클립 ${catalog.length}개 중 ${pool.length}개${p.quiet ? " · 조용한 것 먼저" : ""}`;
+      return `국민체력100 운동처방 ${focus} 12건, 클립 ${catalog.length}개 중 ${pool.length}개${p.quiet ? ", 조용한 것 먼저" : ""}`;
     case "compose":
-      return `준비 ${count("WARMUP")} · 본 ${count("MAIN")} · 정리 ${count("COOLDOWN")} · ${minutes}분`;
+      return `준비 ${count("WARMUP")}, 본 ${count("MAIN")}, 정리 ${count("COOLDOWN")}, 모두 ${minutes}분`;
     case "verify":
-      return "인용 2건 · 금지 어휘 0건";
+      return "인용 2건, 금지 어휘 0건";
   }
 }
 
@@ -108,7 +108,7 @@ function proposalFor(p: PlanParams, focus: string, runId: string) {
     position: 0,
     title: `${focus} 키우기 ${minutes}분`,
     rationale: p.focusFactor
-      ? `고르신 ${focus}을 본운동에 넣고, 몸을 푸는 동작을 앞뒤에 붙였어요.`
+      ? `키워 주고 싶다고 하신 ${focus}을 본운동에 넣고, 몸을 푸는 동작을 앞뒤에 붙였어요.`
       : `${kid}의 ${focus}이 또래보다 가장 낮아요. ${focus}을 기르는 동작을 본운동에 넣고, 늘이는 동작으로 시작과 끝을 잡았어요.`,
     targetMetric: "TIMER_MINUTES",
     targetValue: minutes,
@@ -124,18 +124,26 @@ function proposalFor(p: PlanParams, focus: string, runId: string) {
     citations: [
       {
         index: 1,
-        label: `국민체력100 운동처방 · ${ageGroup}`,
+        label: `국민체력100 운동처방 (${ageGroup})`,
         chunkId: `prescription:${ageGroup}-${focus}`,
         url: null,
       },
-      {
-        index: 2,
-        label: `국민체력100 운동영상 · ${first?.title ?? "기초체력"}`,
-        chunkId: `video:${first?.clip.videoId ?? ""}`,
-        url: first
-          ? `https://www.youtube.com/watch?v=${first.clip.videoId}&t=${first.clip.startSec}s`
-          : null,
-      },
+      // 공단 영상은 코퍼스 색인에 없어 AI 가 `kspo:<영상 아이디>` 로 인용한다(인터페이스 명세)
+      first?.clip.mediaUrl
+        ? {
+            index: 2,
+            label: `국민체력100 동영상 정보: ${first.title}`,
+            chunkId: `kspo:${first.clip.videoId}`,
+            url: first.clip.mediaUrl,
+          }
+        : {
+            index: 2,
+            label: `국민체력100 운동영상: ${first?.title ?? "기초체력"}`,
+            chunkId: `video:${first?.clip.videoId ?? ""}`,
+            url: first
+              ? `https://www.youtube.com/watch?v=${first.clip.videoId}&t=${first.clip.startSec}s`
+              : null,
+          },
     ],
     sessions,
   };
@@ -256,9 +264,14 @@ export const coaching = [
   }),
 
   /** ▲ 서버에 아직 없다. 기기에 든 runId 가 없어도 오늘 제안을 다시 찾게 */
-  http.get(`${BASE}/families/:familyId/coach/runs/latest`, () => {
+  http.get(`${BASE}/families/:familyId/coach/runs/latest`, ({ request }) => {
     if (!db.hasCoachRun) return fail(404, "NO_RUN", "회차가 없습니다");
     const run = advance(current());
+    // 서버와 같게 — 아이를 주면 그 아이를 짠 회차만. 목은 회차가 하나라 다른 아이면 없다
+    const profileId = new URL(request.url).searchParams.get("profileId");
+    if (profileId && run.params && run.params.profileId !== profileId) {
+      return fail(404, "COACH_RUN_NOT_FOUND", "회차가 없습니다");
+    }
     return HttpResponse.json(run);
   }),
 

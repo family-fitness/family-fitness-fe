@@ -26,7 +26,7 @@ await context.addInitScript(() => {
     );
 });
 // 유튜브는 막는다. 없어도 타이머로 끝까지 가야 한다
-await context.route(/youtube\.com|ytimg\.com/, (route) => route.abort());
+await context.route(/youtube\.com|ytimg\.com|openapi\.kspo\.or\.kr/, (route) => route.abort());
 
 const page = await context.newPage();
 const errors = [];
@@ -73,8 +73,8 @@ for (const minutes of [4, 4, 1, 1]) {
   await page.clock.runFor(minutes * 60 * 1000 + 600);
   await page.clock.runFor(10500);
 }
-await step("다 하면 엄마 · 아빠한테 알린다", async () => {
-  await page.getByRole("button", { name: "엄마 · 아빠한테 알리기" }).click({ timeout: 8000 });
+await step("다 하면 보호자한테 알린다", async () => {
+  await page.getByRole("button", { name: /한테 알리기$/ }).click({ timeout: 8000 });
   await page.getByText(/알렸어요/).waitFor({ timeout: 5000 });
 });
 await page.clock.resume();
@@ -93,10 +93,10 @@ const xpBefore = await xpNow();
 // 2. 부모 — 종에 점, 알림을 누르면 스티커 붙이기로
 await become("parent", "/parent");
 await step("부모 종에 새 알림 점이 뜬다", async () => {
-  await page.getByRole("link", { name: "알림 · 새로 온 것 있음" }).waitFor({ timeout: 10000 });
+  await page.getByRole("link", { name: "알림, 새 알림이 있어요" }).waitFor({ timeout: 10000 });
 });
 await step("알림에 아이가 마쳤다는 말이 있다", async () => {
-  await page.getByRole("link", { name: "알림 · 새로 온 것 있음" }).click();
+  await page.getByRole("link", { name: "알림, 새 알림이 있어요" }).click();
   await page
     .getByText(/서준이 운동을 마쳤어요/)
     .first()
@@ -118,21 +118,21 @@ await step("스티커를 고르기만 해도 붙는다", async () => {
 // 3. 아이 — 스티커 알림, 누르면 캘린더 그날에 붙어 있다
 await become("kid", "/kid");
 await step("아이 종에 새 알림 점이 뜬다", async () => {
-  await page.getByRole("link", { name: "알림 · 새로 온 것 있음" }).waitFor({ timeout: 10000 });
+  await page.getByRole("link", { name: "알림, 새 알림이 있어요" }).waitFor({ timeout: 10000 });
 });
-await step("알림에 엄마가 스티커를 붙여 줬다는 말이 있다(이름이 아니라 엄마)", async () => {
-  await page.getByRole("link", { name: "알림 · 새로 온 것 있음" }).click();
-  await page.getByText("엄마가 스티커를 붙여 줬어요").first().waitFor({ timeout: 8000 });
+await step("알림에 은영이 스티커를 붙여 줬다는 말이 있다(엄마가 아니라 프로필 이름)", async () => {
+  await page.getByRole("link", { name: "알림, 새 알림이 있어요" }).click();
+  await page.getByText("은영이 스티커를 붙여 줬어요").first().waitFor({ timeout: 8000 });
 });
 await step("누르면 캘린더 오늘 칸에 그 스티커가 있다", async () => {
-  await page.getByText("엄마가 스티커를 붙여 줬어요").first().click();
+  await page.getByText("은영이 스티커를 붙여 줬어요").first().click();
   await page.waitForURL(/\/calendar/, { timeout: 8000 });
   await page.getByText("최고야").first().waitFor({ timeout: 8000 });
 });
 await step("스티커만큼 경험치가 들어왔다 — 목록에도, 숫자에도", async () => {
   const after = await xpNow();
   await page
-    .getByText(/엄마가 붙여 준 스티커/)
+    .getByText(/은영이 붙여 준 스티커/)
     .first()
     .waitFor({ timeout: 8000 });
   if (!(after === xpBefore + 10)) throw new Error(`경험치 ${xpBefore} → ${after} (10 늘어야 한다)`);
@@ -149,7 +149,7 @@ await step("받은 스티커 아래에서 고마워요를 보낼 수 있다", as
 // 5. 부모 — 종에 「서준이 고맙대요」
 await become("parent", "/parent");
 await step("부모 종에 아이가 고맙대요가 온다", async () => {
-  await page.getByRole("link", { name: "알림 · 새로 온 것 있음" }).click({ timeout: 10000 });
+  await page.getByRole("link", { name: "알림, 새 알림이 있어요" }).click({ timeout: 10000 });
   await page.getByText("서준이 고맙대요").first().waitFor({ timeout: 8000 });
 });
 

@@ -19,7 +19,7 @@ export default function Error({
   return (
     <PlainScreen className="flex min-h-dvh flex-col items-center justify-center gap-3 text-center">
       <Illustration name="scene/kiumi-rest" size={140} />
-      <h1 className="page-title">화면을 그리지 못했어요</h1>
+      <h1 className="page-title">화면을 불러오지 못했어요</h1>
       <Button size="md" className="mt-2" onClick={() => retry()}>
         다시 해 볼게요
       </Button>
