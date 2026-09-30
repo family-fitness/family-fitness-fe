@@ -61,8 +61,9 @@ export function FamilyProfile({
           <h2 className="text-metric truncate leading-tight font-extrabold">{familyName}</h2>
           {/* 말 덩어리째 줄을 바꾼다 — 320 폭에서 「10가족 중 / 2등」 으로 쪼개졌다 */}
           <p className="text-signal-deep text-body mt-0.5 font-extrabold">
-            <span className="whitespace-nowrap">{tierName(tier)} 리그</span> ·{" "}
-            <span className="whitespace-nowrap">{place}</span>
+            <span className="whitespace-nowrap">{tierName(tier)} 리그</span>{" "}
+            {/* 가운뎃점은 뒤 말에 붙인다 — 앞에 붙으면 줄 끝에 「골드 리그 ·」 로 홀로 남았다 */}
+            <span className="whitespace-nowrap">· {place}</span>
           </p>
         </div>
       </div>
