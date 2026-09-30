@@ -23,6 +23,7 @@ import {
 } from "@/lib/api/queries";
 import { bodyError, bodyValue, rangeHint } from "@/lib/body";
 import { errorMessage } from "@/lib/errors";
+import { NEED_CHILD_COPY } from "@/lib/family";
 import type { ConsentKind } from "@/lib/legal";
 import { useSession } from "@/lib/session";
 import { ageOf, daysBefore, today } from "@/lib/today";
@@ -231,7 +232,16 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       ? steps.indexOf("kid-name")
       : 0;
   // 첫 칸에서는 들어온 곳으로 — 홈 화면에 얹은 앱에는 브라우저 뒤로가 없다
-  const exit = () => router.replace(mode === "child" && roleMode !== "kid" ? "/parent" : "/start");
+  // 아이가 한 명도 없는 가족은 홈이 닫혀 있다(ChildRequired) — 첫 칸의 뒤로는 설정(로그아웃)으로 보낸다
+  const noChildYet =
+    mode === "child" &&
+    roleMode !== "kid" &&
+    family != null &&
+    !family.profiles?.some((p) => p.role === "CHILD");
+  const exit = () =>
+    router.replace(
+      noChildYet ? "/settings" : mode === "child" && roleMode !== "kid" ? "/parent" : "/start",
+    );
   const back = at > firstEditable ? () => go(-1) : at === 0 && !childId ? exit : undefined;
 
   // 가족이 이미 있는데 가족 만들기가 처음부터 떴다 — 새로고침이다. 다시 만들면 「이미 가족이 있어요」 에 갇힌다
@@ -494,6 +504,12 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       case "kid-name":
         return (
           <WizardShell {...common} title="아이 이름을 알려 주세요">
+            {/* 아이 없는 가족이 앱 화면에서 여기로 왔다 — 왜 왔는지 한 줄로 */}
+            {noChildYet && (
+              <p role="status" className="text-ink-soft mb-4 text-sm font-semibold">
+                {NEED_CHILD_COPY}
+              </p>
+            )}
             <BigInput label="아이 이름" value={kidName} onChange={setKidName} placeholder="서준" />
           </WizardShell>
         );

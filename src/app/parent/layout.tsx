@@ -3,12 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 
+import { ChildRequired } from "@/components/app-shell/child-required";
 import { RouteLoading } from "@/components/app-shell/route-loading";
 import { useSession } from "@/lib/session";
 import { useHydrated } from "@/lib/view-role";
 import { useRoleStore } from "@/stores/role-store";
 
-/** 부모 구역 문지기. */
+/** 부모 화면 가드 컴포넌트. 아이 화면은 아이 홈으로, 아이 없는 가족은 아이 등록으로(가족 관리는 열어 둔다). */
 export default function ParentAreaLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { profile, isPending } = useSession();
@@ -24,5 +25,5 @@ export default function ParentAreaLayout({ children }: { children: ReactNode }) 
 
   // 잠깐이라도 비치면 안 된다 — 그동안은 화면이 넘어갈 때와 같은 뼈대
   if (!hydrated || blocked) return <RouteLoading />;
-  return children;
+  return <ChildRequired>{children}</ChildRequired>;
 }

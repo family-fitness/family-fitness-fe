@@ -38,7 +38,7 @@ import { orderSessions, proposalSessions, sessionsOf, totalMinutes } from "@/lib
 import { todayActivity } from "@/lib/activity";
 import { josa } from "@/lib/utils";
 import { finderHref, finderOwner } from "@/lib/videos";
-import { callName, guardiansName } from "@/lib/family";
+import { callName, guardiansName, mustAddChild, openWithoutChild } from "@/lib/family";
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -584,6 +584,41 @@ check(
   guardiansName([{ name: "은영" }, { name: "도현" }]) === "보호자",
 );
 check("보호자가 없으면 「보호자」", guardiansName([]) === "보호자");
+
+/* ─── 아이 없는 가족 ─────────────────────────────────── */
+
+const parent = { role: "PARENT" as const };
+const kidRow = { role: "CHILD" as const };
+check(
+  "보호자만 있는 가족은 아이 등록으로 보낸다",
+  mustAddChild({ kidView: false, me: parent, profiles: [parent] }),
+);
+check(
+  "아이가 한 명이라도 있으면 보내지 않는다",
+  !mustAddChild({ kidView: false, me: parent, profiles: [parent, kidRow] }),
+);
+check(
+  "가족을 아직 못 받았으면 보내지 않는다 — 받는 동안 튕기지 않게",
+  !mustAddChild({ kidView: false, me: parent, profiles: undefined }),
+);
+check(
+  "아이 화면(제 폰 쓰는 아이 · 아이 모드)은 보내지 않는다",
+  !mustAddChild({ kidView: true, me: parent, profiles: [parent] }) &&
+    !mustAddChild({ kidView: false, me: kidRow, profiles: [] }),
+);
+check(
+  "설정 · 알림 · 가족 관리는 아이 없이도 열린다",
+  openWithoutChild("/settings") &&
+    openWithoutChild("/settings/privacy") &&
+    openWithoutChild("/notifications") &&
+    openWithoutChild("/parent/family"),
+);
+check(
+  "홈 · 편성 · 캘린더 · 리그 · 운동 찾기 · 결과는 닫힌다",
+  ["/parent", "/plan", "/calendar", "/parent/league", "/videos", "/p/x/result"].every(
+    (p) => !openWithoutChild(p),
+  ),
+);
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);
