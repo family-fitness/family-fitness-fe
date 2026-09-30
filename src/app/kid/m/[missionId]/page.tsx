@@ -497,7 +497,7 @@ export default function PlayPage() {
             />
           ))}
 
-          <li id="step-end" className="scroll-mt-40 pt-2 pb-6">
+          <li id="step-end" className="scroll-mt-24 pt-2 pb-6">
             {unsaved.length > 0 ? (
               // 못 보낸 칸이 있으면 「다 했어요」 · 「알리기」 를 띄우지 않는다 — 부모가 빈 기록을 보게 된다
               <section className="card-hero text-center" role="alert">
@@ -596,7 +596,7 @@ function Step({
   const clip = s.clip;
 
   return (
-    <li id={`step-${s.position}`} className="relative scroll-mt-40 pb-3 pl-11">
+    <li id={`step-${s.position}`} className="relative scroll-mt-24 pb-3 pl-11">
       {/* 길. 끝낸 칸까지는 파랑, 그 아래는 회색 */}
       {!last && (
         <span

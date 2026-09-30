@@ -406,6 +406,11 @@ body {
     outline: 2px solid var(--color-signal);
     outline-offset: 2px;
   }
+  /* 위 막대(56px) · 노치 밑으로 초점이 숨지 않게 — Shift+Tab 으로 올라가면 붙어 있는 막대가 초점 칸을 덮었다(9/30 점검).
+     운동하기의 칸(scroll-mt-24)은 이것과 더해 징검다리 머리(160px) 밑에 선다 */
+  html {
+    scroll-padding-top: calc(3.5rem + env(safe-area-inset-top) + 0.5rem);
+  }
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

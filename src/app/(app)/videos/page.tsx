@@ -118,7 +118,8 @@ function Finder() {
     <>
       <AppBar back title="운동 찾기" />
       <Stage wide className={cn("space-y-3", moves.length > 0 && !kidView && "pb-32")}>
-        <div className="card flex items-center gap-2 py-2">
+        {/* 초점은 칸 전체에 — 안쪽 입력의 테두리는 끄고 카드가 파란 고리를 두른다(초점이 안 보였다) */}
+        <div className="card focus-within:outline-signal flex items-center gap-2 py-2 focus-within:outline-2 focus-within:outline-offset-2">
           <Search aria-hidden className="text-faint size-5 shrink-0" />
           <input
             type="search"
