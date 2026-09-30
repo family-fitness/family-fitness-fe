@@ -30,6 +30,9 @@ const CSP = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  /** 응답마다 「X-Powered-By: Next.js」 를 붙이지 않는다 — 무엇으로 만들었는지 밖에 알릴 까닭이 없다 */
+  poweredByHeader: false,
+
   /**
    * 브라우저에게는 /api/v1/... 이 프론트와 같은 출처로 보이고,
    * Next 서버가 뒤에서 백엔드로 넘긴다.
