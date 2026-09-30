@@ -62,7 +62,7 @@ export default function WhoPage() {
     <>
       <AppBar back />
       <Stage className="space-y-4">
-        <h1 className="text-[1.6rem] leading-tight font-extrabold">누구야?</h1>
+        <h1 className="page-title">누구야?</h1>
 
         {kids.length === 0 && (
           <EmptyState
@@ -85,7 +85,7 @@ export default function WhoPage() {
                   setChild(kid.profileId ?? null);
                   router.replace("/kid");
                 }}
-                className="press border-line flex w-full items-center gap-4 rounded-3xl border-2 p-4 text-left"
+                className="press card flex w-full items-center gap-4 text-left"
               >
                 <ProfileAvatar profileId={kid.profileId} name={kid.name} size="lg" />
                 <span className="text-xl font-extrabold">{kid.name}</span>

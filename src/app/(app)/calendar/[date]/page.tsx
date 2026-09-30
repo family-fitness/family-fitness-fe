@@ -2,7 +2,7 @@
 
 import { CalendarDays, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -19,7 +19,7 @@ import type { DayLog, Mission, ProfileWithSex } from "@/lib/api/types";
 import { useCalendar, useFamilyProfiles, useFitnessMap, useMissions } from "@/lib/api/queries";
 import { daySummary, didSomething, isRealDate, plannedDay, plannedOn } from "@/lib/day";
 import { callName } from "@/lib/family";
-import { VERIFIED_COPY } from "@/lib/mission";
+import { verifiedLabel } from "@/lib/mission";
 import { PHASE_LABEL, sessionsOf, stepMinutes, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { stickerOf } from "@/lib/stickers";
@@ -79,7 +79,29 @@ function Day() {
   // 한 번만 받는다 — 앞으로 할 것도 이 목록에서 날짜로 고른다(전에는 ACTIVE 와 ALL 을 둘 다 받았다)
   const { data: all } = useMissions(familyId, { scope: "ALL" });
 
-  const back = kidView ? "/kid" : "/parent";
+  // 앞날인데 잡아 둔 운동이 없다 — 달력이 누를 수 없게 둔 날이다. 주소로 곧장 와도 빈 하루를 보이지 않고 오늘로.
+  // 운동 목록 · 볼 아이를 다 받은 뒤에만 정한다(받기 전에 보내면 잡아 둔 앞날도 튕긴다)
+  const unplannedFuture =
+    date > now && all !== undefined && who !== undefined
+      ? !(all.missions ?? []).some(
+          (m) =>
+            m.participants?.some((p) => p.profileId === who.profileId) &&
+            plannedDay(m, now) === date,
+        )
+      : false;
+  useEffect(() => {
+    if (!unplannedFuture) return;
+    const keep = asked && asked === who?.profileId ? `?profileId=${encodeURIComponent(asked)}` : "";
+    router.replace(`/calendar/${now}${keep}`);
+  }, [unplannedFuture, now, asked, who?.profileId, router]);
+
+  // 달력에서 왔으면 그 달력으로, 아니면(홈 · 알림) 홈으로 — 달력을 건너뛰고 홈으로 가면 폰의 뒤로가 달력을 다시 열었다
+  const fromCalendar = search.get("from") === "calendar";
+  const back = fromCalendar
+    ? `/calendar?month=${monthOf(date)}${asked ? `&profileId=${encodeURIComponent(asked)}` : ""}`
+    : kidView
+      ? "/kid"
+      : "/parent";
   const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
     return (
@@ -121,8 +143,20 @@ function Day() {
   const logs = new Map((calendar?.days ?? []).map((d) => [d.date, d]));
   const log = logs.get(date);
   const summary = daySummary(log);
+  // 쉬는 날 카드를 쓰고 움직이지 않은 날 — 빈 날이 아니라 쉬기로 한 날이다. 목표(「/ 12분」)를 대지 않는다(규칙 15)
+  const resting = Boolean(log?.rest) && summary.moved === 0;
   // 한 칸이라도 한 것만 「한 운동」. 아직 시작 안 한 오늘 운동은 「할 운동」 이다
   const doneEntries = (log?.entries ?? []).filter(didSomething);
+  // 스티커는 그날 한 운동에 붙인다 — 직접 적은 기록이 먼저다. 스티커가 곧 보호자 확인이다(규칙 2)
+  const cheerFor = doneEntries.find((e) => e.verifiedBy === "SELF_REPORT") ?? doneEntries.at(-1);
+  // 직접 적은 기록을 부모가 확인했나 — 그날 기록에는 없어 운동 목록에서 찾는다. 모르면 확인 필요로 둔다
+  const needsCheckOf = (missionId: string) =>
+    all?.missions
+      ?.find((m) => m.missionId === missionId)
+      ?.participants?.find((p) => p.profileId === who.profileId)?.needsGuardianCheck;
+  const selfNeedsCheck = doneEntries.some(
+    (e) => e.verifiedBy === "SELF_REPORT" && needsCheckOf(e.missionId) !== false,
+  );
   // 쉬기로 한 날에는 할 운동을 늘어놓지 않는다 — 쉬는 날에 운동을 권하지 않는다(규칙 15).
   // 그날 기록이 오기 전에도 — 이미 한 운동 · 쉬기로 한 날인지 모르는 채 「할 운동」 이 먼저 번쩍였다
   const planned =
@@ -159,7 +193,10 @@ function Day() {
       kidView,
     );
   const suffix = asked && asked === who.profileId ? `?profileId=${encodeURIComponent(asked)}` : "";
-  const go = (d: string) => router.replace(`/calendar/${d}${suffix}`, { scroll: false });
+  // 하루씩 옮겨도 어디서 왔는지는 남긴다 — 뒤로가 달력으로 가게
+  const dayQuery = [fromCalendar && "from=calendar", suffix.slice(1)].filter(Boolean).join("&");
+  const go = (d: string) =>
+    router.replace(`/calendar/${d}${dayQuery ? `?${dayQuery}` : ""}`, { scroll: false });
   const sticker = log?.stickers[0];
 
   return (
@@ -171,7 +208,7 @@ function Day() {
           <NavLink
             href={`/calendar?month=${monthOf(date)}${suffix ? `&${suffix.slice(1)}` : ""}`}
             aria-label="달력"
-            className="press text-ink-soft grid size-10 place-items-center rounded-full"
+            className="press text-ink-soft grid size-11 place-items-center rounded-full"
           >
             <CalendarDays aria-hidden className="size-5" />
           </NavLink>
@@ -184,9 +221,12 @@ function Day() {
             selectedId={who.profileId}
             onSelect={(id) => {
               setChild(id);
-              router.replace(`/calendar/${date}?profileId=${encodeURIComponent(id)}`, {
-                scroll: false,
-              });
+              router.replace(
+                `/calendar/${date}?${fromCalendar ? "from=calendar&" : ""}profileId=${encodeURIComponent(id)}`,
+                {
+                  scroll: false,
+                },
+              );
             }}
           />
         )}
@@ -266,7 +306,7 @@ function Day() {
         ) : (
           <section className="card-hero">
             {/* 쉬는 날 카드를 쓴 날 — 빈 날이 아니라 쉬기로 한 날이다. 그날 움직였으면 한 것이 먼저다(달력 칸과 같게) */}
-            {log?.rest && summary.moved === 0 && (
+            {resting && (
               <p className="text-caption text-ink-soft mb-2 text-center font-extrabold">
                 쉬기로 한 날
               </p>
@@ -289,14 +329,14 @@ function Day() {
                 label="움직인 시간"
                 value={summary.moved}
                 unit="분"
-                goal={summary.planned ? `/ ${summary.planned}분` : null}
+                goal={summary.planned && !resting ? `/ ${summary.planned}분` : null}
               />
               <Tile
                 dot="bg-mark"
                 label="끝낸 운동"
                 value={summary.done}
                 unit="개"
-                goal={summary.total ? `/ ${summary.total}개` : null}
+                goal={summary.total && !resting ? `/ ${summary.total}개` : null}
               />
               {summary.stickers > 0 && <Tile label="칭찬" value={summary.stickers} unit="장" />}
             </div>
@@ -312,9 +352,13 @@ function Day() {
                       value={`${summary.phases[phase]}분`}
                     />
                   ))}
-                {summary.verified.map((v) => (
-                  <Leader key={v} label="확인" value={VERIFIED_COPY[v]} />
-                ))}
+                {/* 「확인」 은 한 줄 — 무엇으로 확인했는지가 여럿이면 값만 줄을 바꾼다(같은 이름 두 줄은 틀린 화면처럼 보였다) */}
+                {summary.verified.length > 0 && (
+                  <Leader
+                    label="확인"
+                    value={summary.verified.map((v) => verifiedLabel(v, selfNeedsCheck))}
+                  />
+                )}
               </dl>
             )}
           </section>
@@ -329,6 +373,7 @@ function Day() {
                   key={entry.missionId}
                   entry={entry}
                   mission={all?.missions?.find((m) => m.missionId === entry.missionId)}
+                  needsCheck={needsCheckOf(entry.missionId)}
                 />
               ))}
             </ul>
@@ -373,7 +418,7 @@ function Day() {
 
         {!kidView && date === now && summary.moved > 0 && summary.stickers === 0 && (
           <NavLink
-            href={`/parent/sticker/${who.profileId}`}
+            href={`/parent/sticker/${who.profileId}${cheerFor ? `?missionId=${encodeURIComponent(cheerFor.missionId)}` : ""}`}
             className="press bg-signal-strong flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold text-white"
           >
             칭찬 스티커 붙이기
@@ -413,13 +458,21 @@ function Tile({
   );
 }
 
-/** 점선으로 잇는 요약 한 줄 */
-function Leader({ label, value }: { label: string; value: string }) {
+/** 점선으로 잇는 요약 한 줄. 값이 여럿이면 값만 줄을 바꿔 오른쪽에 쌓는다 */
+function Leader({ label, value }: { label: string; value: string | string[] }) {
   return (
     <div className="flex items-baseline gap-2 text-sm">
       <dt className="text-ink-soft shrink-0 font-semibold">{label}</dt>
       <span aria-hidden className="border-line mb-1 min-w-4 flex-1 border-b-2 border-dotted" />
-      <dd className="shrink-0 font-extrabold tabular-nums">{value}</dd>
+      <dd className="shrink-0 text-right font-extrabold tabular-nums">
+        {Array.isArray(value)
+          ? value.map((v) => (
+              <span key={v} className="block">
+                {v}
+              </span>
+            ))
+          : value}
+      </dd>
     </div>
   );
 }
@@ -435,7 +488,16 @@ function Thumb({ videoId }: { videoId?: string | null }) {
 }
 
 /** 그날 한 운동 한 개 — 칸마다 한 줄. 칸 없이 직접 적은 것(걷기 등)은 무엇으로 확인했는지만 */
-function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; mission?: Mission }) {
+function EntryRows({
+  entry,
+  mission,
+  needsCheck,
+}: {
+  entry: DayLog["entries"][number];
+  mission?: Mission;
+  /** 직접 적은 기록을 부모가 아직 확인하지 않았나. 모르면 undefined */
+  needsCheck?: boolean;
+}) {
   // 칸 이름과 영상만 쓴다 — 끝냈는지는 그날 기록(`entry.sessions`)이 말한다
   const clips = sessionsOf(mission, null);
   if (!entry.sessions || entry.sessions.length === 0) {
@@ -446,7 +508,7 @@ function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; missi
           <span className="text-caption text-ink-soft block">
             {[
               entry.minutes > 0 && `${entry.minutes}분`,
-              entry.verifiedBy && VERIFIED_COPY[entry.verifiedBy],
+              entry.verifiedBy && verifiedLabel(entry.verifiedBy, needsCheck),
             ]
               .filter(Boolean)
               .join(" · ")}
@@ -465,9 +527,14 @@ function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; missi
           return (
             <li key={`${s.title}-${i}`} className="flex items-center gap-3">
               <Thumb videoId={mission ? clip?.videoId : null} />
-              <span className={cn("min-w-0 flex-1", !s.done && "opacity-50")}>
-                <span className="block truncate text-sm font-bold">{s.title}</span>
-                <span className="text-caption text-ink-soft block">
+              {/* 아직 안 한 동작은 흐리게 — 반투명으로 흐리면 대비가 3.4:1 로 떨어졌다(9/30 점검). 글자색으로 */}
+              <span className="min-w-0 flex-1">
+                <span
+                  className={cn("block truncate text-sm font-bold", !s.done && "text-ink-soft")}
+                >
+                  {s.title}
+                </span>
+                <span className={cn("text-caption block", s.done ? "text-ink-soft" : "text-faint")}>
                   {PHASE_LABEL[s.phase]} · {stepMinutes(s)}분
                 </span>
               </span>

@@ -28,6 +28,7 @@ import {
   daySummary,
   dayWork,
   didSomething,
+  isOpenMonth,
   isRealDate,
   missionsOn,
   plannedDay,
@@ -38,6 +39,7 @@ import { orderSessions, proposalSessions, sessionsOf, totalMinutes } from "@/lib
 import { todayActivity } from "@/lib/activity";
 import { josa } from "@/lib/utils";
 import { CONSENT_TERMS, PRIVACY_POLICY, TERMS_OF_SERVICE } from "@/lib/legal";
+import { verifiedLabel } from "@/lib/mission";
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -314,6 +316,23 @@ check(
 check(
   "직접 적어 낸 걸음수는 확인 전에도 한 것으로 보인다",
   didSomething({ ...dayLog.entries[1], completed: false }),
+);
+check(
+  "직접 적은 기록 — 부모가 확인하면 확인함, 모르면 확인 필요(확인된 척하지 않는다)",
+  verifiedLabel("SELF_REPORT", false) === "직접 입력함 · 부모 확인함" &&
+    verifiedLabel("SELF_REPORT", true) === "직접 입력함 · 부모 확인 필요" &&
+    verifiedLabel("SELF_REPORT", undefined) === "직접 입력함 · 부모 확인 필요" &&
+    verifiedLabel("TIMER", false) === "타이머로 확인됨",
+);
+check(
+  "캘린더가 보여 줄 달 — 2020년 1월부터 다음 달까지, 그 밖(0000-01 · 2031-01)은 아니다",
+  isOpenMonth("2026-10", "2026-09-30") &&
+    isOpenMonth("2020-01", "2026-09-30") &&
+    !isOpenMonth("2026-11", "2026-09-30") &&
+    !isOpenMonth("0000-01", "2026-09-30") &&
+    !isOpenMonth("2031-01", "2026-09-30") &&
+    !isOpenMonth("2026-13", "2026-09-30") &&
+    isOpenMonth("2027-01", "2026-12-15"),
 );
 check("달력에 있는 날", isRealDate("2026-09-23") && isRealDate("2024-02-29"));
 check(

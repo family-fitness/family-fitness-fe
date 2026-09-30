@@ -13,6 +13,9 @@
  *   2. 초대받은 계정 → 자리 확인 → 참여 방식 → 역할 고르기
  *   3. 첫 시작 중간에 새로고침 — 가족을 만든 뒤 · 아이를 만든 뒤. 두 번 만들지 않고 이어 간다.
  *      아이 등록 첫 칸의 뒤로 · 「지금 잴래요」 측정 화면의 뒤로가 홈으로 가는지
+ *   4. 첫 시작 중간에 폰 · 브라우저의 뒤로 — 한 칸 앞으로 가고 적은 것이 남는다.
+ *      가족을 만든 뒤에는 그 앞으로 가지 않는다
+ *   5. 첫 시작 중간에 새로고침한 뒤 폰의 뒤로 — 적은 것이 사라진 앞칸(빈 칸)으로 가지 않고 첫 시작 밖으로
  */
 import { chromium } from "playwright";
 
@@ -33,7 +36,13 @@ async function walk(name, run) {
   page.on("pageerror", (e) => noise.push("터짐: " + String(e).split("\n")[0].slice(0, 90)));
   page.on("console", (m) => {
     const t = m.text();
-    if (m.type() === "error" && !/favicon|ytimg|_next\/image|40[049] /.test(t)) {
+    // 유튜브 썸네일은 다음 화면으로 넘어가며 받다 끊기면 「Failed to load resource」 만 남는다 — 글에는 주소가 없어 자리로 거른다
+    const from = m.location()?.url ?? "";
+    if (
+      m.type() === "error" &&
+      !/favicon|ytimg|_next\/image|40[049] /.test(t) &&
+      !/ytimg|youtube/.test(from)
+    ) {
       noise.push("콘솔: " + t.split("\n")[0].slice(0, 90));
     }
   });
@@ -123,7 +132,7 @@ await walk("새 가족 만들기", async (h) => {
     const locked = await page.getByRole("button", { name: "다음", exact: true }).isDisabled();
     if (!locked) problems.push("새 가족 만들기\n    동의 없이도 다음이 열려 있다");
     await page.getByRole("checkbox", { name: /개인정보 수집 · 이용에 동의/ }).click();
-    await page.getByRole("checkbox", { name: /건강정보\(민감정보\) 처리에 동의/ }).click();
+    await page.getByRole("checkbox", { name: /민감정보\(건강정보\) 처리에 동의/ }).click();
     await next();
     await h.settle(900);
   });
@@ -244,7 +253,7 @@ await walk("새로고침에도 두 번 만들지 않는다", async (h) => {
     await next();
     await next("건너뛰기"); // 사진
     await page.getByRole("checkbox", { name: /개인정보 수집 · 이용에 동의/ }).click();
-    await page.getByRole("checkbox", { name: /건강정보\(민감정보\) 처리에 동의/ }).click();
+    await page.getByRole("checkbox", { name: /민감정보\(건강정보\) 처리에 동의/ }).click();
     await next();
   });
   // 가족만 만들고 새로고침했다 — 참여 방식을 아직 안 골랐으니 아이 다음에 묻는다(안 물으면 영영 빈다)
@@ -279,10 +288,98 @@ await walk("새로고침에도 두 번 만들지 않는다", async (h) => {
   });
 });
 
+/* ─── 4. 첫 시작 중간에 폰의 뒤로 ─────────────────────────── */
+
+await walk("폰의 뒤로는 한 칸 앞으로", async (h) => {
+  const { page } = h;
+  const next = async (name = "다음") => {
+    await page.getByRole("button", { name, exact: true }).click();
+    await h.settle(700);
+  };
+  const back = async () => {
+    await page.goBack({ waitUntil: "commit" }).catch(() => {});
+    await h.settle(900);
+  };
+  await h.step("가족 이름까지 적는다", async () => {
+    await page.goto(`${BASE}/login`, { waitUntil: "load", timeout: 30000 });
+    await h.settle(2400);
+    await page.getByRole("button", { name: /새 계정/ }).click();
+    await h.until(/\/start\/family/);
+    await next("좋아요");
+    await page.getByLabel("가족 이름").fill("바다네");
+    await next();
+    await page.getByLabel("보호자 이름").waitFor({ timeout: 8000 });
+  });
+  await h.step("뒤로 — 가족 이름 칸으로, 적은 것이 남아 있다", async () => {
+    await back();
+    if (!/\/start\/family/.test(page.url())) {
+      problems.push(`폰의 뒤로는 한 칸 앞으로\n    첫 시작 밖으로 나갔다 — ${page.url()}`);
+      return;
+    }
+    const name = await page.getByLabel("가족 이름").inputValue({ timeout: 8000 });
+    if (name !== "바다네")
+      problems.push(`폰의 뒤로는 한 칸 앞으로\n    적은 가족 이름이 사라졌다 — 「${name}」`);
+  });
+  await h.step("다시 다음 — 보호자 칸부터 가족을 만든다", async () => {
+    await next();
+    await page.getByLabel("보호자 이름").fill("수진");
+    await next();
+    await page.getByRole("radio", { name: /여성/ }).click();
+    await next();
+    await page.getByLabel("보호자 생년월일").fill("1987-06-15");
+    await next();
+    await next("건너뛰기"); // 사진 → 가족이 생긴다
+    await page.getByLabel("아이 이름").waitFor({ timeout: 8000 });
+  });
+  await h.step("가족을 만든 뒤 뒤로 — 아이 이름 칸에 남는다", async () => {
+    await back();
+    const onKid = await page.getByLabel("아이 이름").count();
+    if (!/\/start\/family/.test(page.url()) || onKid === 0) {
+      problems.push(
+        `폰의 뒤로는 한 칸 앞으로\n    가족을 만든 뒤 뒤로가 앞칸으로 갔다 — ${page.url()}`,
+      );
+    }
+  });
+});
+
+/* ─── 5. 새로고침한 뒤 폰의 뒤로 ─────────────────────────── */
+
+await walk("새로고침 뒤 폰의 뒤로는 빈 앞칸으로 가지 않는다", async (h) => {
+  const { page } = h;
+  const next = async (name = "다음") => {
+    await page.getByRole("button", { name, exact: true }).click();
+    await h.settle(700);
+  };
+  await h.step("보호자 이름 칸까지 간다", async () => {
+    await page.goto(`${BASE}/login`, { waitUntil: "load", timeout: 30000 });
+    await h.settle(2400);
+    await page.getByRole("button", { name: /새 계정/ }).click();
+    await h.until(/\/start\/family/);
+    await next("좋아요");
+    await page.getByLabel("가족 이름").fill("구름네");
+    await next();
+    await page.getByLabel("보호자 이름").waitFor({ timeout: 8000 });
+  });
+  await h.step("새로고침 — 적은 것이 사라지고 처음 칸이다", async () => {
+    await page.reload({ waitUntil: "load" });
+    await h.settle(2000);
+  });
+  await h.step("뒤로 — 빈 가족 이름 칸이 아니라 첫 시작 밖으로", async () => {
+    await page.goBack({ waitUntil: "commit" }).catch(() => {});
+    await h.settle(1200);
+    if (/\/start\/family/.test(page.url()) && (await page.getByLabel("가족 이름").count()) > 0) {
+      const name = await page.getByLabel("가족 이름").inputValue();
+      problems.push(
+        `새로고침 뒤 폰의 뒤로는 빈 앞칸으로 가지 않는다\n    적은 것이 사라진 앞칸으로 갔다 — 가족 이름 「${name}」`,
+      );
+    }
+  });
+});
+
 await browser.close();
 
 if (problems.length > 0) {
   console.error("가입 경로 문제:\n  " + problems.join("\n  "));
   process.exit(1);
 }
-console.log(`가입 경로 세 갈래 · 단계 ${steps}개 이상 없음`);
+console.log(`가입 경로 다섯 갈래 · 단계 ${steps}개 이상 없음`);

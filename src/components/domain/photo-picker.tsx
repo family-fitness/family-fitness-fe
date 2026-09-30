@@ -76,7 +76,7 @@ export function PhotoPicker({
         <button
           type="button"
           onClick={() => onChange(null)}
-          className="press text-ink-soft mt-3 min-h-10 text-sm font-bold"
+          className="press text-ink-soft mt-3 min-h-11 px-1 text-sm font-bold"
         >
           사진 빼기
         </button>

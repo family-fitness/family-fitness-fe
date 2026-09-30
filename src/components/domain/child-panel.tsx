@@ -12,7 +12,7 @@ import { REMEASURE_DAYS } from "@/lib/remeasure";
 import type { FitnessMapMember, Mission } from "@/lib/api/types";
 import { useCheers, useLatestCoachRun, useLatestFitnessTest, useRestDays } from "@/lib/api/queries";
 import { missionsOn } from "@/lib/day";
-import { VERIFIED_COPY } from "@/lib/mission";
+import { verifiedLabel } from "@/lib/mission";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { daysSince, monthOf, today } from "@/lib/today";
 import { cn, formatDate, withJosa } from "@/lib/utils";
@@ -340,7 +340,9 @@ function TodaySection({
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">{m.title}</p>
               <p className="text-caption text-ink-soft mt-0.5">
-                {p?.verifiedBy ? VERIFIED_COPY[p.verifiedBy] : "아직 안 적었어요"}
+                {p?.verifiedBy
+                  ? verifiedLabel(p.verifiedBy, p.needsGuardianCheck)
+                  : "아직 안 적었어요"}
               </p>
             </div>
             {p?.needsGuardianCheck && (
@@ -357,7 +359,7 @@ function TodaySection({
 
       {proposal}
 
-      {/* 운동 더하기 — 오늘 운동이 있어도 AI 코치에게 더 받거나 직접 짜서 더한다(9/25 「운동 미션을 추가하는」).
+      {/* 운동 더하기 — 오늘 운동이 있어도 AI에게 더 받거나 직접 짜서 더한다(9/25 「운동 미션을 추가하는」).
           코치가 짠 것은 등록해야 운동이 된다(규칙 1) */}
       {!waiting && !restToday && (
         <div className="border-line mt-3 grid grid-cols-2 gap-2 border-t pt-3">
@@ -366,7 +368,7 @@ function TodaySection({
             className="press bg-signal-soft text-signal-deep flex min-h-11 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold"
           >
             <ArtIcon name="icon/menu-ai" className="size-5" />
-            AI 코치에게 더 받기
+            AI에게 더 받기
           </Link>
           <Link
             href="/videos"

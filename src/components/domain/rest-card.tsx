@@ -12,6 +12,7 @@ import { artFor } from "@/lib/art";
 import { errorMessage } from "@/lib/errors";
 import { daysBefore, monthOf, today, weekdayOf } from "@/lib/today";
 import { cn } from "@/lib/utils";
+import { radioKeys } from "@/components/ui/radio-keys";
 
 /**
  * 쉬는 날 카드(9/25 「오늘 하루는 운동을 쉰다거나 가능하게」).
@@ -140,7 +141,12 @@ function RestCardSheet({
     <Sheet open={open} onClose={onClose} title="쉬는 날 카드">
       <p className="text-caption text-ink-soft">이번 달 {left}장 남음</p>
 
-      <div className="mt-3 grid grid-cols-4 gap-2" role="radiogroup" aria-label="쉴 날">
+      <div
+        className="mt-3 grid grid-cols-4 gap-2"
+        role="radiogroup"
+        aria-label="쉴 날"
+        onKeyDown={radioKeys}
+      >
         {choices.map((d) => {
           const isUsed = used.includes(d);
           const blocked = d === now && movedToday;
@@ -197,7 +203,7 @@ function RestCardSheet({
                   type="button"
                   onClick={() => void run(d, true)}
                   disabled={restDay.isPending}
-                  className="press text-signal-deep min-h-10 text-sm font-extrabold"
+                  className="press text-signal-deep min-h-11 px-1 text-sm font-extrabold"
                 >
                   되돌리기
                 </button>

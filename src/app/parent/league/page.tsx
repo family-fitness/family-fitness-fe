@@ -59,7 +59,7 @@ function League() {
     isRefetching,
   } = useFamilyLeague(familyId, month);
   // 오늘 이미 움직인 아이가 있으면 오늘은 쉬는 날로 못 고른다
-  const { data: map } = useFitnessMap(familyId);
+  const { data: map, isLoading: mapLoading } = useFitnessMap(familyId);
   const kidIds = (map?.members ?? [])
     .filter((m) => m.role === "CHILD")
     .map((m) => m.profileId ?? "")
@@ -85,7 +85,12 @@ function League() {
       </>
     );
   }
-  if (sessionPending || leagueLoading) return <LeagueSkeleton backHref={backHref} />;
+  // 우리 가족 프로필은 가족 · 레벨 · 업적이 다 와야 모양이 선다 — 먼저 그리면 아이 줄 · 업적 줄이 뒤늦게 붙어
+  // 아래 카드가 180px 밀렸다. 못 받은 것은 기다리지 않는다(없는 채로 선다)
+  const profileLoading = mapLoading || progresses.some((q) => q.isLoading);
+  if (sessionPending || leagueLoading || profileLoading) {
+    return <LeagueSkeleton backHref={backHref} />;
+  }
   // 가족이 없으면 리그도 없다 — 꺼진 조회를 기다리며 뼈대만 돌지 않게
   if (!league) {
     return (
@@ -125,7 +130,7 @@ function League() {
           familyName={map?.familyName ?? "우리 가족"}
           tier={league.tier}
           place={rank != null ? `${league.groupSize}가족 중 ${rank}등` : "아직 순위가 없어요"}
-          meta={`${monthLabel(month)} · ${league.daysLeft}일 남음`}
+          meta={`${monthLabel(month)} · ${league.daysLeft > 0 ? `${league.daysLeft}일 남음` : "오늘까지"}`}
           kids={kids}
           progresses={kids.map((k) => progresses[kidIds.indexOf(k.profileId ?? "")]?.data)}
         />
@@ -258,9 +263,11 @@ function LeagueSkeleton({ backHref }: { backHref: string }) {
   return (
     <>
       <AppBar backHref={backHref} title="가족 리그" />
+      {/* 실제 세 묶음과 같은 자리 — 우리 가족 프로필 · 이번 달 · 순위(390 폭에서 잰 높이) */}
       <Stage wide className="space-y-3">
-        <Skeleton className="h-72 w-full rounded-3xl" />
-        <Skeleton className="h-96 w-full rounded-3xl" />
+        <Skeleton className="h-110 w-full rounded-3xl" />
+        <Skeleton className="h-64 w-full rounded-3xl" />
+        <Skeleton className="h-146 w-full rounded-3xl" />
       </Stage>
     </>
   );

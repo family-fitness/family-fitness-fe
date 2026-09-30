@@ -18,7 +18,7 @@ import { FactorIcon } from "@/components/domain/factor-icon";
 import type { ClipView, SessionPhase } from "@/lib/api/types";
 import { useClips, useToggleClipFavorite } from "@/lib/api/queries";
 import { FACTORS, isFactor, type Factor } from "@/lib/fitness-factors";
-import { routineMinutes } from "@/lib/routine";
+import { MAX_MOVES, routineMinutes } from "@/lib/routine";
 import { PHASE_LABEL, clock } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -118,7 +118,8 @@ function Finder() {
     <>
       <AppBar back title="운동 찾기" />
       <Stage wide className={cn("space-y-3", moves.length > 0 && !kidView && "pb-32")}>
-        <div className="card flex items-center gap-2 py-2">
+        {/* 초점은 칸 전체에 — 안쪽 입력의 테두리는 끄고 카드가 파란 고리를 두른다(초점이 안 보였다) */}
+        <div className="card focus-within:outline-signal flex items-center gap-2 py-2 focus-within:outline-2 focus-within:outline-offset-2">
           <Search aria-hidden className="text-faint size-5 shrink-0" />
           <input
             type="search"
@@ -182,7 +183,7 @@ function Finder() {
                 aria-pressed={phase === p.value}
                 onClick={() => setPhase(p.value)}
                 className={cn(
-                  "press min-h-10 min-w-11 rounded-full px-3 text-sm font-bold",
+                  "press min-h-11 min-w-11 rounded-full px-3 text-sm font-bold",
                   phase === p.value ? "bg-signal-strong text-white" : "text-ink-soft",
                 )}
               >
@@ -235,6 +236,7 @@ function Finder() {
                 owner={owner}
                 picked={inTray(c)}
                 canPick={!kidView}
+                full={moves.length >= MAX_MOVES}
                 onPick={() => toggleMove(c)}
                 onPreview={() => {
                   setPreviewId(c.clipId);
@@ -264,6 +266,7 @@ function ClipRow({
   owner,
   picked,
   canPick,
+  full,
   onPick,
   onPreview,
 }: {
@@ -271,6 +274,8 @@ function ClipRow({
   owner: string | undefined;
   picked: boolean;
   canPick: boolean;
+  /** 열 개를 다 담았다 — 더 담는 단추는 눌러도 아무 일이 없으니 꺼 둔다. 빼기는 된다 */
+  full: boolean;
   onPick: () => void;
   onPreview: () => void;
 }) {
@@ -285,7 +290,8 @@ function ClipRow({
         aria-label={`${c.title} 시범 보기`}
         className="press relative shrink-0 overflow-hidden rounded-xl"
       >
-        <VideoThumb videoId={c.videoId} className="aspect-video w-24" />
+        {/* 좁은 폰(320)에서는 썸네일을 줄이고 단추 둘을 세로로 — 동작 이름 자리가 44px 로 줄어 한 글자씩 꺾였다 */}
+        <VideoThumb videoId={c.videoId} className="aspect-video w-20 min-[360px]:w-24" />
         {/* 누르면 시범이 돈다는 표시. 검정 면 대신 남색(규칙: 검정으로 면을 채우지 않는다) */}
         <span className="absolute inset-0 grid place-items-center">
           <span className="bg-signal-deep/70 grid size-8 place-items-center rounded-full text-white">
@@ -313,7 +319,7 @@ function ClipRow({
             ))}
         </p>
       </div>
-      <div className="flex shrink-0 items-center">
+      <div className="flex shrink-0 flex-col items-center min-[360px]:flex-row">
         {owner && (
           <button
             type="button"
@@ -334,9 +340,10 @@ function ClipRow({
             type="button"
             aria-pressed={picked}
             aria-label={picked ? `${c.title} 빼기` : `${c.title} 담기`}
+            disabled={!picked && full}
             onClick={onPick}
             className={cn(
-              "press grid size-11 place-items-center rounded-full",
+              "press grid size-11 place-items-center rounded-full disabled:opacity-30",
               picked ? "bg-signal-strong text-white" : "bg-sub text-ink",
             )}
           >
@@ -394,12 +401,12 @@ function Tray({ onClear }: { onClear: () => void }) {
       <div className="card-hero flex items-center gap-3 py-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-extrabold">
-            담은 동작 {moves.length}개 · {minutes}분
+            담은 동작 {moves.length}개 · {minutes}분{moves.length >= MAX_MOVES && " · 다 담았어요"}
           </p>
           <button
             type="button"
             onClick={onClear}
-            className="press text-caption text-ink-soft -ml-1 min-h-10 px-1 font-semibold"
+            className="press text-caption text-ink-soft -ml-1 min-h-11 px-1 font-semibold"
           >
             모두 빼기
           </button>

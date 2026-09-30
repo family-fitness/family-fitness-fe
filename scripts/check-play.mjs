@@ -48,7 +48,7 @@ await context.addInitScript(() => {
   }
 });
 // 유튜브 스크립트 · 영상은 막는다. 없어도 타이머로 끝까지 가야 한다
-await context.route(/youtube\.com|ytimg\.com/, (route) => route.abort());
+await context.route(/youtube(-nocookie)?\.com|ytimg\.com/, (route) => route.abort());
 
 const page = await context.newPage();
 const errors = [];

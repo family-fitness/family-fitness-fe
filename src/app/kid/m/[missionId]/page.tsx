@@ -27,11 +27,13 @@ import {
   useProgress,
   useSendCheer,
 } from "@/lib/api/queries";
+import { missionsOn } from "@/lib/day";
 import { errorMessage } from "@/lib/errors";
 import { stageOf } from "@/lib/levels";
 import { newlyUnlocked } from "@/lib/unlocks";
 import { PHASE_LABEL, clock, sessionsOf, stepMinutes, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
+import { today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useVoice } from "@/lib/voice";
 import { usePrefsStore } from "@/stores/prefs-store";
@@ -92,8 +94,19 @@ export default function PlayPage() {
   } = useMissions(familyId, { scope: "ALL" });
   const { data: progress, isLoading: progressLoading } = useProgress(kidId || undefined);
   const complete = useCompleteSession(missionId, familyId ?? "");
+  const { data: family } = useFamilyProfiles(familyId);
+  // 동의를 거둔 아이 — 해도 기록이 남지 않는다(422). 시작하게 두면 한 칸을 다 하고 나서야 안다
+  const kid = family?.profiles?.find((p) => p.profileId === kidId);
+  const noConsent = Boolean(kid?.consentRequired && !kid.consentGiven);
 
   const mission = missions?.missions?.find((m) => m.missionId === missionId);
+  // 오늘 할 운동이 더 남았나 — 남았으면 이 운동을 끝낸 것이지 「오늘 거」 를 다 한 게 아니다
+  const moreToday = missionsOn(missions?.missions, kidId, today()).some(
+    (m) =>
+      m.missionId !== missionId &&
+      m.targetMetric !== "STEPS" &&
+      !m.participants?.find((p) => p.profileId === kidId)?.completed,
+  );
 
   /** 이 화면에서 방금 끝낸 칸. 서버 응답을 기다리지 않고 바로 체크한다 */
   const [doneHere, setDoneHere] = useState<number[]>([]);
@@ -148,6 +161,23 @@ export default function PlayPage() {
   const doneCount = sessions.filter((s) => s.completed).length;
   const allDone = sessions.length > 0 && doneCount === sessions.length;
   const finished = allDone || status === "ended";
+  /** 끝 칸의 제목 — 화면 읽기에도 같은 말로 */
+  /** 화면 읽기에 한 번씩 — 시작 · 멈춤 · 쉼(다음 운동) · 막힘. 초마다 바뀌는 수는 싣지 않는다 */
+  const liveLine =
+    status === "running"
+      ? `${activeSession?.title ?? "운동"} 시작`
+      : status === "paused"
+        ? "잠깐 멈췄어요"
+        : status === "rest"
+          ? `쉬는 시간 · 다음은 ${activeSession?.title ?? "운동"}`
+          : status === "blocked"
+            ? "멈췄어요 · 눌러서 시작"
+            : "";
+  const finishLine = allDone
+    ? moreToday
+      ? "이 운동 다 했어요!"
+      : "오늘 거 다 했어요!"
+    : `${doneCount}개 했어요!`;
 
   /** 다음에 할 칸. 지금 칸 뒤에서 먼저 찾고, 없으면 앞에 남은 칸 */
   const nextOpen = (after: number, done: number[]) => {
@@ -174,6 +204,8 @@ export default function PlayPage() {
         // 망 · 서버 탓이 아니면(4xx) 다시 보내도 같다
         if (e instanceof ApiError && e.status < 500 && e.status !== 408 && e.status !== 429) {
           setStuckTo(e.status === 401 ? "/login" : "/kid");
+          // 다음 칸으로 이어 가면 남지 않을 운동을 더 시킨다(동의를 거둔 아이) — 여기서 멈추고 끝 칸의 말을 띄운다
+          setStatus("ended");
         }
         setSaveError(
           errorMessage(
@@ -293,6 +325,19 @@ export default function PlayPage() {
     firstScroll.current = false;
   }, [active]);
 
+  /*
+    조작 단추가 바뀌면(시작 → 멈춤 → 쉼) 누른 단추가 사라져 초점이 body 로 떨어졌다 — 자판 · 화면 읽기로는 어디 있는지
+    잃는다(9/30 점검). 누른 단추가 사라졌을 때만 지금 칸의 첫 단추로 돌린다(굴리지 않고)
+  */
+  const stepList = useRef<HTMLOListElement>(null);
+  const lastFocused = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const was = lastFocused.current;
+    if (!was || was.isConnected) return;
+    if (document.activeElement && document.activeElement !== document.body) return;
+    stepList.current?.querySelector<HTMLElement>("[data-primary]")?.focus({ preventScroll: true });
+  }, [status, active]);
+
   // 다 끝나면 끝 칸으로
   useEffect(() => {
     if (!finished) return;
@@ -311,6 +356,18 @@ export default function PlayPage() {
             error={failure}
             onRetry={() => void (sessionError ? refetchMe() : refetch())}
           />
+        </Stage>
+      </>
+    );
+  }
+
+  // 하던 중에 거둬졌으면 끝 칸이 말한다 — 하던 화면을 걷어 내지 않는다
+  if (noConsent && doneHere.length === 0) {
+    return (
+      <>
+        <AppBar backHref="/kid" title="오늘 운동" />
+        <Stage wide>
+          <EmptyState scene="waiting" title="지금은 기록을 남길 수 없어요" />
         </Stage>
       </>
     );
@@ -378,14 +435,14 @@ export default function PlayPage() {
         )}
         <div className="relative flex items-center justify-center">
           <p className="text-caption text-ink-soft text-center font-bold">
-            {doneCount} / {sessions.length}칸 · {totalMin}분 중 {doneMin}분
+            {doneCount} / {sessions.length}개 · {totalMin}분 중 {doneMin}분
           </p>
           <button
             type="button"
             onClick={() => setVoiceOn(!voiceOn)}
             aria-pressed={voiceOn}
             aria-label={voiceOn ? "소리 안내 끄기" : "소리 안내 켜기"}
-            className="press text-ink-soft absolute right-0 grid size-10 place-items-center rounded-full"
+            className="press text-ink-soft absolute right-0 grid size-11 place-items-center rounded-full"
           >
             {voiceOn ? (
               <Volume2 aria-hidden className="size-5" />
@@ -396,8 +453,18 @@ export default function PlayPage() {
         </div>
       </div>
 
+      {/* 끝났다는 말 — 자리는 늘 두고 글자만 바꾼다. 끝 칸과 같이 생기는 알림 자리는 화면 읽기가 읽지 않는다 */}
+      <p className="sr-only" role="status">
+        {finished && unsaved.length === 0 && saving === 0 ? finishLine : liveLine}
+      </p>
       <Stage wide className="pt-1">
-        <ol className="relative">
+        <ol
+          ref={stepList}
+          className="relative"
+          onFocus={(e) => {
+            lastFocused.current = e.target;
+          }}
+        >
           {sessions.map((s, i) => (
             <Step
               key={s.position}
@@ -430,7 +497,7 @@ export default function PlayPage() {
             />
           ))}
 
-          <li id="step-end" className="scroll-mt-40 pt-2 pb-6">
+          <li id="step-end" className="scroll-mt-24 pt-2 pb-6">
             {unsaved.length > 0 ? (
               // 못 보낸 칸이 있으면 「다 했어요」 · 「알리기」 를 띄우지 않는다 — 부모가 빈 기록을 보게 된다
               <section className="card-hero text-center" role="alert">
@@ -458,7 +525,9 @@ export default function PlayPage() {
               <Skeleton className="h-80 w-full rounded-3xl" />
             ) : finished ? (
               <Finish
+                title={finishLine}
                 allDone={allDone}
+                moreToday={moreToday}
                 doneCount={doneCount}
                 minutes={doneMin}
                 xp={xp}
@@ -527,7 +596,7 @@ function Step({
   const clip = s.clip;
 
   return (
-    <li id={`step-${s.position}`} className="relative scroll-mt-40 pb-3 pl-11">
+    <li id={`step-${s.position}`} className="relative scroll-mt-24 pb-3 pl-11">
       {/* 길. 끝낸 칸까지는 파랑, 그 아래는 회색 */}
       {!last && (
         <span
@@ -542,9 +611,10 @@ function Step({
         aria-hidden
         className={cn(
           "absolute top-4 left-0 grid size-8 place-items-center rounded-full text-sm font-extrabold",
-          s.completed && "bg-signal text-white",
+          // 다 한 칸은 체크만 — 파랑 동그라미 안의 흰 체크는 「둥근 바탕 안 표시」 였다(9/30 점검)
+          s.completed && "bg-ground text-signal",
           !s.completed && active && "bg-paper ring-signal text-signal-deep ring-2",
-          !s.completed && !active && "bg-paper text-ink-soft shadow-card",
+          !s.completed && !active && "bg-ground text-ink-soft",
         )}
       >
         {s.completed ? <Check className="size-4" strokeWidth={3.2} /> : index + 1}
@@ -568,7 +638,10 @@ function Step({
             </div>
           )}
 
-          <div className="mt-4 flex items-center gap-4">
+          {/* 쉬는 동안만 오른쪽에 「+10초 더 쉬기」. 그 밖에는 링 하나 — 옆의 「N분」 은 타이머를 되풀이했다 */}
+          <div
+            className={cn("mt-4 flex items-center gap-4", status !== "rest" && "justify-center")}
+          >
             <Ring
               value={status === "rest" ? restTotal - restLeft : elapsed}
               max={status === "rest" ? restTotal : planned}
@@ -590,23 +663,23 @@ function Step({
                 </span>
               )}
             </Ring>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold">{stepMinutes(s)}분</p>
-              {status === "rest" && (
+            {status === "rest" && (
+              <div className="min-w-0 flex-1">
                 <button
                   type="button"
                   onClick={onMoreRest}
-                  className="press bg-sub mt-2 inline-flex min-h-10 items-center rounded-full px-4 text-sm font-extrabold"
+                  className="press bg-sub inline-flex min-h-11 items-center rounded-full px-4 text-sm font-extrabold"
                 >
                   +{REST_MORE}초 더 쉬기
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {status === "blocked" ? (
             <button
               type="button"
+              data-primary
               onClick={onStart}
               className="press bg-signal-strong mt-4 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white"
             >
@@ -617,6 +690,7 @@ function Step({
             <div className={cn("mt-4 grid gap-2", onSkip && "grid-cols-[1fr_auto]")}>
               <button
                 type="button"
+                data-primary
                 onClick={onPause}
                 className="press bg-sub flex min-h-14 items-center justify-center gap-2 rounded-2xl text-lg font-extrabold"
               >
@@ -637,11 +711,17 @@ function Step({
           ) : (
             <button
               type="button"
+              data-primary
               onClick={onStart}
               className="press bg-signal-strong mt-4 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white"
             >
               <Play aria-hidden className="size-5 fill-current" />
-              {status === "paused" ? "이어서 하기" : status === "rest" ? "바로 시작" : "시작하기"}
+              {/* 쉬는 동안 화면을 떠나 멈춘 것은 아직 시작 전이다 — 「이어서」 가 아니다 */}
+              {status === "paused" && elapsed > 0
+                ? "이어서 하기"
+                : status === "rest"
+                  ? "바로 시작"
+                  : "시작하기"}
             </button>
           )}
         </section>
@@ -650,10 +730,7 @@ function Step({
           type="button"
           onClick={onPick}
           disabled={s.completed}
-          className={cn(
-            "card press flex w-full items-center gap-3 text-left",
-            s.completed && "opacity-70",
-          )}
+          className={cn("card press flex w-full items-center gap-3 text-left")}
         >
           {clip?.videoId ? (
             <VideoThumb videoId={clip.videoId} className="aspect-video w-24 shrink-0 rounded-xl" />
@@ -661,7 +738,7 @@ function Step({
             <span className="bg-sub aspect-video w-24 shrink-0 rounded-xl" />
           )}
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-extrabold">{s.title}</span>
+            <span className="line-clamp-2 text-sm font-extrabold">{s.title}</span>
             <span className="text-caption text-ink-soft mt-0.5 block">
               {PHASE_LABEL[s.phase]} · {stepMinutes(s)}분{s.completed && " · 했어요"}
             </span>
@@ -687,7 +764,9 @@ const FEEL_LINE: Record<Feel, string> = {
 
 /** 끝 칸 — 다 했어요 · 경험치 · 어땠어요 · 알리기 */
 function Finish({
+  title,
   allDone,
+  moreToday,
   doneCount,
   minutes,
   xp,
@@ -699,7 +778,10 @@ function Finish({
   toldNow,
   onTold,
 }: {
+  title: string;
   allDone: boolean;
+  /** 오늘 할 운동이 더 남았다 — 이 운동만 끝났다 */
+  moreToday: boolean;
   doneCount: number;
   minutes: number;
   xp: number;
@@ -749,7 +831,7 @@ function Finish({
             fromProfileId: kidId,
             toProfileId: p.profileId ?? "",
             // 남는 말이라 「오늘」 을 넣지 않는다 — 다음 날 알림함에서 읽으면 틀린 말이 된다
-            message: `${allDone ? "운동 다 했어요!" : `운동 ${doneCount}개 했어요!`}${feel ? ` ${FEEL_LINE[feel]}` : ""}`,
+            message: `${allDone ? (moreToday ? "운동 하나 다 했어요!" : "운동 다 했어요!") : `운동 ${doneCount}개 했어요!`}${feel ? ` ${FEEL_LINE[feel]}` : ""}`,
             missionId,
           }),
         ),
@@ -761,7 +843,7 @@ function Finish({
   };
 
   return (
-    <section className="card-hero text-center" aria-live="polite">
+    <section className="card-hero text-center">
       <KiumIsland
         stage={stage.stage}
         level={progress?.level}
@@ -774,9 +856,7 @@ function Finish({
         label={`${stage.name}의 섬`}
         className="-mt-3 -mb-1"
       />
-      <h2 className="page-title mt-1">
-        {allDone ? "오늘 거 다 했어요!" : `${doneCount}개 했어요!`}
-      </h2>
+      <h2 className="page-title mt-1">{title}</h2>
       <p className="text-caption text-ink-soft mt-1 font-semibold">{minutes}분 움직였어요</p>
 
       {progress && (

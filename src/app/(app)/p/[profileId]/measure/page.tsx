@@ -194,6 +194,11 @@ export default function MeasurePage() {
   const onSubmit = handleSubmit(async (form) => {
     setServerError(null);
 
+    // 앞날에 잰 기록은 없다 — 직접 쳐 넣으면 달력의 max 를 지나 들어온다
+    if (!testedOn || testedOn > today()) {
+      setServerError("측정한 날짜를 다시 봐 주세요.");
+      return;
+    }
     // 키 · 몸무게가 범위를 벗어났으면 보내지 않는다 — 빼고 보내면 적은 줄 알았던 키가 사라진다
     if (heightProblem || weightProblem) {
       setServerError("키 · 몸무게를 다시 봐 주세요.");
@@ -263,21 +268,24 @@ export default function MeasurePage() {
       <Stage wide>
         <form onSubmit={onSubmit} className="space-y-3">
           {/* 언제 · 어디서 쟀는지. 센터 결과지를 며칠 뒤에 옮겨 적는 경우가 많다 */}
-          <fieldset className="card space-y-3">
+          <fieldset className="card min-w-0 space-y-3">
             <legend className="sr-only">언제 쟀나요</legend>
             <p aria-hidden className="card-head">
               언제 쟀나요
             </p>
             <input
               type="date"
+              required
               value={testedOn}
               max={today()}
-              onChange={(e) => setTestedOn(e.target.value)}
+              // 폰 달력의 「지우기」 로 비우면 날짜 없이 보내 서버가 받지 않는다 — 비우는 것은 받지 않고 고른 날에 둔다
+              onChange={(e) => e.target.value && setTestedOn(e.target.value)}
               aria-label="측정한 날짜"
               className="field"
             />
 
-            <div className="flex gap-2">
+            {/* 크게 키운 화면(200%)에서도 넘치지 않게 줄을 바꾼다 */}
+            <div className="flex flex-wrap gap-2">
               {(
                 [
                   ["SELF_INPUT", "집에서 직접"],
@@ -304,7 +312,7 @@ export default function MeasurePage() {
               <BodyInput
                 label="키"
                 unit="cm"
-                placeholder={String(pendingBody?.heightCm ?? 138)}
+                placeholder={pendingBody?.heightCm != null ? String(pendingBody.heightCm) : ""}
                 value={heightCm}
                 onChange={setHeightCm}
                 hint={rangeHint("heightCm")}
@@ -313,7 +321,7 @@ export default function MeasurePage() {
               <BodyInput
                 label="몸무게"
                 unit="kg"
-                placeholder={String(pendingBody?.weightKg ?? 34)}
+                placeholder={pendingBody?.weightKg != null ? String(pendingBody.weightKg) : ""}
                 value={weightKg}
                 onChange={setWeightKg}
                 hint={rangeHint("weightKg")}

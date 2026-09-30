@@ -76,8 +76,11 @@ function CustomPlan() {
   const firstKid = kids.find((k) => k.profileId === childProfileId) ?? kids[0];
   const [who, setWho] = useState<Uuid[] | null>(null);
   const chosen = who ?? (firstKid?.profileId ? [firstKid.profileId] : []);
+  const kidIds = new Set(kids.map((k) => k.profileId ?? ""));
+  // 아이가 적어도 하나 — 부모만 하는 운동은 아이 화면 · 캘린더 · 리그 어디에도 안 보인다
+  const chosenKid = chosen.find((id) => kidIds.has(id));
   // 「운동할 수 있는 날」 점은 지금 짜는 첫 아이의 시간표로 — 기기에 고른 아이가 아니라
-  const { data: availability } = useAvailability(chosen[0]);
+  const { data: availability } = useAvailability(chosenKid);
   const now = today();
   const [days, setDays] = useState<string[]>([now]);
   const [weeks, setWeeks] = useState<(typeof WEEKS)[number]["value"]>("1");
@@ -102,13 +105,17 @@ function CustomPlan() {
   const free = new Set((availability?.slots ?? []).map((s) => s.day));
   const upcoming = upcomingDays(now);
 
-  const toggleWho = (id: Uuid) =>
-    setWho(chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id]);
+  const toggleWho = (id: Uuid) => {
+    const next = chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id];
+    // 마지막 아이는 빼지 않는다 — 다른 아이를 먼저 고르면 바꿀 수 있다
+    if (!next.some((x) => kidIds.has(x))) return;
+    setWho(next);
+  };
   const toggleDay = (d: string) =>
     setDays((list) => (list.includes(d) ? list.filter((x) => x !== d) : [...list, d].sort()));
 
   const submit = async () => {
-    if (moves.length === 0 || chosen.length === 0 || pending.length === 0) return;
+    if (moves.length === 0 || !chosenKid || pending.length === 0) return;
     setProblem(null);
     setSaving(true);
     const sessions = toSessions(moves);
@@ -214,7 +221,7 @@ function CustomPlan() {
               <button
                 type="button"
                 onClick={tidy}
-                className="press text-signal-deep min-h-10 px-1 text-xs font-extrabold"
+                className="press text-signal-deep min-h-11 px-1 text-xs font-extrabold"
               >
                 준비 → 본 → 정리로
               </button>
@@ -236,7 +243,7 @@ function CustomPlan() {
                     type="button"
                     onClick={() => remove(i)}
                     aria-label={`${m.clip.title} 빼기`}
-                    className="press text-ink-soft -mt-2 -mr-2 grid size-10 shrink-0 place-items-center"
+                    className="press text-ink-soft -mt-2 -mr-2 grid size-11 shrink-0 place-items-center"
                   >
                     <X aria-hidden className="size-4" />
                   </button>
@@ -249,7 +256,7 @@ function CustomPlan() {
                       onClick={() => setMinutes(i, m.minutes - 1)}
                       disabled={m.minutes <= MOVE_MINUTES.min}
                       aria-label={`${m.clip.title} 1분 줄이기`}
-                      className="press grid size-10 place-items-center disabled:opacity-30"
+                      className="press grid size-11 place-items-center disabled:opacity-30"
                     >
                       <Minus aria-hidden className="size-4" />
                     </button>
@@ -261,7 +268,7 @@ function CustomPlan() {
                       onClick={() => setMinutes(i, m.minutes + 1)}
                       disabled={m.minutes >= MOVE_MINUTES.max}
                       aria-label={`${m.clip.title} 1분 늘리기`}
-                      className="press grid size-10 place-items-center disabled:opacity-30"
+                      className="press grid size-11 place-items-center disabled:opacity-30"
                     >
                       <Plus aria-hidden className="size-4" />
                     </button>
@@ -272,7 +279,7 @@ function CustomPlan() {
                       onClick={() => shift(i, -1)}
                       disabled={i === 0}
                       aria-label={`${m.clip.title} 위로`}
-                      className="press bg-sub grid size-10 place-items-center rounded-full disabled:opacity-30"
+                      className="press bg-sub grid size-11 place-items-center rounded-full disabled:opacity-30"
                     >
                       <ArrowUp aria-hidden className="size-4" />
                     </button>
@@ -281,7 +288,7 @@ function CustomPlan() {
                       onClick={() => shift(i, 1)}
                       disabled={i === moves.length - 1}
                       aria-label={`${m.clip.title} 아래로`}
-                      className="press bg-sub grid size-10 place-items-center rounded-full disabled:opacity-30"
+                      className="press bg-sub grid size-11 place-items-center rounded-full disabled:opacity-30"
                     >
                       <ArrowDown aria-hidden className="size-4" />
                     </button>
@@ -415,8 +422,8 @@ function CustomPlan() {
           <button
             type="button"
             onClick={() => void submit()}
-            disabled={saving || chosen.length === 0 || pending.length === 0}
-            data-off={!saving && (chosen.length === 0 || pending.length === 0) ? "" : undefined}
+            disabled={saving || !chosenKid || pending.length === 0}
+            data-off={!saving && (!chosenKid || pending.length === 0) ? "" : undefined}
             className="press bg-signal-strong data-off:bg-line data-off:text-ink-soft mt-2 flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white disabled:opacity-100 data-off:shadow-none"
           >
             {saving ? "등록하는 중" : label}

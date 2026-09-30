@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { SessionError } from "@/components/app-shell/session-error";
 import { ChoiceButton, WizardShell, WizardSkeleton } from "@/components/app-shell/wizard";
+import { radioKeys } from "@/components/ui/radio-keys";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { useBackSheet } from "@/components/ui/use-back-sheet";
 import { Illustration } from "@/components/ui/illustration";
@@ -100,6 +101,12 @@ const SUPPORT: { value: SupportMode; title: string; art: string }[] = [
   },
   { value: "FULL", title: "매번 같이", art: "icon/mode-full" },
 ];
+
+/**
+ * 첫 시작의 칸 번호를 브라우저 기록에 얹는다 — Next 의 기록(__NA · 트리)은 그대로 둔 채.
+ * `__wiz` 는 이번에 뜬 첫 시작의 표, `__depth` 는 그 안에서 몇째 칸인지
+ */
+type StepMark = { __step?: number; __wiz?: string; __depth?: number } | null;
 
 export function Onboarding({ mode }: { mode: "family" | "child" }) {
   const router = useRouter();
@@ -220,9 +227,31 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       : 0,
   );
   const step = steps[Math.min(at, steps.length - 1)];
-  const go = (d: number) => {
+  /** 이번에 뜬 첫 시작의 표 — 새로고침 전에 쌓인 칸(적은 것이 이미 사라졌다)과 가른다 */
+  const session = useRef("");
+  /** 지금 기록 칸의 표시 — 이번 첫 시작이 쌓은 것일 때만 */
+  const markHere = () => {
+    const mark = window.history.state as StepMark;
+    return mark?.__wiz === session.current ? mark : null;
+  };
+  /**
+   * 한 칸 앞으로 — 브라우저 기록에도 한 칸 쌓는다. 쌓지 않으면 폰의 뒤로가 첫 시작 밖으로 나가
+   * 적은 것을 다 잃었다(9/30 점검). 누른 자리에서 쌓는다 — 누르지 않고 쌓은 칸은 브라우저가 건너뛴다
+   */
+  const forward = (to: number) => {
     setProblem(null);
-    setAt((i) => Math.max(0, Math.min(steps.length - 1, i + d)));
+    const n = Math.max(0, Math.min(steps.length - 1, to));
+    if (n === at) return;
+    window.history.pushState(
+      {
+        ...(window.history.state ?? {}),
+        __step: n,
+        __wiz: session.current,
+        __depth: (markHere()?.__depth ?? 0) + 1,
+      },
+      "",
+    );
+    setAt(n);
   };
   // 가족 · 아이를 만든 뒤에는 그 앞으로 돌아가지 않는다(두 번 만들지 않게)
   const firstEditable = childId
@@ -232,7 +261,50 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       : 0;
   // 첫 칸에서는 들어온 곳으로 — 홈 화면에 얹은 앱에는 브라우저 뒤로가 없다
   const exit = () => router.replace(mode === "child" && roleMode !== "kid" ? "/parent" : "/start");
-  const back = at > firstEditable ? () => go(-1) : at === 0 && !childId ? exit : undefined;
+  /** 화면의 「뒤로」 — 기록에 쌓인 칸이면 폰의 뒤로와 같은 길로 간다. 둘이 어긋나면 폰의 뒤로가 한 번 헛돈다 */
+  const stepBack = () => {
+    if (markHere()?.__step === at) {
+      window.history.back();
+      return;
+    }
+    setProblem(null);
+    setAt((i) => Math.max(0, i - 1));
+  };
+  const back = at > firstEditable ? stepBack : at === 0 && !childId ? exit : undefined;
+
+  // 폰 · 브라우저의 뒤로 — 쌓아 둔 칸으로 돌아간다. 가족 · 아이를 만든 앞칸으로는 가지 않는다(두 번 만들지 않게)
+  const floor = useRef(firstEditable);
+  useEffect(() => {
+    floor.current = firstEditable;
+  }, [firstEditable]);
+  useEffect(() => {
+    session.current = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+    window.history.replaceState(
+      { ...(window.history.state ?? {}), __step: at, __wiz: session.current, __depth: 0 },
+      "",
+    );
+    const onPop = () => {
+      const mark = window.history.state as StepMark;
+      if (typeof mark?.__step !== "number") return;
+      if (mark.__wiz !== session.current) {
+        // 새로고침 전에 쌓인 칸 — 적은 것이 사라져 돌아갈 칸이 없다(빈 칸으로 가면 빈 이름으로 가족을 만든다).
+        // 첫 시작에 들어오기 전으로 한 번에 나간다
+        window.history.go(-((mark.__depth ?? 0) + 1));
+        return;
+      }
+      if (mark.__step < floor.current) {
+        // 만든 앞칸이다 — 한 칸 앞으로 되돌려 그 자리에 남는다
+        window.history.forward();
+        return;
+      }
+      setProblem(null);
+      setAt(mark.__step);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+    // 처음 칸을 한 번 적어 두고 듣기만 한다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 가족이 이미 있는데 가족 만들기가 처음부터 떴다 — 새로고침이다. 다시 만들면 「이미 가족이 있어요」 에 갇힌다
   const hadFamily =
@@ -308,7 +380,13 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       setChild(id || null);
       setMode("parent");
       // 새로고침해도 이 아이로 이어 가게 — 처음부터 다시 적으면 아이가 둘이 된다
-      if (id) window.history.replaceState(null, "", `?child=${encodeURIComponent(id)}`);
+      // 칸 번호는 남긴다 — 지우면 폰의 뒤로가 이 칸에서 한 번 헛돈다
+      if (id)
+        window.history.replaceState(
+          { ...(window.history.state ?? {}), __step: at },
+          "",
+          `?child=${encodeURIComponent(id)}`,
+        );
       // 이 기기에만 두는 것(키 · 몸무게 · 사진)은 따로 — 저장소가 가득 차 못 적어도 아이는 이미 만들어졌다
       try {
         // 서버가 키 · 몸무게를 따로 받지 못한다 — 첫 측정 때 같이 보낸다(BACKEND_ASKS)
@@ -326,7 +404,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       // 서버가 동의를 요구한다 — 동의 칸을 넣고 그리로(만 14세 생일 앞뒤로 날짜 셈이 다를 수 있다)
       if (e instanceof ApiError && e.code === "CONSENT_REQUIRED" && !needsConsent) {
         setForceConsent(true);
-        setAt((i) => i + 1);
+        forward(at + 1);
         return false;
       }
       setProblem(
@@ -378,7 +456,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       router.replace("/parent");
       return;
     }
-    go(1);
+    forward(at + 1);
   };
 
   // 다음으로 갈 수 있나 — 칸마다
@@ -453,7 +531,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
               label="가족 이름"
               value={familyName}
               onChange={setFamilyName}
-              placeholder="서준이네"
+              placeholder="튼튼 가족"
             />
           </WizardShell>
         );
@@ -466,7 +544,12 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       case "me-sex":
         return (
           <WizardShell {...common} title="보호자님의 성별을 알려 주세요">
-            <div className="space-y-3" role="radiogroup" aria-label="보호자 성별">
+            <div
+              className="space-y-3"
+              role="radiogroup"
+              aria-label="보호자 성별"
+              onKeyDown={radioKeys}
+            >
               <ChoiceButton selected={meSex === "F"} onClick={() => setMeSex("F")} title="여성" />
               <ChoiceButton selected={meSex === "M"} onClick={() => setMeSex("M")} title="남성" />
             </div>
@@ -507,7 +590,12 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
             {...common}
             title={`${withJosa(kid, "은는")} 여자아이인가요, 남자아이인가요?`}
           >
-            <div className="space-y-3" role="radiogroup" aria-label="아이 성별">
+            <div
+              className="space-y-3"
+              role="radiogroup"
+              aria-label="아이 성별"
+              onKeyDown={radioKeys}
+            >
               <ChoiceButton
                 selected={kidSex === "F"}
                 onClick={() => setKidSex("F")}
@@ -572,7 +660,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
                   multi
                   selected={consent.healthData}
                   onClick={() => setConsent((c) => ({ ...c, healthData: !c.healthData }))}
-                  title="건강정보(민감정보) 처리에 동의해요(필수)"
+                  title="민감정보(건강정보) 처리에 동의해요(필수)"
                 />
                 <div className="flex">
                   <TermsLink label="건강정보 처리" onClick={() => terms.show("health")} />
@@ -585,7 +673,12 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       case "support":
         return (
           <WizardShell {...common} title="얼마나 같이 하실래요?">
-            <div className="space-y-3" role="radiogroup" aria-label="참여 방식">
+            <div
+              className="space-y-3"
+              role="radiogroup"
+              aria-label="참여 방식"
+              onKeyDown={radioKeys}
+            >
               {SUPPORT.map((s) => (
                 <ChoiceButton
                   key={s.value}
@@ -672,7 +765,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       case "measure":
         return (
           <WizardShell {...common} title={`지금 ${kid} 체력을 재 볼까요?`}>
-            <div className="space-y-3" role="radiogroup" aria-label="첫 측정">
+            <div className="space-y-3" role="radiogroup" aria-label="첫 측정" onKeyDown={radioKeys}>
               <ChoiceButton
                 selected={later === false}
                 onClick={() => setLater(false)}
@@ -722,7 +815,7 @@ function BigInput({
       placeholder={placeholder}
       autoFocus
       enterKeyHint="next"
-      className="field text-xl font-bold"
+      className="field text-xl font-bold placeholder:font-normal"
     />
   );
 }
@@ -747,7 +840,7 @@ function DateInput({
       min={min}
       max={today()}
       onChange={(e) => onChange(e.target.value)}
-      className="field text-xl font-bold"
+      className="field text-xl font-bold placeholder:font-normal"
     />
   );
 }
@@ -771,6 +864,8 @@ function UnitInput({
   /** 범위를 벗어나면 까닭 한 줄 — 「다음」 이 왜 안 눌리는지 */
   problem: string | null;
 }) {
+  // 도움말 · 범위를 벗어난 까닭 줄 — 칸에 잇고, 바뀌면 화면 읽기가 읽는다(말없이 글자만 바뀌었다)
+  const noteId = useId();
   return (
     <label className="block">
       <span className="text-ink-soft text-sm font-bold">{label}</span>
@@ -781,17 +876,20 @@ function UnitInput({
           step="0.1"
           aria-label={label}
           aria-invalid={problem != null}
+          aria-describedby={noteId}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           enterKeyHint="next"
-          className="field pr-14 text-xl font-bold"
+          className="field pr-14 text-xl font-bold placeholder:font-normal"
         />
         <span className="text-ink-soft absolute top-1/2 right-4 -translate-y-1/2 text-base font-bold">
           {unit}
         </span>
       </span>
       <span
+        id={noteId}
+        aria-live="polite"
         className={cn(
           "text-caption mt-1 block",
           problem ? "text-signal-deep font-bold" : "text-faint",
