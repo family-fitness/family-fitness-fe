@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -69,8 +69,13 @@ function PlanForm() {
   // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
   const { data: map, isLoading: mapLoading, error: mapError, refetch } = useFitnessMap(familyId);
   const childProfileId = useRoleStore((s) => s.childProfileId);
+  // 방금 잰 아이의 결과에서 왔으면 그 아이로 — 홈에서 고른 아이로 짜면 다른 아이의 제안이 된다
+  const wanted = useSearchParams().get("profileId");
   const kids = (map?.members ?? []).filter((m) => m.role === "CHILD");
-  const kid = kids.find((k) => k.profileId === childProfileId) ?? kids[0];
+  const kid =
+    kids.find((k) => k.profileId === wanted) ??
+    kids.find((k) => k.profileId === childProfileId) ??
+    kids[0];
   const { data: latest } = useLatestFitnessTest(kid?.profileId);
   // 안 잰 아이는 연령대 · 성별 · 키 · 몸무게로 짠다(9/30 시연) — 키 · 몸무게는 가입 때 이 기기에 적은 값
   const deviceBody = useBodyStore((s) => (kid?.profileId ? s.byProfile[kid.profileId] : undefined));
