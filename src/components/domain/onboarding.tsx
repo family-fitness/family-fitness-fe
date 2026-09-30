@@ -722,7 +722,7 @@ function BigInput({
       placeholder={placeholder}
       autoFocus
       enterKeyHint="next"
-      className="field text-xl font-bold"
+      className="field text-xl font-bold placeholder:font-normal"
     />
   );
 }
@@ -747,7 +747,7 @@ function DateInput({
       min={min}
       max={today()}
       onChange={(e) => onChange(e.target.value)}
-      className="field text-xl font-bold"
+      className="field text-xl font-bold placeholder:font-normal"
     />
   );
 }
@@ -785,7 +785,7 @@ function UnitInput({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           enterKeyHint="next"
-          className="field pr-14 text-xl font-bold"
+          className="field pr-14 text-xl font-bold placeholder:font-normal"
         />
         <span className="text-ink-soft absolute top-1/2 right-4 -translate-y-1/2 text-base font-bold">
           {unit}

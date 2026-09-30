@@ -85,7 +85,7 @@ export default function WhoPage() {
                   setChild(kid.profileId ?? null);
                   router.replace("/kid");
                 }}
-                className="press border-line flex w-full items-center gap-4 rounded-3xl border-2 p-4 text-left"
+                className="press card flex w-full items-center gap-4 text-left"
               >
                 <ProfileAvatar profileId={kid.profileId} name={kid.name} size="lg" />
                 <span className="text-xl font-extrabold">{kid.name}</span>

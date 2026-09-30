@@ -304,7 +304,7 @@ export default function MeasurePage() {
               <BodyInput
                 label="키"
                 unit="cm"
-                placeholder={String(pendingBody?.heightCm ?? 138)}
+                placeholder={pendingBody?.heightCm != null ? String(pendingBody.heightCm) : ""}
                 value={heightCm}
                 onChange={setHeightCm}
                 hint={rangeHint("heightCm")}
@@ -313,7 +313,7 @@ export default function MeasurePage() {
               <BodyInput
                 label="몸무게"
                 unit="kg"
-                placeholder={String(pendingBody?.weightKg ?? 34)}
+                placeholder={pendingBody?.weightKg != null ? String(pendingBody.weightKg) : ""}
                 value={weightKg}
                 onChange={setWeightKg}
                 hint={rangeHint("weightKg")}
