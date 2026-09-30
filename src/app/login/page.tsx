@@ -24,8 +24,8 @@ import { useRoleStore } from "@/stores/role-store";
  * 앱이 돌고 있었고, 처음 쓰는 사람이 겪는 화면은 아무도 안 봤다.
  */
 const DEV_ACCOUNTS: { id: string; label: string; claimCode?: string }[] = [
-  { id: "demo-fresh", label: "새 계정 · 가족 없음" },
-  { id: "demo-parent", label: "은영 · 가족 3명" },
+  { id: "demo-fresh", label: "가족이 없는 새 계정" },
+  { id: "demo-parent", label: "은영, 가족 3명" },
   // 백엔드 시드의 두 번째 부모와 그 자리의 초대코드 — 코드를 들고 가야 서버가 코드 넣는 단계로 보낸다
   { id: "demo-parent-2", label: "초대받은 계정", claimCode: "K7M2QT" },
 ];
@@ -246,7 +246,7 @@ function LoginContent() {
           cheer
           spin="auto"
           height={250}
-          label="키움 섬 — 운동한 날마다 나무가 하나씩 자라요"
+          label="키움 섬이에요. 운동한 날마다 나무가 하나씩 자라요"
         />
         <h1 className="page-title -mt-1">우리가족 체력키움</h1>
       </div>
@@ -280,7 +280,7 @@ function LoginContent() {
 
         {DEV_LOGIN && (
           <div className="card space-y-2">
-            <p className="text-ink-soft text-caption font-bold">개발용 · 구글 없이 들어가기</p>
+            <p className="text-ink-soft text-caption font-bold">개발용으로 구글 없이 들어가기</p>
             {DEV_ACCOUNTS.map((account) => (
               <Button
                 key={account.id}
@@ -335,11 +335,13 @@ function LoginContent() {
 function LegalLinks() {
   const link = "inline-flex min-h-11 items-center px-2 underline-offset-4 hover:underline";
   return (
-    <nav aria-label="약관" className="text-ink-soft text-caption flex items-center justify-center">
+    <nav
+      aria-label="약관"
+      className="text-ink-soft text-caption flex items-center justify-center gap-3"
+    >
       <Link href={PRIVACY_HREF} className={link}>
         개인정보처리방침
       </Link>
-      <span aria-hidden>·</span>
       <Link href={TERMS_HREF} className={link}>
         이용약관
       </Link>

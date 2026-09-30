@@ -45,7 +45,7 @@ export function FactorTable({
                   {scored ? (
                     (item?.topPercentText ?? `백분위 ${p.percentile}`)
                   ) : (
-                    <span className="text-faint">{measured ? "-" : "안 쟀어요"}</span>
+                    <span className="text-faint">{measured ? "비교 기준이 없어요" : "안 쟀어요"}</span>
                   )}
                 </p>
               </div>

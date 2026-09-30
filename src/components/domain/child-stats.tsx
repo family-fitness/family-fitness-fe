@@ -134,7 +134,7 @@ function Stat({
       {state === "pending" ? (
         <Skeleton className="mt-2 h-8 w-16" />
       ) : state === "error" ? (
-        <p className="metric-value text-metric text-faint mt-1">-</p>
+        <p className="text-caption text-faint mt-2 font-bold">불러오지 못했어요</p>
       ) : (
         <p className="metric-value text-metric mt-1">
           {value}

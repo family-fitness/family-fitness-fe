@@ -216,7 +216,7 @@ export function path(
     const value = values[i - 1];
     if (value instanceof QueryString) return out + value.text + piece;
     if (value == null || value === "") {
-      throw new ApiError(400, "BAD_PATH", `경로에 빈 값이 있습니다: ${strings.join("·")}`);
+      throw new ApiError(400, "BAD_PATH", `경로에 빈 값이 있어요: ${strings.join("{값}")}`);
     }
     return out + encodeURIComponent(String(value)) + piece;
   });

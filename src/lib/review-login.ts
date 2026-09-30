@@ -12,7 +12,7 @@ export const REVIEW_WAYS: readonly { kind: ReviewKind; title: string; descriptio
   {
     kind: "FAMILY",
     title: "체험 가족으로 둘러보기",
-    description: "측정 · 운동 기록이 있는 가족으로 바로 들어가요",
+    description: "측정 기록과 운동 기록이 있는 가족으로 바로 들어가요",
   },
   {
     kind: "FRESH",

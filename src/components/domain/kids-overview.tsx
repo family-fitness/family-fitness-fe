@@ -169,12 +169,16 @@ function KidLine({
         <span className="flex w-24 shrink-0 flex-col items-end">
           {measured ? (
             <>
-              <span
-                className={cn("metric-value text-2xl leading-none", score == null && "text-faint")}
-              >
-                {score ?? "-"}
-                {score != null && <span className="metric-unit">점</span>}
-              </span>
+              {score != null ? (
+                <span className="metric-value text-2xl leading-none">
+                  {score}
+                  <span className="metric-unit">점</span>
+                </span>
+              ) : (
+                <span className="text-caption text-faint leading-none font-bold">
+                  점수가 없어요
+                </span>
+              )}
               <span
                 className="record-rail mt-1.5 w-16"
                 role="img"

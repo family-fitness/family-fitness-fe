@@ -197,7 +197,7 @@ function Finder() {
           <div
             className="bg-paper shadow-card flex rounded-full p-1"
             role="group"
-            aria-label="준비 · 본 · 정리"
+            aria-label="준비, 본, 정리"
           >
             {PHASES.map((p) => (
               <button
@@ -409,7 +409,7 @@ function ClipRow({
       </button>
       <div className="min-w-0 flex-1">
         <p className="line-clamp-2 text-sm leading-snug font-bold">{c.title}</p>
-        {/* 꼬리표는 통째로 줄을 넘긴다 — 「도구 / 필요」 로 쪼개지지 않게. 「·」 는 앞 꼬리표에 붙는다 */}
+        {/* 꼬리표는 통째로 줄을 넘긴다 — 「도구 / 필요」 로 쪼개지지 않게. 쉼표는 앞 꼬리표에 붙는다 */}
         <p className="text-caption text-ink-soft mt-0.5">
           {[
             PHASE_LABEL[c.phase],
@@ -421,7 +421,7 @@ function ClipRow({
             .filter((t): t is string => Boolean(t))
             .map((t, i) => (
               <Fragment key={t}>
-                {i > 0 && "\u00a0· "}
+                {i > 0 && ", "}
                 <span className="whitespace-nowrap">{t}</span>
               </Fragment>
             ))}
@@ -484,7 +484,7 @@ function Preview({ clip, alternates }: { clip: ClipView; alternates: ClipView[] 
       />
       <p className="text-caption text-ink-soft mt-2">
         {PHASE_LABEL[clip.phase]}
-        {clip.factor && ` · ${clip.factor}`} · {clock(clip.endSec - clip.startSec)}
+        {clip.factor && `, ${clip.factor}`}, {clock(clip.endSec - clip.startSec)}
       </p>
       <button
         type="button"
@@ -512,7 +512,7 @@ function Tray({ onClear }: { onClear: () => void }) {
       <div className="card-hero flex items-center gap-3 py-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-extrabold">
-            담은 동작 {moves.length}개 · {minutes}분
+            담은 동작 {moves.length}개, {minutes}분
           </p>
           <button
             type="button"
