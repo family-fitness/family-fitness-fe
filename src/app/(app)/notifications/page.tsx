@@ -221,6 +221,10 @@ function Thanks({ item, to, until }: { item: NotificationView; to: string; until
   }
   return (
     <div className="-mt-1 pb-3 pl-15">
+      {/* 보냈다는 말은 늘 있는 자리에서 읽어 준다 — 단추가 「보냈어요」 줄로 바뀌기만 하면 조용했다 */}
+      <span className="sr-only" role="status">
+        {justSent ? "고마워요를 보냈어요" : ""}
+      </span>
       {sent ? (
         <p className="text-caption text-done flex min-h-11 items-center gap-1 font-bold">
           <Check aria-hidden className="size-4" strokeWidth={3} />
@@ -231,6 +235,8 @@ function Thanks({ item, to, until }: { item: NotificationView; to: string; until
         <button
           type="button"
           onClick={() => setOpen(true)}
+          // 알림마다 같은 이름이면 화면 읽기로는 누구에게 보내는지 모른다
+          aria-label={`${item.title} · 고마워요 보내기`}
           className="press text-signal-deep inline-flex min-h-11 items-center text-sm font-extrabold"
         >
           고마워요 보내기
