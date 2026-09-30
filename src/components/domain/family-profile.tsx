@@ -59,8 +59,10 @@ export function FamilyProfile({
         {artFor(medal) && <ArtIcon name={medal} className="size-20" />}
         <div className="min-w-0 flex-1">
           <h2 className="text-metric truncate leading-tight font-extrabold">{familyName}</h2>
+          {/* 말 덩어리째 줄을 바꾼다 — 320 폭에서 「10가족 중 / 2등」 으로 쪼개졌다 */}
           <p className="text-signal-deep text-body mt-0.5 font-extrabold">
-            {tierName(tier)} 리그 · {place}
+            <span className="whitespace-nowrap">{tierName(tier)} 리그</span> ·{" "}
+            <span className="whitespace-nowrap">{place}</span>
           </p>
         </div>
       </div>
@@ -106,7 +108,8 @@ export function FamilyProfile({
           >
             {badges.map((b) => (
               <li key={b.code} title={b.title}>
-                <ArtIcon name={badgeArt(b.code)} className="size-12" />
+                {/* 좁은 폰에서는 한 줄에 다섯 — 넷씩 서면 아홉째가 한 줄에 홀로 남았다 */}
+                <ArtIcon name={badgeArt(b.code)} className="size-12 max-[359px]:size-10" />
                 <span className="sr-only">{b.title}</span>
               </li>
             ))}
