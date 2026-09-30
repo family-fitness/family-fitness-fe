@@ -54,6 +54,8 @@
   --color-baseline: #8b939c;
   /* 강조하지 않는 막대. 오늘 칸만 파랑이고 나머지는 이 회색 */
   --color-bar: #cfd5dc;
+  /* 데스크톱에서 폰 너비 화면 둘레 — 바탕보다 한 단계 어둡게 */
+  --color-gutter: #e4e7ec;
 
   /* 기록 강조 — 마스코트 노랑 */
   --color-mark: #ffb800;
@@ -117,7 +119,7 @@ html {
   color-scheme: light;
 
   /* 데스크톱 거터. 앱 화면이 기기처럼 떠 보이게 한 단계 더 어둡게 */
-  background-color: #e4e7ec;
+  background-color: var(--color-gutter);
   overflow-x: hidden;
   /* 시트가 뒤 화면을 잠그면 스크롤바가 사라진다 — 그 폭만큼 화면이 옆으로 튀지 않게 자리를 늘 둔다 */
   scrollbar-gutter: stable;
@@ -267,7 +269,7 @@ body {
   /* 고른 칩. 검정으로 채우면 흑백 앱처럼 보인다 — 국민체력100 파랑을 쓴다 */
   .chip-on {
     background: var(--color-signal-strong);
-    color: #ffffff;
+    color: var(--color-paper);
   }
 
   /* 카드 안의 목록은 다시 카드로 감싸지 않고 선으로 나눈다 */
