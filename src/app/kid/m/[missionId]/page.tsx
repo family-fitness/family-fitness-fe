@@ -683,7 +683,12 @@ function Step({
               className="press bg-signal-strong mt-4 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white"
             >
               <Play aria-hidden className="size-5 fill-current" />
-              {status === "paused" ? "이어서 하기" : status === "rest" ? "바로 시작" : "시작하기"}
+              {/* 쉬는 동안 화면을 떠나 멈춘 것은 아직 시작 전이다 — 「이어서」 가 아니다 */}
+              {status === "paused" && elapsed > 0
+                ? "이어서 하기"
+                : status === "rest"
+                  ? "바로 시작"
+                  : "시작하기"}
             </button>
           )}
         </section>
