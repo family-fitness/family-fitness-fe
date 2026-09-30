@@ -18,7 +18,7 @@ import { KiumIsland } from "@/components/scene/kium-island";
 import { NotificationBell } from "@/components/domain/notification-bell";
 import { XpGauge } from "@/components/domain/xp-gauge";
 import { WelcomeSheet } from "@/components/domain/welcome-sheet";
-import type { Mission } from "@/lib/api/types";
+import type { CheerLog, Mission } from "@/lib/api/types";
 import type { ProfileWithSex } from "@/lib/api/types";
 import {
   useCalendar,
@@ -73,6 +73,8 @@ export default function KidHomePage() {
     refetch: refetchCalendar,
   } = useCalendar(familyId, childProfileId ?? undefined, week);
   const { data: cheers } = useCheers(familyId, childProfileId ?? undefined);
+  // 오늘 운동을 알렸는지 · 부모가 붙여 줬는지 — 아이가 보낸 것도 봐야 해서 가족 것 전부
+  const { data: familyCheers } = useCheers(familyId);
   const { data: family } = useFamilyProfiles(familyId);
   // 아이에게 부모는 엄마 · 아빠다
   const nameOf = (profileId: string, fallback: string) =>
@@ -201,10 +203,14 @@ export default function KidHomePage() {
             </button>
           </div>
         ) : mine.length > 0 && !todo ? (
-          // 다 했으면 쉬는 날이어도 다 했다고 — 「그래도 할래요」 로 한 것을 덮지 않는다
-          <div className="card-hero text-center">
-            <p className="text-lead font-extrabold">오늘 거 다 했어요!</p>
-          </div>
+          // 다 했으면 쉬는 날이어도 다 했다고 — 「그래도 할래요」 로 한 것을 덮지 않는다.
+          // 알렸으면 부모가 붙여 줄 때까지 「기다리는 중」, 붙여 주면 그 스티커(규칙 12) — 운동하기 화면과 같은 말
+          <DoneToday
+            missionIds={mine.map((m) => m.missionId ?? "")}
+            kidId={childProfileId}
+            cheers={familyCheers?.cheers}
+            nameOf={nameOf}
+          />
         ) : todo && me.consentRequired && !me.consentGiven ? (
           // 보호자가 동의를 거뒀다 — 해도 기록이 남지 않는다. 시작을 권하지 않고 지금 상태만(아이가 풀 일이 아니다)
           <div className="card-hero text-center">
@@ -304,6 +310,42 @@ export default function KidHomePage() {
 }
 
 /** 오늘 운동 — 파랑 큰 카드. 누르면 바로 운동하기로 */
+/**
+ * 오늘 거 다 한 뒤 — 알렸으면 「알렸어요 · 기다리는 중」, 부모가 붙여 주면 그 스티커와 누가 붙였는지.
+ * 재촉하지 않는다 — 알리지 않았으면 다 했다는 말만(알리기는 운동하기 끝 칸에 있다)
+ */
+function DoneToday({
+  missionIds,
+  kidId,
+  cheers,
+  nameOf,
+}: {
+  missionIds: string[];
+  kidId: string | null;
+  cheers: CheerLog[] | undefined;
+  nameOf: (profileId: string, fallback: string) => string;
+}) {
+  const about = (cheers ?? []).filter((c) => c.missionId && missionIds.includes(c.missionId));
+  const told = about.some((c) => c.fromProfileId === kidId);
+  const praise = about
+    .filter((c) => c.toProfileId === kidId && c.stickerId && stickerOf(c.stickerId))
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0];
+
+  return (
+    <div className="card-hero flex flex-col items-center text-center">
+      {praise && <StickerArt id={praise.stickerId} className="mb-2 size-20" />}
+      <p className="text-lead font-extrabold">오늘 거 다 했어요!</p>
+      {praise ? (
+        <p className="text-caption text-ink-soft mt-1 font-bold">
+          {nameOf(praise.fromProfileId, praise.fromName)} · {stickerOf(praise.stickerId)?.label}
+        </p>
+      ) : (
+        told && <p className="text-caption text-ink-soft mt-1 font-bold">알렸어요 · 기다리는 중</p>
+      )}
+    </div>
+  );
+}
+
 function TodayHero({ mission, profileId }: { mission: Mission; profileId: string | null }) {
   const sessions = sessionsOf(mission, profileId);
   const minutes = totalMinutes(sessions);
