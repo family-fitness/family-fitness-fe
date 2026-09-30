@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { SessionError } from "@/components/app-shell/session-error";
 import { ChoiceButton, WizardShell, WizardSkeleton } from "@/components/app-shell/wizard";
@@ -864,6 +864,8 @@ function UnitInput({
   /** 범위를 벗어나면 까닭 한 줄 — 「다음」 이 왜 안 눌리는지 */
   problem: string | null;
 }) {
+  // 도움말 · 범위를 벗어난 까닭 줄 — 칸에 잇고, 바뀌면 화면 읽기가 읽는다(말없이 글자만 바뀌었다)
+  const noteId = useId();
   return (
     <label className="block">
       <span className="text-ink-soft text-sm font-bold">{label}</span>
@@ -874,6 +876,7 @@ function UnitInput({
           step="0.1"
           aria-label={label}
           aria-invalid={problem != null}
+          aria-describedby={noteId}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
@@ -885,6 +888,8 @@ function UnitInput({
         </span>
       </span>
       <span
+        id={noteId}
+        aria-live="polite"
         className={cn(
           "text-caption mt-1 block",
           problem ? "text-signal-deep font-bold" : "text-faint",
