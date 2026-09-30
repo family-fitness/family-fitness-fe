@@ -36,7 +36,13 @@ async function walk(name, run) {
   page.on("pageerror", (e) => noise.push("터짐: " + String(e).split("\n")[0].slice(0, 90)));
   page.on("console", (m) => {
     const t = m.text();
-    if (m.type() === "error" && !/favicon|ytimg|_next\/image|40[049] /.test(t)) {
+    // 유튜브 썸네일은 다음 화면으로 넘어가며 받다 끊기면 「Failed to load resource」 만 남는다 — 글에는 주소가 없어 자리로 거른다
+    const from = m.location()?.url ?? "";
+    if (
+      m.type() === "error" &&
+      !/favicon|ytimg|_next\/image|40[049] /.test(t) &&
+      !/ytimg|youtube/.test(from)
+    ) {
       noise.push("콘솔: " + t.split("\n")[0].slice(0, 90));
     }
   });
