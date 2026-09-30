@@ -17,7 +17,7 @@ import {
   prevTier,
   zoneOf,
 } from "@/lib/league";
-import { NO_PEER_NORMS_NOTE, noPeerNormsNote } from "@/lib/fitness-factors";
+import { NO_PEER_NORMS_NOTE, memberNoPeerNormsNote, noPeerNormsNote } from "@/lib/fitness-factors";
 import { projectOrtho } from "@/lib/ortho";
 import { withJosa } from "@/lib/utils";
 import {
@@ -1092,6 +1092,31 @@ check("리그가 열흘 남으면 10일 남았어요", daysLeftText(10) === "10�
     "유소년이 아니면 만 7~10세 까닭을 말하지 않는다",
     noPeerNormsNote({ ageGroup: "유아기", measured: true, compared: false }) === null &&
       noPeerNormsNote({ ageGroup: undefined, measured: true, compared: false }) === null,
+  );
+}
+
+// 부모 홈 아래쪽 아이 칸도 위쪽 카드와 같은 가족 지도 값으로 까닭을 정한다
+{
+  const kid = {
+    ageGroup: "유소년" as const,
+    latest: { testedOn: "2026-09-30", overallPercentile: null },
+  };
+  check(
+    "가족 지도에서 쟀는데 점수가 없는 유소년은 까닭을 말한다",
+    memberNoPeerNormsNote(kid) === NO_PEER_NORMS_NOTE,
+    String(memberNoPeerNormsNote(kid)),
+  );
+  check(
+    "가족 지도에 측정일이 없어도 따로 받은 측정일이 있으면 까닭을 말한다",
+    memberNoPeerNormsNote({ ageGroup: "유소년", latest: null }, "2026-09-30") ===
+      NO_PEER_NORMS_NOTE,
+  );
+  check(
+    "가족 지도에 점수가 있으면 까닭을 말하지 않는다",
+    memberNoPeerNormsNote({
+      ageGroup: "유소년",
+      latest: { testedOn: "2026-09-30", overallPercentile: 40 },
+    }) === null,
   );
 }
 

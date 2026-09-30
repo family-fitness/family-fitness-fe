@@ -92,3 +92,21 @@ export function noPeerNormsNote({
 }): string | null {
   return measured && !compared && ageGroup === "유소년" ? NO_PEER_NORMS_NOTE : null;
 }
+
+/**
+ * 가족 지도의 아이 한 명으로 `noPeerNormsNote` 를 구한다. 부모 홈 위쪽 카드와 아래쪽 아이 칸이
+ * 같은 값으로 가르게 한 곳에 둔다. 측정일을 따로 받았으면 `testedOn` 으로 넘긴다.
+ */
+export function memberNoPeerNormsNote(
+  member: {
+    ageGroup?: string | null;
+    latest?: { testedOn?: string | null; overallPercentile?: number | null } | null;
+  },
+  testedOn: string | null | undefined = member.latest?.testedOn,
+): string | null {
+  return noPeerNormsNote({
+    ageGroup: member.ageGroup,
+    measured: Boolean(testedOn),
+    compared: member.latest?.overallPercentile != null,
+  });
+}

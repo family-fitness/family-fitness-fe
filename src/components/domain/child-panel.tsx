@@ -8,6 +8,7 @@ import { CardHead } from "@/components/ui/card";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorView, FirstMeasure } from "@/components/domain/factor-view";
+import { memberNoPeerNormsNote } from "@/lib/fitness-factors";
 import { REMEASURE_DAYS } from "@/lib/remeasure";
 import type { FitnessMapMember, Mission } from "@/lib/api/types";
 import { useCheers, useLatestCoachRun, useLatestFitnessTest, useRestDays } from "@/lib/api/queries";
@@ -66,6 +67,7 @@ export function ChildPanel({
             pending={isPending}
             score={score}
             headline={child.headline}
+            note={memberNoPeerNormsNote(child, testedOn)}
             className="mx-auto mt-2 max-w-80"
           />
         </>
