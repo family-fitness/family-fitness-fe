@@ -178,7 +178,7 @@ export function RecentDays({
         <button
           type="button"
           onClick={() => void refetch()}
-          className="press text-ink-soft mt-1 min-h-10 text-sm font-bold"
+          className="press text-ink-soft mt-1 min-h-11 text-sm font-bold"
         >
           불러오지 못했어요 · 다시
         </button>

@@ -243,7 +243,7 @@ function Calendar() {
             <button
               type="button"
               onClick={() => void refetchCalendar()}
-              className="press text-ink-soft mt-3 min-h-10 w-full text-sm font-bold"
+              className="press text-ink-soft mt-3 min-h-11 w-full text-sm font-bold"
             >
               기록을 불러오지 못했어요 · 다시
             </button>
