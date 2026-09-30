@@ -79,7 +79,8 @@ function embedSrc(videoId: string, startSec: number): string {
     start: String(Math.floor(startSec)),
   });
   if (typeof window !== "undefined") params.set("origin", window.location.origin);
-  return `https://www.youtube.com/embed/${encodeURIComponent(videoId)}?${params}`;
+  // 아이가 보는 영상이라 쿠키를 남기지 않는 주소로(9/30 보안 점검) — 조종은 같은 IFrame API 로 한다
+  return `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}?${params}`;
 }
 
 export function ClipPlayer({
