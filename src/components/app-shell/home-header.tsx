@@ -27,7 +27,8 @@ export function HomeHeader({
 }) {
   return (
     <PageTransition>
-      <header className="flex items-end justify-between gap-3 px-5 pt-4 pb-3">
+      {/* 제목이 자리를 다 쓰면 아이콘들이 다음 줄로 — 큰 글씨(125%)에서 「서준 / 이네」 처럼 이름이 가운데서 꺾였다 */}
+      <header className="flex flex-wrap items-end justify-between gap-x-3 gap-y-1 px-5 pt-4 pb-3">
         <div className="min-w-0">
           {eyebrow && <p className="text-caption text-ink-soft font-semibold">{eyebrow}</p>}
           {/* 긴 가족 이름은 두 줄까지 — 한 줄로 자르면 오른쪽 아이콘들에 밀려 「무지…」 만 남았다 */}
@@ -49,7 +50,7 @@ export function HomeHeader({
             )}
           </h1>
         </div>
-        {actions && <div className="-mr-2 flex shrink-0 items-center">{actions}</div>}
+        {actions && <div className="-mr-2 ml-auto flex shrink-0 items-center">{actions}</div>}
       </header>
     </PageTransition>
   );
