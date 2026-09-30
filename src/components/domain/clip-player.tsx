@@ -3,6 +3,8 @@
 import { ExternalLink, RefreshCw, Volume2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { afterFileFailure, fileType } from "@/lib/videos";
+
 /*
   운동 한 칸의 시범 영상.
 
@@ -359,6 +361,10 @@ function FilePlayer({
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
   const failed = failedSrc === src;
+  // 이 주소를 몇 번 다시 불렀나. error 와 stalled 가 잇달아 와도 한 번만 다시 부르게 ref 로 센다.
+  // reloads 는 다시 부른 뒤 아래 재생 effect 를 한 번 더 돌리려고 둔다 — load() 는 재생을 멈춘다
+  const tries = useRef<{ src: string; reloads: number }>({ src, reloads: 0 });
+  const [reloads, setReloads] = useState(0);
 
   const blocked = useRef(onBlocked);
   useEffect(() => {
@@ -392,12 +398,29 @@ function FilePlayer({
     return () => {
       cancelled = true;
     };
-  }, [playing, failed, src]);
+  }, [playing, failed, src, reloads]);
 
   // 클립의 처음으로. 구간이 없는 한 편이면 0초다
   const rewind = () => {
     const v = video.current;
     if (v) v.currentTime = startSec;
+  };
+
+  /*
+    못 틀었다(error) · 받다가 멈춰 섰다(stalled). 공단 서버 두 대 가운데 한 대가 Content-Type 을
+    video/mg4 로 주는데(요청마다 절반 확률) iPhone Safari 는 그 파일을 못 연다. 같은 주소를 한 번만
+    다시 불러 보고, 두 번째도 안 되면 실패 안내를 띄운다
+  */
+  const fail = () => {
+    if (tries.current.src !== src) tries.current = { src, reloads: 0 };
+    const v = video.current;
+    if (v && afterFileFailure(tries.current.reloads) === "reload") {
+      tries.current.reloads += 1;
+      v.load();
+      setReloads((n) => n + 1);
+      return;
+    }
+    setFailedSrc(src);
   };
 
   // 형식(iPhone Safari 가 video/mg4 로 온 파일을 못 연다) · 네트워크 오류 모두 여기로 온다
@@ -407,7 +430,6 @@ function FilePlayer({
     <div className="bg-signal-deep relative overflow-hidden rounded-2xl">
       <video
         ref={video}
-        src={src}
         poster={poster ?? undefined}
         title={`${title} 시범 영상`}
         controls
@@ -427,8 +449,15 @@ function FilePlayer({
           rewind();
           if (running.current) e.currentTarget.play().catch(() => {});
         }}
-        onError={() => setFailedSrc(src)}
-      />
+        onError={fail}
+        // 받은 것이 하나도 없을 때만 실패로 본다. 틀던 영상이 느린 망에서 잠깐 멈춘 것까지 안내로 덮지 않는다
+        onStalled={(e) => {
+          if (e.currentTarget.readyState === HTMLMediaElement.HAVE_NOTHING) fail();
+        }}
+      >
+        {/* 파일을 못 열면 error 는 video 가 아니라 이 source 에 온다 */}
+        <source src={src} type={fileType(src)} onError={fail} />
+      </video>
 
       {muted && playing && (
         <UnmuteButton

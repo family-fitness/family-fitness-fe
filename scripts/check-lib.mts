@@ -37,7 +37,7 @@ import { UNLOCKS, decorationsAt, newlyUnlocked, nextUnlock } from "@/lib/unlocks
 import { orderSessions, proposalSessions, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { todayActivity } from "@/lib/activity";
 import { josa } from "@/lib/utils";
-import { finderHref, finderOwner } from "@/lib/videos";
+import { afterFileFailure, fileType, finderHref, finderOwner } from "@/lib/videos";
 import { callName, guardiansName, mustAddChild, openWithoutChild } from "@/lib/family";
 
 let failed = 0;
@@ -619,6 +619,24 @@ check(
     (p) => !openWithoutChild(p),
   ),
 );
+
+/* ─── 공단 mp4 를 못 틀었을 때 — 같은 주소를 한 번만 다시 불러 본다 ─────────────────── */
+
+// 공단 서버 두 대 가운데 한 대가 Content-Type 을 video/mg4 로 준다(요청마다 절반 확률).
+// 다시 부르면 다른 서버가 받을 수 있으니 한 번은 다시 불러 보고, 두 번째도 안 되면 안내를 띄운다
+check("처음 못 틀면 같은 주소를 다시 부른다", afterFileFailure(0) === "reload");
+check("다시 불러도 못 틀면 안내를 띄운다", afterFileFailure(1) === "give-up");
+check("그 뒤로는 더 부르지 않는다", afterFileFailure(2) === "give-up");
+check(
+  "공단 mp4 주소는 형식을 video/mp4 로 적는다",
+  fileType("https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00181.mp4") === "video/mp4",
+);
+check(
+  "물음표 뒤 · 대문자 확장자도 mp4 로 본다",
+  fileType("https://x.test/a.MP4?t=1#frag") === "video/mp4",
+);
+check("mp4 가 아니면 형식을 적지 않는다", fileType("https://x.test/a.webm") === undefined);
+check("주소가 이상해도 멈추지 않는다", fileType("not a url") === undefined);
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);

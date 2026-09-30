@@ -41,3 +41,31 @@ export function finderOwner({
   if (kidView) return childProfileId ?? undefined;
   return fromUrl || childProfileId || self;
 }
+
+/**
+ * 공단 mp4 를 못 틀었을 때(`<video>` 의 error · stalled) 다음에 할 일.
+ *
+ * 공단 서버 두 대 가운데 한 대가 Content-Type 을 video/mg4 로 준다 — 요청마다 절반 확률이다.
+ * 같은 주소를 다시 부르면 다른 서버가 받을 수 있으니 한 번은 다시 불러(`load()`) 본다.
+ * 두 번째도 못 틀면 그때 「이 기기에서 영상을 열지 못했어요」 를 띄운다.
+ *
+ * @param reloads 이 주소를 이미 다시 부른 횟수
+ */
+export const FILE_RELOADS = 1;
+export function afterFileFailure(reloads: number): "reload" | "give-up" {
+  return reloads < FILE_RELOADS ? "reload" : "give-up";
+}
+
+/**
+ * `<source type>` 에 적을 형식. 주소가 .mp4 로 끝나면 video/mp4, 아니면 적지 않는다(undefined).
+ * 서버가 준 Content-Type 을 바꾸지는 못하지만, 브라우저가 이 파일을 틀 수 있는지 먼저 고를 때 쓴다
+ */
+export function fileType(url: string): string | undefined {
+  let path: string;
+  try {
+    path = new URL(url).pathname;
+  } catch {
+    return undefined;
+  }
+  return path.toLowerCase().endsWith(".mp4") ? "video/mp4" : undefined;
+}
