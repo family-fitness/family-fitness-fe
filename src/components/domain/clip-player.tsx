@@ -242,17 +242,19 @@ export function ClipPlayer({
         />
       </div>
 
-      {/* 플레이어가 붙는 동안 — 그 영상의 썸네일이 자리를 잡는다. 회색 상자로 멈춰 있으면 아이는 고장으로 본다.
-          썸네일도 못 받으면(막힌 망) 깨진 그림 표시 대신 남색 틀만 */}
-      {!ready && thumbFailed !== videoId && (
-        <div className="absolute inset-0" aria-hidden>
-          {/* eslint-disable-next-line @next/next/no-img-element -- 유튜브 썸네일은 외부 주소라 최적화가 안 된다 */}
-          <img
-            src={`https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`}
-            alt=""
-            onError={() => setThumbFailed(videoId)}
-            className="size-full object-cover opacity-70"
-          />
+      {/* 플레이어가 붙는 동안 — 남색 덮개 위에 그 영상의 썸네일이 자리를 잡는다. 회색 상자로 멈춰 있으면 아이는 고장으로 본다.
+          썸네일을 못 받아도(막힌 망) 덮개는 남긴다 — 걷으면 그 밑 iframe 의 브라우저 오류 그림이 드러났다 */}
+      {!ready && (
+        <div className="bg-signal-deep absolute inset-0" aria-hidden>
+          {thumbFailed !== videoId && (
+            // eslint-disable-next-line @next/next/no-img-element -- 유튜브 썸네일은 외부 주소라 최적화가 안 된다
+            <img
+              src={`https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`}
+              alt=""
+              onError={() => setThumbFailed(videoId)}
+              className="size-full object-cover opacity-70"
+            />
+          )}
         </div>
       )}
 
