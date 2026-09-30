@@ -1,3 +1,7 @@
+"use client";
+
+import { useSyncExternalStore } from "react";
+
 import { artFor } from "@/lib/art";
 import { poseArt, type Pose } from "@/lib/poses";
 import { cn } from "@/lib/utils";
@@ -9,6 +13,14 @@ import { cn } from "@/lib/utils";
  * 그 자리에 서고, 오기 전에는 레벨 캐릭터(서 있기 · 만세)가 선다. 꾸밈이라 읽지 않는다(aria-hidden).
  * 좁은 화면에는 없다 — 거터가 없으면 앱 화면을 가린다. 움직이지 않는다(AGENTS 「움직임」).
  */
+
+/** 거터가 판을 세울 만큼 넓은 화면 */
+const WIDE = "(min-width: 1240px)";
+const onWideChange = (notify: () => void) => {
+  const query = window.matchMedia(WIDE);
+  query.addEventListener("change", notify);
+  return () => query.removeEventListener("change", notify);
+};
 
 /** 동작 그림이 있으면 그것, 없으면 레벨 캐릭터 */
 function kiumi(pose: Pose, fallback: string) {
@@ -33,6 +45,16 @@ const FACTORS = [
 ];
 
 export function DesktopBanner() {
+  /*
+    넓은 화면에서만 그린다(서버는 늘 안 그린다). 숨긴 채 그렸더니 폰에서도 그림 18장(551KB)을 받고, React 가 그림마다
+    미리 받기(preload)까지 걸어 폰의 첫 그림이 0.45초 늦었다(9/30 성능 점검)
+  */
+  const wide = useSyncExternalStore(
+    onWideChange,
+    () => window.matchMedia(WIDE).matches,
+    () => false,
+  );
+  if (!wide) return null;
   return (
     <>
       <aside
