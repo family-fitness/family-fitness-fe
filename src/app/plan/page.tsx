@@ -89,10 +89,13 @@ function PlanForm() {
   // 운동 찾기에서 담아 둔 동작 — 있으면 직접 짜기로 바로
   const gathered = useRoutineStore((s) => s.moves.length);
   useRoutineReady();
-  // 참여 방식이 「매번 같이」 면 부모도 같이가 기본이다. 고르기 전에는 기본값을 따른다 —
+  // 참여 방식이 「매번 같이」 면 부모도 같이가 기본이다 — 「주말에는 같이」 면 토 · 일에. 고르기 전에는 기본값을 따른다 —
   // 처음 한 번만 읽으면 새로고침 직후(/me 가 오기 전)에는 늘 「혼자」 였다
   const [pickedWithParent, setWithParent] = useState<boolean | null>(null);
-  const withParent = pickedWithParent ?? profile?.supportMode === "FULL";
+  const weekend = weekdayCode() === "SAT" || weekdayCode() === "SUN";
+  const withParent =
+    pickedWithParent ??
+    (profile?.supportMode === "FULL" || (profile?.supportMode === "WEEKEND" && weekend));
   const [error, setError] = useState<string | null>(null);
   /** 막힌 까닭이 「이미 있는 제안」 이면 그리로 가는 길 */
   const [existing, setExisting] = useState(false);
