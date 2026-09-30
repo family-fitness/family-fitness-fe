@@ -37,11 +37,17 @@ interface YtMessage {
 
 /** 우리가 만드는 임베드 주소. 끝(end)은 넣지 않는다 — 되풀이를 우리가 하기 때문이다 */
 function embedSrc(videoId: string, startSec: number): string {
+  // 유튜브 조작(멈춤 · 넘기기 · 자판)은 두지 않는다 — 켜고 끄는 것은 타이머다. 영상을 눌러 멈추면 타이머는 흐르는데
+  // 영상만 멈춰 서고, 시작 전에 누르면 타이머 없이 클립 끝을 넘어 원래 영상으로 흘렀다(9/30 점검)
   const params = new URLSearchParams({
     enablejsapi: "1",
     playsinline: "1",
     rel: "0",
     modestbranding: "1",
+    controls: "0",
+    disablekb: "1",
+    fs: "0",
+    iv_load_policy: "3",
     start: String(Math.floor(startSec)),
   });
   if (typeof window !== "undefined") params.set("origin", window.location.origin);
@@ -72,6 +78,8 @@ export function ClipPlayer({
   const playerState = useRef(-1);
   const currentTime = useRef(0);
   const [ready, setReady] = useState(false);
+  /** 지금 정말 돌고 있나 — 「소리 켜기」 는 돌 때만 */
+  const [rolling, setRolling] = useState(false);
   const [failed, setFailed] = useState(false);
   const [muted, setMuted] = useState(false);
 
@@ -117,13 +125,17 @@ export function ClipPlayer({
         case "initialDelivery":
         case "infoDelivery": {
           const info = message.info as { playerState?: number; currentTime?: number } | null;
-          if (typeof info?.playerState === "number") playerState.current = info.playerState;
+          if (typeof info?.playerState === "number") {
+            playerState.current = info.playerState;
+            setRolling(info.playerState === PLAYING);
+          }
           if (typeof info?.currentTime === "number") currentTime.current = info.currentTime;
           break;
         }
         case "onStateChange":
           if (typeof message.info === "number") {
             playerState.current = message.info;
+            setRolling(message.info === PLAYING);
             // 영상 끝까지 가 버렸으면 클립 처음으로
             if (message.info === ENDED)
               say({ event: "command", func: "seekTo", args: [startSec, true] });
@@ -151,6 +163,7 @@ export function ClipPlayer({
       playerState.current = -1;
       currentTime.current = 0;
       setReady(false);
+      setRolling(false);
     };
   }, [videoId, startSec]);
 
@@ -222,7 +235,8 @@ export function ClipPlayer({
           src={embedSrc(videoId, startSec)}
           allow="autoplay; encrypted-media; picture-in-picture; compute-pressure"
           allowFullScreen
-          className="size-full border-0"
+          // 누름은 영상에 닿지 않는다 — 켜고 끄는 것은 위의 시작 · 멈춤 단추다
+          className="pointer-events-none size-full border-0"
         />
       </div>
 
@@ -238,7 +252,8 @@ export function ClipPlayer({
         </div>
       )}
 
-      {muted && playing && (
+      {/* 소리를 끄고 돌고 있을 때만 — 막혀 멈춰 선 영상 위에는 켤 소리가 없다 */}
+      {muted && playing && rolling && (
         <button
           type="button"
           onClick={() => {
