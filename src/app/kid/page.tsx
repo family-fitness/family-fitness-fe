@@ -205,6 +205,11 @@ export default function KidHomePage() {
           <div className="card-hero text-center">
             <p className="text-lead font-extrabold">오늘 거 다 했어요!</p>
           </div>
+        ) : todo && me.consentRequired && !me.consentGiven ? (
+          // 보호자가 동의를 거뒀다 — 해도 기록이 남지 않는다. 시작을 권하지 않고 지금 상태만(아이가 풀 일이 아니다)
+          <div className="card-hero text-center">
+            <p className="text-lead font-extrabold">지금은 기록을 남길 수 없어요</p>
+          </div>
         ) : restToday && !started ? (
           // 쉬는 날 카드를 쓴 날 — 「안 한 날」 이 아니라 「쉬기로 한 날」. 그래도 하고 싶으면 한다
           <div className="card-hero flex flex-col items-center text-center">

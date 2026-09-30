@@ -92,6 +92,10 @@ export default function PlayPage() {
   } = useMissions(familyId, { scope: "ALL" });
   const { data: progress, isLoading: progressLoading } = useProgress(kidId || undefined);
   const complete = useCompleteSession(missionId, familyId ?? "");
+  const { data: family } = useFamilyProfiles(familyId);
+  // 동의를 거둔 아이 — 해도 기록이 남지 않는다(422). 시작하게 두면 한 칸을 다 하고 나서야 안다
+  const kid = family?.profiles?.find((p) => p.profileId === kidId);
+  const noConsent = Boolean(kid?.consentRequired && !kid.consentGiven);
 
   const mission = missions?.missions?.find((m) => m.missionId === missionId);
 
@@ -174,6 +178,8 @@ export default function PlayPage() {
         // 망 · 서버 탓이 아니면(4xx) 다시 보내도 같다
         if (e instanceof ApiError && e.status < 500 && e.status !== 408 && e.status !== 429) {
           setStuckTo(e.status === 401 ? "/login" : "/kid");
+          // 다음 칸으로 이어 가면 남지 않을 운동을 더 시킨다(동의를 거둔 아이) — 여기서 멈추고 끝 칸의 말을 띄운다
+          setStatus("ended");
         }
         setSaveError(
           errorMessage(
@@ -311,6 +317,18 @@ export default function PlayPage() {
             error={failure}
             onRetry={() => void (sessionError ? refetchMe() : refetch())}
           />
+        </Stage>
+      </>
+    );
+  }
+
+  // 하던 중에 거둬졌으면 끝 칸이 말한다 — 하던 화면을 걷어 내지 않는다
+  if (noConsent && doneHere.length === 0) {
+    return (
+      <>
+        <AppBar backHref="/kid" title="오늘 운동" />
+        <Stage wide>
+          <EmptyState scene="waiting" title="지금은 기록을 남길 수 없어요" />
         </Stage>
       </>
     );
