@@ -70,7 +70,8 @@ function ConsentPageContent() {
         {needConsent.length === 0 ? (
           <EmptyState scene="waiting" title="동의가 필요한 가족이 없어요" />
         ) : (
-          <ul className="divide-rows">
+          // 내용은 전부 카드 위 — 동의 줄만 회색 바탕에 떠 있었다
+          <ul className="card divide-rows py-0">
             {needConsent.map((child) => (
               <ConsentRow key={child.profileId} child={child} familyId={familyId ?? ""} />
             ))}
