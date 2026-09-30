@@ -91,6 +91,51 @@ check(
     `${res.status} ${auth.nextStep}`,
   );
 }
+{
+  // 심사자가 세 흐름 가운데 고른다. 본문이 없으면 체험 가족(예전 화면도 된다)
+  const reviewAs = async (body?: unknown) => {
+    const res = await fetch(`${BASE}/auth/review-login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const auth = (await res.json().catch(() => ({}))) as {
+      accessToken?: string;
+      nextStep?: string;
+      inviteCode?: string | null;
+      code?: string;
+    };
+    return { status: res.status, ...auth };
+  };
+  const family = await reviewAs({ kind: "FAMILY" });
+  check(
+    "심사용 FAMILY 는 체험 가족으로 홈에",
+    family.status === 200 && family.nextStep === "HOME" && !family.inviteCode,
+    `${family.status} ${family.nextStep}`,
+  );
+  const noKind = await reviewAs({});
+  check("심사용 kind 가 없으면 FAMILY", noKind.nextStep === "HOME", `${noKind.nextStep}`);
+  const fresh = await reviewAs({ kind: "FRESH" });
+  check(
+    "심사용 FRESH 는 가족 없는 새 계정 — 가족 만들기부터",
+    fresh.status === 200 && fresh.nextStep === "CREATE_FAMILY" && !fresh.inviteCode,
+    `${fresh.status} ${fresh.nextStep}`,
+  );
+  const meFresh = (await (await get("/me")).json()) as { nextStep?: string };
+  check("FRESH 로 들어오면 /me 도 가족 만들기", meFresh.nextStep === "CREATE_FAMILY");
+  const invited = await reviewAs({ kind: "INVITED" });
+  check(
+    "심사용 INVITED 는 가족 없는 계정과 체험 가족의 초대코드를 준다",
+    invited.status === 200 && !!invited.accessToken && invited.inviteCode === "K7M2QT",
+    `${invited.status} ${invited.nextStep} ${invited.inviteCode}`,
+  );
+  const seat = await get(`/invites/${invited.inviteCode}`);
+  check("INVITED 의 초대코드로 자리를 미리 볼 수 있다", seat.ok, `${seat.status}`);
+  const odd = await reviewAs({ kind: "GUEST" });
+  check("심사용 kind 를 모르면 400", odd.status === 400, `${odd.status}`);
+  // 뒤 검사는 서준이네 보호자로 본다
+  await reviewAs({ kind: "FAMILY" });
+}
 
 /* ─── 0-1. 두 화면이 같은 말을 한다 ─────────────────────────── */
 

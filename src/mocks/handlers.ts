@@ -186,12 +186,24 @@ const identity = [
   }),
 
   /**
-   * 심사용 계정으로 들어간다. 토큰도 몸체도 없이 부른다.
+   * 심사용 계정으로 들어간다. 토큰 없이 부르고, 본문 `{ kind }` 로 세 흐름 가운데 하나를 고른다.
    *
-   * 진짜 서버는 부를 때마다 새 계정과 「체험 가족」을 만든다. 목에는 식구와 측정 기록이 다 차 있는
-   * 서준이네가 이미 있어서 그 가족으로 바로 홈에 들어간다. 응답 모양은 개발 로그인과 같다(nextStep HOME).
+   *   FAMILY(본문이 없거나 kind 가 없을 때도)  체험 가족의 보호자로 홈에. 진짜 서버는 부를 때마다 새 계정과
+   *                                          「체험 가족」 을 만든다. 목은 식구와 측정 기록이 다 차 있는 서준이네로 들어간다
+   *   FRESH    가족이 없는 새 계정 — 개발용 「새 계정 · 가족 없음」 과 같다(nextStep CREATE_FAMILY)
+   *   INVITED  가족이 없는 새 계정과, 체험 가족의 초대코드(`inviteCode`). 개발용 「초대받은 계정」 과 같게
+   *            서준이네 아빠 자리 코드(K7M2QT)를 준다
+   *
+   * 모르는 kind 는 400.
    */
-  http.post(`${BASE}/auth/review-login`, () => HttpResponse.json(signIn(undefined))),
+  http.post(`${BASE}/auth/review-login`, async ({ request }) => {
+    const body = (await request.json().catch(() => ({}))) as { kind?: unknown } | null;
+    const kind = body?.kind ?? "FAMILY";
+    if (kind === "FAMILY") return HttpResponse.json(signIn(undefined));
+    if (kind === "FRESH") return HttpResponse.json(signIn(FRESH_ID));
+    if (kind === "INVITED") return HttpResponse.json({ ...signIn(CLAIM_ID), inviteCode: "K7M2QT" });
+    return fail(400, "INVALID_REQUEST", "kind 는 FAMILY · FRESH · INVITED 가운데 하나입니다");
+  }),
 
   /**
    * 구글에서 받은 인가코드를 토큰으로 바꾼다.
