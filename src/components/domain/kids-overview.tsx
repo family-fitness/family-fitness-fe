@@ -181,7 +181,7 @@ function KidLine({
                 aria-label={
                   score != null
                     ? `신체 점수 ${score}, 또래 평균 50`
-                    : "아직 신체 점수가 없어요, 또래 평균 50"
+                    : "신체 점수가 없어요. 또래 평균은 50"
                 }
               >
                 {score != null ? (

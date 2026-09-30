@@ -191,7 +191,7 @@ function RestCardSheet({
               <li key={d} className="flex min-h-12 items-center justify-between gap-3">
                 <span className="text-sm font-bold">
                   {d === now ? "오늘은" : `${Number(d.slice(5, 7))}월 ${Number(d.slice(8))}일은`}{" "}
-                  쉬는 날
+                  쉬는 날이에요
                 </span>
                 <button
                   type="button"

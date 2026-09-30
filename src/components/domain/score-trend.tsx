@@ -168,7 +168,7 @@ export function ScoreTrend({ tests }: { tests: FitnessTestSummary[] }) {
           >
             <p className="text-caption font-bold">
               {Number(shown.testedOn.slice(5, 7))}월 {Number(shown.testedOn.slice(8, 10))}일{" "}
-              <span className="ml-1">{shown.overallPercentile}점</span>
+              <span>{shown.overallPercentile}점</span>
             </p>
           </div>
         )}

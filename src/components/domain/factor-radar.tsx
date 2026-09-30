@@ -1,7 +1,7 @@
 import { FactorIcon } from "@/components/domain/factor-icon";
 import type { RadarPoint } from "@/lib/api/types";
 import { FACTORS, toHexagon, type Factor, type FactorPointView } from "@/lib/fitness-factors";
-import { cn } from "@/lib/utils";
+import { cn, withJosa } from "@/lib/utils";
 
 /*
   체력 육각형 — 부모가 보는 그래프 하나.
@@ -90,10 +90,12 @@ export function FactorRadar({
 
   // 화면의 「—」 와 같은 말 — 「안 잰」 이라 읽으면 쟀는데 비교 기준이 없는 나이의 값까지 안 잰 것이 된다
   const summary = hex
-    .map(
-      (p) => `${p.factor} ${p.percentile == null ? "값이 없어요" : `또래 백분위 ${p.percentile}`}`,
+    .map((p) =>
+      p.percentile == null
+        ? `${withJosa(p.factor, "은는")} 값이 없어요`
+        : `${p.factor} 또래 백분위 ${p.percentile}`,
     )
-    .join(", ");
+    .join(". ");
 
   return (
     <div className={cn("relative", className)}>

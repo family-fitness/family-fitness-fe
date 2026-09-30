@@ -19,8 +19,8 @@ export function ScoreLine({ score }: { score: number }) {
           {score}
           <span className="metric-unit">점</span>
         </p>
-        <p className="text-caption text-ink-soft flex gap-2 pb-1 text-right font-semibold">
-          <span>신체 점수</span>
+        <p className="text-caption text-ink-soft flex gap-2 pb-1 font-semibold">
+          <span>신체 점수,</span>
           <span>
             또래 평균 <b className="text-ink">50</b>
           </span>
