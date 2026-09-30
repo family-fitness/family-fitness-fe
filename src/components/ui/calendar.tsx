@@ -40,9 +40,9 @@ export function Calendar({ className, classNames, ...props }: ComponentProps<typ
         weekdays: "",
         weekday: "h-9 text-xs font-bold text-faint",
         week: "",
-        day: "p-0.5 text-center",
+        day: "p-0 text-center",
         day_button:
-          "mx-auto grid size-10 place-items-center rounded-full text-[15px] font-semibold tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal",
+          "mx-auto grid size-11 place-items-center rounded-full text-[15px] font-semibold tabular-nums focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-signal",
         today: "[&>button]:text-signal [&>button]:ring-1 [&>button]:ring-signal-pale",
         selected:
           "[&>button]:bg-signal [&>button]:text-white [&>button]:ring-0 [&>button]:font-bold",
