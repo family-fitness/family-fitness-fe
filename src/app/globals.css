@@ -463,7 +463,8 @@ body {
   .field-focus:focus {
     outline: none;
     border-color: var(--color-signal);
-    box-shadow: 0 0 0 3px var(--color-signal-soft);
+    /* 연한 고리(signal-soft)는 흰 바탕에서 1.1:1 이라 1px 테두리만 보였다 — 파랑 고리로(9/30 점검) */
+    box-shadow: 0 0 0 2px var(--color-signal);
   }
 }
 
