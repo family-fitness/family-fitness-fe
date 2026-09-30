@@ -200,7 +200,7 @@ function PlanForm() {
             // 심사용 계정만 하루(한국 시간)에 20번까지 짠다. 자정이 지나면 다시 센다
             TOO_MANY: "심사용 계정은 하루에 20번까지 짤 수 있어요. 내일 다시 짜 주세요.",
           },
-          "짜 달라고 하지 못했어요.",
+          "운동을 짜 달라고 보내지 못했어요.",
         ),
       );
     }
@@ -224,7 +224,7 @@ function PlanForm() {
               href={measureHref}
               className="press text-signal-strong min-h-11 shrink-0 content-center text-sm font-extrabold"
             >
-              첫 측정 하기
+              체력 재러 가기
             </NavLink>
           </div>
         )}
@@ -274,7 +274,7 @@ function PlanForm() {
                 className="press text-signal-deep inline-flex min-h-10 items-center font-bold"
               >
                 {todaySlot
-                  ? `오늘 적어 둔 시간 ${todaySlot.minutes}분 · 바꾸기`
+                  ? `오늘은 ${todaySlot.minutes}분으로 적어 뒀어요. 바꾸기`
                   : "운동할 수 있는 시간 적기"}
               </NavLink>
             }
@@ -376,7 +376,7 @@ function PlanForm() {
                 href={measureHref}
                 className="press text-signal-strong min-h-11 shrink-0 content-center text-sm font-extrabold"
               >
-                첫 측정 하기
+                체력 재러 가기
               </NavLink>
             )}
           </div>
@@ -390,7 +390,7 @@ function PlanForm() {
             href={measureHref}
             className="press bg-signal-strong shadow-lift flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white"
           >
-            첫 측정 하기
+            체력 재러 가기
           </NavLink>
         ) : (
           <button

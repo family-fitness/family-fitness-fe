@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, Minus } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -30,7 +30,7 @@ import { cn } from "@/lib/utils";
 /** 단계 코드를 화면 이름으로. 코드값을 그대로 내보내지 않는다 — AI 서비스의 네 단계(명세 §5.4) */
 const STEP_TITLE: Record<string, string> = {
   assess: "측정 기록 읽기",
-  retrieve: "국민체력100 처방 · 영상 찾기",
+  retrieve: "국민체력100 처방과 영상 찾기",
   compose: "순서 짜기",
   verify: "근거 확인하기",
 };
@@ -159,14 +159,14 @@ function PlanRun() {
                 >
                   {ok && <Check className="text-signal size-5" strokeWidth={3.2} />}
                   {state === "failed" && (
-                    <span className="text-ink-soft text-sm leading-none font-extrabold">–</span>
+                    <Minus className="text-ink-soft size-5" strokeWidth={3.2} />
                   )}
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className={cn("text-sm font-extrabold", !step && "text-faint")}>
                     {i + 1}. {STEP_TITLE[name] ?? name}
                   </p>
-                  {running && <p className="text-caption text-ink-soft mt-0.5">보는 중</p>}
+                  {running && <p className="text-caption text-ink-soft mt-0.5">하는 중이에요</p>}
                 </div>
               </li>
             );

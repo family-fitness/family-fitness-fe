@@ -101,7 +101,7 @@ function Proposal() {
     .map((p) => [p, sessions.filter((s) => s.phase === p).length] as const)
     .filter(([, n]) => n > 0)
     .map(([p, n]) => `${PHASE_LABEL[p].replace("운동", "")} ${n}`)
-    .join(" · ");
+    .join(", ");
 
   const approved = run.status === "APPROVED";
   const rejected = run.status === "REJECTED";
@@ -172,8 +172,8 @@ function Proposal() {
               {/* 서버가 지은 이름을 그대로 */}
               <h2 className="page-title">{proposal?.title ?? "오늘 운동"}</h2>
               <p className="text-caption text-ink-soft mt-1 font-semibold">
-                {sessions.length}개 · {minutes}분{phases && ` · ${phases}`}
-                {people.length > 0 && ` · ${people.join(" · ")}`}
+                {sessions.length}개, {minutes}분{phases && ` (${phases})`}
+                {people.length > 0 && `, ${people.join(", ")}`}
               </p>
             </section>
 

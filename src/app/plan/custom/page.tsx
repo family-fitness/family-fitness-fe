@@ -157,7 +157,7 @@ function CustomPlan() {
         { NOT_A_PARENT: "보호자만 운동을 만들 수 있어요." },
         "등록하지 못했어요.",
       );
-      setProblem(made.length > 0 ? `${made.length}일은 등록됐어요 · ${reason}` : reason);
+      setProblem(made.length > 0 ? `${made.length}일은 등록했어요. ${reason}` : reason);
     } finally {
       if (here.current) setSaving(false);
     }
@@ -228,7 +228,7 @@ function CustomPlan() {
         {/* 1. 동작 — 하는 차례대로. 위아래로 옮기고 시간을 정한다 */}
         <Card hero>
           <CardHead
-            title={`동작 ${moves.length}개 · ${minutes}분`}
+            title={`동작 ${moves.length}개, ${minutes}분`}
             meta={
               <button
                 type="button"
@@ -376,7 +376,7 @@ function CustomPlan() {
                     type="button"
                     aria-pressed={on}
                     disabled={resting}
-                    aria-label={`${Number(d.slice(8))}일 ${WEEKDAY[new Date(`${d}T00:00:00`).getDay()]}요일${resting ? " · 쉬는 날" : free.has(weekdayCode(d)) ? " · 운동할 수 있는 날" : ""}`}
+                    aria-label={`${Number(d.slice(8))}일 ${WEEKDAY[new Date(`${d}T00:00:00`).getDay()]}요일${resting ? ", 쉬는 날" : free.has(weekdayCode(d)) ? ", 운동할 수 있는 날" : ""}`}
                     onClick={() => toggleDay(d)}
                     className={cn(
                       "press flex min-h-16 w-full flex-col items-center justify-center gap-0.5 rounded-2xl text-xs font-extrabold",
@@ -416,7 +416,7 @@ function CustomPlan() {
             </p>
           )}
           <p className="text-caption text-ink-soft mt-2">
-            점 · 운동할 수 있는 날 ·{" "}
+            점이 찍힌 날은 운동할 수 있는 날이에요.{" "}
             <NavLink href="/settings/schedule" className="text-signal-deep font-bold">
               바꾸기
             </NavLink>
@@ -431,14 +431,14 @@ function CustomPlan() {
       <Dock>
         <div className="card-hero py-3">
           <p className="text-caption text-ink-soft text-center font-semibold">
-            {moves.length}개 · {minutes}분 ·{" "}
+            {moves.length}개, {minutes}분,{" "}
             {/* 가족을 받는 동안은 「아무도 안 골랐어요」 가 아니다 */}
             {familyLoading
               ? "…"
               : people
                   .filter((p) => chosen.includes(p.profileId ?? ""))
                   .map((p) => p.name)
-                  .join(" · ") || "아무도 안 골랐어요"}
+                  .join(", ") || "아무도 안 골랐어요"}
           </p>
           {problem && (
             <p role="alert" className="text-signal-deep mt-1 text-center text-sm font-semibold">
