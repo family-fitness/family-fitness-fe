@@ -5,10 +5,12 @@ import type * as T from "three";
 
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import type { Stage } from "@/lib/levels";
+import { projectOrtho } from "@/lib/ortho";
 import { cn } from "@/lib/utils";
 
 import { BUDDY_FRAME, mascotImage } from "./buddy";
 import { useToonScene, type CameraSpec } from "./use-toon-scene";
+import { useWidth } from "./use-width";
 
 /**
  * 징검다리 — 칸마다 떠 있는 작은 육각 돌, 키움이가 지금 돌 위에 서 있다.
@@ -285,6 +287,30 @@ export function StoneTrail({
     setReady,
   );
 
+  // 납작한 그림의 자리 — 입체와 같은 셈(돌 사이 · 엇갈림 · 카메라)으로 세운다. 가운데 모인 점줄 위에 키움이가
+  // 서 있다가 입체가 오면 돌마다 흩어져 튀었다(9/30 점검 「같은 자리에 납작한 그림」)
+  const width = useWidth(host, 320);
+  const spec = CAMERAS[layout];
+  const half = (spec.view * width) / height;
+  const gap = count > 1 ? Math.min(1.3, (2 * half - 2 * STONE - 0.5) / (count - 1)) : 0;
+  const spotOf = (i: number) =>
+    projectOrtho(
+      spec,
+      [
+        (i - (count - 1) / 2) * gap,
+        done.includes(i) ? HIGH : LOW,
+        layout === "zigzag" ? (i % 2 === 0 ? 0.32 : -0.32) : 0,
+      ],
+      width,
+      height,
+    );
+  const standOn = Math.min(
+    count - 1,
+    Math.max(0, current ?? (done.length ? Math.max(...done) : 0)),
+  );
+  const buddyPx = Math.round((BUDDY[layout] / BUDDY_FRAME.body) * (height / (2 * spec.view)));
+  const stand = spotOf(standOn);
+
   // 받은 값이 바뀌면 장면을 새로 짓지 않고 따라가게만 한다
   const doneKey = done.join();
   useEffect(() => {
@@ -300,29 +326,36 @@ export function StoneTrail({
       className={cn("relative w-full select-none", className)}
       style={{ height }}
     >
-      {/* 입체가 오기 전 · 없을 때 — 끝낸 칸 파랑, 지금 칸 노랑 점줄(넓은 판에는 키움이도) */}
+      {/* 입체가 오기 전 · 없을 때 — 돌 자리마다 점(끝낸 칸 파랑 · 지금 칸 노랑), 지금 돌 위에 키움이 */}
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 transition-opacity duration-500",
+          "pointer-events-none absolute inset-0 transition-opacity duration-500",
           ready && "opacity-0",
         )}
       >
-        {layout === "zigzag" && <LevelBuddy stage={stage} size={Math.round(height * 0.55)} />}
-        <span className="flex gap-2">
-          {Array.from({ length: count }, (_, i) => (
+        {Array.from({ length: count }, (_, i) => {
+          const at = spotOf(i);
+          return (
             <span
               key={i}
               className={cn(
-                "size-3 rounded-full",
+                "absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-full",
                 done.includes(i)
                   ? "bg-signal"
                   : i === current
                     ? "bg-mark ring-signal-deep ring-2"
                     : "bg-bar",
               )}
+              style={{ left: at.x, top: at.y }}
             />
-          ))}
+          );
+        })}
+        <span
+          className="absolute -translate-x-1/2 -translate-y-full"
+          style={{ left: stand.x, top: stand.y + BUDDY_FRAME.feet * buddyPx }}
+        >
+          <LevelBuddy stage={stage} size={buddyPx} />
         </span>
       </div>
       {/* 돌 위에 세울 키움이 그림의 원본. 화면에는 보이지 않는다 */}
