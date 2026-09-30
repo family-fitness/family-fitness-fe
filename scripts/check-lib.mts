@@ -1120,5 +1120,14 @@ check("리그가 열흘 남으면 10일 남았어요", daysLeftText(10) === "10�
   );
 }
 
+// 운동 짜기 화면 위쪽 육각형도 부모 홈과 같은 까닭을 받는다. 안 넘기면 「없어요」 여섯 칸이 남는다
+{
+  const plan = readFileSync("src/app/plan/page.tsx", "utf8");
+  check(
+    "운동 짜기 화면 육각형도 만 7~10세 까닭을 받는다",
+    /<FactorRadar[^>]*note=\{memberNoPeerNormsNote\(kid\)\}/.test(plan),
+  );
+}
+
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);

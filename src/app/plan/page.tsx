@@ -27,7 +27,7 @@ import {
   useStartCoachRun,
 } from "@/lib/api/queries";
 import { errorMessage } from "@/lib/errors";
-import { FACTORS, isFactor, type Factor } from "@/lib/fitness-factors";
+import { FACTORS, isFactor, memberNoPeerNormsNote, type Factor } from "@/lib/fitness-factors";
 import { useSession } from "@/lib/session";
 import { today, weekdayCode } from "@/lib/today";
 import { cn } from "@/lib/utils";
@@ -236,6 +236,7 @@ function PlanForm() {
             name={name}
             focus={shownFocus}
             legend={false}
+            note={memberNoPeerNormsNote(kid)}
             className="mx-auto mt-2 max-w-72"
           />
           {/* 육각형 아래 통합 신체 점수(9/25). 안 쟀으면 그리지 않는다 */}
