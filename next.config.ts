@@ -1,4 +1,15 @@
+import { readFileSync } from "node:fs";
 import type { NextConfig } from "next";
+
+/**
+ * 설정 화면에 보이는 버전. 화면에서 package.json 을 import 하면 devDependencies 목록까지
+ * 통째로 브라우저 번들에 들어가서, 빌드할 때 버전 글자 하나만 읽어 박는다.
+ */
+const APP_VERSION = (
+  JSON.parse(readFileSync(`${process.cwd()}/package.json`, "utf8")) as {
+    version: string;
+  }
+).version;
 
 const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN ?? "http://localhost:8080";
 
@@ -26,6 +37,7 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_API_MOCKING: process.env.NEXT_PUBLIC_API_MOCKING ?? "",
     NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "",
+    NEXT_PUBLIC_APP_VERSION: APP_VERSION,
   },
 
   /**

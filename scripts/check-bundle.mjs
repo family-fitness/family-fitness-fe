@@ -25,6 +25,9 @@ const FORBIDDEN = [
   "개발용 · 구글 없이 들어가기",
   "초대받은 계정",
   "구글 키가 없는 개발 빌드",
+  // package.json 을 통째로 import 하면 들어오는 칸 — 버전 하나 때문에 개발 도구 목록이 번들에 실렸었다
+  "devDependencies",
+  "lint-staged",
 ];
 
 /** 압축기가 한글을 \uXXXX 꼴로 적어 둘 수도 있어 그 꼴로도 찾는다 */

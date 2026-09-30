@@ -15,7 +15,8 @@ import type { MeWithEmail } from "@/lib/api/types";
 import { useSession, useSignOut } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 
-import { version } from "../../../../package.json";
+/** 빌드할 때 next.config.ts 가 package.json 의 version 만 박는다. package.json 을 import 하면 통째로 번들에 들어간다 */
+const version = process.env.NEXT_PUBLIC_APP_VERSION;
 
 /**
  * 설정 — 로그인 계정 · 누가 쓰는지 · 동의 · 약관 · 앱 정보 · 로그아웃(9/28 「설정에 이런 식으로」).
