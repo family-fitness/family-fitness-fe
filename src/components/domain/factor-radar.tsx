@@ -71,19 +71,20 @@ export function FactorRadar({
 
   const vertex = (p: { i: number; percentile: number }) => at(p.i, p.percentile);
 
+  /*
+    잰 요인이 넷은 되어야 모양을 그린다 — 집에서 잰 셋만으로 면을 채우면 한쪽에 납작한 세모가 서서 「아주 약하다」 ·
+    「고장 났다」 로 읽혔다(9/30 점검). 그 전에는 점만 찍어 또래 평균(점선)과 견주게 한다
+  */
+  const shaped = measured.length >= 4;
+
   /* 잰 꼭지점을 한 바퀴 돌며 잇는다. 바로 옆이면 실선, 사이에 안 잰 것이 있으면 점선 */
-  const edges =
-    measured.length >= 2
-      ? measured
-          .map((p, k) => {
-            const next = measured[(k + 1) % measured.length];
-            // 둘뿐이면 한 번만 긋는다. 왕복으로 두 번 그으면 선이 겹쳐 진해진다
-            if (measured.length === 2 && k === 1) return null;
-            const adjacent = (p.i + 1) % FACTORS.length === next.i;
-            return { from: vertex(p), to: vertex(next), dashed: !adjacent, key: p.factor };
-          })
-          .filter((e) => e !== null)
-      : [];
+  const edges = shaped
+    ? measured.map((p, k) => {
+        const next = measured[(k + 1) % measured.length];
+        const adjacent = (p.i + 1) % FACTORS.length === next.i;
+        return { from: vertex(p), to: vertex(next), dashed: !adjacent, key: p.factor };
+      })
+    : [];
 
   // 화면의 「—」 와 같은 말 — 「안 잰」 이라 읽으면 쟀는데 비교 기준이 없는 나이의 값까지 안 잰 것이 된다
   const summary = hex
@@ -137,7 +138,7 @@ export function FactorRadar({
 
           {/* 아이 — 가운데에서 차오른다 */}
           <g className="radar-grow" style={{ transformOrigin: `${CX}px ${CY}px` }}>
-            {measured.length >= 3 && (
+            {shaped && (
               <polygon
                 points={measured.map((p) => vertex(p).join(",")).join(" ")}
                 fill="var(--color-signal)"
