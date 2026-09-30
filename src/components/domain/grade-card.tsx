@@ -21,7 +21,9 @@ export function GradeCard({
 }) {
   const { status, grade } = certification;
   const missing = joinLabels(certification.missingItems);
-  const peers = certification.peers ?? [];
+  // 등급 기준이 없는 나이(어르신 · 만 7~10세)에는 같은 나이 등급 비율을 그리지 않는다 —
+  // 「기준이 없어요」 바로 아래에 1등급 22% … 막대가 나오면 앞뒤가 안 맞는다
+  const peers = status === "NO_CRITERIA" ? [] : (certification.peers ?? []);
 
   let body = null;
   if (status === "GRADED" && grade) {
