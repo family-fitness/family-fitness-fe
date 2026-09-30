@@ -15,6 +15,7 @@
  *      아이 등록 첫 칸의 뒤로 · 「지금 잴래요」 측정 화면의 뒤로가 홈으로 가는지
  *   4. 첫 시작 중간에 폰 · 브라우저의 뒤로 — 한 칸 앞으로 가고 적은 것이 남는다.
  *      가족을 만든 뒤에는 그 앞으로 가지 않는다
+ *   5. 첫 시작 중간에 새로고침한 뒤 폰의 뒤로 — 적은 것이 사라진 앞칸(빈 칸)으로 가지 않고 첫 시작 밖으로
  */
 import { chromium } from "playwright";
 
@@ -335,10 +336,44 @@ await walk("폰의 뒤로는 한 칸 앞으로", async (h) => {
   });
 });
 
+/* ─── 5. 새로고침한 뒤 폰의 뒤로 ─────────────────────────── */
+
+await walk("새로고침 뒤 폰의 뒤로는 빈 앞칸으로 가지 않는다", async (h) => {
+  const { page } = h;
+  const next = async (name = "다음") => {
+    await page.getByRole("button", { name, exact: true }).click();
+    await h.settle(700);
+  };
+  await h.step("보호자 이름 칸까지 간다", async () => {
+    await page.goto(`${BASE}/login`, { waitUntil: "load", timeout: 30000 });
+    await h.settle(2400);
+    await page.getByRole("button", { name: /새 계정/ }).click();
+    await h.until(/\/start\/family/);
+    await next("좋아요");
+    await page.getByLabel("가족 이름").fill("구름네");
+    await next();
+    await page.getByLabel("보호자 이름").waitFor({ timeout: 8000 });
+  });
+  await h.step("새로고침 — 적은 것이 사라지고 처음 칸이다", async () => {
+    await page.reload({ waitUntil: "load" });
+    await h.settle(2000);
+  });
+  await h.step("뒤로 — 빈 가족 이름 칸이 아니라 첫 시작 밖으로", async () => {
+    await page.goBack({ waitUntil: "commit" }).catch(() => {});
+    await h.settle(1200);
+    if (/\/start\/family/.test(page.url()) && (await page.getByLabel("가족 이름").count()) > 0) {
+      const name = await page.getByLabel("가족 이름").inputValue();
+      problems.push(
+        `새로고침 뒤 폰의 뒤로는 빈 앞칸으로 가지 않는다\n    적은 것이 사라진 앞칸으로 갔다 — 가족 이름 「${name}」`,
+      );
+    }
+  });
+});
+
 await browser.close();
 
 if (problems.length > 0) {
   console.error("가입 경로 문제:\n  " + problems.join("\n  "));
   process.exit(1);
 }
-console.log(`가입 경로 네 갈래 · 단계 ${steps}개 이상 없음`);
+console.log(`가입 경로 다섯 갈래 · 단계 ${steps}개 이상 없음`);
