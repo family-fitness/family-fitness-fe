@@ -198,7 +198,7 @@ function Thanks({ item, to, until }: { item: NotificationView; to: string; until
       await send.mutateAsync({
         fromProfileId: kidId,
         toProfileId: to,
-        message: `고마워요 · ${sticker.label}`,
+        message: `고마워요. ${sticker.label}`,
         stickerId: sticker.id,
       });
       setJustSent(true);

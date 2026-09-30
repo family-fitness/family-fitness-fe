@@ -118,9 +118,11 @@ export default function SettingsPage() {
             <div className="min-w-0 flex-1">
               <p className="text-lead truncate font-extrabold">{profile?.name ?? "나"}</p>
               {email && <p className="text-caption text-ink-soft mt-0.5 truncate">{email}</p>}
-              <p className="text-caption text-ink-soft mt-0.5">
-                {family?.familyName ?? "우리집"} ·{" "}
-                {parentView ? "부모 화면" : `아이 화면${kid?.name ? ` · ${kid.name}` : ""}`}
+              <p className="text-caption text-ink-soft mt-0.5 flex flex-wrap gap-x-2">
+                <span>{family?.familyName ?? "우리집"}</span>
+                <span>
+                  {parentView ? "부모 화면" : `아이 화면${kid?.name ? `(${kid.name})` : ""}`}
+                </span>
               </p>
             </div>
           </div>

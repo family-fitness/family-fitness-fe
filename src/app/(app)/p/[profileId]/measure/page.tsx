@@ -223,7 +223,7 @@ export default function MeasurePage() {
       waistProblem && "허리둘레",
     ].filter(Boolean);
     if (wrongBody.length > 0) {
-      setServerError(`${withJosa(wrongBody.join(" · "), "을를")} 다시 봐 주세요.`);
+      setServerError(`${withJosa(wrongBody.join(", "), "을를")} 다시 봐 주세요.`);
       return;
     }
     // 접어 둔 장비 항목은 화면에서 빠져 검사를 건너뛴다. 접기 전에 적은 값도 여기서 다시 본다
@@ -286,7 +286,7 @@ export default function MeasurePage() {
         {...nav}
         meta={
           <span>
-            국민체력100 {profile.ageGroup ?? ""} 항목 · {filledCount}개 입력함
+            국민체력100 {profile.ageGroup ?? ""} 항목 중 {filledCount}개를 적었어요
           </span>
         }
       />
@@ -514,7 +514,7 @@ const messageFor = (error: unknown) =>
       NO_ITEMS: "한 항목이라도 입력해 주세요.",
       NOT_MEASURABLE: "만 4세부터 측정할 수 있어요.",
       CONSENT_REQUIRED: "보호자 동의가 필요해요.",
-      DUPLICATE_DATE: "그 날짜의 측정이 이미 있어요.",
+      DUPLICATE_DATE: "그날 잰 기록이 이미 있어요.",
       ITEM_NOT_ALLOWED: "지금 저장할 수 없는 항목이 섞여 있어요.",
       UNKNOWN_ITEM: "지금 저장할 수 없는 항목이 섞여 있어요.",
       ITEM_NOT_FOR_AGE_GROUP: "이 연령대에서 잴 수 없는 항목이 있어요.",
