@@ -75,7 +75,7 @@ function joinLabels(items: MissingItem[] | undefined): string {
   return (items ?? [])
     .map((m) => m.label ?? (m.itemCodes ?? []).join(" 또는 "))
     .filter(Boolean)
-    .join(" · ");
+    .join(", ");
 }
 
 /**

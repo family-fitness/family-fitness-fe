@@ -45,13 +45,13 @@ export function FactorTable({
                   {scored ? (
                     (item?.topPercentText ?? `백분위 ${p.percentile}`)
                   ) : (
-                    <span className="text-faint">{measured ? "—" : "안 잼"}</span>
+                    <span className="text-faint">{measured ? "-" : "안 쟀어요"}</span>
                   )}
                 </p>
               </div>
               <p className="text-micro text-ink-soft mt-0.5">
                 {item
-                  ? `${item.itemLabel} ${item.value}${item.unit ?? ""}${item.band ? ` · ${BAND_COPY[item.band]}` : ""}`
+                  ? `${item.itemLabel} ${item.value}${item.unit ?? ""}${item.band ? `, ${BAND_COPY[item.band]}` : ""}`
                   : (howTo?.itemLabel ?? "")}
               </p>
               {measured && (

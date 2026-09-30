@@ -90,7 +90,9 @@ export function FactorRadar({
 
   // 화면의 「—」 와 같은 말 — 「안 잰」 이라 읽으면 쟀는데 비교 기준이 없는 나이의 값까지 안 잰 것이 된다
   const summary = hex
-    .map((p) => `${p.factor} ${p.percentile == null ? "값 없음" : `또래 백분위 ${p.percentile}`}`)
+    .map(
+      (p) => `${p.factor} ${p.percentile == null ? "값이 없어요" : `또래 백분위 ${p.percentile}`}`,
+    )
     .join(", ");
 
   return (
@@ -212,7 +214,7 @@ export function FactorRadar({
               {/* 값이 없으면 「—」 — 안 잰 것일 수도, 잰 나이에 비교 기준이 없는 것일 수도 있다(규칙 8).
                   어느 쪽인지는 요인 표가 항목과 같이 말한다 */}
               {missing ? (
-                <span className="text-micro text-faint mt-0.5 font-semibold">—</span>
+                <span className="text-micro text-faint mt-0.5 font-semibold">-</span>
               ) : (
                 <span className="text-ink text-base font-extrabold tabular-nums">
                   {p.percentile}
@@ -230,7 +232,7 @@ export function FactorRadar({
             <span aria-hidden className="bg-signal relative h-0.5 w-4 rounded-full">
               <span className="bg-signal absolute top-1/2 left-1/2 size-2 -translate-1/2 rounded-full" />
             </span>
-            {name} · 또래 백분위
+            {name}의 또래 백분위
           </li>
           <li className="flex items-center gap-1.5">
             <svg aria-hidden width="16" height="2" className="overflow-visible">
