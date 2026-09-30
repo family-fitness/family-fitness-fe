@@ -83,7 +83,7 @@ function stepSummary(
   const minutes = plan.reduce((sum, s) => sum + s.minutes, 0);
   switch (name) {
     case "assess":
-      return `${who} · 측정 ${latest?.items?.length ?? 0}항목 · ${p.focusFactor ? `키워 주고 싶은 역량 ${focus}` : `가장 낮은 힘 ${focus}`}`;
+      return `${who} · 측정 ${latest?.items?.length ?? 0}항목 · ${p.focusFactor ? `보호자가 키워 주고 싶은 역량 ${focus}` : `지금 키우기 좋은 영역 ${focus}`}`;
     case "retrieve":
       return `국민체력100 운동처방 ${focus} 12건 · 클립 ${catalog.length}개 중 ${pool.length}개${p.quiet ? " · 조용한 것 먼저" : ""}`;
     case "compose":

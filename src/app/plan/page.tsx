@@ -242,7 +242,9 @@ function PlanForm() {
           )}
           {shownFocus && (
             <p className="mt-3 text-center text-sm font-bold">
-              <span className="text-ink-soft">{focus ? "키워 주고 싶은 역량" : "키울 역량"}</span>{" "}
+              <span className="text-ink-soft">
+                {focus ? "보호자가 키워 주고 싶은 역량" : "지금 키우기 좋은 영역"}
+              </span>{" "}
               <span className="text-signal-deep font-extrabold">{shownFocus}</span>
             </p>
           )}
