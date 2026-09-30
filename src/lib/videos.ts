@@ -1,3 +1,5 @@
+import { safeUrl } from "@/lib/safe-url";
+
 /**
  * 운동 찾기(`/videos`) 주소와 「누구의 목록인가」.
  *
@@ -68,4 +70,63 @@ export function fileType(url: string): string | undefined {
     return undefined;
   }
   return path.toLowerCase().endsWith(".mp4") ? "video/mp4" : undefined;
+}
+
+/**
+ * 앱 안 영상 화면(`/watch`)이 틀어 주는 주소 — 공단 영상(https://openapi.kspo.or.kr/web/video/…)만.
+ * 다른 주소면 undefined 를 돌려준다. `/watch` 가 아무 주소나 넣어 여는 창이 되지 않게 한다.
+ * 주소는 URL 로 풀어 본다 — `..` 로 올라가는 경로, 계정 · 포트가 붙은 주소, http 는 받지 않는다
+ */
+const KSPO_HOST = "openapi.kspo.or.kr";
+const KSPO_VIDEO_PATH = "/web/video/";
+
+export function kspoVideo(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return undefined;
+  }
+  const ok =
+    u.protocol === "https:" &&
+    u.hostname === KSPO_HOST &&
+    !u.port &&
+    !u.username &&
+    !u.password &&
+    u.pathname.startsWith(KSPO_VIDEO_PATH) &&
+    u.pathname.length > KSPO_VIDEO_PATH.length;
+  return ok ? u.href : undefined;
+}
+
+/**
+ * 공단 mp4 를 여는 앱 안 주소. 공단 영상이 아니면 undefined.
+ *
+ * 공단 서버 두 대 가운데 한 대가 요청마다 절반 확률로 Content-Type 을 video/mg4 로 준다. 앱 안 `<video>` 는 파일
+ * 내용을 보고 튼다. 그런데 주소를 새 창으로 바로 열면 브라우저가 영상인 줄 몰라 파일로 내려받는다
+ */
+export function watchHref(url: string | null | undefined, title?: string): string | undefined {
+  const src = kspoVideo(url);
+  if (!src) return undefined;
+  const q = new URLSearchParams({ src });
+  if (title) q.set("title", title);
+  return `/watch?${q.toString()}`;
+}
+
+/** 영상 주소를 누르면 갈 곳. 공단 영상은 앱 안 영상 화면(`inApp`), 그 밖(유튜브 …)은 지금처럼 밖으로 */
+export function videoLink(
+  url: string | null | undefined,
+  title: string,
+): { href: string; inApp: boolean } | undefined {
+  const inside = watchHref(url, title);
+  if (inside) return { href: inside, inApp: true };
+  const outside = safeUrl(url);
+  return outside ? { href: outside, inApp: false } : undefined;
+}
+
+/** 영상 화면 제목. 주소로 들어오는 값이라 앞뒤 빈칸을 빼고 길이를 자른다 */
+export const WATCH_TITLE_MAX = 60;
+export function watchTitle(raw: string | null | undefined): string {
+  const title = raw?.trim();
+  return title ? title.slice(0, WATCH_TITLE_MAX) : "시범 영상";
 }

@@ -1,8 +1,12 @@
 "use client";
 
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, PlayCircle } from "lucide-react";
+import Link from "next/link";
 
-import { safeUrl } from "@/lib/safe-url";
+import { videoLink } from "@/lib/videos";
+
+const LINK =
+  "text-ink-soft text-caption inline-flex min-h-11 items-start gap-1 py-1.5 leading-relaxed underline underline-offset-2";
 
 /** 인용의 라벨 이름이 두 곳에서 다르다. */
 interface CitationLike {
@@ -13,7 +17,12 @@ interface CitationLike {
   url?: string | null;
 }
 
-/** AI 편성 제안의 근거. 제안마다 늘 붙는다(규칙 6) */
+/**
+ * AI 편성 제안의 근거. 제안마다 늘 붙는다(규칙 6).
+ *
+ * 공단 영상 근거는 url 이 mp4 주소다. 새 창으로 바로 열면 video/mg4 로 온 파일을 브라우저가 내려받아서,
+ * 앱 안 영상 화면(`/watch`)으로 연다. 그 밖(유튜브 · 문서)은 지금처럼 새 창으로 밖에서 연다
+ */
 export function Citations({
   items,
   className,
@@ -33,20 +42,20 @@ export function Citations({
     <ol className={className}>
       {items.map((c, i) => {
         const label = c.sourceLabel ?? c.label ?? "출처";
-        const href = safeUrl(c.url);
+        const link = videoLink(c.url, label);
         return (
           <li key={c.index ?? i} className="flex gap-1.5 py-1">
             <span className="text-signal-strong text-caption shrink-0 font-extrabold tabular-nums">
               [{c.index ?? i + 1}]
             </span>
             <span className="min-w-0">
-              {href ? (
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="text-ink-soft text-caption inline-flex min-h-11 items-start gap-1 py-1.5 leading-relaxed underline underline-offset-2"
-                >
+              {link?.inApp ? (
+                <Link href={link.href} className={LINK}>
+                  {label}
+                  <PlayCircle className="mt-0.5 size-3 shrink-0" aria-hidden />
+                </Link>
+              ) : link ? (
+                <a href={link.href} target="_blank" rel="noreferrer noopener" className={LINK}>
                   {label}
                   <ExternalLink className="mt-0.5 size-2.5 shrink-0" aria-hidden />
                 </a>

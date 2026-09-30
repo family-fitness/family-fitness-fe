@@ -3,7 +3,7 @@
 import { ExternalLink, RefreshCw, Volume2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import { afterFileFailure, fileType } from "@/lib/videos";
+import { afterFileFailure, fileType, watchHref } from "@/lib/videos";
 
 /*
   운동 한 칸의 시범 영상.
@@ -165,7 +165,8 @@ export function ClipPlayer({
 
 /**
  * 영상을 못 틀었을 때 — 빈 화면 대신 까닭 한 줄, 새 창으로 열기, 다른 영상이 있으면 다른 영상 보기.
- * 새 창에서는 브라우저가 파일을 직접 여니 앱 안에서 못 튼 영상도 열리는 때가 있다
+ * 새 창으로 여는 곳: 유튜브는 유튜브 주소, 공단 mp4 는 앱 안 영상 화면(`/watch`). mp4 주소를 새 창으로 바로 열면
+ * video/mg4 로 온 파일을 브라우저가 영상인 줄 몰라 내려받는다. 새 창이라 이 화면의 운동(타이머)은 그대로 남는다
  */
 function PlayFailed({ href, onOther }: { href: string; onOther?: () => void }) {
   return (
@@ -424,7 +425,7 @@ function FilePlayer({
   };
 
   // 형식(iPhone Safari 가 video/mg4 로 온 파일을 못 연다) · 네트워크 오류 모두 여기로 온다
-  if (failed) return <PlayFailed href={src} onOther={onOther} />;
+  if (failed) return <PlayFailed href={watchHref(src, title) ?? src} onOther={onOther} />;
 
   return (
     <div className="bg-signal-deep relative overflow-hidden rounded-2xl">

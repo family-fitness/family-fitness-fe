@@ -38,7 +38,17 @@ import { UNLOCKS, decorationsAt, newlyUnlocked, nextUnlock } from "@/lib/unlocks
 import { orderSessions, proposalSessions, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { todayActivity } from "@/lib/activity";
 import { josa } from "@/lib/utils";
-import { afterFileFailure, fileType, finderHref, finderOwner } from "@/lib/videos";
+import {
+  WATCH_TITLE_MAX,
+  afterFileFailure,
+  fileType,
+  finderHref,
+  finderOwner,
+  kspoVideo,
+  videoLink,
+  watchHref,
+  watchTitle,
+} from "@/lib/videos";
 import { callName, guardiansName, mustAddChild, openWithoutChild } from "@/lib/family";
 
 import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
@@ -680,6 +690,70 @@ check(
 );
 check("mp4 가 아니면 형식을 적지 않는다", fileType("https://x.test/a.webm") === undefined);
 check("주소가 이상해도 멈추지 않는다", fileType("not a url") === undefined);
+
+/* ─── 공단 mp4 는 앱 안 영상 화면(/watch)으로 연다 ─────────────────── */
+
+// 공단 서버 한 대가 Content-Type 을 video/mg4 로 주면, 주소를 새 창으로 바로 연 브라우저는 영상인 줄 몰라
+// 파일로 내려받는다. 앱 안 <video> 는 파일 내용을 보고 튼다 — 그래서 mp4 는 /watch 에서 <video> 로 튼다
+{
+  const mp4 = "https://openapi.kspo.or.kr/web/video/0AUDLJ08S_00589.mp4";
+  const youtube = "https://www.youtube.com/watch?v=IdpXx2gm90o&t=96s";
+  check("공단 영상 주소는 받는다", kspoVideo(mp4) === mp4);
+  check(
+    "공단 영상이 아닌 주소는 /watch 가 틀지 않는다 — 아무 주소나 넣어 여는 창이 되지 않게",
+    [
+      "http://openapi.kspo.or.kr/web/video/a.mp4",
+      "https://openapi.kspo.or.kr.evil.test/web/video/a.mp4",
+      "https://evil.test/web/video/a.mp4",
+      "https://evil.test/?u=https://openapi.kspo.or.kr/web/video/a.mp4",
+      "https://openapi.kspo.or.kr/web/image/a/a.jpeg",
+      "https://openapi.kspo.or.kr/web/video/../../evil.mp4",
+      "https://openapi.kspo.or.kr/web/video/%2e%2e/%2e%2e/evil.mp4",
+      "https://user@openapi.kspo.or.kr/web/video/a.mp4",
+      "https://openapi.kspo.or.kr:8443/web/video/a.mp4",
+      "https://openapi.kspo.or.kr/web/video/",
+      "javascript:alert(1)",
+      "not a url",
+      "",
+      null,
+      undefined,
+    ].every((u) => kspoVideo(u) === undefined),
+  );
+  const href = watchHref(mp4, "넙다리 뒤쪽 스트레칭");
+  const q = new URLSearchParams(href?.split("?")[1] ?? "");
+  check(
+    "공단 영상은 /watch?src=…&title=… 로 연다",
+    Boolean(href?.startsWith("/watch?")) &&
+      q.get("src") === mp4 &&
+      q.get("title") === "넙다리 뒤쪽 스트레칭",
+    href,
+  );
+  check("유튜브 주소는 /watch 로 열지 않는다", watchHref(youtube, "x") === undefined);
+  check(
+    "근거 링크 — 공단 영상은 앱 안, 유튜브는 지금처럼 밖으로",
+    videoLink(mp4, "t")?.inApp === true &&
+      videoLink(mp4, "t")?.href === href?.replace(/title=[^&]*/, "title=t") &&
+      same(videoLink(youtube, "t"), { href: youtube, inApp: false }),
+  );
+  check(
+    "근거 링크 — 걸러야 할 주소 · 빈 주소는 링크를 만들지 않는다",
+    videoLink("javascript:alert(1)", "t") === undefined && videoLink(null, "t") === undefined,
+  );
+  check("영상 화면 제목이 없으면 「시범 영상」", watchTitle(null) === "시범 영상");
+  check("영상 화면 제목은 앞뒤 빈칸을 뺀다", watchTitle("  넙다리 ") === "넙다리");
+  check(
+    "영상 화면 제목은 주소로 들어오니 길이를 자른다",
+    watchTitle("가".repeat(500)).length === WATCH_TITLE_MAX,
+  );
+  check("영상 화면은 로그인 없이 열리는 앱 맨 위에 있다", existsSync("src/app/watch/page.tsx"));
+  const player = readFileSync("src/components/domain/clip-player.tsx", "utf8");
+  const citations = readFileSync("src/components/domain/citations.tsx", "utf8");
+  check(
+    "재생 실패 안내의 「새 창으로 열기」 는 공단 mp4 를 바로 열지 않는다",
+    player.includes("watchHref(") && !/PlayFailed href=\{src\}/.test(player),
+  );
+  check("근거 링크는 videoLink 로 고른다", citations.includes("videoLink("));
+}
 
 /* ─── 키울 요인을 부르는 두 이름(결정 7) ─────────────────── */
 
