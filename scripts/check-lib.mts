@@ -28,6 +28,7 @@ import {
   daySummary,
   dayWork,
   didSomething,
+  isOpenMonth,
   isRealDate,
   missionsOn,
   plannedDay,
@@ -322,6 +323,16 @@ check(
     verifiedLabel("SELF_REPORT", true) === "직접 입력함 · 부모 확인 필요" &&
     verifiedLabel("SELF_REPORT", undefined) === "직접 입력함 · 부모 확인 필요" &&
     verifiedLabel("TIMER", false) === "타이머로 확인됨",
+);
+check(
+  "캘린더가 보여 줄 달 — 2020년 1월부터 다음 달까지, 그 밖(0000-01 · 2031-01)은 아니다",
+  isOpenMonth("2026-10", "2026-09-30") &&
+    isOpenMonth("2020-01", "2026-09-30") &&
+    !isOpenMonth("2026-11", "2026-09-30") &&
+    !isOpenMonth("0000-01", "2026-09-30") &&
+    !isOpenMonth("2031-01", "2026-09-30") &&
+    !isOpenMonth("2026-13", "2026-09-30") &&
+    isOpenMonth("2027-01", "2026-12-15"),
 );
 check("달력에 있는 날", isRealDate("2026-09-23") && isRealDate("2024-02-29"));
 check(

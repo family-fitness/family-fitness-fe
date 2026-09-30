@@ -2,7 +2,7 @@
 
 import { CalendarDays, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -78,6 +78,22 @@ function Day() {
   } = useCalendar(familyId, who?.profileId ?? undefined, { from: week.from, to: week.to });
   // 한 번만 받는다 — 앞으로 할 것도 이 목록에서 날짜로 고른다(전에는 ACTIVE 와 ALL 을 둘 다 받았다)
   const { data: all } = useMissions(familyId, { scope: "ALL" });
+
+  // 앞날인데 잡아 둔 운동이 없다 — 달력이 누를 수 없게 둔 날이다. 주소로 곧장 와도 빈 하루를 보이지 않고 오늘로.
+  // 운동 목록 · 볼 아이를 다 받은 뒤에만 정한다(받기 전에 보내면 잡아 둔 앞날도 튕긴다)
+  const unplannedFuture =
+    date > now && all !== undefined && who !== undefined
+      ? !(all.missions ?? []).some(
+          (m) =>
+            m.participants?.some((p) => p.profileId === who.profileId) &&
+            plannedDay(m, now) === date,
+        )
+      : false;
+  useEffect(() => {
+    if (!unplannedFuture) return;
+    const keep = asked && asked === who?.profileId ? `?profileId=${encodeURIComponent(asked)}` : "";
+    router.replace(`/calendar/${now}${keep}`);
+  }, [unplannedFuture, now, asked, who?.profileId, router]);
 
   const back = kidView ? "/kid" : "/parent";
   const failure = sessionError ?? (map ? null : mapError);

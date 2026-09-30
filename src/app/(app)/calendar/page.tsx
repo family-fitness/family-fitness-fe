@@ -15,7 +15,7 @@ import { DayRings } from "@/components/domain/day-rings";
 import { StickerArt } from "@/components/domain/sticker-art";
 import type { DayLog } from "@/lib/api/types";
 import { useCalendar, useFitnessMap, useMissions } from "@/lib/api/queries";
-import { daySummary, plannedDay } from "@/lib/day";
+import { daySummary, isOpenMonth, plannedDay } from "@/lib/day";
 import { useSession } from "@/lib/session";
 import { stickerOf } from "@/lib/stickers";
 import { longDate, monthGrid, monthLabel, monthOf, shiftMonth, today } from "@/lib/today";
@@ -66,10 +66,9 @@ function Calendar() {
   const suffix = asked && asked === who?.profileId ? `?profileId=${encodeURIComponent(asked)}` : "";
 
   const now = today();
-  // 주소창 값은 믿지 않는다 — 모양이 틀리면 이번 달로
+  // 주소창 값은 믿지 않는다 — 모양이 틀리거나 볼 수 없는 달(2020년 앞 · 다음 달 뒤)이면 이번 달로
   const askedMonth = params.get("month");
-  const month =
-    askedMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(askedMonth) ? askedMonth : monthOf(now);
+  const month = isOpenMonth(askedMonth, now) ? askedMonth : monthOf(now);
   const grid = monthGrid(month);
 
   const {
