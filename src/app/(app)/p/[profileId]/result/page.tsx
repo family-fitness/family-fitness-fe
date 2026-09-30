@@ -154,7 +154,8 @@ export default function ResultPage() {
                   value={`${entry.value}${entry.unit ?? ""}`}
                   percentile={entry.percentile}
                   caption={entry.topPercentText}
-                  delay={index * 0.08}
+                  // 위 육각형이 다 차오른 뒤에(0.7초) — 한 화면에 둘이 같이 자랐다
+                  delay={0.7 + index * 0.08}
                 />
                 {/* 등급 · 상태 — 딱지 대신 글자 한 줄 */}
                 <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5">

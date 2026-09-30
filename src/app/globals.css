@@ -385,6 +385,10 @@ body {
     transform-origin: left;
     animation: fill 0.7s cubic-bezier(0.16, 0.84, 0.3, 1) both;
   }
+  /* 보일 때까지 기다리는 막대(RecordBar) — 화면에 들어오면 data-seen 이 붙어 자란다 */
+  .fill[data-wait]:not([data-seen]) {
+    animation-play-state: paused;
+  }
 }
 
 @layer base {
