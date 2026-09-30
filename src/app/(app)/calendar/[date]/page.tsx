@@ -121,6 +121,8 @@ function Day() {
   const logs = new Map((calendar?.days ?? []).map((d) => [d.date, d]));
   const log = logs.get(date);
   const summary = daySummary(log);
+  // 쉬는 날 카드를 쓰고 움직이지 않은 날 — 빈 날이 아니라 쉬기로 한 날이다. 목표(「/ 12분」)를 대지 않는다(규칙 15)
+  const resting = Boolean(log?.rest) && summary.moved === 0;
   // 한 칸이라도 한 것만 「한 운동」. 아직 시작 안 한 오늘 운동은 「할 운동」 이다
   const doneEntries = (log?.entries ?? []).filter(didSomething);
   // 스티커는 그날 한 운동에 붙인다 — 직접 적은 기록이 먼저다. 스티커가 곧 보호자 확인이다(규칙 2)
@@ -276,7 +278,7 @@ function Day() {
         ) : (
           <section className="card-hero">
             {/* 쉬는 날 카드를 쓴 날 — 빈 날이 아니라 쉬기로 한 날이다. 그날 움직였으면 한 것이 먼저다(달력 칸과 같게) */}
-            {log?.rest && summary.moved === 0 && (
+            {resting && (
               <p className="text-caption text-ink-soft mb-2 text-center font-extrabold">
                 쉬기로 한 날
               </p>
@@ -299,14 +301,14 @@ function Day() {
                 label="움직인 시간"
                 value={summary.moved}
                 unit="분"
-                goal={summary.planned ? `/ ${summary.planned}분` : null}
+                goal={summary.planned && !resting ? `/ ${summary.planned}분` : null}
               />
               <Tile
                 dot="bg-mark"
                 label="끝낸 운동"
                 value={summary.done}
                 unit="개"
-                goal={summary.total ? `/ ${summary.total}개` : null}
+                goal={summary.total && !resting ? `/ ${summary.total}개` : null}
               />
               {summary.stickers > 0 && <Tile label="칭찬" value={summary.stickers} unit="장" />}
             </div>
