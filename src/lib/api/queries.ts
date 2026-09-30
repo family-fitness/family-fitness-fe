@@ -367,7 +367,9 @@ export function useCoachRun(runId: Uuid | undefined, poll = true) {
       const e = q.state.error;
       const settled =
         e instanceof ApiError && e.status < 500 && e.status !== 408 && e.status !== 429;
-      return poll && q.state.data?.status === "RUNNING" && !settled ? 700 : false;
+      if (!poll || q.state.data?.status !== "RUNNING" || settled) return false;
+      // 못 받으면(429 · 5xx · 망) 점점 늦게 — 0.7 · 1.4 · 2.8 … 15초까지. 힘든 서버를 0.7초마다 두드리지 않는다
+      return Math.min(700 * 2 ** q.state.fetchFailureCount, 15_000);
     },
   });
 }
