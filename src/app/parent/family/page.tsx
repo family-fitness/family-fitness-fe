@@ -17,7 +17,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Field } from "@/components/ui/field";
 import { errorMessage } from "@/lib/errors";
 import type { ProfileSummary } from "@/lib/api/types";
-import { useCreateProfile, useFamilyProfiles } from "@/lib/api/queries";
+import { useCreateProfile, useCurrentMissions, useFamilyProfiles } from "@/lib/api/queries";
+import { missionsOn } from "@/lib/day";
 import { useSession } from "@/lib/session";
 import { today } from "@/lib/today";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ export default function MembersPage() {
   const { data: family, isLoading, error: familyError, refetch } = useFamilyProfiles(familyId);
   const error = sessionError ?? (family ? null : familyError);
   const childProfileId = useRoleStore((s) => s.childProfileId);
+  const { data: missions } = useCurrentMissions(familyId);
 
   const [adding, setAdding] = useState(false);
   // 초대 시트 — 닫힘(undefined) · 이 자리로(id). 가족 대시보드와 같은 시트다
@@ -64,6 +66,12 @@ export default function MembersPage() {
     profiles.find((p) => p.profileId === childProfileId) ??
     profiles.find((p) => p.role === "CHILD");
   const mySupportMode = profile?.supportMode ?? undefined;
+  // 스티커는 오늘 한 운동에 붙인다 — 직접 적은 기록이 먼저(스티커가 곧 확인이다). 한 게 없으면 그냥 칭찬이다
+  const todays = missionsOn(missions?.missions, kid?.profileId, today());
+  const mineIn = (m: (typeof todays)[number]) =>
+    m.participants?.find((p) => p.profileId === kid?.profileId);
+  const cheerFor =
+    todays.find((m) => mineIn(m)?.needsGuardianCheck) ?? todays.find((m) => mineIn(m)?.completed);
 
   return (
     <>
@@ -112,7 +120,7 @@ export default function MembersPage() {
           <ListRow href="/settings/schedule" art="icon/menu-schedule" title="운동할 수 있는 시간" />
           {kid?.profileId && (
             <ListRow
-              href={`/parent/sticker/${kid.profileId}`}
+              href={`/parent/sticker/${kid.profileId}${cheerFor?.missionId ? `?missionId=${encodeURIComponent(cheerFor.missionId)}` : ""}`}
               art="icon/menu-cheer"
               title="칭찬 스티커 붙이기"
             />
