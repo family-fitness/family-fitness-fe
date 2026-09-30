@@ -201,7 +201,13 @@ function Calendar() {
                     future={date > now}
                     isToday={date === now}
                     loading={calendarPending}
-                    onPick={() => router.push(`/calendar/${date}${suffix}`)}
+                    // 달력에서 왔다고 적어 둔다 — 하루 기록의 뒤로가 홈이 아니라 이 달력으로 돌아온다
+                    onPick={() =>
+                      router.push(
+                        `/calendar/${date}?from=calendar${suffix ? `&${suffix.slice(1)}` : ""}`,
+                        { transitionTypes: ["nav-forward"] },
+                      )
+                    }
                   />
                 )}
               </li>

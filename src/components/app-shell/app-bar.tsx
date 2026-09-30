@@ -31,9 +31,12 @@ export function AppBar({
   const router = useRouter();
   const showBack = back || Boolean(backHref) || Boolean(onBack);
 
+  // 돌아가는 길은 기록을 쌓지 않고 바꿔 끼운다 — 쌓으면 폰의 뒤로가 방금 나온 화면을 다시 열어
+  // 두 화면 사이를 끝없이 오갔다(9/30 점검). 미끄러지는 방향(nav-back)은 그대로
   const backButton = backHref ? (
     <Link
       href={backHref}
+      replace
       transitionTypes={["nav-back"]}
       aria-label="뒤로"
       className="press text-ink-soft grid size-11 shrink-0 place-items-center rounded-full"
