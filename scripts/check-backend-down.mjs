@@ -67,6 +67,8 @@ if (!reachable) {
 
 const browser = await chromium.launch({ channel: "chrome" });
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+// 처음 한 번 뜨는 환영 안내는 본 것으로 — 화면을 덮으면 누를 것을 못 누른다
+await ctx.addInitScript(() => localStorage.setItem("ff-welcome", "parent,kid"));
 await ctx.addInitScript(
   ([kid]) => {
     const mode = location.pathname.startsWith("/kid") ? "kid" : "parent";

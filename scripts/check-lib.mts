@@ -37,6 +37,7 @@ import { UNLOCKS, decorationsAt, newlyUnlocked, nextUnlock } from "@/lib/unlocks
 import { orderSessions, proposalSessions, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { todayActivity } from "@/lib/activity";
 import { josa } from "@/lib/utils";
+import { CONSENT_TERMS, PRIVACY_POLICY, TERMS_OF_SERVICE } from "@/lib/legal";
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -518,6 +519,30 @@ check(
     threw = true;
   }
   check("빈 값이 든 경로는 부르지 않는다", threw);
+}
+
+/* ─── 약관 · 방침 — 글 안에서 조 번호로 서로 가리키는 곳. 조를 넣거나 빼면 번호가 밀린다 ─── */
+{
+  const article = (doc: { articles: { title: string }[] }, n: number) =>
+    doc.articles[n - 1]?.title ?? "";
+  check(
+    "건강정보 동의가 가리키는 방침 제7조는 국외 이전",
+    article(PRIVACY_POLICY, 7).includes("국외 이전") &&
+      CONSENT_TERMS.health.rows.some((r) => r.text.includes("개인정보처리방침 제7조")),
+  );
+  check(
+    "방침 제9조 · 약관 제11조가 가리키는 방침 제12조는 개인정보 보호책임자",
+    article(PRIVACY_POLICY, 12) === "개인정보 보호책임자",
+  );
+  check(
+    "방침 제5조가 가리키는 제1조는 처리 목적",
+    article(PRIVACY_POLICY, 1) === "개인정보의 처리 목적",
+  );
+  check(
+    "약관 제11조 · 제12조가 가리키는 제8조는 회원의 의무 · 제9조는 측정 결과와 운동",
+    article(TERMS_OF_SERVICE, 8) === "회원의 의무" &&
+      article(TERMS_OF_SERVICE, 9) === "측정 결과와 운동의 성격",
+  );
 }
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);

@@ -28,6 +28,8 @@ const check = async (name, fn) => {
 
 async function open(mode, route) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  // 처음 한 번 뜨는 환영 안내는 본 것으로 — 화면을 덮으면 누를 것을 못 누른다
+  await ctx.addInitScript(() => localStorage.setItem("ff-welcome", "parent,kid"));
   await ctx.addInitScript(
     ([m, kid]) => {
       localStorage.setItem(
