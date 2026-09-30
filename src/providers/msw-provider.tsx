@@ -8,6 +8,9 @@ const MOCKING_ENABLED = process.env.NEXT_PUBLIC_API_MOCKING === "enabled";
 let startPromise: Promise<void> | null = null;
 
 function startWorker() {
+  // 조건을 이 자리에 식 그대로 둔다 — 빌드가 값을 박으면 아래 import 가 통째로 빠져, 실제 서버 빌드에
+  // 목 서버(가짜 계정 · 초대코드 · 모든 처리기)가 실리지 않는다(9/30 보안 점검)
+  if (process.env.NEXT_PUBLIC_API_MOCKING !== "enabled") return Promise.resolve();
   startPromise ??= (async () => {
     const { worker } = await import("@/mocks/browser");
     await worker.start({
