@@ -27,11 +27,13 @@ import {
   useProgress,
   useSendCheer,
 } from "@/lib/api/queries";
+import { missionsOn } from "@/lib/day";
 import { errorMessage } from "@/lib/errors";
 import { stageOf } from "@/lib/levels";
 import { newlyUnlocked } from "@/lib/unlocks";
 import { PHASE_LABEL, clock, sessionsOf, stepMinutes, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
+import { today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useVoice } from "@/lib/voice";
 import { usePrefsStore } from "@/stores/prefs-store";
@@ -98,6 +100,13 @@ export default function PlayPage() {
   const noConsent = Boolean(kid?.consentRequired && !kid.consentGiven);
 
   const mission = missions?.missions?.find((m) => m.missionId === missionId);
+  // 오늘 할 운동이 더 남았나 — 남았으면 이 운동을 끝낸 것이지 「오늘 거」 를 다 한 게 아니다
+  const moreToday = missionsOn(missions?.missions, kidId, today()).some(
+    (m) =>
+      m.missionId !== missionId &&
+      m.targetMetric !== "STEPS" &&
+      !m.participants?.find((p) => p.profileId === kidId)?.completed,
+  );
 
   /** 이 화면에서 방금 끝낸 칸. 서버 응답을 기다리지 않고 바로 체크한다 */
   const [doneHere, setDoneHere] = useState<number[]>([]);
@@ -477,6 +486,7 @@ export default function PlayPage() {
             ) : finished ? (
               <Finish
                 allDone={allDone}
+                moreToday={moreToday}
                 doneCount={doneCount}
                 minutes={doneMin}
                 xp={xp}
@@ -706,6 +716,7 @@ const FEEL_LINE: Record<Feel, string> = {
 /** 끝 칸 — 다 했어요 · 경험치 · 어땠어요 · 알리기 */
 function Finish({
   allDone,
+  moreToday,
   doneCount,
   minutes,
   xp,
@@ -718,6 +729,8 @@ function Finish({
   onTold,
 }: {
   allDone: boolean;
+  /** 오늘 할 운동이 더 남았다 — 이 운동만 끝났다 */
+  moreToday: boolean;
   doneCount: number;
   minutes: number;
   xp: number;
@@ -767,7 +780,7 @@ function Finish({
             fromProfileId: kidId,
             toProfileId: p.profileId ?? "",
             // 남는 말이라 「오늘」 을 넣지 않는다 — 다음 날 알림함에서 읽으면 틀린 말이 된다
-            message: `${allDone ? "운동 다 했어요!" : `운동 ${doneCount}개 했어요!`}${feel ? ` ${FEEL_LINE[feel]}` : ""}`,
+            message: `${allDone ? (moreToday ? "운동 하나 다 했어요!" : "운동 다 했어요!") : `운동 ${doneCount}개 했어요!`}${feel ? ` ${FEEL_LINE[feel]}` : ""}`,
             missionId,
           }),
         ),
@@ -793,7 +806,11 @@ function Finish({
         className="-mt-3 -mb-1"
       />
       <h2 className="page-title mt-1">
-        {allDone ? "오늘 거 다 했어요!" : `${doneCount}개 했어요!`}
+        {allDone
+          ? moreToday
+            ? "이 운동 다 했어요!"
+            : "오늘 거 다 했어요!"
+          : `${doneCount}개 했어요!`}
       </h2>
       <p className="text-caption text-ink-soft mt-1 font-semibold">{minutes}분 움직였어요</p>
 
