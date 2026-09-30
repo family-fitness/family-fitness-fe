@@ -36,7 +36,7 @@ import { newlyUnlocked } from "@/lib/unlocks";
 import { PHASE_LABEL, clock, sessionsOf, stepMinutes, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { longDate, today } from "@/lib/today";
-import { cn } from "@/lib/utils";
+import { cn, withJosa } from "@/lib/utils";
 import { useVoice } from "@/lib/voice";
 import { usePrefsStore } from "@/stores/prefs-store";
 import { useRoleStore } from "@/stores/role-store";
@@ -405,7 +405,7 @@ export default function PlayPage() {
         )}
         <div className="relative flex items-center justify-center">
           <p className="text-caption text-ink-soft text-center font-bold">
-            {doneCount} / {sessions.length}칸 · {totalMin}분 중 {doneMin}분
+            {sessions.length}칸 중 {doneCount}칸, {totalMin}분 중 {doneMin}분
           </p>
           <button
             type="button"
@@ -545,7 +545,7 @@ export default function PlayPage() {
 /** 운동을 받은 사람들 — 「서준 · 하윤의」 */
 function ownerNames(participants: { name?: string | null }[] | undefined): string {
   const names = (participants ?? []).map((p) => p.name).filter(Boolean);
-  return names.length > 0 ? `${names.join(" · ")}의` : "다른 사람";
+  return names.length > 0 ? `${names.join(", ")}의` : "다른 사람";
 }
 
 /** 한 칸. 지금 칸만 펼친다 */
@@ -636,7 +636,7 @@ function Step({
               {status === "rest" ? (
                 <span className="text-center leading-none">
                   <span className="text-metric-lg block font-extrabold">{restLeft}</span>
-                  <span className="text-micro text-ink-soft font-bold">쉬어요 · 곧 시작</span>
+                  <span className="text-micro text-ink-soft font-bold">쉬었다가 곧 시작해요</span>
                 </span>
               ) : (
                 <span className="text-center leading-none">
@@ -724,7 +724,7 @@ function Step({
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-extrabold">{s.title}</span>
             <span className="text-caption text-ink-soft mt-0.5 block">
-              {PHASE_LABEL[s.phase]} · {stepMinutes(s)}분{s.completed && " · 했어요"}
+              {PHASE_LABEL[s.phase]} {stepMinutes(s)}분{s.completed && ", 했어요"}
             </span>
           </span>
         </button>
@@ -889,7 +889,7 @@ function Finish({
           {/* 레벨이 올라 새로 열린 것 — 위 섬에 방금 섰다 */}
           {opened.map((u) => (
             <p key={u.id} className="border-line mt-3 border-t pt-3 text-sm font-extrabold">
-              새로 열렸어요 · {u.name}
+              {withJosa(u.name, "이가")} 새로 열렸어요
             </p>
           ))}
         </div>
@@ -922,7 +922,7 @@ function Finish({
       {told ? (
         <p className="text-done mt-4 flex min-h-12 items-center justify-center gap-1.5 text-sm font-extrabold">
           <Check aria-hidden className="size-4" strokeWidth={3} />
-          {answered ? "알렸어요" : "알렸어요 · 기다리는 중"}
+          {answered ? "알렸어요" : "알렸어요. 답을 기다리는 중이에요"}
         </p>
       ) : checking ? (
         <Skeleton className="mt-4 h-14 w-full rounded-2xl" />

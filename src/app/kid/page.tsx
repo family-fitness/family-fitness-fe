@@ -172,8 +172,8 @@ export default function KidHomePage() {
           {progress ? (
             <>
               <p className="text-caption text-ink-soft mt-1 font-bold">
-                Lv.{progress.level} · {stage.name}
-                {trees > 0 ? ` · 나무 ${trees}그루` : ""}
+                Lv.{progress.level} {stage.name}
+                {trees > 0 ? `, 나무 ${trees}그루` : ""}
               </p>
               {/* 다음 레벨까지 · 경험치 — 아래에 두꺼운 게이지(9/25) */}
               <XpGauge progress={progress} className="mt-3 max-w-64 text-left" />
@@ -278,7 +278,7 @@ export default function KidHomePage() {
                     role="img"
                     aria-label="신체 점수 없음"
                   >
-                    —
+                    없음
                   </span>
                 ) : score != null ? (
                   <span className="flex flex-col items-center">
@@ -313,7 +313,7 @@ function TodayHero({ mission, profileId }: { mission: Mission; profileId: string
     .map((p) => [p, sessions.filter((s) => s.phase === p).length] as const)
     .filter(([, n]) => n > 0)
     .map(([p, n]) => `${PHASE_LABEL[p].replace("운동", "")} ${n}`)
-    .join(" · ");
+    .join(", ");
   const done = sessions.filter((s) => s.completed).length;
 
   return (
@@ -323,11 +323,11 @@ function TodayHero({ mission, profileId }: { mission: Mission; profileId: string
     >
       <p className="text-caption font-bold text-white">오늘 운동</p>
       <p className="text-metric mt-1 leading-tight font-extrabold">
-        {sessions.length}개 · {minutes}분
+        {sessions.length}개, {minutes}분
       </p>
       <p className="text-caption mt-1 font-semibold text-white">
         {phases}
-        {done > 0 && ` · ${done}개 했어요`}
+        {done > 0 && `. ${done}개 했어요`}
       </p>
       <span className="text-signal-strong mt-4 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-white text-lg font-extrabold">
         <Play aria-hidden className="size-5 fill-current" />
