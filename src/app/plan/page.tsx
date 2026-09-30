@@ -340,12 +340,12 @@ function PlanForm() {
 
           <div className="py-3.5">
             <CardHead title="누가 해요" />
-            <div className="mt-2 flex gap-2" role="group" aria-label="누가 해요">
+            <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="누가 해요">
               <Chip on={!withParent} onClick={() => setWithParent(false)}>
-                {name} 혼자
+                <Named name={name} tail="혼자" spaced />
               </Chip>
               <Chip on={withParent} onClick={() => setWithParent(true)}>
-                {profile?.name ?? "나"}도 같이
+                <Named name={profile?.name ?? "나"} tail="도 같이" />
               </Chip>
             </div>
           </div>
@@ -405,10 +405,11 @@ function BodyTile({
   value: number | string | null | undefined;
   unit?: string;
 }) {
+  // 좁은 폰(320)에서는 칸이 50px 남짓이라 「유소년」 이 「유소 / 년」 으로 꺾였다 — 글자 · 칸 여백을 줄이고 꺾지 않는다
   return (
-    <div className="tile">
+    <div className="tile max-[359px]:px-2.5">
       <dt className="metric-label">{label}</dt>
-      <dd className="metric-value text-metric mt-1">
+      <dd className="metric-value text-metric mt-1 whitespace-nowrap max-[359px]:text-xl">
         {value ?? "–"}
         {value != null && unit && <span className="metric-unit">{unit}</span>}
       </dd>
@@ -430,9 +431,19 @@ function Chip({
       type="button"
       aria-pressed={on}
       onClick={onClick}
-      className={cn("chip press", on && "chip-on")}
+      className={cn("chip press max-w-full", on && "chip-on")}
     >
       {children}
     </button>
+  );
+}
+
+/** 이름이 길면 이름만 줄이고 뒤 말(혼자 · 도 같이)은 남긴다 — 칩이 한 줄을 넘겨 화면이 옆으로 밀렸다 */
+function Named({ name, tail, spaced }: { name: string; tail: string; spaced?: boolean }) {
+  return (
+    <span className="flex min-w-0 items-center">
+      <span className="max-w-28 truncate">{name}</span>
+      <span className={cn("shrink-0", spaced && "ml-1")}>{tail}</span>
+    </span>
   );
 }
