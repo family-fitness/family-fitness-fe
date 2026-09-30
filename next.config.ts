@@ -10,6 +10,19 @@ const nextConfig: NextConfig = {
   agentRules: false,
 
   /**
+   * 목 서버 스위치와 구글 키를 빌드할 때 값으로 못 박는다.
+   *
+   * `NEXT_PUBLIC_*` 은 빌드할 때 값이 있어야 번들에 박힌다. 값이 없으면 서버 쪽 코드는 `next start`
+   * 를 띄울 때 환경에서 다시 읽고, 브라우저 쪽 번들은 undefined 로 본다. 그래서 운영 서버를
+   * NEXT_PUBLIC_API_MOCKING=enabled 로 띄우면 서버만 목이 켜진 줄 알고 body 를 비운 채 렌더링했고,
+   * 브라우저에서 hydration 오류(#418)가 났다. 없으면 빈 문자열로 박아 두 쪽이 늘 같은 값을 보게 한다.
+   */
+  env: {
+    NEXT_PUBLIC_API_MOCKING: process.env.NEXT_PUBLIC_API_MOCKING ?? "",
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "",
+  },
+
+  /**
    * 브라우저에게는 /api/v1/... 이 프론트와 같은 출처로 보이고,
    * Next 서버가 뒤에서 백엔드로 넘긴다.
    *
