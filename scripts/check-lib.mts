@@ -8,7 +8,15 @@
  */
 import type { ClipView } from "@/lib/api/types";
 import type { DayLog } from "@/lib/api/types";
-import { TIERS, leagueScore, nextTier, placeAt, prevTier, zoneOf } from "@/lib/league";
+import {
+  TIERS,
+  daysLeftText,
+  leagueScore,
+  nextTier,
+  placeAt,
+  prevTier,
+  zoneOf,
+} from "@/lib/league";
 import { projectOrtho } from "@/lib/ortho";
 import { withJosa } from "@/lib/utils";
 import {
@@ -1057,6 +1065,11 @@ check(
   check("측정 날짜에 미래는 고를 수 없다", !inRule(measured, "2026-10-01"));
   check("측정 날짜에 오늘은 고를 수 있다", inRule(measured, on));
 }
+
+// 달 마지막 날에 「0일 남았어요」 가 아니라 「오늘 끝나요」
+check("리그가 오늘 끝나면 오늘 끝나요", daysLeftText(0) === "오늘 끝나요", daysLeftText(0));
+check("리그가 하루 남으면 1일 남았어요", daysLeftText(1) === "1일 남았어요", daysLeftText(1));
+check("리그가 열흘 남으면 10일 남았어요", daysLeftText(10) === "10일 남았어요", daysLeftText(10));
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);

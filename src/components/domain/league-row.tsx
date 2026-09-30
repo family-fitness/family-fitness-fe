@@ -7,7 +7,7 @@ import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFamilyLeague } from "@/lib/api/queries";
 import { artFor } from "@/lib/art";
-import { tierArt, tierName } from "@/lib/league";
+import { daysLeftText, tierArt, tierName } from "@/lib/league";
 import { monthOf, today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +34,7 @@ export function LeagueRow({
   // 셀 날이 아직 없으면 0% 가 아니라 비어 있다
   const note =
     league.rate != null
-      ? `이번 달 달성률 ${league.rate}%, ${league.daysLeft}일 남았어요`
+      ? `이번 달 달성률 ${league.rate}%, ${daysLeftText(league.daysLeft)}`
       : "아직 순위가 없어요";
   return (
     <NavLink

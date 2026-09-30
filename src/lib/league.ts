@@ -33,6 +33,11 @@ export function prevTier(tier: LeagueTier): LeagueTier | null {
   return i > 0 ? TIERS[i - 1].id : null;
 }
 
+/** 이번 달 리그가 며칠 남았는지. 달 마지막 날(0일)은 「0일 남았어요」 대신 「오늘 끝나요」 */
+export function daysLeftText(daysLeft: number): string {
+  return daysLeft <= 0 ? "오늘 끝나요" : `${daysLeft}일 남았어요`;
+}
+
 /** 티어 메달 그림 이름(주문서의 `league/tier-*`) */
 export function tierArt(tier: LeagueTier): string {
   return `league/tier-${tier.toLowerCase()}`;

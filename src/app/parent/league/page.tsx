@@ -21,6 +21,7 @@ import {
 import { artFor } from "@/lib/art";
 import {
   TIERS,
+  daysLeftText,
   nextTier,
   placeAt as placeIn,
   prevTier,
@@ -135,7 +136,7 @@ function League() {
           familyName={map?.familyName ?? "우리 가족"}
           tier={league.tier}
           place={rank != null ? `${league.groupSize}가족 중 ${rank}등` : "아직 순위가 없어요"}
-          meta={`${monthLabel(month)}, ${league.daysLeft}일 남았어요`}
+          meta={`${monthLabel(month)}, ${daysLeftText(league.daysLeft)}`}
           kids={kids}
           progresses={kids.map((k) => progresses[kidIds.indexOf(k.profileId ?? "")]?.data)}
         />
