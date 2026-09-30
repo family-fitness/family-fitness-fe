@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarDays } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { Calendar } from "@/components/ui/calendar";
@@ -40,10 +40,22 @@ export function DateField({
   // 한 번 열기 전에는 시트를 그리지 않는다. 서버에서 그릴 때는 document 가 없다
   const [used, setUsed] = useState(false);
   const shown = value ? koreanDate(value) : placeholder;
+  const field = useRef<HTMLButtonElement>(null);
+
+  /*
+    닫을 때 초점을 이 칸으로 돌려준다. 시트는 자기를 연 요소로 초점을 돌려주지만, 달력의
+    autoFocus 가 시트의 useEffect 보다 먼저 실행돼서 그 요소가 달력의 날짜 버튼으로 기록됐고,
+    닫히면 그 버튼은 inert 라 초점이 body 로 빠졌다
+  */
+  const close = () => {
+    setOpen(false);
+    requestAnimationFrame(() => field.current?.focus({ preventScroll: true }));
+  };
 
   return (
     <>
       <button
+        ref={field}
         type="button"
         aria-haspopup="dialog"
         aria-label={`${label}, ${value ? koreanDate(value) : "아직 안 골랐어요"}`}
@@ -62,7 +74,7 @@ export function DateField({
       </button>
       {used &&
         createPortal(
-          <Sheet open={open} onClose={() => setOpen(false)} title={label}>
+          <Sheet open={open} onClose={close} title={label}>
             <Calendar
               mode="single"
               required
@@ -70,7 +82,7 @@ export function DateField({
               selected={parseDate(value)}
               onSelect={(d) => {
                 onChange(toDateString(d));
-                setOpen(false);
+                close();
               }}
               defaultMonth={parseDate(openingDate(rule, value))}
               startMonth={parseDate(rule.min)}
