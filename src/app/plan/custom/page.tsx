@@ -431,7 +431,7 @@ function CustomPlan() {
       <Dock>
         <div className="card-hero py-3">
           <p className="text-caption text-ink-soft text-center font-semibold">
-            {moves.length}개, {minutes}분,{" "}
+            {moves.length}개, {minutes}분.{" "}
             {/* 가족을 받는 동안은 「아무도 안 골랐어요」 가 아니다 */}
             {familyLoading
               ? "…"

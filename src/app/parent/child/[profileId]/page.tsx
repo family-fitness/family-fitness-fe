@@ -145,7 +145,7 @@ export default function ChildDetailPage() {
           </div>
           <div className="border-line mt-4 border-t pt-3">
             <p className="text-caption text-ink-soft font-bold">
-              체력{testedOn && `, ${formatDate(testedOn)}에 쟀어요`}
+              {testedOn ? `${formatDate(testedOn)}에 잰 체력` : "체력"}
             </p>
             {/* 잰 적이 있는지로 가른다 — 만 7~10세는 쟀어도 점수가 없을 수 있다(규칙 8) */}
             {testedOn == null && (

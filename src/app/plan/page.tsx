@@ -224,7 +224,7 @@ function PlanForm() {
               href={measureHref}
               className="press text-signal-strong min-h-11 shrink-0 content-center text-sm font-extrabold"
             >
-              체력 재러 가기
+              첫 측정 하기
             </NavLink>
           </div>
         )}
@@ -376,7 +376,7 @@ function PlanForm() {
                 href={measureHref}
                 className="press text-signal-strong min-h-11 shrink-0 content-center text-sm font-extrabold"
               >
-                체력 재러 가기
+                첫 측정 하기
               </NavLink>
             )}
           </div>
@@ -390,7 +390,7 @@ function PlanForm() {
             href={measureHref}
             className="press bg-signal-strong shadow-lift flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white"
           >
-            체력 재러 가기
+            첫 측정 하기
           </NavLink>
         ) : (
           <button

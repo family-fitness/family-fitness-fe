@@ -26,7 +26,7 @@ import { failureText } from "@/lib/coach";
 import { errorMessage } from "@/lib/errors";
 import { PHASE_LABEL, proposalSessions, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
-import { cn } from "@/lib/utils";
+import { cn, withJosa } from "@/lib/utils";
 
 /**
  * AI 편성 — 제안 · 근거 · 순서.
@@ -173,7 +173,7 @@ function Proposal() {
               <h2 className="page-title">{proposal?.title ?? "오늘 운동"}</h2>
               <p className="text-caption text-ink-soft mt-1 font-semibold">
                 {sessions.length}개, {minutes}분{phases && ` (${phases})`}
-                {people.length > 0 && `, ${people.join(", ")}`}
+                {people.length > 0 && `. ${withJosa(people.join(", "), "이가")} 해요`}
               </p>
             </section>
 

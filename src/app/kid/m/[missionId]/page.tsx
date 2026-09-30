@@ -636,7 +636,7 @@ function Step({
               {status === "rest" ? (
                 <span className="text-center leading-none">
                   <span className="text-metric-lg block font-extrabold">{restLeft}</span>
-                  <span className="text-micro text-ink-soft font-bold">쉬었다가 곧 시작해요</span>
+                  <span className="text-micro text-ink-soft font-bold">곧 시작해요</span>
                 </span>
               ) : (
                 <span className="text-center leading-none">
@@ -724,7 +724,7 @@ function Step({
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-extrabold">{s.title}</span>
             <span className="text-caption text-ink-soft mt-0.5 block">
-              {PHASE_LABEL[s.phase]} {stepMinutes(s)}분{s.completed && ", 했어요"}
+              {PHASE_LABEL[s.phase]} {stepMinutes(s)}분{s.completed && ", 다 했어요"}
             </span>
           </span>
         </button>

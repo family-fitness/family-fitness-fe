@@ -327,7 +327,7 @@ function TodayHero({ mission, profileId }: { mission: Mission; profileId: string
       </p>
       <p className="text-caption mt-1 font-semibold text-white">
         {phases}
-        {done > 0 && `. ${done}개 했어요`}
+        {done > 0 && ` 중 ${done}개 했어요`}
       </p>
       <span className="text-signal-strong mt-4 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-white text-lg font-extrabold">
         <Play aria-hidden className="size-5 fill-current" />
