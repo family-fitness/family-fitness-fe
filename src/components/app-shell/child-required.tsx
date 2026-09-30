@@ -5,7 +5,7 @@ import { useEffect, type ReactNode } from "react";
 
 import { RouteLoading } from "@/components/app-shell/route-loading";
 import { useFamilyProfiles } from "@/lib/api/queries";
-import { mustAddChild, openWithoutChild } from "@/lib/family";
+import { mustAddChild, mustSetUpFamily, openWithoutChild } from "@/lib/family";
 import { useSession } from "@/lib/session";
 import { useHydrated, useIsKidView } from "@/lib/view-role";
 
@@ -22,18 +22,21 @@ export function ChildRequired({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const hydrated = useHydrated();
   const kidView = useIsKidView();
-  const { profile, familyId } = useSession();
+  const { profile, familyId, nextStep } = useSession();
   const { data: family } = useFamilyProfiles(familyId);
 
+  // 가족이 없는 계정이 먼저다. 스플래시를 거치지 않고 주소로 들어와도 가족 만들기나 합류 화면으로
+  const setup = mustSetUpFamily({ nextStep, pathname });
   const send =
     hydrated &&
     !openWithoutChild(pathname) &&
     mustAddChild({ kidView, me: profile, profiles: family?.profiles ?? undefined });
 
   useEffect(() => {
-    if (send) router.replace("/start/child?why=no-child");
-  }, [send, router]);
+    if (setup) router.replace(setup);
+    else if (send) router.replace("/start/child?why=no-child");
+  }, [setup, send, router]);
 
-  if (send) return <RouteLoading />;
+  if (setup || send) return <RouteLoading />;
   return <>{children}</>;
 }

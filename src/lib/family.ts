@@ -1,4 +1,4 @@
-import type { ProfileWithSex } from "./api/types";
+import type { NextStep, ProfileWithSex } from "./api/types";
 
 /** 누구인지 모르거나 여럿을 한꺼번에 부를 때의 말 */
 export const GUARDIAN = "보호자";
@@ -48,4 +48,32 @@ const OPEN_WITHOUT_CHILD = ["/settings", "/notifications", "/parent/family"];
 
 export function openWithoutChild(pathname: string): boolean {
   return OPEN_WITHOUT_CHILD.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+/**
+ * 가족이 아직 없으면 먼저 가야 할 곳. 가족이 없으면 가족 만들기, 초대코드로 합류하기 전이면 합류 화면.
+ * 스플래시와 앱 화면 가드가 같이 쓴다. 가족이 있거나 `/me` 를 아직 못 받았으면 null.
+ */
+export function familySetupPath(nextStep: NextStep | undefined): "/start/family" | "/claim" | null {
+  if (nextStep === "CREATE_FAMILY") return "/start/family";
+  if (nextStep === "CLAIM") return "/claim";
+  return null;
+}
+
+/**
+ * 앱 화면 가드가 가족 없는 계정을 보낼 곳.
+ *
+ * 스플래시만 `nextStep` 을 보면, 초대 합류가 실패한 뒤 뒤로 가거나 주소를 쳐서 들어온 계정이
+ * 가족 없이 부모 홈과 대시보드를 그대로 봤다(「우리집」, 「구성원 0명」).
+ * 설정(로그아웃과 참여 방식 고르기)은 열어 둔다.
+ */
+export function mustSetUpFamily({
+  nextStep,
+  pathname,
+}: {
+  nextStep: NextStep | undefined;
+  pathname: string;
+}): "/start/family" | "/claim" | null {
+  if (pathname === "/settings" || pathname.startsWith("/settings/")) return null;
+  return familySetupPath(nextStep);
 }

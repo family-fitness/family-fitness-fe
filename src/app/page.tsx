@@ -7,6 +7,7 @@ import { SessionError } from "@/components/app-shell/session-error";
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { ApiError } from "@/lib/api/client";
 import { useMe } from "@/lib/api/queries";
+import { familySetupPath } from "@/lib/family";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRoleStore } from "@/stores/role-store";
 
@@ -43,12 +44,9 @@ export default function SplashPage() {
       「아이」 를 고를 수 있는 화면이 먼저 뜨는 건 말이 안 된다 — 고를 자리가 없다.
       가족 만들기로 곧장 보낸다.
     */
-    if (data.nextStep === "CREATE_FAMILY") {
-      router.replace("/start/family");
-      return;
-    }
-    if (data.nextStep === "CLAIM") {
-      router.replace("/claim");
+    const setup = familySetupPath(data.nextStep);
+    if (setup) {
+      router.replace(setup);
       return;
     }
     // 초대를 받아 들어왔다가 참여 방식을 고르기 전에 닫았다 — 고르던 자리로

@@ -54,7 +54,14 @@ import {
   watchHref,
   watchTitle,
 } from "@/lib/videos";
-import { callName, guardiansName, mustAddChild, openWithoutChild } from "@/lib/family";
+import {
+  callName,
+  familySetupPath,
+  guardiansName,
+  mustAddChild,
+  mustSetUpFamily,
+  openWithoutChild,
+} from "@/lib/family";
 import {
   CREATE_AT,
   guardianAgeProblem,
@@ -685,6 +692,43 @@ check(
   guardiansName([{ name: "은영" }, { name: "도현" }]) === "보호자",
 );
 check("보호자가 없으면 「보호자」", guardiansName([]) === "보호자");
+
+/* ─── 가족이 없는 계정 ─────────────────────────────────── */
+
+check("가족이 없으면 가족 만들기로 보낸다", familySetupPath("CREATE_FAMILY") === "/start/family");
+check("초대코드로 합류하기 전이면 합류 화면으로 보낸다", familySetupPath("CLAIM") === "/claim");
+check(
+  "가족이 있거나 아직 모르면 보내지 않는다",
+  familySetupPath("HOME") === null &&
+    familySetupPath("SUPPORT_MODE") === null &&
+    familySetupPath(undefined) === null,
+);
+check(
+  "가족이 없는 계정이 부모 화면, 캘린더, 편성, 알림에 들어오면 가족 만들기로 보낸다",
+  [
+    "/parent",
+    "/parent/dashboard",
+    "/parent/family",
+    "/parent/league",
+    "/calendar",
+    "/plan",
+    "/notifications",
+  ].every((p) => mustSetUpFamily({ nextStep: "CREATE_FAMILY", pathname: p }) === "/start/family"),
+);
+check(
+  "합류 전 계정이 부모 홈에 들어오면 합류 화면으로 보낸다",
+  mustSetUpFamily({ nextStep: "CLAIM", pathname: "/parent" }) === "/claim",
+);
+check(
+  "설정은 가족이 없어도 열어 둔다",
+  mustSetUpFamily({ nextStep: "CREATE_FAMILY", pathname: "/settings" }) === null &&
+    mustSetUpFamily({ nextStep: "CLAIM", pathname: "/settings/support-mode" }) === null,
+);
+check(
+  "가족이 있으면 어느 화면이든 보내지 않는다",
+  mustSetUpFamily({ nextStep: "HOME", pathname: "/parent" }) === null &&
+    mustSetUpFamily({ nextStep: undefined, pathname: "/parent" }) === null,
+);
 
 /* ─── 아이 없는 가족 ─────────────────────────────────── */
 
