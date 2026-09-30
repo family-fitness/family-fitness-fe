@@ -20,7 +20,7 @@ import { useAuthStore } from "@/stores/auth-store";
 const DEV_ACCOUNTS: { id: string; label: string; claimCode?: string }[] = [
   { id: "demo-fresh", label: "새 계정 · 가족 없음" },
   { id: "demo-parent", label: "은영 · 가족 3명" },
-  // 백엔드 시드의 두 번째 부모와 그 자리의 초대코드 — 코드를 들고 가야 서버가 코드 넣는 단계로 보낸다
+  // 백엔드 시드의 두 번째 부모와 그 자리의 초대코드 — 들어간 뒤 그 코드의 자리 미리 보기로 간다
   { id: "demo-parent-2", label: "초대받은 계정", claimCode: "K7M2QT" },
 ];
 
@@ -31,13 +31,15 @@ const REDIRECT_PATH = "/login";
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
 /**
- * 개발용 계정을 내는가 — 개발 서버, 목 서버를 켠 빌드, 구글 키가 없는 빌드. 구글 키가 없으면
- * 구글 단추가 없어 들어갈 길이 하나도 없다(로컬 백엔드에 붙인 빌드). 운영 서버는 개발 로그인을 막는다.
+ * 개발용 계정을 내는가 — 개발 서버, 목 서버를 켠 빌드, 그리고 빌드에 `NEXT_PUBLIC_DEV_LOGIN=enabled` 를
+ * 준 경우(로컬 백엔드에 붙여 보는 빌드)뿐이다.
+ * 「구글 키가 없으면」 도 열었더니 키를 빠뜨린 실제 서버 빌드에 개발 계정이 떠서, 누구나 같은 개발 계정으로
+ * 들어가 앞사람 가족을 볼 수 있었다(9/30 보안 점검). 키가 없으면 들어갈 길이 없는 편이 낫다.
  */
 const DEV_LOGIN =
   process.env.NODE_ENV === "development" ||
   process.env.NEXT_PUBLIC_API_MOCKING === "enabled" ||
-  !GOOGLE_CLIENT_ID;
+  process.env.NEXT_PUBLIC_DEV_LOGIN === "enabled";
 
 /**
  * 구글에 가기 전 이 탭에 남기는 것 — 돌아올 때 맞춰 볼 표(state)와 들고 가는 초대코드.
@@ -83,12 +85,15 @@ function LoginContent() {
 
   const code = params.get("code");
   const state = params.get("state");
-  // 초대 링크로 들어왔다가 로그인하는 경우. 코드를 같이 넘겨야 바로 프로필에 붙는다
+  /**
+   * 초대 링크로 들어왔다가 로그인하는 경우. 코드는 로그인에 싣지 않는다 — 실으면 서버가 로그인과 함께
+   * 그 자리에 붙여서, 남이 보낸 링크로 로그인한 사람이 「OO네 · 아빠 자리」 를 보지도 못하고 남의 가족에
+   * 들어갔다(9/30 보안 점검). 로그인한 뒤 코드 화면에서 자리를 보고 직접 누른다.
+   */
   const claimCode = params.get("claimCode") ?? undefined;
   /**
-   * 로그인하고 갈 곳 — 초대코드를 들고 왔고 아직 가족에 붙지 않았으면 그 코드를 넣는 화면으로.
-   * 로그인하며 서버가 코드로 붙여 줬으면(참여 방식 · 홈) 스플래시가 단계대로 보낸다 — 코드 화면으로 가면
-   * 방금 쓴 코드라며 막혔다
+   * 로그인하고 갈 곳 — 초대코드를 들고 왔고 아직 가족에 붙지 않았으면 그 코드의 자리 미리 보기로.
+   * 이미 가족이 있으면(참여 방식 · 홈) 스플래시가 단계대로 보낸다
    */
   const after = (auth: AuthResponse, claim: string | undefined) =>
     claim && auth.nextStep !== "SUPPORT_MODE" && auth.nextStep !== "HOME"
@@ -107,7 +112,6 @@ function LoginContent() {
         ? googleLogin.mutateAsync({
             authorizationCode: code,
             redirectUri: `${window.location.origin}${REDIRECT_PATH}`,
-            claimCode: saved.claimCode,
           })
         : Promise.reject(new Error("state mismatch"));
     exchange
@@ -125,7 +129,7 @@ function LoginContent() {
     // 초대 링크로 들고 온 코드가 먼저다
     const claim = claimCode ?? account.claimCode;
     try {
-      const auth = await devLogin.mutateAsync({ providerUserId: account.id, claimCode: claim });
+      const auth = await devLogin.mutateAsync({ providerUserId: account.id });
       signIn(auth);
       router.replace(after(auth, claim));
     } catch (e) {
