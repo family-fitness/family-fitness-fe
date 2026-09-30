@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
    */
   agentRules: false,
 
+  /** 응답에 X-Powered-By: Next.js 를 붙이지 않는다 — 아래 보안 헤더를 넣을 때 이것만 빠져 있었다 */
+  poweredByHeader: false,
+
   /**
    * 목 서버 스위치와 구글 키를 빌드할 때 값으로 못 박는다.
    *
