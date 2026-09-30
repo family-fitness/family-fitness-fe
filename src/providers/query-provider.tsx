@@ -12,6 +12,8 @@ function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
+        // 끊긴 채 부르면 망이 돌아오길 기다리지 않고 바로 실패해 「다시 불러오기」 를 — 기본(online)은 멈춘 채 뼈대만 남았다
+        networkMode: "always",
         // 모바일에서 탭을 오갈 때마다 다시 부르면 데이터 요금과 배터리를 쓴다
         refetchOnWindowFocus: false,
         staleTime: 30_000,
@@ -20,6 +22,11 @@ function makeQueryClient() {
           if (error instanceof ApiError && error.status < 500) return false;
           return failureCount < 2;
         },
+      },
+      mutations: {
+        // 끊긴 채 보낸 것(운동 한 칸 끝 · 스티커 · 등록)도 바로 실패한다 — 멈춘 채 기다리면 「다시 보내기」 도 없이
+        // 뼈대만 돌았고, 그사이 앱을 닫으면 말없이 사라졌다(9/30 점검)
+        networkMode: "always",
       },
     },
   });
