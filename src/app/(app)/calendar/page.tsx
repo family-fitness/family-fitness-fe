@@ -245,7 +245,7 @@ function Calendar() {
               onClick={() => void refetchCalendar()}
               className="press text-ink-soft mt-3 min-h-10 w-full text-sm font-bold"
             >
-              기록을 불러오지 못했어요 · 다시
+              기록을 불러오지 못했어요. 눌러서 다시 불러와요
             </button>
           )}
         </section>
@@ -289,7 +289,7 @@ function DayCell({
       // 앞날은 운동을 잡아 둔 날만 연다 — 하루 기록도 앞날은 잡아 둔 날만 간다. 쉬는 날은 흐리지 않고 칠만 한다
       disabled={future && !planned}
       // 링 둘이 말하는 것을 다 읽어 준다 — 범례는 화면 읽기에서 숨어 있다
-      aria-label={`${longDate(date)}${rest ? " · 쉬는 날" : ""}${moved ? ` · 움직인 시간 ${moved.minutes}분 · 끝낸 운동 ${summary.done}개` : ""}${sticker ? ` · ${sticker.label} 스티커` : ""}${planned && !moved ? " · 운동 잡혀 있음" : ""}`}
+      aria-label={`${longDate(date)}${rest ? ", 쉬는 날" : ""}${moved ? `, 움직인 시간 ${moved.minutes}분, 끝낸 운동 ${summary.done}개` : ""}${sticker ? `, ${sticker.label} 스티커` : ""}${planned && !moved ? ", 운동이 잡혀 있어요" : ""}`}
       className={cn(
         "press relative grid size-11 place-items-center rounded-full",
         isToday && "bg-signal-soft",
@@ -333,7 +333,7 @@ function DayCell({
   );
 }
 
-/** 이 달 한 칸. 못 받은 것은 0 이 아니라 「—」 — 0 을 그리면 안 한 달처럼 보인다 */
+/** 이 달 한 칸. 못 받은 것은 0 이 아니라 「?」 — 0 을 그리면 안 한 달처럼 보인다 */
 function MonthTile({
   label,
   value,
@@ -360,7 +360,7 @@ function MonthTile({
             state === "pending" && "opacity-40",
           )}
         >
-          {state === "error" ? "—" : 0}
+          {state === "error" ? <span aria-label="불러오지 못했어요">?</span> : 0}
         </p>
       )}
     </div>

@@ -226,7 +226,7 @@ function Day() {
                   onClick={() => go(d)}
                   disabled={!open(d)}
                   aria-current={d === date ? "date" : undefined}
-                  aria-label={`${longDate(d)}${day && day.minutes > 0 ? ` · ${day.minutes}분` : ""}${got ? ` · ${got.label} 스티커` : ""}`}
+                  aria-label={`${longDate(d)}${day && day.minutes > 0 ? `, ${day.minutes}분` : ""}${got ? `, ${got.label} 스티커` : ""}`}
                   className="press flex w-full flex-col items-center gap-1 disabled:opacity-40"
                 >
                   <span
@@ -454,7 +454,7 @@ function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; missi
               entry.verifiedBy && VERIFIED_COPY[entry.verifiedBy],
             ]
               .filter(Boolean)
-              .join(" · ")}
+              .join(", ")}
           </span>
         </span>
         {entry.completed && <Done />}
@@ -473,7 +473,7 @@ function EntryRows({ entry, mission }: { entry: DayLog["entries"][number]; missi
               <span className={cn("min-w-0 flex-1", !s.done && "opacity-50")}>
                 <span className="block truncate text-sm font-bold">{s.title}</span>
                 <span className="text-caption text-ink-soft block">
-                  {PHASE_LABEL[s.phase]} · {stepMinutes(s)}분
+                  {PHASE_LABEL[s.phase]} {stepMinutes(s)}분
                 </span>
               </span>
               {s.done && <Done />}
@@ -515,7 +515,7 @@ function PlannedRows({
         <p className="text-caption text-ink-soft mt-0.5 font-semibold">
           {(mission.participants ?? [])
             .map((p) => nameOf(p.profileId ?? "", p.name ?? ""))
-            .join(" · ")}
+            .join(", ")}
         </p>
       )}
       <ul className="mt-2 space-y-2">
