@@ -127,8 +127,13 @@ export function Sheet({
   /** Tab 이 시트 밖으로 나가지 않게 — 뒤 화면을 더듬게 되면 열린 시트가 보이지 않는다 */
   const trapTab = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== "Tab") return;
-    const items = panel.current?.querySelectorAll<HTMLElement>(FOCUSABLE);
-    if (!items || items.length === 0) return;
+    // Tab 이 실제로 닿는 것만 — 숨긴 파일 입력(사진 고르기)처럼 tabIndex -1 · aria-hidden · 안 보이는 것을 끝으로 셌더니
+    // 마지막 단추에서 Tab 이 시트 밖 뒤 화면으로 빠졌다(9/30 점검)
+    const items = [...(panel.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])].filter(
+      (el) =>
+        el.tabIndex >= 0 && !el.closest('[aria-hidden="true"]') && el.getClientRects().length > 0,
+    );
+    if (items.length === 0) return;
     const first = items[0];
     const last = items[items.length - 1];
     if (
