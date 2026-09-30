@@ -157,7 +157,7 @@ function KidLine({
           <span className="text-caption text-ink-soft block truncate">
             {status ??
               (missionsFailed ? (
-                "—"
+                "불러오지 못했어요"
               ) : (
                 <span className="skeleton inline-block h-3 w-16 rounded align-middle" />
               ))}
@@ -172,7 +172,7 @@ function KidLine({
               <span
                 className={cn("metric-value text-2xl leading-none", score == null && "text-faint")}
               >
-                {score ?? "—"}
+                {score ?? "-"}
                 {score != null && <span className="metric-unit">점</span>}
               </span>
               <span
@@ -181,7 +181,7 @@ function KidLine({
                 aria-label={
                   score != null
                     ? `신체 점수 ${score}, 또래 평균 50`
-                    : "신체 점수 없음, 또래 평균 50"
+                    : "아직 신체 점수가 없어요, 또래 평균 50"
                 }
               >
                 {score != null ? (

@@ -21,7 +21,7 @@ export function IconLink({
   return (
     <NavLink
       href={href}
-      aria-label={dot ? `${label}, 새 소식 있음` : label}
+      aria-label={dot ? `${label}, 새 소식이 있어요` : label}
       className={cn(
         "press text-ink relative grid size-11 place-items-center rounded-full",
         className,

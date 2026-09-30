@@ -75,7 +75,7 @@ export function ChildPanel({
         <PanelRow
           href={`/p/${child.profileId}/measure`}
           art="icon/menu-measure"
-          title="키 · 몸무게를 새로 잴 때예요"
+          title="키와 몸무게를 새로 잴 때예요"
           note={`지난번에 잰 지 ${since}일`}
         />
       )}
@@ -280,7 +280,7 @@ function TodaySection({
     .map((p) => [p, sessions.filter((s) => s.phase === p).length] as const)
     .filter(([, n]) => n > 0)
     .map(([p, n]) => `${PHASE_LABEL[p].replace("운동", "")} ${n}`)
-    .join(" · ");
+    .join(", ");
 
   return (
     <>
@@ -294,7 +294,7 @@ function TodaySection({
             )}
           </p>
           <p className="text-caption text-ink-soft mt-0.5">
-            {sessions.length}개 · {minutes}분{phases && ` · ${phases}`}
+            {sessions.length}개, {minutes}분{phases && ` (${phases})`}
           </p>
           <p
             className={cn(
@@ -306,7 +306,7 @@ function TodaySection({
             {finished
               ? `${withJosa(childName, "이가")} 다 했어요`
               : doneCount > 0
-                ? `${doneCount}개 했어요 · ${sessions.length - doneCount}개 남음`
+                ? `${doneCount}개 했어요. ${sessions.length - doneCount}개 남았어요`
                 : restToday
                   ? "오늘은 쉬는 날이에요"
                   : "아직 시작 전이에요"}

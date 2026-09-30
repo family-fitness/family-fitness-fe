@@ -15,7 +15,7 @@ export function NotificationBell({ profileId }: { profileId: string | undefined 
   const fresh = (data?.unread ?? 0) > 0;
 
   return (
-    <IconLink href="/notifications" label={fresh ? "알림 · 새로 온 것 있음" : "알림"}>
+    <IconLink href="/notifications" label={fresh ? "알림, 새 알림이 있어요" : "알림"}>
       <span className="relative">
         <Bell className="size-6" strokeWidth={1.8} />
         {fresh && (

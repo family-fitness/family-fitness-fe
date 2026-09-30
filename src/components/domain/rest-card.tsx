@@ -52,7 +52,7 @@ export function RestCardRow({
   const note = restToday
     ? "오늘은 쉬는 날이에요"
     : upcoming.length > 0
-      ? `${upcoming.map((d) => `${Number(d.slice(8))}일`).join(" · ")} 쉬기로 했어요`
+      ? `${upcoming.map((d) => `${Number(d.slice(8))}일`).join(", ")} 쉬기로 했어요`
       : null;
 
   return (
@@ -138,7 +138,7 @@ function RestCardSheet({
 
   return (
     <Sheet open={open} onClose={onClose} title="쉬는 날 카드">
-      <p className="text-caption text-ink-soft">이번 달 {left}장 남음</p>
+      <p className="text-caption text-ink-soft">이번 달 {left}장 남았어요</p>
 
       <div className="mt-3 grid grid-cols-4 gap-2" role="radiogroup" aria-label="쉴 날">
         {choices.map((d) => {
@@ -190,8 +190,8 @@ function RestCardSheet({
             .map((d) => (
               <li key={d} className="flex min-h-12 items-center justify-between gap-3">
                 <span className="text-sm font-bold">
-                  {d === now ? "오늘" : `${Number(d.slice(5, 7))}월 ${Number(d.slice(8))}일`} · 쉬는
-                  날
+                  {d === now ? "오늘은" : `${Number(d.slice(5, 7))}월 ${Number(d.slice(8))}일은`}{" "}
+                  쉬는 날
                 </span>
                 <button
                   type="button"
