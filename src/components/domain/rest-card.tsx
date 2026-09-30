@@ -203,7 +203,7 @@ function RestCardSheet({
                   type="button"
                   onClick={() => void run(d, true)}
                   disabled={restDay.isPending}
-                  className="press text-signal-deep min-h-10 text-sm font-extrabold"
+                  className="press text-signal-deep min-h-11 px-1 text-sm font-extrabold"
                 >
                   되돌리기
                 </button>
