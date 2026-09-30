@@ -73,12 +73,11 @@ export default function KidHomePage() {
   } = useCalendar(familyId, childProfileId ?? undefined, week);
   const { data: cheers } = useCheers(familyId, childProfileId ?? undefined);
   const { data: family } = useFamilyProfiles(familyId);
-  // 아이에게 부모는 엄마 · 아빠다
+  // 보호자는 프로필 이름으로 부른다(엄마 · 아빠로 박지 않는다)
   const nameOf = (profileId: string, fallback: string) =>
     callName(
       family?.profiles?.find((p) => p.profileId === profileId) as ProfileWithSex | undefined,
       fallback,
-      true,
     );
 
   const me = map?.members?.find((m) => m.profileId === childProfileId);
@@ -252,7 +251,7 @@ export default function KidHomePage() {
               <PanelCell
                 href={`/calendar/${dayOf(sticker.createdAt)}`}
                 label="받은 스티커"
-                // 누가 붙여 줬는지 — 아이에게 부모는 엄마 · 아빠다. 스티커 말은 그림이 한다
+                // 누가 붙여 줬는지 — 보호자의 프로필 이름. 스티커 말은 그림이 한다
                 note={nameOf(sticker.fromProfileId, sticker.fromName)}
                 art={<StickerArt id={sticker.stickerId} className="size-10" />}
               />

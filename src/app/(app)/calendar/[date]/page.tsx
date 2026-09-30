@@ -156,7 +156,6 @@ function Day() {
     callName(
       family?.profiles?.find((p) => p.profileId === profileId) as ProfileWithSex | undefined,
       fallback,
-      kidView,
     );
   const suffix = asked && asked === who.profileId ? `?profileId=${encodeURIComponent(asked)}` : "";
   const go = (d: string) => router.replace(`/calendar/${d}${suffix}`, { scroll: false });

@@ -28,6 +28,7 @@ import {
   useSendCheer,
 } from "@/lib/api/queries";
 import { errorMessage } from "@/lib/errors";
+import { guardiansName } from "@/lib/family";
 import { stageOf } from "@/lib/levels";
 import { newlyUnlocked } from "@/lib/unlocks";
 import { PHASE_LABEL, clock, sessionsOf, stepMinutes, totalMinutes } from "@/lib/session-plan";
@@ -134,7 +135,7 @@ export default function PlayPage() {
   const { say } = useVoice(voiceOn);
   const [burst, setBurst] = useState(0);
   const [xp, setXp] = useState(0);
-  /** 엄마 · 아빠한테 알렸나 — 끝 칸이 다시 그려져도(다시 받는 동안 뼈대로 내려갔다 올라와도) 잊지 않게 여기에 둔다 */
+  /** 보호자한테 알렸나 — 끝 칸이 다시 그려져도(다시 받는 동안 뼈대로 내려갔다 올라와도) 잊지 않게 여기에 둔다 */
   const [told, setTold] = useState(false);
   const startedAt = useRef<string | null>(null);
   /** 시작할 때의 레벨. 끝나고 올랐는지 견준다 */
@@ -740,7 +741,7 @@ const FEELS = [
   { id: "hard", label: "힘들었어요" },
 ] as const;
 type Feel = (typeof FEELS)[number]["id"];
-/** 엄마 · 아빠한테 가는 말에 붙는 한 줄 */
+/** 보호자한테 가는 말에 붙는 한 줄 */
 const FEEL_LINE: Record<Feel, string> = {
   easy: "쉬웠어요.",
   good: "딱 좋았어요.",
@@ -796,7 +797,7 @@ function Finish({
   const answered = !fresh && aboutThis.some((c) => c.toProfileId === kidId && c.stickerId);
   const told = toldNow || toldBefore;
   const [error, setError] = useState<string | null>(null);
-  /** 어땠어요 — 고르면 엄마 · 아빠한테 가는 말에 붙는다. 안 골라도 된다 */
+  /** 어땠어요 — 고르면 보호자한테 가는 말에 붙는다. 안 골라도 된다 */
   const [feel, setFeel] = useState<Feel | null>(null);
 
   const stage = stageOf(progress?.level);
@@ -809,7 +810,7 @@ function Finish({
   const tell = async () => {
     setError(null);
     try {
-      // 엄마 · 아빠 모두에게. 아이에게 누구에게 알릴지 고르게 하지 않는다
+      // 보호자 모두에게. 아이에게 누구에게 알릴지 고르게 하지 않는다
       await Promise.all(
         parents.map((p) =>
           send.mutateAsync({
@@ -864,7 +865,7 @@ function Finish({
         </div>
       )}
 
-      {/* 어땠어요 — 한 번 누르면 끝. 고르면 엄마 · 아빠한테 가는 말에 붙는다 */}
+      {/* 어땠어요 — 한 번 누르면 끝. 고르면 보호자한테 가는 말에 붙는다 */}
       {!told && !checking && (
         <div className="mt-4" role="group" aria-label="오늘 운동 어땠어요">
           <p className="text-sm font-extrabold">어땠어요?</p>
@@ -903,7 +904,7 @@ function Finish({
             disabled={send.isPending}
             className="press bg-signal-strong mt-4 flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white"
           >
-            {send.isPending ? "알리는 중" : "엄마 · 아빠한테 알리기"}
+            {send.isPending ? "알리는 중" : `${guardiansName(parents)}한테 알리기`}
           </button>
         )
       )}

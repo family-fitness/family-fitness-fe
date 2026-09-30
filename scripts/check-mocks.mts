@@ -302,7 +302,7 @@ check(
 // 아이와 같이 하는 보호자 둘 — 아이가 끝낸 칸은 같이 끝나고, 보호자가 끝낸 칸은 그 보호자 것뿐이다
 const together = (await (
   await post(`/families/${DEMO.familyId}/missions`, {
-    title: "엄마랑 같이",
+    title: "보호자와 같이",
     startDate: today,
     endDate: today,
     targetMetric: "TIMER_MINUTES",

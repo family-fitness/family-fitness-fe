@@ -123,10 +123,10 @@ await expect("다 하고 나면 어땠는지 고를 수 있다", async () => {
   await good.click({ timeout: 3000 });
   if ((await good.getAttribute("aria-pressed")) !== "true") throw new Error("눌리지 않는다");
 });
-await expect("엄마 · 아빠한테 알리기가 있다", async () => {
-  await page.getByRole("button", { name: "엄마 · 아빠한테 알리기" }).waitFor({ timeout: 3000 });
+await expect("보호자한테 알리기가 있다", async () => {
+  await page.getByRole("button", { name: /한테 알리기$/ }).waitFor({ timeout: 3000 });
 });
-await page.getByRole("button", { name: "엄마 · 아빠한테 알리기" }).click();
+await page.getByRole("button", { name: /한테 알리기$/ }).click();
 await expect("알리면 기다린다고 말한다 — 재촉하지 않는다", async () => {
   await page.getByText(/기다리는 중/).waitFor({ timeout: 5000 });
 });

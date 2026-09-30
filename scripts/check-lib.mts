@@ -38,6 +38,7 @@ import { orderSessions, proposalSessions, sessionsOf, totalMinutes } from "@/lib
 import { todayActivity } from "@/lib/activity";
 import { josa } from "@/lib/utils";
 import { finderHref, finderOwner } from "@/lib/videos";
+import { callName, guardiansName } from "@/lib/family";
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -549,6 +550,21 @@ check(
   }
   check("빈 값이 든 경로는 부르지 않는다", threw);
 }
+
+/* ─── 보호자를 부르는 말 ─────────────────────────────────── */
+
+check(
+  "보호자 한 사람은 프로필 이름 — 엄마 · 아빠로 박지 않는다",
+  callName({ name: "은영" }, "은영") === "은영",
+);
+check("프로필을 못 찾으면 넘겨받은 이름", callName(undefined, "도현") === "도현");
+check("아무것도 모르면 「보호자」", callName(undefined, null) === "보호자");
+check("보호자가 한 사람뿐이면 그 이름으로 알린다", guardiansName([{ name: "은영" }]) === "은영");
+check(
+  "보호자가 여럿이면 「보호자」",
+  guardiansName([{ name: "은영" }, { name: "도현" }]) === "보호자",
+);
+check("보호자가 없으면 「보호자」", guardiansName([]) === "보호자");
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);

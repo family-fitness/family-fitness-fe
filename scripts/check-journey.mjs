@@ -197,7 +197,7 @@ await step("아이 홈 오늘 운동을 누르면 운동하기", async () => {
 await shot("kid-mission");
 await step("끝까지 하면 다 했어요 · 알리기", async () => {
   await page.getByRole("button", { name: "시작하기" }).click();
-  const notify = page.getByRole("button", { name: "엄마 · 아빠한테 알리기" });
+  const notify = page.getByRole("button", { name: /한테 알리기$/ });
   for (let i = 0; i < 40 && !(await notify.isVisible()); i++) {
     await page.clock.runFor(61_000);
   }
