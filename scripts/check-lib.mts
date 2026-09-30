@@ -925,7 +925,7 @@ check(
     "로그인 화면의 「심사용 계정으로 둘러보기」 는 고르는 시트를 열고 kind 를 보낸다",
     page.includes("REVIEW_WAYS") && page.includes("reviewLogin.mutateAsync(kind)"),
   );
-  check("개발용 로그인 묶음은 그대로 둔다", page.includes("개발용 · 구글 없이 들어가기"));
+  check("개발용 로그인 묶음은 그대로 둔다", page.includes("개발용으로 구글 없이 들어가기"));
 }
 
 /* ─── 키울 요인을 부르는 두 이름(결정 7) ─────────────────── */

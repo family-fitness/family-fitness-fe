@@ -312,7 +312,7 @@ await walk("중간에 닫아도 아이 없는 가족이 생기지 않고 두 번
   await h.step("아이는 한 명이다", async () => {
     await page.goto(`${BASE}/parent/family`, { waitUntil: "load" });
     await h.settle(2000);
-    const kids = await page.getByText(/· 자녀/).count();
+    const kids = await page.getByText(/, 자녀/).count();
     if (kids !== 1) problems.push(`새로고침에도 두 번 만들지 않는다\n    아이가 ${kids}명`);
   });
 });

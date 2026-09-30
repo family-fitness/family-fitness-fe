@@ -102,49 +102,37 @@ await step("새 계정으로 들어가면 첫 시작이 뜬다", async () => {
   await page.waitForURL(/\/start\/family/, { timeout: 20000 });
   await page.waitForTimeout(1200);
 });
-await step("첫 시작을 끝까지 — 지금 잴래요", async () => {
-  await next("좋아요");
+await step("첫 시작을 끝까지 하고 지금 잴래요", async () => {
+  // 첫 시작은 다섯 화면: 가족과 보호자, 아이, 키와 몸무게와 동의, 운동할 수 있는 시간, 준비됐어요
   await page.getByLabel("가족 이름").fill("민서네");
-  await next();
   await page.getByLabel("보호자 이름").fill("지영");
-  await next();
   await page.getByRole("radio", { name: /여성/ }).click();
-  await next();
   await pickDate(page, "보호자 생년월일", "1988-04-12");
   await next();
-  await next("건너뛰기"); // 사진 건너뜀
-  await page.waitForTimeout(1200);
   await page.getByLabel("아이 이름").fill("민서");
-  await next();
   await pickDate(page, "아이 생일", "2017-08-03");
-  await next();
   await page.getByRole("radio", { name: "여자아이" }).click();
   await next();
   await page.getByLabel("키").fill("125");
   await page.getByLabel("몸무게").fill("26");
-  await next();
-  await next("건너뛰기"); // 아이 사진 건너뜀
   await page.getByRole("checkbox", { name: /개인정보/ }).click();
   await page.getByRole("checkbox", { name: /건강정보/ }).click();
   await next();
-  await page.waitForTimeout(1200);
+  await page.getByRole("heading", { name: /언제 운동할 수 있어요/ }).waitFor({ timeout: 8000 });
   await page.getByRole("radio", { name: /주말에는 같이/ }).click();
   await next();
-  await page.waitForTimeout(800);
-  await next(); // 운동 시간 — 기본값
-  await page.waitForTimeout(800);
-  await page.getByRole("radio", { name: /지금 잴래요/ }).click();
+  await page.getByRole("heading", { name: "준비됐어요!" }).waitFor({ timeout: 8000 });
   await shot("ob-measure-now");
-  await next();
+  await next("지금 잴래요");
   await page.waitForURL(/\/p\/[^/]+\/measure/, { timeout: 15000 });
 });
 
 // ── 2. 첫 측정 ─────────────────────────────────────────────
-await step("측정 화면에 첫 시작에서 적은 키 · 몸무게가 들어와 있다", async () => {
+await step("측정 화면에 첫 시작에서 적은 키와 몸무게가 들어와 있다", async () => {
   await page.getByLabel("키").waitFor({ timeout: 15000 });
   const h = await page.getByLabel("키").inputValue();
   const w = await page.getByLabel("몸무게").inputValue();
-  if (h !== "125" || w !== "26") throw new Error(`키 ${h} · 몸무게 ${w}`);
+  if (h !== "125" || w !== "26") throw new Error(`키 ${h}, 몸무게 ${w}`);
 });
 await shot("measure", true);
 await step("집에서 잴 수 있는 셋을 적고 결과를 본다", async () => {
@@ -244,7 +232,7 @@ await step("아이 화면 → 설정 → 누가 쓰는지 → 부모", async () 
 });
 await shot("parent-after-kid", true);
 await step("부모 종 → 민서가 운동을 마쳤어요 → 스티커", async () => {
-  await page.getByRole("link", { name: "알림 · 새로 온 것 있음" }).click({ timeout: 10000 });
+  await page.getByRole("link", { name: "알림, 새 알림이 있어요" }).click({ timeout: 10000 });
   await page
     .getByText(/민서가 운동을 마쳤어요/)
     .first()
@@ -359,29 +347,21 @@ await step("부모 홈 알약 → 아이 등록하기 → 둘째 아이 첫 시�
   await page.waitForURL(/\/start\/child/, { timeout: 10000 });
   await page.waitForTimeout(1200);
   await shot("child-wizard-first");
+  // 아이 더하기는 네 화면: 아이, 키와 몸무게와 동의, 운동할 수 있는 시간, 준비됐어요
   await page.getByLabel("아이 이름").fill("민준");
-  await next();
   await pickDate(page, "아이 생일", "2020-02-10");
-  await next();
   await page.getByRole("radio", { name: "남자아이" }).click();
   await next();
   await page.getByLabel("키").fill("108");
   await page.getByLabel("몸무게").fill("18");
-  await next();
-  await next("건너뛰기"); // 사진 건너뜀
   await page.getByRole("checkbox", { name: /개인정보/ }).click();
   await page.getByRole("checkbox", { name: /건강정보/ }).click();
   await next();
-  await page.waitForTimeout(1200);
   await shot("child-wizard-after-consent");
-  // 남은 칸 — 운동 시간 · 첫 측정(나중에) · 준비됐어요
-  for (let i = 0; i < 6 && !/\/parent$/.test(page.url()); i++) {
-    const later = page.getByRole("radio", { name: /나중에 할게요/ });
-    if (await later.count()) await later.click();
-    const go = page.getByRole("button", { name: /^(다음|시작하기)$/ });
-    if (await go.count()) await go.click();
-    await page.waitForTimeout(900);
-  }
+  await page.getByRole("heading", { name: /언제 운동할 수 있어요/ }).waitFor({ timeout: 8000 });
+  await next();
+  await page.getByRole("heading", { name: "준비됐어요!" }).waitFor({ timeout: 8000 });
+  await next("나중에 할게요");
   await page.waitForURL(/\/parent$/, { timeout: 10000 });
   await page.waitForTimeout(2500);
 });
