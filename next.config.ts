@@ -30,6 +30,9 @@ const CSP = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  /** 응답마다 「X-Powered-By: Next.js」 를 붙이지 않는다 — 무엇으로 만들었는지 밖에 알릴 까닭이 없다 */
+  poweredByHeader: false,
+
   /**
    * 개발 서버가 AGENTS.md · CLAUDE.md 를 만들지 않게 한다. develop 에는 웹 프론트를 돌리는 파일만 둔다 —
    * 두 파일이 없으면 `next dev` 가 새로 만들어, 모르고 커밋하면 문서가 다시 올라간다.
