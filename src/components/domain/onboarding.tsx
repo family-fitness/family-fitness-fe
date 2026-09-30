@@ -660,7 +660,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
                   multi
                   selected={consent.healthData}
                   onClick={() => setConsent((c) => ({ ...c, healthData: !c.healthData }))}
-                  title="건강정보(민감정보) 처리에 동의해요(필수)"
+                  title="민감정보(건강정보) 처리에 동의해요(필수)"
                 />
                 <div className="flex">
                   <TermsLink label="건강정보 처리" onClick={() => terms.show("health")} />
