@@ -214,7 +214,7 @@ function CustomPlan() {
               <button
                 type="button"
                 onClick={tidy}
-                className="press text-signal-deep min-h-10 px-1 text-xs font-extrabold"
+                className="press text-signal-deep min-h-11 px-1 text-xs font-extrabold"
               >
                 준비 → 본 → 정리로
               </button>
@@ -236,7 +236,7 @@ function CustomPlan() {
                     type="button"
                     onClick={() => remove(i)}
                     aria-label={`${m.clip.title} 빼기`}
-                    className="press text-ink-soft -mt-2 -mr-2 grid size-10 shrink-0 place-items-center"
+                    className="press text-ink-soft -mt-2 -mr-2 grid size-11 shrink-0 place-items-center"
                   >
                     <X aria-hidden className="size-4" />
                   </button>
@@ -249,7 +249,7 @@ function CustomPlan() {
                       onClick={() => setMinutes(i, m.minutes - 1)}
                       disabled={m.minutes <= MOVE_MINUTES.min}
                       aria-label={`${m.clip.title} 1분 줄이기`}
-                      className="press grid size-10 place-items-center disabled:opacity-30"
+                      className="press grid size-11 place-items-center disabled:opacity-30"
                     >
                       <Minus aria-hidden className="size-4" />
                     </button>
@@ -261,7 +261,7 @@ function CustomPlan() {
                       onClick={() => setMinutes(i, m.minutes + 1)}
                       disabled={m.minutes >= MOVE_MINUTES.max}
                       aria-label={`${m.clip.title} 1분 늘리기`}
-                      className="press grid size-10 place-items-center disabled:opacity-30"
+                      className="press grid size-11 place-items-center disabled:opacity-30"
                     >
                       <Plus aria-hidden className="size-4" />
                     </button>
@@ -272,7 +272,7 @@ function CustomPlan() {
                       onClick={() => shift(i, -1)}
                       disabled={i === 0}
                       aria-label={`${m.clip.title} 위로`}
-                      className="press bg-sub grid size-10 place-items-center rounded-full disabled:opacity-30"
+                      className="press bg-sub grid size-11 place-items-center rounded-full disabled:opacity-30"
                     >
                       <ArrowUp aria-hidden className="size-4" />
                     </button>
@@ -281,7 +281,7 @@ function CustomPlan() {
                       onClick={() => shift(i, 1)}
                       disabled={i === moves.length - 1}
                       aria-label={`${m.clip.title} 아래로`}
-                      className="press bg-sub grid size-10 place-items-center rounded-full disabled:opacity-30"
+                      className="press bg-sub grid size-11 place-items-center rounded-full disabled:opacity-30"
                     >
                       <ArrowDown aria-hidden className="size-4" />
                     </button>

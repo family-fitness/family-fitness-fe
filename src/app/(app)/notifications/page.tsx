@@ -221,7 +221,7 @@ function Thanks({ item, to, until }: { item: NotificationView; to: string; until
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="press text-signal-deep inline-flex min-h-10 items-center text-sm font-extrabold"
+          className="press text-signal-deep inline-flex min-h-11 items-center text-sm font-extrabold"
         >
           고마워요 보내기
         </button>

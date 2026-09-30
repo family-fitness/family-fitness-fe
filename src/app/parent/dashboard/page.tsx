@@ -362,7 +362,7 @@ function MemberLine({
             <button
               type="button"
               onClick={onInvite}
-              className="press bg-sub grid min-h-10 shrink-0 place-items-center rounded-xl px-3 text-xs font-extrabold"
+              className="press bg-sub grid min-h-11 shrink-0 place-items-center rounded-xl px-3 text-sm font-extrabold"
             >
               초대하기
             </button>

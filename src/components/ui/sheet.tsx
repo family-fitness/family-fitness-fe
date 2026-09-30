@@ -180,7 +180,7 @@ export function Sheet({
             type="button"
             onClick={onClose}
             aria-label="닫기"
-            className="press text-ink-soft -m-2 grid size-10 shrink-0 place-items-center rounded-full"
+            className="press text-ink-soft -m-2 grid size-11 shrink-0 place-items-center rounded-full"
           >
             <X className="size-5" />
           </button>
