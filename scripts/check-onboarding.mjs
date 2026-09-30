@@ -8,11 +8,11 @@
  * 결과가 다음 화면을 만드는 길**은 못 잡는다. 실제로 `POST /families` 에 목 응답이
  * 없어서 새 사용자가 첫 관문을 못 넘고 있었는데 아무 검사도 빨갛지 않았다.
  *
- * 여섯 길을 걷는다.
- *   1. 가족 없는 계정 → 첫 시작(키움이 인사 · 가족 · 보호자 · 아이 · 동의 · 참여 방식 · 운동 시간 · 첫 측정) → 부모 홈
+ * 네 길을 걷는다.
+ *   1. 가족 없는 계정 → 첫 시작 다섯 화면(인사와 가족, 보호자 / 아이 / 키, 몸무게, 동의 / 운동 시간, 참여 방식 / 준비됐어요) → 부모 홈
  *   2. 초대받은 계정 → 자리 확인 → 참여 방식 → 역할 고르기
- *   3. 첫 시작 중간에 새로고침 — 가족을 만든 뒤 · 아이를 만든 뒤. 두 번 만들지 않고 이어 간다.
- *      아이 등록 첫 칸의 뒤로 · 「지금 잴래요」 측정 화면의 뒤로가 홈으로 가는지
+ *   3. 첫 시작 중간에 닫았다가 다시 열면 아이 등록이 아니라 가족 화면부터. 아이를 만든 뒤 새로고침하면 이어 간다.
+ *      「지금 잴래요」 측정 화면의 뒤로가 홈으로 가는지
  *   4. 심사용 계정 → 세 흐름을 고르는 시트 → 들어가는 화면. 360px 폰에서
  *      체험 가족은 역할 고르기 없이 부모 홈(가족 이름이 잘리지 않는지), 처음 가입은 가족 만들기,
  *      초대받은 보호자는 코드가 채워진 합류 화면에서 자리로 들어가 참여 방식까지
@@ -87,41 +87,23 @@ await walk("새 가족 만들기", async (h) => {
     await page.getByRole("button", { name, exact: true }).click();
     await h.settle(700);
   };
-  await h.step("키움이 인사", async () => {
+  await h.step("키움이 인사와 가족, 보호자가 한 화면", async () => {
     await page.getByRole("heading", { name: /저는 키움이에요/ }).waitFor({ timeout: 8000 });
-    await next("좋아요");
-  });
-  await h.step("가족 이름 · 보호자 이름 · 성별 · 생년월일", async () => {
     await page.getByLabel("가족 이름").fill("민서네");
-    await next();
     await page.getByLabel("보호자 이름").fill("지영");
-    await next();
     await page.getByRole("radio", { name: /여성/ }).click();
-    await next();
     await page.getByLabel("보호자 생년월일").fill("1988-04-12");
     await next();
   });
-  await h.step("보호자 사진은 건너뛴다 → 가족이 생긴다", async () => {
-    await next("건너뛰기");
-    await page.getByLabel("아이 이름").waitFor({ timeout: 8000 });
-    // 가족을 만든 뒤에는 뒤로 가지 않는다 — 두 번 만들지 않게
-    if (await page.getByRole("button", { name: "뒤로" }).count()) {
-      problems.push("새 가족 만들기\n    가족을 만든 뒤에도 뒤로 단추가 있다");
-    }
-  });
-  await h.step("아이 이름 · 생일 · 성별 · 키 · 몸무게", async () => {
+  await h.step("아이 이름, 생일, 성별이 한 화면", async () => {
     await page.getByLabel("아이 이름").fill("민서");
-    await next();
     await page.getByLabel("아이 생일").fill("2017-08-03");
-    await next();
     await page.getByRole("radio", { name: "여자아이" }).click();
     await next();
+  });
+  await h.step("키, 몸무게와 보호자 동의가 한 화면", async () => {
     await page.getByLabel("키").fill("125");
     await page.getByLabel("몸무게").fill("26");
-    await next();
-    await next("건너뛰기"); // 아이 사진
-  });
-  await h.step("보호자 동의 둘", async () => {
     // 동의를 안 누르면 다음이 잠겨 있어야 한다
     const locked = await page.getByRole("button", { name: "다음", exact: true }).isDisabled();
     if (!locked) problems.push("새 가족 만들기\n    동의 없이도 다음이 열려 있다");
@@ -130,18 +112,18 @@ await walk("새 가족 만들기", async (h) => {
     await next();
     await h.settle(900);
   });
-  await h.step("참여 방식 · 운동할 수 있는 시간", async () => {
+  await h.step("운동할 수 있는 시간과 참여 방식이 한 화면", async () => {
+    await page.getByRole("heading", { name: /언제 운동할 수 있어요/ }).waitFor({ timeout: 8000 });
+    // 가족과 아이를 만든 뒤에는 뒤로 가지 않는다 — 두 번 만들지 않게
+    if (await page.getByRole("button", { name: "뒤로" }).count()) {
+      problems.push("새 가족 만들기\n    가족과 아이를 만든 뒤에도 뒤로 단추가 있다");
+    }
     await page.getByRole("radio", { name: /주말에는 같이/ }).click();
     await next();
-    await h.settle(600);
-    await page.getByRole("heading", { name: /언제 운동할 수 있어요/ }).waitFor({ timeout: 8000 });
-    await next();
   });
-  await h.step("첫 측정은 나중에 → 준비됐어요 → 부모 홈", async () => {
-    await page.getByRole("radio", { name: /나중에 할게요/ }).click();
-    await next();
+  await h.step("준비됐어요에서 나중에 할게요, 부모 홈", async () => {
     await page.getByRole("heading", { name: "준비됐어요!" }).waitFor({ timeout: 8000 });
-    await next("시작하기");
+    await next("나중에 할게요");
     await h.until(/\/parent/);
     await h.settle(1500);
   });
@@ -190,76 +172,70 @@ await walk("초대 수락", async (h) => {
   });
 });
 
-/* ─── 3. 첫 시작 중간에 새로고침 ──────────────────────────── */
+/* ─── 3. 첫 시작 중간에 닫고 다시 열기, 새로고침 ──────────────────────────── */
 
-await walk("새로고침에도 두 번 만들지 않는다", async (h) => {
+await walk("중간에 닫아도 아이 없는 가족이 생기지 않고 두 번 만들지 않는다", async (h) => {
   const { page } = h;
   const next = async (name = "다음") => {
     await page.getByRole("button", { name, exact: true }).click();
     await h.settle(700);
   };
-  await h.step("가족까지 만든다", async () => {
+  const family = async () => {
+    await page.getByLabel("가족 이름").fill("하늘네");
+    await page.getByLabel("보호자 이름").fill("도현");
+    await page.getByRole("radio", { name: /남성/ }).click();
+    await page.getByLabel("보호자 생년월일").fill("1984-02-20");
+    await next();
+  };
+  const child = async () => {
+    await page.getByLabel("아이 이름").fill("하늘");
+    await page.getByLabel("아이 생일").fill("2016-05-01");
+    await page.getByRole("radio", { name: "남자아이" }).click();
+    await next();
+  };
+  await h.step("가족과 아이 이름까지 적고 앱을 닫았다가 연다", async () => {
     await page.goto(`${BASE}/login`, { waitUntil: "load", timeout: 30000 });
     await h.settle(2400);
     await page.getByRole("button", { name: /새 계정/ }).click();
     await h.until(/\/start\/family/);
-    await next("좋아요");
-    await page.getByLabel("가족 이름").fill("하늘네");
-    await next();
-    await page.getByLabel("보호자 이름").fill("도현");
-    await next();
-    await page.getByRole("radio", { name: /남성/ }).click();
-    await next();
-    await page.getByLabel("보호자 생년월일").fill("1984-02-20");
-    await next();
-    await next("건너뛰기"); // 사진
-    await page.getByLabel("아이 이름").waitFor({ timeout: 8000 });
+    await family();
+    await child();
+    await page.getByLabel("키").waitFor({ timeout: 8000 });
+    await page.goto(`${BASE}/`, { waitUntil: "load" });
+    await h.until(/\/start\//);
   });
-  await h.step("새로고침하면 아이 등록으로 — 가족을 다시 만들지 않는다", async () => {
-    await page.reload({ waitUntil: "load" });
-    await h.until(/\/start\/child/);
-    await page.getByLabel("아이 이름").waitFor({ timeout: 10000 });
-  });
-  await h.step("아이 등록 첫 칸에 뒤로가 있다", async () => {
+  // 가족을 보호자 화면에서 먼저 만들 때는 여기서 아이 등록으로 곧장 갔다(아이 없는 가족을 막는 가드)
+  await h.step("다시 열면 아이 등록이 아니라 가족 화면부터", async () => {
+    if (/\/start\/child/.test(page.url())) {
+      problems.push("중간에 닫기\n    다시 열었더니 아이 등록부터 묻는다");
+    }
+    await page.getByRole("heading", { name: /저는 키움이에요/ }).waitFor({ timeout: 10000 });
     if ((await page.getByRole("button", { name: "뒤로" }).count()) === 0) {
-      problems.push("새로고침에도 두 번 만들지 않는다\n    아이 등록 첫 칸에 나가는 길이 없다");
+      problems.push("중간에 닫기\n    첫 화면에 나가는 길이 없다");
     }
   });
-  await h.step("아이를 만든다", async () => {
-    await page.getByLabel("아이 이름").fill("하늘");
-    await next();
-    await page.getByLabel("아이 생일").fill("2016-05-01");
-    await next();
-    await page.getByRole("radio", { name: "남자아이" }).click();
-    await next();
+  await h.step("가족과 아이를 함께 만든다", async () => {
+    await family();
+    await child();
     await page.getByLabel("키").fill("132");
     await page.getByLabel("몸무게").fill("30");
-    await next();
-    await next("건너뛰기"); // 사진
     await page.getByRole("checkbox", { name: /개인정보 처리에 동의/ }).click();
     await page.getByRole("checkbox", { name: /건강정보 처리에 동의/ }).click();
     await next();
-  });
-  // 가족만 만들고 새로고침했다 — 참여 방식을 아직 안 골랐으니 아이 다음에 묻는다(안 물으면 영영 빈다)
-  await h.step("아이 다음에 참여 방식을 묻는다", async () => {
-    await page.getByRole("heading", { name: /얼마나 같이 하실래요/ }).waitFor({ timeout: 8000 });
-    await page.getByRole("radio", { name: /매번 같이/ }).click();
-    await next();
-    // 고른 뒤 나(/me)가 다시 와도 운동 시간 칸을 건너뛰지 않는다
-    await h.settle(1500);
     await page.getByRole("heading", { name: /언제 운동할 수 있어요/ }).waitFor({ timeout: 8000 });
   });
-  await h.step("새로고침하면 그 아이로 이어 간다 — 아이 이름부터 다시 묻지 않는다", async () => {
+  await h.step("새로고침하면 그 아이로 이어 간다, 아이 이름부터 다시 묻지 않는다", async () => {
     await page.reload({ waitUntil: "load" });
     await h.settle(2000);
     await page
       .getByRole("heading", { name: /하늘은 언제 운동할 수 있어요/ })
       .waitFor({ timeout: 10000 });
+    await page.getByRole("radio", { name: /매번 같이/ }).click();
     await next();
   });
-  await h.step("지금 잴래요 → 측정 화면 뒤로는 홈", async () => {
-    await page.getByRole("radio", { name: /지금 잴래요/ }).click();
-    await next();
+  await h.step("지금 잴래요, 측정 화면 뒤로는 홈", async () => {
+    await page.getByRole("heading", { name: "준비됐어요!" }).waitFor({ timeout: 8000 });
+    await next("지금 잴래요");
     await h.until(/\/measure\?from=start/);
     await page.getByRole("link", { name: "뒤로" }).click();
     await h.until(/\/parent$/);

@@ -54,6 +54,7 @@ import {
   watchTitle,
 } from "@/lib/videos";
 import { callName, guardiansName, mustAddChild, openWithoutChild } from "@/lib/family";
+import { CREATE_AT, guardianOldEnough, onboardingSteps } from "@/lib/onboarding";
 
 import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
 import { REVIEW_WAYS, afterSignIn, reviewDestination } from "@/lib/review-login";
@@ -694,6 +695,33 @@ check(
     (p) => !openWithoutChild(p),
   ),
 );
+
+/* ─── 첫 시작 화면 차례 ─────────────────────────────────── */
+
+{
+  const signUp = onboardingSteps("family");
+  check("첫 시작은 가족과 보호자 화면부터 연다", signUp[0] === "family");
+  check(
+    "아이 화면은 가족과 보호자 화면 뒤에 온다",
+    signUp.indexOf("kid") > signUp.indexOf("family"),
+  );
+  check("첫 시작은 다섯 화면이다", signUp.length === 5, String(signUp.length));
+  check(
+    "가족과 아이는 키, 몸무게 화면을 넘길 때 함께 만든다",
+    signUp.indexOf(CREATE_AT) === signUp.indexOf("kid") + 1,
+  );
+  const addChild = onboardingSteps("child");
+  check(
+    "아이 더하기는 가족 화면 없이 아이 화면부터 네 화면이다",
+    addChild[0] === "kid" && !addChild.includes("family") && addChild.length === 4,
+  );
+  check("만 14세 보호자는 가족을 만들 수 있다", guardianOldEnough("2012-09-30", "2026-09-30"));
+  check(
+    "만 14세가 안 된 보호자는 가족 화면에서 넘어가지 않는다",
+    !guardianOldEnough("2012-10-01", "2026-09-30"),
+  );
+  check("생년월일이 비면 넘어가지 않는다", !guardianOldEnough("", "2026-09-30"));
+}
 
 /* ─── 개인정보처리방침 · 이용약관 — 로그인하지 않아도 열린다 ─────────────────── */
 
