@@ -95,7 +95,13 @@ function Day() {
     router.replace(`/calendar/${now}${keep}`);
   }, [unplannedFuture, now, asked, who?.profileId, router]);
 
-  const back = kidView ? "/kid" : "/parent";
+  // 달력에서 왔으면 그 달력으로, 아니면(홈 · 알림) 홈으로 — 달력을 건너뛰고 홈으로 가면 폰의 뒤로가 달력을 다시 열었다
+  const fromCalendar = search.get("from") === "calendar";
+  const back = fromCalendar
+    ? `/calendar?month=${monthOf(date)}${asked ? `&profileId=${encodeURIComponent(asked)}` : ""}`
+    : kidView
+      ? "/kid"
+      : "/parent";
   const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
     return (
@@ -187,7 +193,10 @@ function Day() {
       kidView,
     );
   const suffix = asked && asked === who.profileId ? `?profileId=${encodeURIComponent(asked)}` : "";
-  const go = (d: string) => router.replace(`/calendar/${d}${suffix}`, { scroll: false });
+  // 하루씩 옮겨도 어디서 왔는지는 남긴다 — 뒤로가 달력으로 가게
+  const dayQuery = [fromCalendar && "from=calendar", suffix.slice(1)].filter(Boolean).join("&");
+  const go = (d: string) =>
+    router.replace(`/calendar/${d}${dayQuery ? `?${dayQuery}` : ""}`, { scroll: false });
   const sticker = log?.stickers[0];
 
   return (
@@ -212,9 +221,12 @@ function Day() {
             selectedId={who.profileId}
             onSelect={(id) => {
               setChild(id);
-              router.replace(`/calendar/${date}?profileId=${encodeURIComponent(id)}`, {
-                scroll: false,
-              });
+              router.replace(
+                `/calendar/${date}?${fromCalendar ? "from=calendar&" : ""}profileId=${encodeURIComponent(id)}`,
+                {
+                  scroll: false,
+                },
+              );
             }}
           />
         )}
