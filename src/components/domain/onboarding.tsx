@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { SessionError } from "@/components/app-shell/session-error";
 import { ChoiceButton, WizardShell, WizardSkeleton } from "@/components/app-shell/wizard";
+import { radioKeys } from "@/components/ui/radio-keys";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { useBackSheet } from "@/components/ui/use-back-sheet";
 import { Illustration } from "@/components/ui/illustration";
@@ -515,7 +516,12 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       case "me-sex":
         return (
           <WizardShell {...common} title="보호자님의 성별을 알려 주세요">
-            <div className="space-y-3" role="radiogroup" aria-label="보호자 성별">
+            <div
+              className="space-y-3"
+              role="radiogroup"
+              aria-label="보호자 성별"
+              onKeyDown={radioKeys}
+            >
               <ChoiceButton selected={meSex === "F"} onClick={() => setMeSex("F")} title="여성" />
               <ChoiceButton selected={meSex === "M"} onClick={() => setMeSex("M")} title="남성" />
             </div>
@@ -556,7 +562,12 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
             {...common}
             title={`${withJosa(kid, "은는")} 여자아이인가요, 남자아이인가요?`}
           >
-            <div className="space-y-3" role="radiogroup" aria-label="아이 성별">
+            <div
+              className="space-y-3"
+              role="radiogroup"
+              aria-label="아이 성별"
+              onKeyDown={radioKeys}
+            >
               <ChoiceButton
                 selected={kidSex === "F"}
                 onClick={() => setKidSex("F")}
@@ -634,7 +645,12 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       case "support":
         return (
           <WizardShell {...common} title="얼마나 같이 하실래요?">
-            <div className="space-y-3" role="radiogroup" aria-label="참여 방식">
+            <div
+              className="space-y-3"
+              role="radiogroup"
+              aria-label="참여 방식"
+              onKeyDown={radioKeys}
+            >
               {SUPPORT.map((s) => (
                 <ChoiceButton
                   key={s.value}
@@ -721,7 +737,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       case "measure":
         return (
           <WizardShell {...common} title={`지금 ${kid} 체력을 재 볼까요?`}>
-            <div className="space-y-3" role="radiogroup" aria-label="첫 측정">
+            <div className="space-y-3" role="radiogroup" aria-label="첫 측정" onKeyDown={radioKeys}>
               <ChoiceButton
                 selected={later === false}
                 onClick={() => setLater(false)}
