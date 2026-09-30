@@ -10,6 +10,7 @@ import { Stage } from "@/components/app-shell/stage";
 import { Dock } from "@/components/ui/dock";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorIcon } from "@/components/domain/factor-icon";
@@ -124,14 +125,37 @@ function PlanForm() {
     );
   }
 
-  const name = kid?.name ?? "아이";
+  // 아이가 없는 가족(혼자 쓰는 어른) — 꺼진 단추만 두지 않고 왜 못 짜는지와 아이 등록 화면으로 가는 링크를 보인다
+  if (!kid) {
+    return (
+      <>
+        <AppBar backHref="/parent" title="오늘 운동 짜기" />
+        <Stage wide>
+          <EmptyState
+            scene="no-record"
+            title="아이를 등록하면 운동을 짜 줘요"
+            action={
+              <NavLink
+                href="/start/child"
+                className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"
+              >
+                아이 등록하기
+              </NavLink>
+            }
+          />
+        </Stage>
+      </>
+    );
+  }
+
+  const name = kid.name;
   // 서버가 준 가장 낮은 요인. 보호자가 키워 주고 싶은 역량을 고르지 않으면 코치가 이걸 키운다 — 육각형 밖(협응력 · 평형성)이면 두지 않는다
   const given = latest?.weakest?.factor;
   const weakest = isFactor(given) ? given : undefined;
   const shownFocus = focus ?? weakest ?? null;
 
   const submit = async () => {
-    if (!kid?.profileId) return;
+    if (!kid.profileId) return;
     setError(null);
     setExisting(false);
     setUnmeasured(false);
@@ -186,7 +210,7 @@ function PlanForm() {
             className="mx-auto mt-2 max-w-72"
           />
           {/* 육각형 아래 통합 신체 점수(9/25). 안 쟀으면 그리지 않는다 */}
-          {kid?.latest?.overallPercentile != null && (
+          {kid.latest?.overallPercentile != null && (
             <ScoreLine score={kid.latest.overallPercentile} />
           )}
           {shownFocus && (
@@ -323,7 +347,7 @@ function PlanForm() {
               </NavLink>
             )}
             {/* 만 4세 미만이면 측정 길을 두지 않는다(규칙 4) */}
-            {unmeasured && kid?.profileId && kid.measurable !== false && (
+            {unmeasured && kid.profileId && kid.measurable !== false && (
               <NavLink
                 href={`/p/${kid.profileId}/measure`}
                 className="press text-signal-strong min-h-11 shrink-0 content-center text-sm font-extrabold"
@@ -340,8 +364,7 @@ function PlanForm() {
         <button
           type="button"
           onClick={() => void submit()}
-          disabled={start.isPending || !kid}
-          data-off={!kid ? "" : undefined}
+          disabled={start.isPending}
           className="press bg-signal-strong shadow-lift data-off:bg-line data-off:text-ink-soft flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white disabled:opacity-100 data-off:shadow-none"
         >
           <ArtIcon name="icon/menu-ai" className="size-5" />
