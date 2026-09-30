@@ -453,7 +453,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
               label="가족 이름"
               value={familyName}
               onChange={setFamilyName}
-              placeholder="서준이네"
+              placeholder="튼튼 가족"
             />
           </WizardShell>
         );
