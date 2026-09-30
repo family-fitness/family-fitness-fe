@@ -106,8 +106,9 @@ export function useToonScene(
 
       let renderer: T.WebGLRenderer;
       try {
-        // 2배 화면이면 계단이 보이지 않는다 — 안티에일리어싱을 끄고 가볍게(장면 둘셋이 한 화면에 선다)
-        renderer = new THREE.WebGLRenderer({ alpha: true, antialias: window.devicePixelRatio < 2 });
+        // 안티에일리어싱은 늘 켠다. 2배 화면이면 계단이 안 보일 줄 알고 껐더니, 픽셀 비율을 2 로 묶어 둔 탓에
+        // 3배 폰 · 레티나에서 띠 경계와 외곽선이 자글자글 깨졌다(9/30). 섬 · 메달처럼 켠다 — 캔버스가 작아 짐이 적다
+        renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
       } catch {
         return; // WebGL 이 없다
       }
