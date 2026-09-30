@@ -123,6 +123,8 @@ function Day() {
   const summary = daySummary(log);
   // 한 칸이라도 한 것만 「한 운동」. 아직 시작 안 한 오늘 운동은 「할 운동」 이다
   const doneEntries = (log?.entries ?? []).filter(didSomething);
+  // 스티커는 그날 한 운동에 붙인다 — 직접 적은 기록이 먼저다. 스티커가 곧 보호자 확인이다(규칙 2)
+  const cheerFor = doneEntries.find((e) => e.verifiedBy === "SELF_REPORT") ?? doneEntries.at(-1);
   // 쉬기로 한 날에는 할 운동을 늘어놓지 않는다 — 쉬는 날에 운동을 권하지 않는다(규칙 15).
   // 그날 기록이 오기 전에도 — 이미 한 운동 · 쉬기로 한 날인지 모르는 채 「할 운동」 이 먼저 번쩍였다
   const planned =
@@ -373,7 +375,7 @@ function Day() {
 
         {!kidView && date === now && summary.moved > 0 && summary.stickers === 0 && (
           <NavLink
-            href={`/parent/sticker/${who.profileId}`}
+            href={`/parent/sticker/${who.profileId}${cheerFor ? `?missionId=${encodeURIComponent(cheerFor.missionId)}` : ""}`}
             className="press bg-signal-strong flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold text-white"
           >
             칭찬 스티커 붙이기
