@@ -1,0 +1,685 @@
+/**
+ * 목 서버가 도메인 규칙대로 동작하는지 검사한다.
+ *
+ *   npm run check:mocks
+ *
+ * AGENTS.md 의 "절대 어기면 안 되는 도메인 규칙" 을 실행 가능한 형태로 옮긴 것이다.
+ * 목 데이터를 고치다가 규칙을 깨뜨리면 여기서 잡힌다.
+ *
+ * 화면이 이 규칙을 지키는지는 별개다 — 그건 브라우저로 눌러 봐야 안다.
+ * 여기서 보는 건 "가짜 서버가 진짜 서버처럼 거절하는가" 뿐이다.
+ *
+ * 테스트 프레임워크를 붙이는 PR 에서 정식 테스트로 옮긴다.
+ */
+
+// MSW 핸들러가 상대 경로(/api/v1/...)로 정의돼 있어서, Node 에는 location 이 없으면
+// 매칭이 안 된다. 브라우저와 같은 기준을 만들어 준다.
+Object.defineProperty(globalThis, "location", {
+  value: new URL("http://localhost/"),
+  writable: true,
+});
+
+import { setupServer } from "msw/node";
+
+import { DEMO, handlers, setActingProfile } from "@/mocks/handlers";
+import { streakOf } from "@/mocks/progress";
+import { daysBefore, toDateString } from "@/lib/today";
+
+const server = setupServer(...handlers);
+server.listen({ onUnhandledRequest: "warn" });
+
+const BASE = "http://localhost/api/v1";
+
+/** 목 서버도 진짜 서버처럼 토큰을 본다. 화면이 붙이는 것과 같은 머리말이다 */
+const SIGNED_IN = { Authorization: "Bearer mock-access-token" };
+
+const get = (path: string) => fetch(`${BASE}${path}`, { headers: SIGNED_IN });
+const send = (method: string, path: string, body?: unknown) =>
+  fetch(`${BASE}${path}`, {
+    method,
+    headers: { "Content-Type": "application/json", ...SIGNED_IN },
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+  });
+const post = (path: string, body?: unknown) => send("POST", path, body);
+
+/** 실패 응답은 봉투에 싸여 온다 — {"error":{"code","message"}} */
+async function codeOf(res: Response): Promise<string> {
+  const body = (await res.json()) as { error?: { code?: string } };
+  return body.error?.code ?? "(코드 없음)";
+}
+
+let failed = 0;
+function check(name: string, ok: boolean, detail = "") {
+  console.log(`${ok ? "통과" : "실패"}  ${name}${detail ? ` — ${detail}` : ""}`);
+  if (!ok) failed += 1;
+}
+
+const RUN_ID = "0271ff7b-6e8f-4685-986a-a3a881352cd2";
+
+/**
+ * **이번 주 제안에서 태어난** 미션 수.
+ *
+ * 지난 회차에서 승인한 미션은 목 서버에 이미 들어 있다. 전체를 세면
+ * "승인 전 0건" 이 지난주 기록 때문에 깨진다 — 세어야 하는 건 언제나
+ * 지금 들여다보고 있는 회차다.
+ */
+async function missionCount(runId = RUN_ID): Promise<number> {
+  const body = (await (await get(`/families/${DEMO.familyId}/missions`)).json()) as {
+    missions?: { coachRunId?: string | null }[];
+  };
+  return (body.missions ?? []).filter((m) => m.coachRunId === runId).length;
+}
+
+/* ─── 0. 로그인부터 한다 ────────────────────────────────────── */
+
+check(
+  "토큰 없이 들어오면 401",
+  (await fetch(`${BASE}/me`)).status === 401,
+  `${(await fetch(`${BASE}/me`)).status}`,
+);
+check(
+  "로그인 자체는 토큰 없이 된다",
+  (await fetch(`${BASE}/auth/dev-login`, { method: "POST" })).ok,
+);
+{
+  // 심사용 계정은 가족이 있는 채로 들어와 바로 홈으로 간다
+  const res = await fetch(`${BASE}/auth/review-login`, { method: "POST" });
+  const auth = (await res.json().catch(() => ({}))) as { accessToken?: string; nextStep?: string };
+  check(
+    "심사용 계정은 토큰 없이 들어와 홈으로 간다",
+    res.ok && !!auth.accessToken && auth.nextStep === "HOME",
+    `${res.status} ${auth.nextStep}`,
+  );
+}
+{
+  // 심사자가 세 흐름 가운데 고른다. 본문이 없으면 체험 가족(예전 화면도 된다)
+  const reviewAs = async (body?: unknown) => {
+    const res = await fetch(`${BASE}/auth/review-login`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const auth = (await res.json().catch(() => ({}))) as {
+      accessToken?: string;
+      nextStep?: string;
+      inviteCode?: string | null;
+      code?: string;
+    };
+    return { status: res.status, ...auth };
+  };
+  const family = await reviewAs({ kind: "FAMILY" });
+  check(
+    "심사용 FAMILY 는 체험 가족으로 홈에",
+    family.status === 200 && family.nextStep === "HOME" && !family.inviteCode,
+    `${family.status} ${family.nextStep}`,
+  );
+  const noKind = await reviewAs({});
+  check("심사용 kind 가 없으면 FAMILY", noKind.nextStep === "HOME", `${noKind.nextStep}`);
+  const fresh = await reviewAs({ kind: "FRESH" });
+  check(
+    "심사용 FRESH 는 가족 없는 새 계정 — 가족 만들기부터",
+    fresh.status === 200 && fresh.nextStep === "CREATE_FAMILY" && !fresh.inviteCode,
+    `${fresh.status} ${fresh.nextStep}`,
+  );
+  const meFresh = (await (await get("/me")).json()) as { nextStep?: string };
+  check("FRESH 로 들어오면 /me 도 가족 만들기", meFresh.nextStep === "CREATE_FAMILY");
+  const invited = await reviewAs({ kind: "INVITED" });
+  check(
+    "심사용 INVITED 는 가족 없는 계정과 체험 가족의 초대코드를 준다",
+    invited.status === 200 && !!invited.accessToken && invited.inviteCode === "K7M2QT",
+    `${invited.status} ${invited.nextStep} ${invited.inviteCode}`,
+  );
+  const seat = await get(`/invites/${invited.inviteCode}`);
+  check("INVITED 의 초대코드로 자리를 미리 볼 수 있다", seat.ok, `${seat.status}`);
+  const odd = await reviewAs({ kind: "GUEST" });
+  check("심사용 kind 를 모르면 400", odd.status === 400, `${odd.status}`);
+  // 뒤 검사는 서준이네 보호자로 본다
+  await reviewAs({ kind: "FAMILY" });
+}
+
+/* ─── 0-1. 두 화면이 같은 말을 한다 ─────────────────────────── */
+
+// 가족 지도(대시보드)와 최근 측정(측정 결과)이 같은 가장 낮은 · 높은 요인을 말한다
+const map = (await (await get(`/families/${DEMO.familyId}/fitness-map`)).json()) as {
+  members: {
+    name: string;
+    profileId: string;
+    latest: { weakest?: { factor?: string }; strongest?: { factor?: string } } | null;
+  }[];
+};
+for (const m of map.members.filter((x) => x.latest)) {
+  const latest = (await (await get(`/profiles/${m.profileId}/fitness-tests/latest`)).json()) as {
+    weakest?: { factor?: string };
+    strongest?: { factor?: string };
+  };
+  check(
+    `${m.name} — 지도와 최근 측정의 가장 낮은 · 높은 요인이 같다`,
+    m.latest?.weakest?.factor === latest.weakest?.factor &&
+      m.latest?.strongest?.factor === latest.strongest?.factor,
+    `${m.latest?.weakest?.factor}/${latest.weakest?.factor} · ${m.latest?.strongest?.factor}/${latest.strongest?.factor}`,
+  );
+}
+
+// 등급은 한 사람에 하나 — 종목 줄에는 없다. 1등급 줄의 종목을 다 안 잰 아이는 모자란 종목을 받는다
+const kidLatest = (await (await get(`/profiles/${DEMO.kid}/fitness-tests/latest`)).json()) as {
+  certification?: { status?: string; missingItems?: { itemCodes?: string[] }[] } | null;
+};
+check(
+  "안 잰 종목이 있는 아이의 등급은 NEEDS_ITEMS 와 모자란 종목",
+  kidLatest.certification?.status === "NEEDS_ITEMS" &&
+    (kidLatest.certification.missingItems?.length ?? 0) > 0,
+  `${kidLatest.certification?.status} · ${kidLatest.certification?.missingItems
+    ?.map((m) => m.itemCodes?.join("/"))
+    .join(", ")}`,
+);
+
+/* ─── 1. 코치 제안은 미션이 아니다 ─────────────────────────── */
+
+check("승인 전 미션 0건", (await missionCount()) === 0, `${await missionCount()}건`);
+
+setActingProfile(DEMO.kid);
+let res = await post(`/coach/runs/${RUN_ID}/approve`);
+check("자녀 계정 승인 차단", res.status === 403, `${res.status} ${await codeOf(res)}`);
+
+check("차단 후에도 미션 0건", (await missionCount()) === 0);
+
+setActingProfile(DEMO.mom);
+res = await post(`/coach/runs/${RUN_ID}/approve`);
+check("보호자 승인 성공", res.status === 200, String(res.status));
+
+const created = await missionCount();
+check("승인해야 미션이 생긴다", created > 0, `${created}건`);
+
+res = await post(`/coach/runs/${RUN_ID}/approve`);
+check("중복 승인 차단", res.status === 409, `${res.status} ${await codeOf(res)}`);
+
+/* ─── 2. 측정 거절 규칙 ────────────────────────────────────── */
+
+// 기기 시간대의 오늘 — toISOString 은 UTC 라 한국 자정~오전 9시에 어제가 되어 「오늘」 검사가 엇나갔다
+const today = toDateString(new Date());
+
+res = await post(`/profiles/${DEMO.kid}/fitness-tests`, {
+  testedOn: today,
+  source: "SELF_INPUT",
+  items: [],
+});
+check("측정 항목 0개 차단", res.status === 400 && (await codeOf(res)) === "NO_ITEMS");
+
+res = await post(`/profiles/${DEMO.kid}/fitness-tests`, {
+  testedOn: today,
+  source: "SELF_INPUT",
+  // 005 · 006 은 혈압이다. 입력으로 받지 않는다
+  items: [{ itemCode: "005", value: 120 }],
+});
+check("혈압 항목 차단", res.status === 400 && (await codeOf(res)) === "ITEM_NOT_ALLOWED");
+
+// 만 4세 미만은 국민체력100 규준 자체가 없다
+const babyRes = await post(`/families/${DEMO.familyId}/profiles`, {
+  name: "막내",
+  birthDate: `${new Date().getFullYear() - 2}-01-01`,
+  sex: "F",
+  role: "CHILD",
+  guardianConsent: { personalData: true, healthData: true },
+});
+const baby = (await babyRes.json()) as { profileId?: string; measurable?: boolean };
+check("만 4세 미만도 프로필은 생긴다", babyRes.status === 201, String(babyRes.status));
+check("만 4세 미만은 measurable=false", baby.measurable === false, String(baby.measurable));
+
+res = await post(`/profiles/${baby.profileId}/fitness-tests`, {
+  testedOn: today,
+  source: "SELF_INPUT",
+  items: [{ itemCode: "012", value: 5 }],
+});
+check("만 4세 미만 측정 차단", res.status === 422 && (await codeOf(res)) === "NOT_MEASURABLE");
+
+// 서버가 동의를 자동으로 찍지 않는다
+res = await post(`/families/${DEMO.familyId}/profiles`, {
+  name: "동의없는아이",
+  birthDate: `${new Date().getFullYear() - 9}-01-01`,
+  sex: "M",
+  role: "CHILD",
+});
+check(
+  "동의 없는 미성년 프로필 차단",
+  res.status === 422 && (await codeOf(res)) === "CONSENT_REQUIRED",
+);
+
+/* ─── 3. 한 칸 끝 — 끝낸 칸은 사람마다 ─────────────────────── */
+
+type Participant = {
+  profileId: string;
+  completed?: boolean;
+  needsGuardianCheck?: boolean;
+  verifiedBy?: string | null;
+  doneSessions?: number[];
+};
+type MissionBody = { missionId: string; participants: Participant[] };
+
+const sibling = (await (
+  await post(`/families/${DEMO.familyId}/profiles`, {
+    name: "둘째",
+    birthDate: `${new Date().getFullYear() - 8}-03-01`,
+    sex: "F",
+    role: "CHILD",
+    guardianConsent: { personalData: true, healthData: true },
+  })
+).json()) as { profileId: string };
+
+// 형제 둘이 같은 운동을 받는다(직접 짜기에서 여럿을 고를 수 있다)
+const shared = (await (
+  await post(`/families/${DEMO.familyId}/missions`, {
+    title: "둘이 같이",
+    startDate: today,
+    endDate: today,
+    targetMetric: "TIMER_MINUTES",
+    targetValue: 2,
+    participantProfileIds: [DEMO.kid, sibling.profileId],
+    sessions: [
+      { position: 1, phase: "WARMUP", title: "준비", minutes: 1, completed: true },
+      { position: 2, phase: "MAIN", title: "본", minutes: 1 },
+    ],
+  })
+).json()) as MissionBody;
+const partsOf = async (id: string) =>
+  (
+    (await (await get(`/families/${DEMO.familyId}/missions`)).json()) as {
+      missions: MissionBody[];
+    }
+  ).missions.find((m) => m.missionId === id)?.participants ?? [];
+const who = (list: Participant[], id: string) => list.find((p) => p.profileId === id);
+
+check(
+  "보낸 쪽이 칸에 적어 온 끝냄은 믿지 않는다",
+  (who(await partsOf(shared.missionId), DEMO.kid)?.doneSessions ?? []).length === 0,
+);
+
+const xpOf = async (id: string) =>
+  ((await (await get(`/profiles/${id}/progress`)).json()) as { xp: number }).xp;
+const before = await xpOf(DEMO.kid);
+const done = { profileId: DEMO.kid, activeSeconds: 60, startedAt: today, endedAt: today };
+const first = (await (
+  await post(`/missions/${shared.missionId}/sessions/1/done`, done)
+).json()) as { xpGained?: number; missionCompleted?: boolean; verifiedBy?: string };
+check("한 칸 끝은 타이머로 확인된다", first.verifiedBy === "TIMER");
+check("한 칸만 끝내면 아직 다 한 것이 아니다", first.missionCompleted === false);
+check(
+  "받은 경험치는 레벨이 센 만큼과 같다",
+  (first.xpGained ?? 0) > 0 && (await xpOf(DEMO.kid)) - before === first.xpGained,
+  `+${first.xpGained} / ${(await xpOf(DEMO.kid)) - before}`,
+);
+
+let parts = await partsOf(shared.missionId);
+check("끝낸 아이에게 그 칸이 남는다", (who(parts, DEMO.kid)?.doneSessions ?? []).includes(1));
+check(
+  "형제에게는 끝난 칸이 아니다",
+  (who(parts, sibling.profileId)?.doneSessions ?? []).length === 0 &&
+    !who(parts, sibling.profileId)?.completed,
+);
+const siblingDay = (await (
+  await get(
+    `/families/${DEMO.familyId}/calendar?profileId=${sibling.profileId}&from=${today}&to=${today}`,
+  )
+).json()) as { days: { minutes: number }[] };
+check("형제의 오늘은 0분이다", (siblingDay.days[0]?.minutes ?? 0) === 0);
+
+const again = (await (
+  await post(`/missions/${shared.missionId}/sessions/1/done`, done)
+).json()) as { xpGained?: number };
+check("같은 칸을 두 번 끝내도 두 번 쌓이지 않는다", again.xpGained === 0, `+${again.xpGained}`);
+
+res = await post(`/missions/${shared.missionId}/sessions/2/done`, { ...done, activeSeconds: 10 });
+check("잡힌 시간의 절반도 안 했으면 끝이 아니다", (await codeOf(res)) === "TOO_SHORT");
+
+res = await post(`/missions/${shared.missionId}/sessions/2/done`, { ...done, profileId: DEMO.dad });
+check("참여자가 아니면 끝낼 수 없다", (await codeOf(res)) === "NOT_A_PARTICIPANT");
+
+const last = (await (await post(`/missions/${shared.missionId}/sessions/2/done`, done)).json()) as {
+  missionCompleted?: boolean;
+};
+parts = await partsOf(shared.missionId);
+check(
+  "다 끝낸 아이만 다 한 것이다",
+  last.missionCompleted === true &&
+    who(parts, DEMO.kid)?.completed === true &&
+    !who(parts, sibling.profileId)?.completed,
+);
+
+// 아이와 같이 하는 보호자 둘 — 아이가 끝낸 칸은 같이 끝나고, 보호자가 끝낸 칸은 그 보호자 것뿐이다
+const together = (await (
+  await post(`/families/${DEMO.familyId}/missions`, {
+    title: "보호자와 같이",
+    startDate: today,
+    endDate: today,
+    targetMetric: "TIMER_MINUTES",
+    targetValue: 2,
+    participantProfileIds: [DEMO.kid, DEMO.mom, DEMO.dad],
+    sessions: [
+      { position: 1, phase: "MAIN", title: "하나", minutes: 1 },
+      { position: 2, phase: "MAIN", title: "둘", minutes: 1 },
+    ],
+  })
+).json()) as MissionBody;
+await post(`/missions/${together.missionId}/sessions/1/done`, done);
+res = await post(`/missions/${together.missionId}/sessions/2/done`, {
+  ...done,
+  profileId: DEMO.mom,
+});
+parts = await partsOf(together.missionId);
+check(
+  "보호자도 자기 칸을 끝낼 수 있다",
+  res.ok && (who(parts, DEMO.mom)?.doneSessions ?? []).includes(2),
+  `${res.status} · ${JSON.stringify(who(parts, DEMO.mom)?.doneSessions)}`,
+);
+check(
+  "아이가 끝낸 칸은 같이 하는 보호자에게도 끝난 칸이다",
+  (who(parts, DEMO.mom)?.doneSessions ?? []).includes(1) &&
+    (who(parts, DEMO.dad)?.doneSessions ?? []).includes(1),
+);
+check(
+  "보호자가 끝낸 칸은 아이 · 다른 보호자에게 번지지 않는다",
+  !(who(parts, DEMO.kid)?.doneSessions ?? []).includes(2) &&
+    !(who(parts, DEMO.dad)?.doneSessions ?? []).includes(2),
+  `아이 ${JSON.stringify(who(parts, DEMO.kid)?.doneSessions)} · 아빠 ${JSON.stringify(who(parts, DEMO.dad)?.doneSessions)}`,
+);
+
+// 여러 날짜리 운동 — 오늘 한 칸이 기간 안의 지난날에도 한 것으로 되풀이되지 않는다
+const rateOf = async () =>
+  ((await (await get(`/families/${DEMO.familyId}/league`)).json()) as { rate: number | null })
+    .rate ?? 0;
+const rateBefore = await rateOf();
+const span = (await (
+  await post(`/families/${DEMO.familyId}/missions`, {
+    title: "사흘짜리",
+    startDate: daysBefore(2),
+    endDate: today,
+    targetMetric: "TIMER_MINUTES",
+    targetValue: 1,
+    participantProfileIds: [sibling.profileId],
+    sessions: [{ position: 1, phase: "MAIN", title: "하나", minutes: 1 }],
+  })
+).json()) as MissionBody;
+await post(`/missions/${span.missionId}/sessions/1/done`, {
+  ...done,
+  profileId: sibling.profileId,
+});
+const spanDays = (await (
+  await get(
+    `/families/${DEMO.familyId}/calendar?profileId=${sibling.profileId}&from=${daysBefore(2)}&to=${today}`,
+  )
+).json()) as { days: { date: string; entries: { missionId: string }[] }[] };
+const spanOn = (date: string) =>
+  (spanDays.days.find((d) => d.date === date)?.entries ?? []).some(
+    (e) => e.missionId === span.missionId,
+  );
+check(
+  "여러 날짜리 운동은 끝낸 날에만 한 것이다",
+  spanOn(today) && !spanOn(daysBefore(1)) && !spanOn(daysBefore(2)),
+  spanDays.days.map((d) => d.date).join(" · "),
+);
+check(
+  "여러 날짜리 운동을 한 번 해냈다고 리그 달성률이 내려가지 않는다 — 기간의 날마다 잡힌 날로 세지 않는다",
+  (await rateOf()) >= rateBefore,
+  `${rateBefore}% → ${await rateOf()}%`,
+);
+
+// 끝내 안 한 여러 날짜리는 지난 마지막 날 하루로 선다 — 어느 날에도 안 서면 잡아 두기만 해도 달성률이 지켜진다
+const missed = (await (
+  await post(`/families/${DEMO.familyId}/missions`, {
+    title: "안 한 사흘짜리",
+    startDate: daysBefore(5),
+    endDate: daysBefore(3),
+    targetMetric: "TIMER_MINUTES",
+    targetValue: 1,
+    participantProfileIds: [sibling.profileId],
+    sessions: [{ position: 1, phase: "MAIN", title: "하나", minutes: 1 }],
+  })
+).json()) as MissionBody;
+const missedDays = (await (
+  await get(
+    `/families/${DEMO.familyId}/calendar?profileId=${sibling.profileId}&from=${daysBefore(5)}&to=${daysBefore(3)}`,
+  )
+).json()) as { days: { date: string; entries: { missionId: string }[] }[] };
+const missedOn = missedDays.days
+  .filter((d) => d.entries.some((e) => e.missionId === missed.missionId))
+  .map((d) => d.date);
+check(
+  "끝내 안 한 여러 날짜리는 마지막 날 하루로 선다",
+  missedOn.length === 1 && missedOn[0] === daysBefore(3),
+  missedOn.join(" · ") || "없음",
+);
+
+// 다 한 뒤에 운동이 하나 더 잡혀도 경험치는 줄지 않는다(규칙 10) — 끝까지 한 몫은 운동마다 붙는다.
+// 오늘 잡힌 것을 다 한 아이가 있어야 본다 — 셋째를 새로 들인다
+const third = (await (
+  await post(`/families/${DEMO.familyId}/profiles`, {
+    name: "셋째",
+    birthDate: `${new Date().getFullYear() - 9}-02-01`,
+    sex: "M",
+    role: "CHILD",
+    guardianConsent: { personalData: true, healthData: true },
+  })
+).json()) as { profileId: string };
+const oneFor = async (profileId: string, title: string) =>
+  (await (
+    await post(`/families/${DEMO.familyId}/missions`, {
+      title,
+      startDate: today,
+      endDate: today,
+      targetMetric: "TIMER_MINUTES",
+      targetValue: 1,
+      participantProfileIds: [profileId],
+      sessions: [{ position: 1, phase: "MAIN", title: "하나", minutes: 1 }],
+    })
+  ).json()) as MissionBody;
+const solo = await oneFor(third.profileId, "혼자 하나");
+await post(`/missions/${solo.missionId}/sessions/1/done`, { ...done, profileId: third.profileId });
+const xpDone = await xpOf(third.profileId);
+await oneFor(third.profileId, "하나 더");
+check(
+  "다 한 뒤에 운동이 더 잡혀도 경험치가 줄지 않는다",
+  (await xpOf(third.profileId)) >= xpDone,
+  `${xpDone} → ${await xpOf(third.profileId)}`,
+);
+
+/* ─── 4. 사람이 적은 것은 보호자가 확인한다(규칙 2) ─────────── */
+
+const reported = (await (
+  await get(`/families/${DEMO.familyId}/calendar?profileId=${DEMO.kid}&from=${today}&to=${today}`)
+).json()) as {
+  days: { entries: { missionId: string; verifiedBy: string | null; minutes: number }[] }[];
+};
+const steps = reported.days[0]?.entries.find((e) => e.missionId === "seed-steps");
+check(
+  "직접 적은 걸음수는 자기 신고이고 분으로 세지 않는다",
+  steps?.verifiedBy === "SELF_REPORT" && steps.minutes === 0,
+);
+
+setActingProfile(DEMO.kid);
+res = await post(`/missions/seed-steps/participants/${DEMO.kid}/confirm`);
+check("아이는 스스로 확인할 수 없다", res.status === 403);
+setActingProfile(DEMO.mom);
+res = await post(`/missions/seed-steps/participants/${DEMO.kid}/confirm`);
+parts = await partsOf("seed-steps");
+check(
+  "보호자가 확인하면 완료가 된다",
+  res.ok && who(parts, DEMO.kid)?.completed === true && !who(parts, DEMO.kid)?.needsGuardianCheck,
+);
+res = await post(`/missions/없는-미션/participants/${DEMO.kid}/confirm`);
+check("없는 운동은 확인할 수 없다", res.status === 404);
+// 타이머로 확인된 칸을 끝낸 운동 — 보호자가 확인을 눌러도 「직접 입력함」 으로 바뀌지 않는다
+res = await post(`/missions/${shared.missionId}/participants/${DEMO.kid}/confirm`);
+parts = await partsOf(shared.missionId);
+check(
+  "타이머로 확인된 것은 확인을 눌러도 타이머 그대로다",
+  res.ok && who(parts, DEMO.kid)?.verifiedBy === "TIMER",
+  `${res.status} · ${who(parts, DEMO.kid)?.verifiedBy}`,
+);
+
+/* ─── 5. 동의 철회 ─────────────────────────────────────────── */
+
+const revoked = (await (
+  await send("PATCH", `/profiles/${DEMO.kid}/consent`, {
+    personalData: false,
+    healthData: false,
+  })
+).json()) as { consentGiven?: boolean; measurable?: boolean };
+check("동의를 철회하면 측정할 수 없게 된다", revoked.measurable === false);
+
+res = await post(`/profiles/${DEMO.kid}/fitness-tests`, {
+  testedOn: today,
+  source: "SELF_INPUT",
+  items: [{ itemCode: "012", value: 8 }],
+});
+check(
+  "동의 철회 후 측정 차단 — 422(백엔드 공통 규칙: 도메인 규칙 위반)",
+  res.status === 422 && (await codeOf(res)) === "CONSENT_REQUIRED",
+);
+
+res = await post(`/missions/${shared.missionId}/sessions/1/done`, done);
+check("동의 철회 후 운동 기록도 차단", (await codeOf(res)) === "CONSENT_REQUIRED");
+
+/* ─── 6. 쉬는 날 · 이어서 한 날 · 리그 ─────────────────────── */
+
+// 쉬는 날은 건너서 잇는다 — 끊지도 않고 더하지도 않는다(규칙 15)
+const [d0, d1, d2, d3] = [0, 1, 2, 3].map((n) => daysBefore(n));
+check("오늘 아직이면 어제부터 센다", streakOf(new Set([d1, d2]), new Set()) === 2);
+check(
+  "쉬는 날은 사이를 잇고 수에 더하지 않는다",
+  streakOf(new Set([d1, d3]), new Set([d2])) === 2,
+  `${streakOf(new Set([d1, d3]), new Set([d2]))}`,
+);
+check("쉬는 날만으로는 이어서 한 날이 생기지 않는다", streakOf(new Set(), new Set([d0, d1])) === 0);
+
+// 쉬는 날 카드는 부모가 쓴다(규칙 15) — 아이 프로필로는 쓰지도 되돌리지도 못한다
+setActingProfile(DEMO.kid);
+res = await post(`/families/${DEMO.familyId}/rest-days`, { date: today });
+check("아이는 쉬는 날 카드를 쓸 수 없다", (await codeOf(res)) === "NOT_A_PARENT");
+res = await send("DELETE", `/families/${DEMO.familyId}/rest-days/${today}`);
+check("아이는 쉬는 날을 되돌릴 수 없다", (await codeOf(res)) === "NOT_A_PARENT");
+setActingProfile(DEMO.mom);
+
+type League = {
+  tier: string;
+  rate: number | null;
+  score?: number | null;
+  rank: number | null;
+  standings: { rate: number | null; score?: number | null; me: boolean }[];
+};
+const demoLeague = (await (await get(`/families/${DEMO.familyId}/league`)).json()) as League;
+check(
+  "시연 가족 리그 — 달성률 · 순위가 있다",
+  demoLeague.rate != null &&
+    demoLeague.rate >= 0 &&
+    demoLeague.rate <= 100 &&
+    demoLeague.rank != null,
+  `${demoLeague.tier} ${demoLeague.rate}% ${demoLeague.rank}등`,
+);
+const scores = demoLeague.standings.map((s) => s.score ?? -1);
+check(
+  "리그 줄은 순위 점수 순이다",
+  scores.every((v, i) => i === 0 || scores[i - 1] >= v) &&
+    demoLeague.standings.every((s) => s.rate == null || (s.score != null && s.score <= 1)),
+  scores.join(" "),
+);
+check(
+  "하루만 해낸 100% 집은 달성률이 더 낮은 집보다 아래에 선다",
+  demoLeague.standings.some(
+    (s, i) =>
+      s.rate === 100 && demoLeague.standings.slice(0, i).some((above) => (above.rate ?? 101) < 100),
+  ),
+);
+
+/* 운동 찾기: 페이지 나누기, 전체 수, 모든 나이 */
+{
+  type Page = {
+    clips: { clipId: string; title: string }[];
+    total: number;
+    nextCursor: string | null;
+  };
+  const page = async (qs: string) => (await (await get(`/clips?${qs}`)).json()) as Page;
+  /** nextCursor 를 따라 끝까지 받는다 */
+  async function all(qs: string) {
+    const ids: string[] = [];
+    let cursor: string | null = null;
+    let total = 0;
+    for (let i = 0; i < 100; i++) {
+      const p: Page = await page(`${qs}${cursor ? `&cursor=${cursor}` : ""}`);
+      if (i === 0) total = p.total;
+      ids.push(...p.clips.map((c) => c.clipId));
+      cursor = p.nextCursor;
+      if (!cursor) break;
+    }
+    return { ids, total };
+  }
+
+  const kid = `profileId=${DEMO.kid}`;
+  const first = await page(`${kid}&size=20`);
+  check(
+    "운동 찾기 첫 페이지는 size 만큼 오고 nextCursor 가 있다",
+    first.clips.length === 20 && first.total > 20 && typeof first.nextCursor === "string",
+    `${first.clips.length}개, 전체 ${first.total}, 다음 ${first.nextCursor}`,
+  );
+  const mine = await all(`${kid}&size=30`);
+  check(
+    "다음 페이지를 끝까지 받으면 전체 수만큼 겹치지 않고 모인다",
+    mine.ids.length === mine.total && new Set(mine.ids).size === mine.ids.length,
+    `${mine.ids.length}개 / 전체 ${mine.total}`,
+  );
+  const every = await all(`${kid}&size=100&ageGroup=ALL`);
+  check(
+    "모든 나이로 보면 아이 나이대보다 많고 수백 개다",
+    every.total > mine.total && every.total >= 300 && every.ids.length === every.total,
+    `아이 나이대 ${mine.total}, 모든 나이 ${every.total}`,
+  );
+  const quiet = await page(`${kid}&ageGroup=ALL&quiet=true&factor=${encodeURIComponent("유연성")}`);
+  check(
+    "모든 나이에서도 요인과 조용한 운동 거르기가 그대로 걸린다",
+    quiet.total > 0 && quiet.total < every.total,
+    `${quiet.total}`,
+  );
+  const big = await page(`${kid}&ageGroup=ALL&size=500`);
+  check("한 페이지는 100개를 넘지 않는다", big.clips.length === 100, `${big.clips.length}`);
+  const bad = await get(`/clips?${kid}&cursor=abc`);
+  check(
+    "알아볼 수 없는 cursor 는 400 INVALID_INPUT",
+    bad.status === 400 && (await codeOf(bad)) === "INVALID_INPUT",
+    `${bad.status}`,
+  );
+  const badAge = await get(`/clips?${kid}&ageGroup=KID`);
+  check(
+    "모르는 나이대는 400 INVALID_INPUT",
+    badAge.status === 400 && (await codeOf(badAge)) === "INVALID_INPUT",
+    `${badAge.status}`,
+  );
+}
+
+// 새 가족 — 브론즈에서, 셀 날이 없으면 달성률 · 순위가 비어 있다(0% · 꼴찌가 아니다)
+await post("/auth/dev-login", { providerUserId: "demo-fresh" });
+const freshFamily = (await (
+  await post("/families", {
+    familyName: "검사네",
+    owner: { name: "검사", birthDate: "1988-01-01", sex: "F" },
+  })
+).json()) as { familyId?: string };
+const fresh = (await (await get(`/families/${freshFamily.familyId}/league`)).json()) as League;
+check("새 가족은 브론즈에서 시작한다", fresh.tier === "BRONZE", fresh.tier);
+check(
+  "셀 날이 없으면 달성률 · 순위가 비어 있다",
+  fresh.rate === null && fresh.rank === null,
+  `${fresh.rate} · ${fresh.rank}`,
+);
+
+// 아무도 안 잰 가족은 편성을 받지 못한다 — 실제 서버와 같은 코드(화면이 「아직 재지 않았어요」 로 옮긴다)
+const unmeasuredRun = await post(`/families/${freshFamily.familyId}/coach/runs`, {
+  date: toDateString(new Date()),
+  minutes: 20,
+});
+check(
+  "아무도 안 잰 가족은 편성이 422 NO_MEASURED_MEMBER",
+  unmeasuredRun.status === 422 && (await codeOf(unmeasuredRun)) === "NO_MEASURED_MEMBER",
+  `${unmeasuredRun.status}`,
+);
+
+server.close();
+console.log(failed === 0 ? "\n전부 통과" : `\n${failed}건 실패`);
+process.exit(failed === 0 ? 0 : 1);
