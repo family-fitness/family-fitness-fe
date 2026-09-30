@@ -325,7 +325,8 @@ function MemberLine({
           <span className="truncate font-extrabold">{member.name}</span>
           {me && <span className="text-ink-soft text-caption font-bold">나</span>}
         </span>
-        <span className="text-caption text-ink-soft block truncate">
+        {/* 자르지 않고 두 줄로 — 320 폭에서 「아직 안 들어옴」 · 오늘 몇 개가 잘려 지금 상태가 안 보였다 */}
+        <span className="text-caption text-ink-soft block">
           {child ? "자녀" : "부모"} · {member.ageGroup}
           {/* 아이는 부모 폰을 빌려 쓰는 게 기본이라 계정이 없어도 오늘을 적는다. 부모 자리만 「아직 안 들어옴」 */}
           {!child && hasAccount === false ? (
