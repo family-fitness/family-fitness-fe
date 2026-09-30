@@ -85,7 +85,7 @@ export default function StartPage() {
   return (
     <Stage className="flex min-h-dvh flex-col justify-center gap-5 py-8">
       <div>
-        <h1 className="text-[1.6rem] leading-tight font-extrabold">누가 쓰고 있나요?</h1>
+        <h1 className="page-title">누가 쓰고 있나요?</h1>
       </div>
 
       <RoleCard title="아이" onClick={goKid} art={<LevelBuddy stage={2} size={80} />} />
