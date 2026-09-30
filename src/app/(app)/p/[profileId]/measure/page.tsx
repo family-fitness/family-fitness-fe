@@ -268,7 +268,7 @@ export default function MeasurePage() {
       <Stage wide>
         <form onSubmit={onSubmit} className="space-y-3">
           {/* 언제 · 어디서 쟀는지. 센터 결과지를 며칠 뒤에 옮겨 적는 경우가 많다 */}
-          <fieldset className="card space-y-3">
+          <fieldset className="card min-w-0 space-y-3">
             <legend className="sr-only">언제 쟀나요</legend>
             <p aria-hidden className="card-head">
               언제 쟀나요
@@ -284,7 +284,8 @@ export default function MeasurePage() {
               className="field"
             />
 
-            <div className="flex gap-2">
+            {/* 크게 키운 화면(200%)에서도 넘치지 않게 줄을 바꾼다 */}
+            <div className="flex flex-wrap gap-2">
               {(
                 [
                   ["SELF_INPUT", "집에서 직접"],
