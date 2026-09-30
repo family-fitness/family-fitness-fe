@@ -33,6 +33,7 @@ import { callName } from "@/lib/family";
 import { badgeArt, stageOf } from "@/lib/levels";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
+import { FACTOR_POSE, poseArt } from "@/lib/poses";
 import { dayOf, longDate, today, weekOf } from "@/lib/today";
 import { stickerOf } from "@/lib/stickers";
 import { useRoleStore } from "@/stores/role-store";
@@ -361,20 +362,28 @@ function TodayHero({ mission, profileId }: { mission: Mission; profileId: string
     .map(([p, n]) => `${PHASE_LABEL[p].replace("운동", "")} ${n}`)
     .join(" · ");
   const done = sessions.filter((s) => s.completed).length;
+  // 본운동이 기르는 힘을 하는 키움이(9/30) — 동작 그림이 들어오기 전에는 자리를 두지 않는다
+  const factor = sessions.find((s) => s.phase === "MAIN")?.factor;
+  const pose = factor && FACTOR_POSE[factor] ? poseArt(FACTOR_POSE[factor]) : null;
 
   return (
     <NavLink
       href={`/kid/m/${mission.missionId}`}
       className="press bg-signal-strong shadow-lift block rounded-3xl p-5 text-white"
     >
-      <p className="text-caption font-bold text-white">오늘 운동</p>
-      <p className="text-metric mt-1 leading-tight font-extrabold">
-        {sessions.length}개 · {minutes}분
-      </p>
-      <p className="text-caption mt-1 font-semibold text-white">
-        {phases}
-        {done > 0 && ` · ${done}개 했어요`}
-      </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-caption font-bold text-white">오늘 운동</p>
+          <p className="text-metric mt-1 leading-tight font-extrabold">
+            {sessions.length}개 · {minutes}분
+          </p>
+          <p className="text-caption mt-1 font-semibold text-white">
+            {phases}
+            {done > 0 && ` · ${done}개 했어요`}
+          </p>
+        </div>
+        {pose && <ArtIcon name={pose} className="-my-2 size-20" />}
+      </div>
       <span className="text-signal-strong mt-4 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-white text-lg font-extrabold">
         <Play aria-hidden className="size-5 fill-current" />
         {done > 0 ? "이어서 하기" : "시작하기"}
