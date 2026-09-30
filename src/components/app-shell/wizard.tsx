@@ -79,14 +79,15 @@ export function WizardShell({
         </div>
       </div>
 
-      <div key={step} className="flex flex-1 flex-col">
+      {/* 화면 읽기가 본문으로 바로 가는 자리 — 위는 뒤로 · 게이지뿐이다 */}
+      <main key={step} className="flex flex-1 flex-col">
         <div className="px-6 pt-6">
           {art && <div className="mb-4 flex justify-center">{art}</div>}
           <h1 className="page-title leading-snug">{title}</h1>
         </div>
 
         <div className="mt-7 flex-1 px-6">{children}</div>
-      </div>
+      </main>
 
       {action && <Dock>{action}</Dock>}
     </form>
