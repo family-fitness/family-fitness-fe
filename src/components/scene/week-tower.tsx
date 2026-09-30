@@ -18,6 +18,8 @@ import { useWidth } from "./use-width";
  *   - 정사영이라 앞뒤로 커 보이지 않고, 모든 기둥이 같은 판 위에서 선다
  *   - 높이는 분에 곧게 비례한다. 숫자를 기둥 위에 글자로 얹는다(DOM — 읽히고 번지지 않는다)
  *   - 쉰 날은 납작한 판 하나. 「빠진 날」 처럼 칠하지 않는다. 오늘은 노랑
+ *   - 30분 눈금을 점선으로 같이 긋는다 — 기준이 없으면 11분이 낮은지 높은지 모른다. 기둥과 같은 면(z=0)에
+ *     그어 30분 기둥의 윗면과 딱 맞고, 앞 기둥이 가리면 가려진다
  *
  * 글자는 three 없이 셈해서(`projectOrtho`) 먼저 선다. 기둥은 그 뒤에 자라난다.
  */
@@ -50,8 +52,10 @@ export function WeekTower({
   /** 입체가 섰다 — 그 전 · WebGL 이 없을 때는 같은 자리에 납작한 막대가 선다 */
   const [ready, setReady] = useState(false);
   const minutes = days.map((d) => logs?.find((l) => l.date === d)?.minutes ?? 0);
-  const top = Math.max(FLOOR_MINUTES, ...minutes);
-  const heights = minutes.map((m) => (m > 0 ? Math.max(0.12, (m / top) * TALL) : 0));
+  const scaleTop = Math.max(FLOOR_MINUTES, ...minutes);
+  const heights = minutes.map((m) => (m > 0 ? Math.max(0.12, (m / scaleTop) * TALL) : 0));
+  /** 30분 눈금의 높이 — 기둥과 같은 셈 */
+  const guide = (FLOOR_MINUTES / scaleTop) * TALL;
   const key = `${days.join()}|${minutes.join()}|${today}`;
 
   useToonScene(
@@ -82,6 +86,32 @@ export function WeekTower({
           edgeMaterial,
         );
       root.add(edges(slab));
+
+      /* 30분 눈금 — 기둥 줄을 가로지르는 점선 */
+      const guideMaterial = keep(
+        new addons.LineMaterial({
+          color: new THREE.Color(palette.guide).getHex(),
+          linewidth: 1.5,
+          dashed: true,
+          dashSize: 0.14,
+          gapSize: 0.1,
+        }),
+      );
+      const guideLine = new addons.LineSegments2(
+        keep(
+          new addons.LineSegmentsGeometry().setPositions([
+            -GAP * 3.5,
+            guide,
+            0,
+            GAP * 3.5,
+            guide,
+            0,
+          ]),
+        ),
+        guideMaterial,
+      );
+      guideLine.computeLineDistances();
+      root.add(guideLine);
 
       /* 기둥 — 꼭짓점이 이쪽을 보게 두면 두 면이 보여 입체가 산다 */
       const prism = keep(new THREE.CylinderGeometry(RADIUS, RADIUS, 1, 6));
@@ -123,6 +153,7 @@ export function WeekTower({
         },
         resize(width, heightPx) {
           edgeMaterial.resolution.set(width, heightPx);
+          guideMaterial.resolution.set(width, heightPx);
         },
       };
     },
@@ -154,6 +185,7 @@ export function WeekTower({
           ready && "opacity-0",
         )}
       >
+        <GuideLine guide={guide} width={width} height={tall} />
         {days.map((date, i) => {
           const x = (i - 3) * GAP;
           const base = projectOrtho(SPEC, [x, 0, 0], width, tall);
@@ -174,6 +206,7 @@ export function WeekTower({
         days={days}
         minutes={minutes}
         heights={heights}
+        guide={guide}
         today={today}
         height={tall}
         width={width}
@@ -182,11 +215,24 @@ export function WeekTower({
   );
 }
 
-/** 기둥 위 분 · 판 앞 요일. 칸의 실제 크기로 셈한다 */
+/** 입체가 오기 전 · 없을 때의 30분 눈금 — 입체의 점선과 같은 자리 */
+function GuideLine({ guide, width, height }: { guide: number; width: number; height: number }) {
+  const from = projectOrtho(SPEC, [-GAP * 3.5, guide, 0], width, height);
+  const to = projectOrtho(SPEC, [GAP * 3.5, guide, 0], width, height);
+  return (
+    <span
+      className="border-baseline absolute border-t-[1.5px] border-dashed"
+      style={{ left: from.x, top: from.y, width: to.x - from.x }}
+    />
+  );
+}
+
+/** 기둥 위 분 · 판 앞 요일 · 30분 눈금 이름. 칸의 실제 크기로 셈한다 */
 function Labels({
   days,
   minutes,
   heights,
+  guide,
   today,
   height,
   width,
@@ -194,12 +240,21 @@ function Labels({
   days: string[];
   minutes: number[];
   heights: number[];
+  guide: number;
   today: string;
   height: number;
   width: number;
 }) {
+  const guideEnd = projectOrtho(SPEC, [GAP * 3.5, guide, 0], width, height);
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 z-10">
+      {/* 눈금 이름 — 점선 오른쪽 끝 위. 범례 대신 이름이 무엇인지 말한다 */}
+      <span
+        className="text-micro text-ink-soft absolute -translate-x-full -translate-y-full pb-0.5 font-bold"
+        style={{ left: guideEnd.x, top: guideEnd.y }}
+      >
+        30분
+      </span>
       {days.map((date, i) => {
         const x = (i - 3) * GAP;
         const topAt = projectOrtho(SPEC, [x, Math.max(heights[i], 0.06), 0], width, height);

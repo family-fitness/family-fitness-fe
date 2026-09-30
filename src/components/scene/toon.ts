@@ -52,6 +52,8 @@ export interface Palette {
   blueShade: string;
   white: string;
   whiteShade: string;
+  /** 기준선 — 또래 평균 50 · 30분 눈금처럼 값을 읽는 자리 */
+  guide: string;
 }
 
 /** 색은 CSS 토큰에서 읽는다. 코드에 따로 적으면 토큰을 바꿔도 입체만 옛 색으로 남는다 */
@@ -73,6 +75,7 @@ export function readPalette(): Palette {
     blueShade: v("--color-signal-strong", "#1a6fd1"),
     white: v("--color-paper", "#ffffff"),
     whiteShade: v("--color-sub", "#f1f3f6"),
+    guide: v("--color-baseline", "#8b939c"),
   };
 }
 
