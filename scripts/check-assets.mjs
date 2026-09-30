@@ -70,6 +70,8 @@ const LIST_FILE = join(SRC_DIR, "lib/asset-list.ts");
 const FAMILIES = [
   ["level/level-${", "level/level-"],
   ["badge/badge-${", "badge/badge-"],
+  // 키움이 동작(`pose/kiumi-${동작}`) — 동작 이름은 타입(lib/poses.ts)이 막는다
+  ["pose/kiumi-${", "pose/kiumi-"],
 ];
 
 for (const file of walk(SRC_DIR)) {
