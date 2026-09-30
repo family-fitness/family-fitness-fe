@@ -30,13 +30,14 @@ export function HomeHeader({
       <header className="flex items-end justify-between gap-3 px-5 pt-4 pb-3">
         <div className="min-w-0">
           {eyebrow && <p className="text-caption text-ink-soft font-semibold">{eyebrow}</p>}
-          <h1 className="page-title mt-0.5 truncate">
+          {/* 긴 가족 이름은 두 줄까지 — 한 줄로 자르면 오른쪽 아이콘들에 밀려 「무지…」 만 남았다 */}
+          <h1 className="page-title mt-0.5">
             {titleHref ? (
               <NavLink
                 href={titleHref}
                 className="press inline-flex min-h-11 max-w-full items-center gap-0.5"
               >
-                <span className="truncate">{title}</span>
+                <span className="line-clamp-2">{title}</span>
                 <ChevronRight
                   aria-hidden
                   className="text-faint size-6 shrink-0"
@@ -44,7 +45,7 @@ export function HomeHeader({
                 />
               </NavLink>
             ) : (
-              title
+              <span className="line-clamp-2">{title}</span>
             )}
           </h1>
         </div>
