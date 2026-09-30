@@ -137,9 +137,14 @@ export default function ResultPage() {
             <FactorLine
               label={onlyOneFactor ? "지금 재 본 영역" : "잘하고 있는 영역"}
               factor={strongest?.factor}
+              withRadar={radar.length > 0}
             />
             {!onlyOneFactor && weakest && (
-              <FactorLine label="지금 키우기 좋은 영역" factor={weakest.factor} />
+              <FactorLine
+                label="지금 키우기 좋은 영역"
+                factor={weakest.factor}
+                withRadar={radar.length > 0}
+              />
             )}
           </section>
         )}
@@ -218,7 +223,15 @@ function ResultSkeleton() {
 }
 
 /** 한 요인 한 줄 — 요인 그림과 이름. 육각형 밖의 요인(협응력 · 평형성)은 그림이 없어 자리만 둔다 */
-function FactorLine({ label, factor }: { label: string; factor: string | undefined }) {
+function FactorLine({
+  label,
+  factor,
+  withRadar,
+}: {
+  label: string;
+  factor: string | undefined;
+  withRadar: boolean;
+}) {
   return (
     <div className="flex items-center gap-3 py-3">
       <span aria-hidden className="grid size-10 shrink-0 place-items-center">
@@ -227,6 +240,10 @@ function FactorLine({ label, factor }: { label: string; factor: string | undefin
       <div className="min-w-0">
         <p className="text-caption text-ink-soft font-bold">{label}</p>
         <p className="text-body font-extrabold">{factor ?? "-"}</p>
+        {/* 위 육각형은 여섯 요인만 그린다. 협응력 · 평형성이 여기 오면 육각형에서 찾을 수 없어 한 줄 적는다 */}
+        {withRadar && factor && !isFactor(factor) && (
+          <p className="text-caption text-ink-soft mt-0.5">위 육각형에는 없는 영역이에요</p>
+        )}
       </div>
     </div>
   );
