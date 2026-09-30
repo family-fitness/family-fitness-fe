@@ -352,9 +352,13 @@ function Day() {
                       value={`${summary.phases[phase]}분`}
                     />
                   ))}
-                {summary.verified.map((v) => (
-                  <Leader key={v} label="확인" value={verifiedLabel(v, selfNeedsCheck)} />
-                ))}
+                {/* 「확인」 은 한 줄 — 무엇으로 확인했는지가 여럿이면 값만 줄을 바꾼다(같은 이름 두 줄은 틀린 화면처럼 보였다) */}
+                {summary.verified.length > 0 && (
+                  <Leader
+                    label="확인"
+                    value={summary.verified.map((v) => verifiedLabel(v, selfNeedsCheck))}
+                  />
+                )}
               </dl>
             )}
           </section>
@@ -454,13 +458,21 @@ function Tile({
   );
 }
 
-/** 점선으로 잇는 요약 한 줄 */
-function Leader({ label, value }: { label: string; value: string }) {
+/** 점선으로 잇는 요약 한 줄. 값이 여럿이면 값만 줄을 바꿔 오른쪽에 쌓는다 */
+function Leader({ label, value }: { label: string; value: string | string[] }) {
   return (
     <div className="flex items-baseline gap-2 text-sm">
       <dt className="text-ink-soft shrink-0 font-semibold">{label}</dt>
       <span aria-hidden className="border-line mb-1 min-w-4 flex-1 border-b-2 border-dotted" />
-      <dd className="shrink-0 font-extrabold tabular-nums">{value}</dd>
+      <dd className="shrink-0 text-right font-extrabold tabular-nums">
+        {Array.isArray(value)
+          ? value.map((v) => (
+              <span key={v} className="block">
+                {v}
+              </span>
+            ))
+          : value}
+      </dd>
     </div>
   );
 }
