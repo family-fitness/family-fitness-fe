@@ -187,7 +187,12 @@ function MemberRow({ profile, onInvite }: { profile: ProfileSummary; onInvite: (
           <span className="text-done text-xs font-bold">연결됨</span>
         ) : (
           // 코드는 이 자리 하나에 맞는다 — 시트에서 만들고 복사 · 공유한다
-          <Button size="md" variant="outline" onClick={onInvite}>
+          <Button
+            size="md"
+            variant="outline"
+            onClick={onInvite}
+            aria-label={`${profile.name ?? "이 자리"} 초대하기`}
+          >
             초대하기
           </Button>
         )}

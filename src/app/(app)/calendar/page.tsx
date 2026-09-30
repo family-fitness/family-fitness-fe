@@ -293,6 +293,7 @@ function DayCell({
       onClick={onPick}
       // 앞날은 운동을 잡아 둔 날만 연다 — 하루 기록도 앞날은 잡아 둔 날만 간다. 쉬는 날은 흐리지 않고 칠만 한다
       disabled={future && !planned}
+      aria-current={isToday ? "date" : undefined}
       // 링 둘이 말하는 것을 다 읽어 준다 — 범례는 화면 읽기에서 숨어 있다
       aria-label={`${longDate(date)}${rest ? " · 쉬는 날" : ""}${moved ? ` · 움직인 시간 ${moved.minutes}분 · 끝낸 운동 ${summary.done}개` : ""}${sticker ? ` · ${sticker.label} 스티커` : ""}${planned && !moved ? " · 운동 잡혀 있음" : ""}`}
       className={cn(

@@ -264,7 +264,13 @@ export default function KidHomePage() {
                 label="받은 스티커"
                 // 누가 붙여 줬는지 — 아이에게 부모는 엄마 · 아빠다. 스티커 말은 그림이 한다
                 note={nameOf(sticker.fromProfileId, sticker.fromName)}
-                art={<StickerArt id={sticker.stickerId} className="size-10" />}
+                art={
+                  <>
+                    <StickerArt id={sticker.stickerId} className="size-10" />
+                    {/* 그림만 있으면 화면 읽기로는 무슨 스티커인지 모른다 */}
+                    <span className="sr-only">{stickerOf(sticker.stickerId)?.label}</span>
+                  </>
+                }
               />
             )}
             <PanelCell

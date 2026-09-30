@@ -362,7 +362,13 @@ function MemberLine({
           {body}
           {hasAccount === false && (
             // 구성원 줄의 초대는 가족 관리와 같은 테두리 단추 — 네 가지 모양으로 그려져 있었다(9/30 점검)
-            <Button size="md" variant="outline" onClick={onInvite} className="shrink-0">
+            <Button
+              size="md"
+              variant="outline"
+              onClick={onInvite}
+              aria-label={`${member.name ?? "이 자리"} 초대하기`}
+              className="shrink-0"
+            >
               초대하기
             </Button>
           )}
