@@ -19,7 +19,16 @@ import {
   useProgresses,
 } from "@/lib/api/queries";
 import { artFor } from "@/lib/art";
-import { TIERS, nextTier, prevTier, tierArt, tierIndex, tierName, zoneOf } from "@/lib/league";
+import {
+  TIERS,
+  nextTier,
+  placeAt as placeIn,
+  prevTier,
+  tierArt,
+  tierIndex,
+  tierName,
+  zoneOf,
+} from "@/lib/league";
 import { useSession } from "@/lib/session";
 import { monthLabel, monthOf, today } from "@/lib/today";
 import { cn, withJosa } from "@/lib/utils";
@@ -29,6 +38,7 @@ import { cn, withJosa } from "@/lib/utils";
  *
  * 매달 브론즈 · 실버 · 골드 · 플래티넘 · 다이아. 달이 끝나면 위 몇 집은 한 칸 올라가고 아래 몇 집은
  * 한 칸 내려간다. 겨루는 값은 **목표 달성률**이다 — 잡힌 운동 날 중 해낸 날(쉬는 날 뺌), 아이들 평균.
+ * 줄은 달성률과 운동한 날 수를 함께 본 순위 점수(서버의 `score`)로 선다 — 하루만 해낸 100% 가 1등이 되지 않는다.
  * 체력이 좋은 집도 식구가 많은 집도 유리하지 않다. 이름은 가족 단위로만 — 집 안에서 누가 더 했는지는
  * 어디에도 나오지 않는다(규칙 10). 흐름 시연판(9/17)의 리그는 흐름만 참고했다.
  */
@@ -187,18 +197,17 @@ function League() {
         {/* 셋째 묶음 — 이번 달 순위. 올라가는 자리 · 내려가는 자리를 선으로 가른다 */}
         <section className="card" aria-label="이번 달 순위">
           <CardHead title="이번 달 순위" meta={`${league.groupSize}가족`} />
+          {/* 막대는 달성률인데 줄은 점수로 선다 — 100% 가 92% 아래에 있어도 까닭을 알게 */}
+          <p className="text-caption text-ink-soft mt-1">
+            달성률과 운동한 날 수를 함께 봐요. 하루만 해낸 100% 보다 꾸준히 한 집이 위에 서요.
+          </p>
           <ol className="mt-1">
             {league.standings.map((s, i) => {
               /*
-                몇 등인지는 서버의 rank 와 같은 셈이다 — 나보다 높은 집 수 + 1. 동률이면 같은 등수다.
+                몇 등인지는 서버의 rank 와 같은 셈이다 — 순위 점수가 나보다 높은 집 수 + 1. 동률이면 같은 등수다.
                 전에는 줄 차례(i + 1)를 그대로 적어 달성률이 같은 두 집이 1 · 2등으로 갈렸다
               */
-              const placeAt = (n: number) => {
-                const rate = league.standings[n]?.rate ?? null;
-                return rate == null
-                  ? null
-                  : league.standings.filter((x) => x.rate != null && x.rate > rate).length + 1;
-              };
+              const placeAt = (n: number) => placeIn(league.standings, n);
               const place = placeAt(i);
               const zoneAt = (n: number) => {
                 const p = placeAt(n);

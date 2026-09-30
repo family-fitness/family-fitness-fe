@@ -508,6 +508,8 @@ export type LeagueTier = "BRONZE" | "SILVER" | "GOLD" | "PLATINUM" | "DIAMOND";
  * 가족 리그 — 이번 달 우리 가족이 있는 리그와 순위.
  *
  * 겨루는 값은 체력이 아니라 **목표 달성률**이다(잡힌 운동 날 중 해낸 날, 쉬는 날 뺌, 아이들 평균).
+ * 줄은 달성률과 운동한 날 수를 함께 본 **순위 점수(`score`)** 로 세운다 — 하루만 해낸 100% 가 1등이 되지 않게
+ * 운동한 날 수에 로그를 씌운다(`leagueScore`). 그래서 달성률 100% 가 92% 보다 아래에 설 수 있다.
  * 운동 잘하는 집도 식구 많은 집도 유리하지 않다. 가족 단위로만 겨룬다 — 집 안에서 누가 더 했는지는
  * 어디에도 나오지 않는다(규칙 10). 달이 바뀌면 위 `promote` 집은 한 티어 올라가고 아래 `demote` 집은 내려간다.
  *
@@ -521,7 +523,9 @@ export interface FamilyLeague {
    * 0 으로 주면 「0% · 꼴찌 · 내려가요」 가 된다. 비어 있음은 비어 있게(규칙 8)
    */
   rate: number | null;
-  /** 이 리그 묶음에서 우리 가족 자리(1부터). 달성률이 없으면 null */
+  /** 우리 가족 순위 점수(0~1). 셀 날이 없으면 null. 옛 서버는 주지 않는다 */
+  score?: number | null;
+  /** 이 리그 묶음에서 우리 가족 자리(1부터). 순위 점수 순. 달성률이 없으면 null */
   rank: number | null;
   groupSize: number;
   /** 달이 바뀌면 올라가는 · 내려가는 자리 수. 맨 위 · 맨 아래 티어는 0 */
@@ -529,8 +533,8 @@ export interface FamilyLeague {
   demote: number;
   /** 이 달이 끝나기까지 남은 날 */
   daysLeft: number;
-  /** 달성률 순. 이름은 가족 이름만. 달성률이 아직 없는 집은 맨 아래 */
-  standings: { familyName: string; rate: number | null; me: boolean }[];
+  /** 순위 점수 순(점수가 없는 옛 응답은 달성률 순). 이름은 가족 이름만. 달성률이 아직 없는 집은 맨 아래 */
+  standings: { familyName: string; rate: number | null; score?: number | null; me: boolean }[];
 }
 
 /**

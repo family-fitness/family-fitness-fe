@@ -513,7 +513,13 @@ res = await send("DELETE", `/families/${DEMO.familyId}/rest-days/${today}`);
 check("아이는 쉬는 날을 되돌릴 수 없다", (await codeOf(res)) === "NOT_A_PARENT");
 setActingProfile(DEMO.mom);
 
-type League = { tier: string; rate: number | null; rank: number | null };
+type League = {
+  tier: string;
+  rate: number | null;
+  score?: number | null;
+  rank: number | null;
+  standings: { rate: number | null; score?: number | null; me: boolean }[];
+};
 const demoLeague = (await (await get(`/families/${DEMO.familyId}/league`)).json()) as League;
 check(
   "시연 가족 리그 — 달성률 · 순위가 있다",
@@ -522,6 +528,20 @@ check(
     demoLeague.rate <= 100 &&
     demoLeague.rank != null,
   `${demoLeague.tier} ${demoLeague.rate}% ${demoLeague.rank}등`,
+);
+const scores = demoLeague.standings.map((s) => s.score ?? -1);
+check(
+  "리그 줄은 순위 점수 순이다",
+  scores.every((v, i) => i === 0 || scores[i - 1] >= v) &&
+    demoLeague.standings.every((s) => s.rate == null || (s.score != null && s.score <= 1)),
+  scores.join(" "),
+);
+check(
+  "하루만 해낸 100% 집은 달성률이 더 낮은 집보다 아래에 선다",
+  demoLeague.standings.some(
+    (s, i) =>
+      s.rate === 100 && demoLeague.standings.slice(0, i).some((above) => (above.rate ?? 101) < 100),
+  ),
 );
 
 // 새 가족 — 브론즈에서, 셀 날이 없으면 달성률 · 순위가 비어 있다(0% · 꼴찌가 아니다)

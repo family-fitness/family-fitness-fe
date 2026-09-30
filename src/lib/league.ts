@@ -56,3 +56,41 @@ export function zoneOf(
   if (down > 0 && rank > groupSize - down) return "down";
   return "stay";
 }
+
+/**
+ * 순위 점수(0~1) — BE `AchievementRate` 와 같은 셈이다.
+ * 달성률만으로 줄을 세우면 하루만 해낸 가족이 100% 로 1등이 된다. 그래서 운동한 날 수에 로그를 씌워 곱한다.
+ *
+ *   점수 = 달성률(0~1) × ln(1 + 운동한 날) ÷ ln(1 + 지난 날)   (지난 날마다 다 해내면 1)
+ *
+ * 화면은 서버가 준 점수로 줄을 세운다. 이 함수는 목 데이터가 같은 점수를 내는 데 쓴다.
+ */
+export function leagueScore(rate: number, doneDays: number, elapsedDays: number): number {
+  if (elapsedDays <= 0) return 0;
+  const score = (rate * Math.log1p(doneDays)) / Math.log1p(elapsedDays);
+  return Math.round(Math.min(1, score) * 10_000) / 10_000;
+}
+
+/** 줄을 세우는 값 — 서버가 준 점수, 점수가 없는 옛 응답이면 달성률 */
+function rankValue(s: { rate: number | null; score?: number | null }): number | null {
+  return s.score !== undefined ? s.score : s.rate;
+}
+
+/**
+ * i 번째 줄의 등수(1부터) — 서버의 rank 와 같은 셈이다. 나보다 점수가 높은 집 수 + 1, 같으면 같은 등수.
+ * 셀 날이 없는 집(점수 null)은 등수가 없다.
+ */
+export function placeAt(
+  standings: readonly { rate: number | null; score?: number | null }[],
+  i: number,
+): number | null {
+  const row = standings[i];
+  const mine = row ? rankValue(row) : null;
+  if (mine == null) return null;
+  return (
+    standings.filter((x) => {
+      const v = rankValue(x);
+      return v != null && v > mine;
+    }).length + 1
+  );
+}

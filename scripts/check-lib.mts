@@ -8,7 +8,7 @@
  */
 import type { ClipView } from "@/lib/api/types";
 import type { DayLog } from "@/lib/api/types";
-import { TIERS, nextTier, prevTier, zoneOf } from "@/lib/league";
+import { TIERS, leagueScore, nextTier, placeAt, prevTier, zoneOf } from "@/lib/league";
 import { projectOrtho } from "@/lib/ortho";
 import { withJosa } from "@/lib/utils";
 import {
@@ -145,6 +145,25 @@ check(
   "작은 묶음에서 올라가는 자리와 내려가는 자리가 겹치지 않는다",
   zoneOf(2, 5, 3, 3) === "up" && zoneOf(3, 5, 3, 3) === "stay" && zoneOf(4, 5, 3, 3) === "down",
 );
+check(
+  "하루만 해낸 100% 는 스무 날 중 열여덟 날 해낸 92% 보다 점수가 낮다",
+  leagueScore(1, 1, 20) < leagueScore(0.92, 18, 20),
+);
+check("지난 날마다 다 해내면 점수 1", leagueScore(1, 20, 20) === 1);
+check("지난 날이 없으면 점수 0", leagueScore(1, 0, 0) === 0);
+const table = [
+  { rate: 92, score: 0.87 },
+  { rate: 100, score: 0.23 },
+  { rate: 100, score: 0.23 },
+  { rate: null, score: null },
+];
+check(
+  "등수는 점수로 센다 — 달성률 100% 가 92% 아래에 선다",
+  placeAt(table, 0) === 1 && placeAt(table, 1) === 2,
+);
+check("점수가 같으면 같은 등수", placeAt(table, 2) === 2);
+check("점수가 없는 집은 등수가 없다", placeAt(table, 3) === null);
+check("옛 서버처럼 점수가 없으면 달성률로 센다", placeAt([{ rate: 70 }, { rate: 90 }], 0) === 2);
 
 /* ─── 직접 짜기 ──────────────────────────────────────── */
 
