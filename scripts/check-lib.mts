@@ -81,7 +81,7 @@ import {
   onboardingSteps,
 } from "@/lib/onboarding";
 
-import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
+import { PRIVACY_HREF, PRIVACY_POLICY, TERMS_HREF, TERMS_OF_SERVICE } from "@/lib/legal";
 import { REVIEW_WAYS, afterSignIn, reviewDestination } from "@/lib/review-login";
 import {
   childBirthRule,
@@ -1275,6 +1275,41 @@ check(
   check(
     "내보내기 안내 글에 가운데 점과 긴 대시를 쓰지 않는다",
     all.every((l) => !/[·—–]/.test(l)),
+  );
+}
+
+/* ─── 약관과 방침의 탈퇴 문구가 탈퇴 규칙과 같다 ─────────────────── */
+
+{
+  const section = (doc: typeof TERMS_OF_SERVICE, heading: string) =>
+    doc.sections.find((s) => s.heading === heading)?.lines ?? [];
+  const terms = section(TERMS_OF_SERVICE, "탈퇴");
+  const keep = section(PRIVACY_POLICY, "보관과 파기");
+  check(
+    "약관은 언제든 탈퇴할 수 있고 그 사람의 정보를 바로 지운다고 말한다",
+    terms.some((l) => l.includes("언제든 탈퇴할 수 있어요")) &&
+      terms.some((l) => l.includes("그 사람의 정보를 바로 지워요")),
+    terms.join(" / "),
+  );
+  check(
+    "약관은 가족을 만든 사람이 다른 구성원을 내보낸 뒤 탈퇴하고 그때 가족 정보도 지운다고 말한다",
+    terms.some(
+      (l) => l.includes("다른 구성원을 모두 내보낸 뒤") && l.includes("가족 정보도 지워요"),
+    ),
+  );
+  check(
+    "약관은 한 사람이 탈퇴해도 가족의 정보를 모두 지운다고 말하지 않는다",
+    terms.every((l) => !l.includes("가족의 정보를 지워요")),
+  );
+  check(
+    "방침의 보관과 파기는 내보낸 구성원의 정보도 바로 지운다고 말한다",
+    keep.some((l) => l.includes("내보낸 구성원의 정보도 바로 지워요")) &&
+      terms.some((l) => l.includes("내보낸 구성원의 정보도 바로 지워요")),
+    keep.join(" / "),
+  );
+  check(
+    "탈퇴 문구에 가운데 점과 긴 대시를 쓰지 않는다",
+    [...terms, ...keep].every((l) => !/[·—–]/.test(l)),
   );
 }
 
