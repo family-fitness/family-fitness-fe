@@ -1,4 +1,5 @@
 import type { NextStep, ProfileWithSex } from "./api/types";
+import { withJosa } from "./utils";
 
 /** 누구인지 모르거나 여럿을 한꺼번에 부를 때의 말 */
 export const GUARDIAN = "보호자";
@@ -76,4 +77,35 @@ export function mustSetUpFamily({
 }): "/start/family" | "/claim" | null {
   if (pathname === "/settings" || pathname.startsWith("/settings/")) return null;
   return familySetupPath(nextStep);
+}
+
+/**
+ * 이 줄의 구성원을 내보낼 수 있나. 가족을 만든 사람(오너)만, 자기 자신이 아닌 구성원을 내보낸다.
+ * 서버도 오너가 아니면 403, 자기 자신이면 409 CANNOT_REMOVE_SELF 로 거절한다
+ */
+export function canRemoveMember(
+  me: Pick<ProfileWithSex, "profileId" | "isOwner"> | undefined,
+  member: Pick<ProfileWithSex, "profileId">,
+): boolean {
+  if (!me?.isOwner || !me.profileId || !member.profileId) return false;
+  return member.profileId !== me.profileId;
+}
+
+/**
+ * 구성원 내보내기 확인 시트의 제목과 글. 내보내면 그 사람의 프로필과 기록이 지워진다.
+ * 계정이 있는 사람이면 계정은 남고 우리 가족에서만 빠진다
+ */
+export function removeMemberCopy(member: Pick<ProfileWithSex, "name" | "hasAccount">): {
+  title: string;
+  lines: string[];
+} {
+  const name = member.name?.trim() || "이 구성원";
+  return {
+    title: `${withJosa(name, "을를")} 내보낼까요`,
+    lines: [
+      `가족에서 내보내면 ${name}의 기록이 모두 지워져요`,
+      "지운 기록은 되돌릴 수 없어요",
+      ...(member.hasAccount ? [`${name}의 계정은 지워지지 않고 우리 가족에서만 빠져요`] : []),
+    ],
+  };
 }

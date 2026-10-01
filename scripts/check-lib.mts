@@ -66,11 +66,13 @@ import {
 } from "@/lib/videos";
 import {
   callName,
+  canRemoveMember,
   familySetupPath,
   guardiansName,
   mustAddChild,
   mustSetUpFamily,
   openWithoutChild,
+  removeMemberCopy,
 } from "@/lib/family";
 import {
   CREATE_AT,
@@ -79,7 +81,7 @@ import {
   onboardingSteps,
 } from "@/lib/onboarding";
 
-import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
+import { PRIVACY_HREF, PRIVACY_POLICY, TERMS_HREF, TERMS_OF_SERVICE } from "@/lib/legal";
 import { REVIEW_WAYS, afterSignIn, reviewDestination } from "@/lib/review-login";
 import {
   childBirthRule,
@@ -92,6 +94,13 @@ import {
   yearsBefore,
 } from "@/lib/date-pick";
 import { daysBefore } from "@/lib/today";
+import {
+  WITHDRAWAL_COPY,
+  WITHDRAWN_NOTICE,
+  WITHDRAWN_PATH,
+  cameAfterWithdrawal,
+  withdrawalCase,
+} from "@/lib/withdrawal";
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -1136,6 +1145,173 @@ check(
   !VERIFIED_COPY.VIDEO_PROGRESS.includes("끝까지"),
   VERIFIED_COPY.VIDEO_PROGRESS,
 );
+
+/* ─── 계정 탈퇴: 누가 탈퇴하는지에 따라 안내가 다르다 ─────────────────── */
+
+{
+  const owner = { profileId: "mom", role: "PARENT" as const, isOwner: true };
+  const guardian = { profileId: "dad", role: "PARENT" as const, isOwner: false };
+  const child = { profileId: "kid", role: "CHILD" as const, isOwner: false };
+
+  check(
+    "프로필이 없는 계정은 가족이 없는 계정이다",
+    withdrawalCase({ me: undefined, members: undefined }) === "NO_FAMILY",
+  );
+  check(
+    "아이 본인 계정은 아이 안내를 받는다",
+    withdrawalCase({ me: child, members: [owner, child] }) === "CHILD",
+  );
+  check(
+    "오너가 아닌 보호자는 보호자 안내를 받는다",
+    withdrawalCase({ me: guardian, members: [owner, guardian, child] }) === "GUARDIAN",
+  );
+  check(
+    "다른 구성원이 있는 오너는 먼저 내보내라는 안내를 받는다",
+    withdrawalCase({ me: owner, members: [owner, child] }) === "OWNER_WITH_MEMBERS",
+  );
+  check(
+    "혼자 남은 오너는 가족까지 지워진다는 안내를 받는다",
+    withdrawalCase({ me: owner, members: [owner] }) === "OWNER_ALONE",
+  );
+  check(
+    "가족 목록을 아직 못 받은 오너는 서버에 맡긴다",
+    withdrawalCase({ me: owner, members: undefined }) === "OWNER_ALONE",
+  );
+  check(
+    "서버가 FAMILY_NOT_EMPTY 로 돌려보내면 받아 둔 목록이 혼자여도 오너 안내로 바꾼다",
+    withdrawalCase({ me: owner, members: [owner], familyNotEmpty: true }) === "OWNER_WITH_MEMBERS",
+  );
+
+  const blocked = WITHDRAWAL_COPY.OWNER_WITH_MEMBERS;
+  check("다른 구성원이 남은 오너에게는 탈퇴 버튼이 없다", blocked.canWithdraw === false);
+  check(
+    "다른 구성원이 남은 오너에게 가족 관리에서 내보낸 뒤 탈퇴하라고 말한다",
+    blocked.lines.includes("가족 관리에서 다른 구성원을 모두 내보낸 뒤에 탈퇴할 수 있어요"),
+  );
+  check(
+    "나머지 경우는 모두 탈퇴할 수 있다",
+    (["NO_FAMILY", "CHILD", "GUARDIAN", "OWNER_ALONE"] as const).every(
+      (c) => WITHDRAWAL_COPY[c].canWithdraw,
+    ),
+  );
+  check(
+    "혼자 남은 오너에게 가족 정보도 지워지고 되돌릴 수 없다고 말한다",
+    WITHDRAWAL_COPY.OWNER_ALONE.lines.some((l) => l.includes("가족 정보")) &&
+      WITHDRAWAL_COPY.OWNER_ALONE.lines.some((l) => l.includes("되돌릴 수 없어요")),
+  );
+  check(
+    "오너가 아닌 보호자에게 가족과 아이 기록은 남는다고 말한다",
+    WITHDRAWAL_COPY.GUARDIAN.lines.some((l) => l.includes("가족과 아이 기록은 그대로 남아요")),
+  );
+  const allCopy = [
+    ...Object.values(WITHDRAWAL_COPY).flatMap((c) => [c.title, ...c.lines]),
+    WITHDRAWN_NOTICE,
+  ];
+  check(
+    "탈퇴 안내 글에 가운데 점과 긴 대시를 쓰지 않는다",
+    allCopy.every((l) => !/[·—–]/.test(l)),
+    allCopy.filter((l) => /[·—–]/.test(l)).join(" / "),
+  );
+  check("탈퇴하면 로그인 화면으로 보낸다", WITHDRAWN_PATH.startsWith("/login?"));
+  check(
+    "탈퇴하고 온 로그인 화면만 탈퇴 안내를 띄운다",
+    cameAfterWithdrawal(new URLSearchParams(WITHDRAWN_PATH.split("?")[1])) &&
+      !cameAfterWithdrawal(new URLSearchParams("")) &&
+      !cameAfterWithdrawal(new URLSearchParams("claimCode=K7M2QT")),
+  );
+}
+
+/* ─── 구성원 내보내기: 가족을 만든 사람만 다른 구성원을 내보낸다 ─────────────────── */
+
+{
+  const owner = { profileId: "mom", isOwner: true };
+  const guardian = { profileId: "dad", isOwner: false };
+  const kid = { profileId: "kid", name: "서준", hasAccount: false };
+  const dad = { profileId: "dad", name: "도현", hasAccount: true };
+
+  check(
+    "오너는 다른 구성원을 내보낼 수 있다",
+    canRemoveMember(owner, kid) && canRemoveMember(owner, dad),
+  );
+  check("오너도 자기 자신은 내보낼 수 없다", !canRemoveMember(owner, { profileId: "mom" }));
+  check("오너가 아니면 아무도 내보낼 수 없다", !canRemoveMember(guardian, kid));
+  check("내 프로필을 모르면 내보낼 수 없다", !canRemoveMember(undefined, kid));
+  check(
+    "프로필 번호가 없는 줄은 내보낼 수 없다",
+    !canRemoveMember(owner, { profileId: undefined }),
+  );
+
+  const kidCopy = removeMemberCopy(kid);
+  check(
+    "확인 제목은 이름에 맞는 조사로 묻는다",
+    kidCopy.title === "서준을 내보낼까요",
+    kidCopy.title,
+  );
+  check(
+    "내보내면 그 사람의 기록이 모두 지워지고 되돌릴 수 없다고 말한다",
+    kidCopy.lines.some((l) => l.includes("서준의 기록이 모두 지워져요")) &&
+      kidCopy.lines.some((l) => l.includes("되돌릴 수 없어요")),
+    kidCopy.lines.join(" / "),
+  );
+  check(
+    "계정이 없는 사람에게는 계정 이야기를 하지 않는다",
+    kidCopy.lines.every((l) => !l.includes("계정")),
+  );
+  const dadCopy = removeMemberCopy(dad);
+  check(
+    "받침 없는 이름도 조사를 맞춘다",
+    removeMemberCopy({ name: "지호" }).title === "지호를 내보낼까요",
+  );
+  check(
+    "계정이 있는 사람이면 계정은 남고 가족에서만 빠진다고 말한다",
+    dadCopy.lines.some((l) => l.includes("도현의 계정은 지워지지 않고 우리 가족에서만 빠져요")),
+    dadCopy.lines.join(" / "),
+  );
+  check(
+    "이름이 없으면 「이 구성원」 으로 부른다",
+    removeMemberCopy({}).title === "이 구성원을 내보낼까요",
+  );
+  const all = [kidCopy, dadCopy].flatMap((c) => [c.title, ...c.lines]);
+  check(
+    "내보내기 안내 글에 가운데 점과 긴 대시를 쓰지 않는다",
+    all.every((l) => !/[·—–]/.test(l)),
+  );
+}
+
+/* ─── 약관과 방침의 탈퇴 문구가 탈퇴 규칙과 같다 ─────────────────── */
+
+{
+  const section = (doc: typeof TERMS_OF_SERVICE, heading: string) =>
+    doc.sections.find((s) => s.heading === heading)?.lines ?? [];
+  const terms = section(TERMS_OF_SERVICE, "탈퇴");
+  const keep = section(PRIVACY_POLICY, "보관과 파기");
+  check(
+    "약관은 언제든 탈퇴할 수 있고 그 사람의 정보를 바로 지운다고 말한다",
+    terms.some((l) => l.includes("언제든 탈퇴할 수 있어요")) &&
+      terms.some((l) => l.includes("그 사람의 정보를 바로 지워요")),
+    terms.join(" / "),
+  );
+  check(
+    "약관은 가족을 만든 사람이 다른 구성원을 내보낸 뒤 탈퇴하고 그때 가족 정보도 지운다고 말한다",
+    terms.some(
+      (l) => l.includes("다른 구성원을 모두 내보낸 뒤") && l.includes("가족 정보도 지워요"),
+    ),
+  );
+  check(
+    "약관은 한 사람이 탈퇴해도 가족의 정보를 모두 지운다고 말하지 않는다",
+    terms.every((l) => !l.includes("가족의 정보를 지워요")),
+  );
+  check(
+    "방침의 보관과 파기는 내보낸 구성원의 정보도 바로 지운다고 말한다",
+    keep.some((l) => l.includes("내보낸 구성원의 정보도 바로 지워요")) &&
+      terms.some((l) => l.includes("내보낸 구성원의 정보도 바로 지워요")),
+    keep.join(" / "),
+  );
+  check(
+    "탈퇴 문구에 가운데 점과 긴 대시를 쓰지 않는다",
+    [...terms, ...keep].every((l) => !/[·—–]/.test(l)),
+  );
+}
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);
