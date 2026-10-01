@@ -56,8 +56,9 @@ import { useRoleStore } from "@/stores/role-store";
  */
 export default function KidHomePage() {
   const router = useRouter();
-  const { familyId, isPending, error: sessionError, refetch: refetchMe } = useSession();
+  const { familyId, profile, isPending, error: sessionError, refetch: refetchMe } = useSession();
   const childProfileId = useRoleStore((s) => s.childProfileId);
+  const setMode = useRoleStore((s) => s.setMode);
 
   const {
     data: map,
@@ -158,9 +159,24 @@ export default function KidHomePage() {
 
   return (
     <>
-      <div className="flex items-center justify-between px-5 pt-4">
+      {/* 화면을 내려도 위에 붙어 따라온다(보호자 홈 머리와 같다) */}
+      <div className="bg-ground border-line sticky top-0 z-20 flex items-center justify-between border-b px-5 pt-4 pb-2">
         <p className="text-caption text-ink-soft font-semibold">{longDate()}</p>
         <div className="-mr-2 flex items-center">
+          {/* 보호자 폰을 빌려 쓰는 중이면 돌려받는 길. 설정의 「누가 쓰는지 바꾸기」 를 대신한다.
+              아이 화면이라 「보호자」 라는 말을 쓰지 않는다. 자녀 계정에는 내지 않는다(늘 아이 화면이다) */}
+          {profile?.role === "PARENT" && (
+            <button
+              type="button"
+              onClick={() => {
+                setMode("parent");
+                router.push("/parent");
+              }}
+              className="chip press text-ink mr-1 px-3"
+            >
+              어른 화면
+            </button>
+          )}
           <NotificationBell profileId={childProfileId ?? undefined} />
           <IconLink href="/settings" label="설정">
             <Settings className="size-6" strokeWidth={1.8} />

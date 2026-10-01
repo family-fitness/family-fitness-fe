@@ -1032,17 +1032,17 @@ check("주소가 이상해도 멈추지 않는다", fileType("not a url") === un
   check("근거 링크는 videoLink 로 고른다", citations.includes("videoLink("));
 }
 
-/* ─── 심사용 계정 — 세 흐름 ─────────────────────────────── */
+/* ─── 심사용 계정 — 네 줄 ──────────────────────────────── */
 
 check(
-  "심사용 계정은 체험 가족 · 처음 가입 · 초대받은 보호자 셋 가운데 고른다",
+  "심사용 계정은 체험 가족 · 아이 입장 · 처음 가입 · 초대받은 보호자 넷 가운데 고른다. 아이 입장은 체험 가족으로 들어간다",
   same(
-    REVIEW_WAYS.map((w) => w.kind),
-    ["FAMILY", "FRESH", "INVITED"],
+    REVIEW_WAYS.map((w) => `${w.kind}${w.asKid ? ":kid" : ""}`),
+    ["FAMILY", "FAMILY:kid", "FRESH", "INVITED"],
   ),
 );
 check(
-  "세 줄 모두 제목과 한 줄 설명이 있다",
+  "네 줄 모두 제목과 한 줄 설명이 있다",
   REVIEW_WAYS.every((w) => w.title.trim() && w.description.trim()),
 );
 check("체험 가족은 홈으로", reviewDestination({ nextStep: "HOME" }) === "/");

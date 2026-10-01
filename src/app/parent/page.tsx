@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { HomeHeader } from "@/components/app-shell/home-header";
-import { ParentHeadActions } from "@/components/app-shell/parent-head-actions";
+import { KidScreenButton, ParentHeadActions } from "@/components/app-shell/parent-head-actions";
 import { Stage } from "@/components/app-shell/stage";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/error-state";
@@ -101,8 +101,14 @@ export default function ParentHomePage() {
       title={map?.familyName ?? "우리집"}
       // 가족 이름을 누르면 가족 대시보드 — 가족 전체를 한 화면에서
       titleHref="/parent/dashboard"
-      // 아이 바꾸기 알약은 뺐다. 화면을 내리면 따라오지 않았고, 바로 아래 「우리 아이」 에서 아이를 고른다
-      actions={<ParentHeadActions />}
+      // 아이 바꾸기 알약은 뺐다. 바로 아래 「우리 아이」 에서 아이를 고른다.
+      // 「아이 화면」 은 폰이 없는 아이가 있을 때만 선다(설정의 「누가 쓰는지 바꾸기」 를 대신한다)
+      actions={
+        <>
+          <KidScreenButton />
+          <ParentHeadActions />
+        </>
+      }
     />
   );
 

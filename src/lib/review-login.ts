@@ -1,18 +1,33 @@
 /**
- * 심사용 계정 — 로그인 화면의 「심사용 계정으로 둘러보기」 에서 심사자가 고르는 세 흐름.
+ * 심사용 계정 — 로그인 화면의 「심사용 계정으로 둘러보기」 에서 심사자가 고르는 네 줄.
  *
  * 전에는 꾸며 둔 체험 가족으로만 들어가서, 심사자가 처음 가입하는 흐름과 초대받아 들어오는 흐름을
  * 해 볼 수 없었다. 개발용 로그인 묶음(「개발용 · 구글 없이 들어가기」)의 세 갈래와 같은 흐름이다.
  * 서버 API: `POST /auth/review-login` 본문 `{ kind }`. 없으면 FAMILY, 모르는 값은 400.
+ *
+ * 「아이 입장으로 둘러보기」 는 서버 흐름이 따로 없다. 체험 가족(FAMILY)으로 들어간 뒤 이 기기를 아이 화면으로
+ * 두고 체험 가족의 첫 아이 홈으로 간다(`asKid`)
  */
 
 export type ReviewKind = "FAMILY" | "FRESH" | "INVITED";
 
-export const REVIEW_WAYS: readonly { kind: ReviewKind; title: string; description: string }[] = [
+export const REVIEW_WAYS: readonly {
+  kind: ReviewKind;
+  /** 들어간 뒤 아이 화면으로 */
+  asKid?: boolean;
+  title: string;
+  description: string;
+}[] = [
   {
     kind: "FAMILY",
     title: "체험 가족으로 둘러보기",
     description: "측정 기록과 운동 기록이 있는 가족으로 바로 들어가요",
+  },
+  {
+    kind: "FAMILY",
+    asKid: true,
+    title: "아이 입장으로 둘러보기",
+    description: "체험 가족의 아이가 보는 화면으로 바로 들어가요",
   },
   {
     kind: "FRESH",
