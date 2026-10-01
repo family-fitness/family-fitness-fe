@@ -22,18 +22,21 @@ const PRODUCTION = process.env.NODE_ENV === "production";
  * 끼어든 스크립트가 있어도 밖으로 보내지 못하게 `connect-src 'self'` 가 먼저다.
  * Next 의 인라인 스크립트 때문에 'unsafe-inline' 은 둔다(nonce 없는 정적 화면들이다).
  * 유튜브 — 쿠키 없는 임베드 · 썸네일만 연다. 유튜브 스크립트는 들이지 않는다 — 플레이어는 말(postMessage)로 부린다.
+ * 공단 영상(국민체력100 동영상)은 mp4 와 썸네일을 공단 서버(openapi.kspo.or.kr)에서 바로 받는다.
+ * 그래서 그림(img-src)과 영상(media-src)에 그 주소를 연다. 주소는 BE 의 exercise_videos 테이블과 `lib/videos` 의 KSPO_HOST 와 같다.
  */
+const KSPO = "https://openapi.kspo.or.kr";
 const CSP = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://i.ytimg.com https://img.youtube.com",
+  `img-src 'self' data: blob: https://i.ytimg.com https://img.youtube.com ${KSPO}`,
   "font-src 'self' data:",
   "connect-src 'self'",
   "frame-src https://www.youtube-nocookie.com",
   "worker-src 'self'",
   "manifest-src 'self'",
-  "media-src 'self' blob:",
+  `media-src 'self' blob: ${KSPO}`,
   "object-src 'none'",
   "base-uri 'none'",
   "form-action 'self'",
