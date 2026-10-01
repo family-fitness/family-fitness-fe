@@ -243,7 +243,7 @@ await walk("초대 수락", async (h) => {
     await h.until(/\/claim/);
   });
   await h.step("코드를 넣기 전에 자리가 보인다", async () => {
-    await page.getByLabel("초대코드 여섯 자리").fill("K7M2QT");
+    await page.getByLabel("초대 코드 여섯 자리").fill("K7M2QT");
     await page.waitForTimeout(1600);
     const text = await page.locator("body").innerText();
     if (!/자리/.test(text)) problems.push("초대 수락\n    어느 자리인지 안 보인다");
@@ -407,7 +407,7 @@ await walk(
     await reviewAs(h, "초대받은 보호자로 들어가 보기");
     await h.step("초대코드가 채워진 합류 화면", async () => {
       await h.until(/\/claim\?code=/);
-      const code = await page.getByLabel("초대코드 여섯 자리").inputValue();
+      const code = await page.getByLabel("초대 코드 여섯 자리").inputValue();
       if (code !== "K7M2QT") problems.push(`심사용 계정 — 초대\n    코드 칸이 「${code}」`);
     });
     await h.step("자리로 들어가 참여 방식까지", async () => {

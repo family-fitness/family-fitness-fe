@@ -112,10 +112,18 @@ import {
 
 import {
   INVITE_ROLE_NAME,
+  claimBody,
   familyInviteBody,
+  inviteBirthRule,
   inviteCodeTitle,
   inviteLink,
+  invitePeekLine,
   inviteShareText,
+  isFamilyInvite,
+  joinButtonLabel,
+  joinProblem,
+  joinReady,
+  normalizeCode,
   pendingInviteDetail,
   pendingInviteTitle,
 } from "@/lib/invite";
@@ -1611,6 +1619,107 @@ check(
   check(
     "가족 관리는 아직 쓰지 않은 초대를 보이고 취소할 수 있다",
     page.includes("useFamilyInvites") && page.includes("useCancelFamilyInvite"),
+  );
+}
+
+/* ─── 초대 코드로 참여하기 ─────────────────────────────── */
+
+{
+  const ON = "2026-10-01";
+  const familyPeek = { kind: "FAMILY" as const, familyName: "서준이네", role: "PARENT" as const };
+  const kidPeek = { ...familyPeek, role: "CHILD" as const };
+  const seatPeek = {
+    kind: "PROFILE" as const,
+    familyName: "서준이네",
+    profileName: "도현",
+    role: "PARENT" as const,
+  };
+  const adult = {
+    name: " 지수 ",
+    birthDate: "1990-05-05",
+    sex: "F" as const,
+    height: "",
+    weight: "",
+  };
+
+  check(
+    "코드는 대문자와 숫자 여섯 자리로 다듬는다",
+    normalizeCode(" h3n-8wd ") === "H3N8WD" && normalizeCode("abcdefgh") === "ABCDEF",
+  );
+  check(
+    "kind 가 FAMILY 일 때만 가족 초대다. 안 주는 서버는 자리 초대로 본다",
+    isFamilyInvite(familyPeek) &&
+      !isFamilyInvite(seatPeek) &&
+      !isFamilyInvite({}) &&
+      !isFamilyInvite(undefined),
+  );
+  check(
+    "미리 보기 한 줄은 가족 초대면 가족과 역할, 자리 초대면 그 자리",
+    invitePeekLine(familyPeek) === "서준이네에 보호자로 초대받았어요" &&
+      invitePeekLine(kidPeek) === "서준이네에 아이로 초대받았어요" &&
+      invitePeekLine(seatPeek) === "서준이네 도현 자리",
+  );
+  check(
+    "생년월일 고르기는 지금 쓰는 규칙 그대로(보호자, 아이)",
+    same(inviteBirthRule("PARENT", ON), guardianBirthRule(ON)) &&
+      same(inviteBirthRule("CHILD", ON), childBirthRule(ON)),
+  );
+  check(
+    "이름, 생년월일, 성별을 다 넣어야 참여할 수 있다",
+    joinReady("PARENT", adult, ON) &&
+      !joinReady("PARENT", { ...adult, name: "  " }, ON) &&
+      !joinReady("PARENT", { ...adult, birthDate: "" }, ON) &&
+      !joinReady("PARENT", { ...adult, sex: null }, ON),
+  );
+  check(
+    "보호자로 초대받았는데 만 14세 미만이면 까닭을 말하고 막는다",
+    joinProblem("PARENT", { ...adult, birthDate: "2015-05-05" }, ON) ===
+      "보호자는 만 14세부터 참여할 수 있어요" &&
+      !joinReady("PARENT", { ...adult, birthDate: "2015-05-05" }, ON),
+  );
+  check(
+    "아이로 초대받았으면 어린 나이도 된다",
+    joinProblem("CHILD", { ...adult, birthDate: "2018-03-05" }, ON) === null &&
+      joinReady("CHILD", { ...adult, birthDate: "2018-03-05" }, ON),
+  );
+  check(
+    "키와 몸무게는 비워도 되고, 적었으면 범위 안이어야 한다",
+    joinReady("PARENT", { ...adult, height: "165", weight: "55" }, ON) &&
+      joinProblem("PARENT", { ...adult, height: "400" }, ON) === "230cm보다 작아야 해요." &&
+      !joinReady("PARENT", { ...adult, height: "400" }, ON),
+  );
+  check(
+    "자리 초대는 코드만 보낸다",
+    same(claimBody("K7M2QT", seatPeek, adult), { claimCode: "K7M2QT" }) &&
+      same(claimBody("K7M2QT", undefined, adult), { claimCode: "K7M2QT" }),
+  );
+  check(
+    "가족 초대는 이름(앞뒤 빈칸 없이), 생년월일, 성별을 싣고 적은 키와 몸무게만 싣는다",
+    same(claimBody("H3N8WD", familyPeek, adult), {
+      claimCode: "H3N8WD",
+      name: "지수",
+      birthDate: "1990-05-05",
+      sex: "F",
+    }) &&
+      same(claimBody("H3N8WD", familyPeek, { ...adult, height: "165.5", weight: "55" }), {
+        claimCode: "H3N8WD",
+        name: "지수",
+        birthDate: "1990-05-05",
+        sex: "F",
+        heightCm: 165.5,
+        weightKg: 55,
+      }),
+  );
+  check(
+    "참여 단추는 가족 초대면 「가족 참여하기」, 자리 초대면 그 자리로",
+    joinButtonLabel(familyPeek) === "가족 참여하기" &&
+      joinButtonLabel(seatPeek) === "도현 자리로 들어가기" &&
+      joinButtonLabel(undefined) === "가족 참여하기",
+  );
+  const claimPage = readFileSync("src/app/claim/page.tsx", "utf8");
+  check(
+    "합류 화면은 가족 초대면 지금 쓰는 달력 부품으로 생년월일을 받는다",
+    claimPage.includes("DateField") && claimPage.includes("inviteBirthRule"),
   );
 }
 
