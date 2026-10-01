@@ -13,7 +13,14 @@ import { Sheet } from "@/components/ui/sheet";
 import { KiumIsland } from "@/components/scene/kium-island";
 import { errorMessage } from "@/lib/errors";
 import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
-import { REVIEW_WAYS, afterSignIn, reviewDestination, type ReviewKind } from "@/lib/review-login";
+import {
+  REVIEW_WAYS,
+  UNUSED_INVITE_COPY,
+  afterSignIn,
+  reviewDestination,
+  unusedInvite,
+  type ReviewKind,
+} from "@/lib/review-login";
 import { useDevLogin, useGoogleLogin, useInvitePeek, useReviewLogin } from "@/lib/api/queries";
 import { blocksClaim, claimErrorMessage, invitePeekLine, normalizeCode } from "@/lib/invite";
 import { WITHDRAWN_NOTICE, cameAfterWithdrawal } from "@/lib/withdrawal";
@@ -138,6 +145,19 @@ function LoginContent() {
   const withdrawn = cameAfterWithdrawal(params);
   /** 심사용 계정의 세 흐름을 고르는 시트 */
   const [picking, setPicking] = useState(false);
+  /**
+   * 가족이 있는 계정이 초대 코드를 들고 로그인했다. 로그인은 코드를 쓰지 않아서 전에는 아무 말 없이 버려졌다.
+   * 한 번 알리고, 확인을 누르면 갈 주소를 담아 둔다
+   */
+  const [unused, setUnused] = useState<string | null>(null);
+  /** 로그인한 뒤 갈 곳으로. 들고 온 코드가 쓰이지 않았으면 먼저 알린다 */
+  const proceed = (auth: Parameters<typeof afterSignIn>[0], withCode: string | undefined) => {
+    if (unusedInvite(auth, withCode)) {
+      setUnused(afterSignIn(auth, withCode));
+      return;
+    }
+    router.replace(afterSignIn(auth, withCode));
+  };
   /** 인가코드는 한 번만 쓸 수 있다 — 개발 모드에서 effect 가 두 번 돌아도 한 번만 바꾼다 */
   const exchanged = useRef<string | null>(null);
 
@@ -157,7 +177,7 @@ function LoginContent() {
     exchange
       .then((auth) => {
         signIn(auth);
-        router.replace(afterSignIn(auth, saved?.claimCode));
+        proceed(auth, saved?.claimCode);
       })
       .catch((e) => {
         setSigning(null);
@@ -174,7 +194,7 @@ function LoginContent() {
     try {
       const auth = await devLogin.mutateAsync({ providerUserId: account.id });
       signIn(auth);
-      router.replace(afterSignIn(auth, claim));
+      proceed(auth, claim);
     } catch (e) {
       setError(errorMessage(e, "들어가지 못했어요."));
     }
@@ -209,7 +229,7 @@ function LoginContent() {
         new Promise((done) => setTimeout(done, STAND_IN_MIN_MS)),
       ]);
       signIn(auth);
-      router.replace(afterSignIn(auth, withCode));
+      proceed(auth, withCode);
     } catch (e) {
       setSigning(null);
       setError(errorMessage(e, "들어가지 못했어요."));
@@ -269,6 +289,8 @@ function LoginContent() {
     setInviting(false);
     start(entered);
   };
+
+  if (unused) return <UnusedInvite onDone={() => router.replace(unused)} />;
 
   // 구글로 떠나는 중 · 돌아와 코드를 바꾸는 중에는 단추 대신 들어가는 화면. 두 번 누르거나 멈춘 줄 알고 닫지 않게
   if (signing) {
@@ -455,6 +477,22 @@ function LegalLinks() {
         이용약관
       </Link>
     </nav>
+  );
+}
+
+/** 가족이 있는 계정이라 들고 온 초대 코드를 쓰지 않았다 — 까닭과 해결법을 한 번 보이고 가던 곳으로 */
+function UnusedInvite({ onDone }: { onDone: () => void }) {
+  return (
+    <PlainScreen className="flex min-h-dvh flex-col items-center justify-center gap-5 text-center">
+      <LevelBuddy stage={3} size={120} />
+      <div className="space-y-2" role="status">
+        <p className="page-title text-balance break-keep">{UNUSED_INVITE_COPY.title}</p>
+        <p className="text-ink-soft text-body">{UNUSED_INVITE_COPY.detail}</p>
+      </div>
+      <Button size="block" onClick={onDone}>
+        확인
+      </Button>
+    </PlainScreen>
   );
 }
 

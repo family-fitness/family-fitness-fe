@@ -91,7 +91,13 @@ import {
   TERMS_OF_SERVICE,
 } from "@/lib/legal";
 import { verifiedLabel } from "@/lib/mission";
-import { REVIEW_WAYS, afterSignIn, reviewDestination } from "@/lib/review-login";
+import {
+  REVIEW_WAYS,
+  UNUSED_INVITE_COPY,
+  afterSignIn,
+  reviewDestination,
+  unusedInvite,
+} from "@/lib/review-login";
 import {
   childBirthRule,
   guardianBirthRule,
@@ -1831,6 +1837,34 @@ check(
   check(
     "합류 화면은 lib/invite 의 표 하나로 말한다",
     claimPage.includes("claimErrorMessage") && !claimPage.includes("들어가지 못했어요"),
+  );
+}
+
+/* ─── 가족이 있는 계정이 초대 코드를 들고 로그인했다 ─────────── */
+
+check(
+  "가족이 있는 계정(홈, 참여 방식)이 코드를 들고 로그인하면 코드를 쓰지 않은 것이다",
+  unusedInvite({ nextStep: "HOME" }, "H3N8WD") &&
+    unusedInvite({ nextStep: "SUPPORT_MODE" }, "H3N8WD"),
+);
+check(
+  "가족이 없는 계정이나 코드 없이 들어온 계정은 알리지 않는다",
+  !unusedInvite({ nextStep: "CLAIM" }, "H3N8WD") &&
+    !unusedInvite({ nextStep: "CREATE_FAMILY" }, "H3N8WD") &&
+    !unusedInvite({ nextStep: "HOME" }, undefined) &&
+    !unusedInvite({ nextStep: "HOME" }, ""),
+);
+check(
+  "코드를 쓰지 않았다는 안내는 까닭과 해결법을 말한다",
+  UNUSED_INVITE_COPY.title === "이미 가족이 있는 계정이라 초대 코드를 쓰지 않았어요" &&
+    UNUSED_INVITE_COPY.detail.includes("설정에서 계정을 탈퇴한 뒤") &&
+    ![UNUSED_INVITE_COPY.title, UNUSED_INVITE_COPY.detail].some((l) => /[·—–]/.test(l)),
+);
+{
+  const page = readFileSync("src/app/login/page.tsx", "utf8");
+  check(
+    "로그인 화면은 버려질 뻔한 코드를 한 번 알린다",
+    page.includes("unusedInvite(") && page.includes("UNUSED_INVITE_COPY"),
   );
 }
 
