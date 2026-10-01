@@ -25,7 +25,7 @@ import { useRoleStore } from "@/stores/role-store";
 const version = process.env.NEXT_PUBLIC_APP_VERSION;
 
 /**
- * 설정 — 로그인 계정 · 누가 쓰는지 · 동의 · 약관 · 앱 정보 · 로그아웃(9/28 「설정에 이런 식으로」).
+ * 설정 — 로그인 계정 · 동의 · 약관 · 앱 정보 · 로그아웃(9/28 「설정에 이런 식으로」).
  * 로그아웃 아래에 계정 탈퇴가 있다.
  *
  * 쓰는 자리가 따로 있는 것은 그리로 옮겼다(9/23) — 가족 · 초대 · 참여 방식은 가족 관리, 운동 루틴은
@@ -135,13 +135,13 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <ul className="card divide-rows py-1">
-          {/* 탭바가 없으니 역할을 바꾸는 길이 여기다 */}
-          <ListRow href="/start" art="icon/menu-switch" title="누가 쓰는지 바꾸기" />
-          {parentView && (
+        {/* 「누가 쓰는지 바꾸기」 는 뺐다(10/1 「그게 설정에 있는 게 이상해」). 폰이 없는 아이가 있으면
+            보호자 홈 머리의 「아이 화면」 으로, 돌아올 때는 아이 홈 머리의 「어른 화면」 으로 바꾼다 */}
+        {parentView && (
+          <ul className="card divide-rows py-1">
             <ListRow href="/settings/consent" art="icon/menu-consent" title="보호자 동의" />
-          )}
-        </ul>
+          </ul>
+        )}
 
         <ul className="card divide-rows py-1">
           <ListRow href={PRIVACY_HREF} title="개인정보 처리방침" />
