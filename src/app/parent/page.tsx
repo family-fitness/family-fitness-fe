@@ -12,7 +12,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArtIcon } from "@/components/ui/art-icon";
-import { ChildPanel } from "@/components/domain/child-panel";
+import { ChildFitnessCard, ChildTodayCard } from "@/components/domain/child-panel";
 import { InviteSheet } from "@/components/domain/invite-sheet";
 import { WelcomeSheet } from "@/components/domain/welcome-sheet";
 import { KidsOverview } from "@/components/domain/kids-overview";
@@ -37,12 +37,13 @@ import type { FamilyLeague } from "@/lib/api/types";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
- * 부모 홈 — 맨 위에 우리 아이 모두, 그 아래 고른 아이 자세히(9/25).
+ * 보호자 홈. 아이 홈과 같은 차례로 쌓는다(10/1 「보호자 화면도 아이 화면처럼」).
  *
- *   「우리 아이」  아이마다 한 줄 — 오늘 · 이어서 · 이번 주 점 · 신체 점수. 누르면 그 아이를 고른다 · 아이 등록 · 초대
- *   고른 아이      육각형 · 그 아래 통합 신체 점수 · 오늘 운동(칭찬 · 걸음수 확인 · 기다리는 제안)
- *   「이번 주」    고른 아이의 오늘 링 셋 · 요일 탑 · 캘린더 · 가족 리그 · 우리 가족
- *   그 아래       아이의 키울 힘 영상이 가로로 한 줄(삼성헬스 홈처럼)
+ *   「우리 아이」  아이마다 한 줄. 누르면 아래가 그 아이로 바뀐다. 아이 등록, 초대
+ *   오늘 운동      고른 아이의 오늘 운동. 아이 홈처럼 파랑 큰 카드(칭찬, 걸음수 확인, 기다리는 제안)
+ *   체력          고른 아이의 체력 육각형과 통합 신체 점수. 아이 홈에도 같은 육각형이 있다
+ *   「이번 주」    고른 아이의 오늘 링 셋, 요일 탑, 캘린더, 가족 리그, 우리 가족
+ *   맨 아래       국민체력100 영상이 가로로 한 줄(아이 홈과 같다)
  *
  * 기능 하나마다 네모 카드 하나씩 쌓지 않는다 — 「ai 특유의 카드 형식」(9/25).
  */
@@ -155,14 +156,17 @@ export default function ParentHomePage() {
           onInvite={() => setInviting(true)}
         />
 
-        <ChildPanel
-          child={child}
+        <ChildTodayCard
           familyId={familyId ?? ""}
           parentProfileId={profile?.profileId ?? ""}
+          childProfileId={child.profileId ?? ""}
+          childName={child.name ?? "아이"}
           missions={missions?.missions}
           missionsFailed={Boolean(missionsError)}
           onRetryMissions={refetchMissions}
         />
+
+        <ChildFitnessCard child={child} />
 
         <WeekPanel
           profileId={child.profileId}

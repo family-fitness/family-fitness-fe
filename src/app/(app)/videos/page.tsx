@@ -1,7 +1,8 @@
 "use client";
 
 import { ChevronRight, Heart, Play, Plus, Search, X } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Fragment, Suspense, useDeferredValue, useEffect, useRef, useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -10,10 +11,8 @@ import { Dock } from "@/components/ui/dock";
 import { EmptyState, EmptyStateAction } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
-import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoThumb } from "@/components/ui/video-thumb";
-import { ClipPlayer } from "@/components/domain/clip-player";
 import { FactorIcon } from "@/components/domain/factor-icon";
 import type { ClipView, SessionPhase } from "@/lib/api/types";
 import { useClipPages, useToggleClipFavorite } from "@/lib/api/queries";
@@ -23,7 +22,7 @@ import { PHASE_LABEL, clock } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { useIsKidView } from "@/lib/view-role";
-import { finderCount, finderOwner, finderScope, joinClipPages } from "@/lib/videos";
+import { clipHref, finderCount, finderOwner, finderScope, joinClipPages } from "@/lib/videos";
 import { useRoleStore } from "@/stores/role-store";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
@@ -58,7 +57,6 @@ export default function VideosPage() {
 }
 
 function Finder() {
-  const router = useRouter();
   const params = useSearchParams();
   const kidView = useIsKidView();
   const { profile } = useSession();
@@ -94,19 +92,6 @@ function Finder() {
   useRoutineReady();
   const toggleMove = useRoutineStore((s) => s.toggle);
   const clearMoves = useRoutineStore((s) => s.clear);
-  // 시범으로 연 클립. 홈의 영상 줄에서 `?clip=` 으로 오면 그 클립이 바로 열린다.
-  // 닫아도 고른 클립은 남긴다 — 시트가 내려가는 동안 제목과 영상이 비지 않게
-  const [previewId, setPreviewId] = useState<string | null>(params.get("clip"));
-  const [previewOpen, setPreviewOpen] = useState(Boolean(params.get("clip")));
-  const closePreview = () => {
-    setPreviewOpen(false);
-    // 홈에서 `?clip=` 으로 왔으면 주소에서 뗀다 — 새로고침하거나 뒤로 돌아오면 닫은 시범이 다시 떴다
-    if (!params.has("clip")) return;
-    const next = new URLSearchParams(params.toString());
-    next.delete("clip");
-    const rest = next.toString();
-    router.replace(`/videos${rest ? `?${rest}` : ""}`, { scroll: false });
-  };
   // 치는 동안은 앞 결과를 둔다 — 한 글자마다 서버에 묻지 않게
   const search = useDeferredValue(q.trim());
 
@@ -134,7 +119,6 @@ function Finder() {
   const loadMore = () => {
     if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
   };
-  const preview = previewId ? (clips.find((c) => c.clipId === previewId) ?? null) : null;
 
   const inTray = (c: ClipView) => moves.some((m) => m.clip.clipId === c.clipId);
 
@@ -287,10 +271,6 @@ function Finder() {
                   canPick={!kidView}
                   full={moves.length >= MAX_MOVES}
                   onPick={() => toggleMove(c)}
-                  onPreview={() => {
-                    setPreviewId(c.clipId);
-                    setPreviewOpen(true);
-                  }}
                 />
               ))}
             </ul>
@@ -306,27 +286,6 @@ function Finder() {
       </Stage>
 
       {!kidView && moves.length > 0 && <Tray onClear={clearMoves} />}
-
-      <Sheet
-        open={previewOpen && preview != null}
-        onClose={closePreview}
-        title={preview?.title ?? "시범"}
-      >
-        {preview && (
-          <Preview
-            clip={preview}
-            // 못 틀면 목록에서 같은 단계 · 같은 요인의 다른 동작을 대신 튼다
-            alternates={clips
-              .filter(
-                (c) =>
-                  c.clipId !== preview.clipId &&
-                  c.phase === preview.phase &&
-                  c.factor === preview.factor,
-              )
-              .slice(0, 5)}
-          />
-        )}
-      </Sheet>
     </>
   );
 }
@@ -397,7 +356,6 @@ function ClipRow({
   canPick,
   full,
   onPick,
-  onPreview,
 }: {
   clip: ClipView;
   owner: string | undefined;
@@ -406,47 +364,44 @@ function ClipRow({
   /** 열 개를 다 담았다 — 더 담는 단추는 눌러도 아무 일이 없으니 꺼 둔다. 빼기는 된다 */
   full: boolean;
   onPick: () => void;
-  onPreview: () => void;
 }) {
   const favorite = useToggleClipFavorite(owner ?? "");
   const length = c.endSec - c.startSec;
 
   return (
     <li className="flex items-center gap-3 py-3">
-      <button
-        type="button"
-        onClick={onPreview}
-        aria-label={`${c.title} 시범 보기`}
-        className="press relative shrink-0 overflow-hidden rounded-xl"
-      >
-        <VideoThumb videoId={c.videoId} src={c.thumbnailUrl} className="aspect-video w-20" />
-        {/* 누르면 시범이 돈다는 표시. 검정 면 대신 남색(규칙: 검정으로 면을 채우지 않는다) */}
-        <span className="absolute inset-0 grid place-items-center">
-          <span className="bg-signal-deep/70 grid size-8 place-items-center rounded-full text-white">
-            <Play aria-hidden className="size-4 fill-current" />
+      {/* 썸네일과 이름을 누르면 운동 상세(영상과 설명)로 */}
+      <Link href={clipHref(c)} className="press flex min-w-0 flex-1 items-center gap-3">
+        <span className="relative shrink-0 overflow-hidden rounded-xl">
+          <VideoThumb videoId={c.videoId} src={c.thumbnailUrl} className="aspect-video w-20" />
+          {/* 누르면 영상이 나온다는 표시. 검정 면 대신 남색(규칙: 검정으로 면을 채우지 않는다) */}
+          <span className="absolute inset-0 grid place-items-center">
+            <span className="bg-signal-deep/70 grid size-8 place-items-center rounded-full text-white">
+              <Play aria-hidden className="size-4 fill-current" />
+            </span>
           </span>
         </span>
-      </button>
-      <div className="min-w-0 flex-1">
-        <p className="line-clamp-2 text-sm leading-snug font-bold">{c.title}</p>
-        {/* 꼬리표는 통째로 줄을 넘긴다 — 「도구 / 필요」 로 쪼개지지 않게. 쉼표는 앞 꼬리표에 붙는다 */}
-        <p className="text-caption text-ink-soft mt-0.5">
-          {[
-            PHASE_LABEL[c.phase],
-            c.factor,
-            clock(length),
-            c.quiet && "조용함",
-            c.props && "도구 필요",
-          ]
-            .filter((t): t is string => Boolean(t))
-            .map((t, i) => (
-              <Fragment key={t}>
-                {i > 0 && ", "}
-                <span className="whitespace-nowrap">{t}</span>
-              </Fragment>
-            ))}
-        </p>
-      </div>
+        <span className="block min-w-0 flex-1">
+          <span className="line-clamp-2 text-sm leading-snug font-bold">{c.title}</span>
+          {/* 꼬리표는 통째로 줄을 넘긴다 — 「도구 / 필요」 로 쪼개지지 않게. 쉼표는 앞 꼬리표에 붙는다 */}
+          <span className="text-caption text-ink-soft mt-0.5 block">
+            {[
+              PHASE_LABEL[c.phase],
+              c.factor,
+              clock(length),
+              c.quiet && "조용함",
+              c.props && "도구 필요",
+            ]
+              .filter((t): t is string => Boolean(t))
+              .map((t, i) => (
+                <Fragment key={t}>
+                  {i > 0 && ", "}
+                  <span className="whitespace-nowrap">{t}</span>
+                </Fragment>
+              ))}
+          </span>
+        </span>
+      </Link>
       {/* 즐겨찾기 · 담기는 위아래로 — 옆으로 두면 360px 에서 이름 칸이 100px 남짓으로 줄어 두 글자씩 끊겼다.
           단추는 누르는 자리 44px(size-11)를 지킨다 */}
       <div className="-my-1 flex shrink-0 flex-col items-center">
@@ -486,36 +441,6 @@ function ClipRow({
         )}
       </div>
     </li>
-  );
-}
-
-/** 시범 보기. 누르면 그 동작 구간만 되풀이한다 */
-function Preview({ clip, alternates }: { clip: ClipView; alternates: ClipView[] }) {
-  const [playing, setPlaying] = useState(false);
-  return (
-    <div>
-      <ClipPlayer
-        videoId={clip.videoId}
-        startSec={clip.startSec}
-        endSec={clip.endSec}
-        mediaUrl={clip.mediaUrl}
-        thumbnailUrl={clip.thumbnailUrl}
-        alternates={alternates}
-        playing={playing}
-        title={clip.title}
-      />
-      <p className="text-caption text-ink-soft mt-2">
-        {PHASE_LABEL[clip.phase]}
-        {clip.factor && `, ${clip.factor}`}, {clock(clip.endSec - clip.startSec)}
-      </p>
-      <button
-        type="button"
-        onClick={() => setPlaying((v) => !v)}
-        className="press bg-signal-strong mt-3 flex min-h-12 w-full items-center justify-center rounded-2xl text-sm font-extrabold text-white"
-      >
-        {playing ? "멈추기" : "시범 보기"}
-      </button>
-    </div>
   );
 }
 

@@ -15,33 +15,18 @@ import type { FitnessMapMember, Mission } from "@/lib/api/types";
 import { useCheers, useLatestCoachRun, useLatestFitnessTest, useRestDays } from "@/lib/api/queries";
 import { missionsOn } from "@/lib/day";
 import { verifiedLabel } from "@/lib/mission";
+import { FACTOR_POSE, poseArt } from "@/lib/poses";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { daysSince, monthOf, today } from "@/lib/today";
-import { cn, formatDate, withJosa } from "@/lib/utils";
+import { formatDate, withJosa } from "@/lib/utils";
 import { childFinderHref } from "@/lib/videos";
 
 /**
- * 부모 홈의 첫 묶음 — 「우리 아이」. 아이가 어디쯤인지와 오늘 무엇을 하는지를 한 덩어리로.
+ * 보호자 홈의 체력 카드. 아이 홈과 같은 자리(오늘 운동 아래)에 고른 아이의 체력 육각형을 둔다.
  *
- * 카드 하나에 기능 하나씩 쌓던 것(체력 · 다시 측정하기 · AI 제안 · 오늘 운동)을 합쳤다(9/25 「큰 묶음 둘」).
- * 육각형 바로 아래에 통합 신체 점수(9/25). 이름을 누르면 아이 기록(요인 표 · 점수 흐름 · 키)으로 간다.
+ * 육각형 바로 아래에 통합 신체 점수(9/25). 제목을 누르면 아이 기록(요인 표, 점수 흐름, 키)으로 간다.
  */
-export function ChildPanel({
-  child,
-  familyId,
-  parentProfileId,
-  missions,
-  missionsFailed,
-  onRetryMissions,
-}: {
-  child: FitnessMapMember;
-  familyId: string;
-  parentProfileId: string;
-  /** 아직 못 받았으면 undefined */
-  missions: Mission[] | undefined;
-  missionsFailed: boolean;
-  onRetryMissions: () => void;
-}) {
+export function ChildFitnessCard({ child }: { child: FitnessMapMember }) {
   const { data: latest, isPending } = useLatestFitnessTest(child.profileId);
   const name = child.name ?? "아이";
   const score = child.latest?.overallPercentile ?? null;
@@ -49,9 +34,9 @@ export function ChildPanel({
   const since = daysSince(testedOn);
 
   return (
-    <section className="card-hero" aria-label={`${name}의 체력과 오늘 운동`}>
+    <section className="card-hero" aria-label={`${name}의 체력`}>
       <CardHead
-        title={name}
+        title={`${name}의 체력`}
         meta={testedOn ? `${formatDate(testedOn)} 측정` : undefined}
         href={`/parent/child/${child.profileId}`}
       />
@@ -87,18 +72,6 @@ export function ChildPanel({
           note={`지난번에 잰 지 ${since}일`}
         />
       )}
-
-      <div className="border-line mt-4 border-t pt-3">
-        <TodaySection
-          familyId={familyId}
-          parentProfileId={parentProfileId}
-          childProfileId={child.profileId ?? ""}
-          childName={name}
-          missions={missions}
-          missionsFailed={missionsFailed}
-          onRetryMissions={onRetryMissions}
-        />
-      </div>
     </section>
   );
 }
@@ -133,8 +106,9 @@ function PanelRow({
 /**
  * 아이의 오늘 — 할 운동 · 칭찬 · 직접 적은 걸음수 · 기다리는 제안.
  * 아이가 다 했으면 여기가 **칭찬을 보내는 자리**다 — 알림을 받고 들어온 부모가 가장 먼저 보는 곳(규칙 12).
+ * 오늘 운동이 있으면 아이 홈의 오늘 운동 카드처럼 파랑 큰 카드로 그린다.
  */
-function TodaySection({
+export function ChildTodayCard({
   familyId,
   parentProfileId,
   childProfileId,
@@ -184,13 +158,8 @@ function TodaySection({
         }
       : null;
 
-  const head = (
-    <CardHead
-      title="오늘 운동"
-      meta="하루 기록"
-      href={`/calendar/${now}?profileId=${encodeURIComponent(childProfileId)}`}
-    />
-  );
+  const dayHref = `/calendar/${now}?profileId=${encodeURIComponent(childProfileId)}`;
+  const head = <CardHead title="오늘 운동" meta="하루 기록" href={dayHref} />;
 
   // 쉬는 날에는 오늘 운동을 권하지 않는다(규칙 15) — 앞날 제안까지 가리지는 않는다
   const proposal = waiting && !(restToday && waiting.today) && (
@@ -205,7 +174,7 @@ function TodaySection({
   // 운동 목록을 못 받았으면 「아직 오늘 운동이 없어요」 로 그리지 않는다 — 부모가 같은 운동을 또 받는다
   if (!missions) {
     return (
-      <>
+      <section className="card-hero" aria-label={`${childName}의 오늘 운동`}>
         {head}
         {missionsFailed ? (
           <p className="text-ink-soft mt-1 flex items-center justify-between gap-3 text-sm">
@@ -224,13 +193,13 @@ function TodaySection({
             <Skeleton className="h-4 w-56" />
           </div>
         )}
-      </>
+      </section>
     );
   }
 
   if (timed.length === 0 && reported.length === 0) {
     return (
-      <>
+      <section className="card-hero" aria-label={`${childName}의 오늘 운동`}>
         {head}
         {/* 글만 두지 않고 왼쪽에 키움이를 세운다. 쉬는 날은 쉬는 키움이 */}
         <div className="mt-1 flex items-center gap-3">
@@ -271,7 +240,7 @@ function TodaySection({
             </Link>
           </div>
         )}
-      </>
+      </section>
     );
   }
 
@@ -305,65 +274,78 @@ function TodaySection({
     .map(([p, n]) => `${PHASE_LABEL[p].replace("운동", "")} ${n}`)
     .join(", ");
 
+  // 본운동이 기르는 힘을 하는 키움이. 아이 홈 오늘 운동 카드와 같은 그림이다
+  const factor = sessions.find((s) => s.phase === "MAIN")?.factor;
+  const pose = factor && FACTOR_POSE[factor] ? poseArt(FACTOR_POSE[factor]) : null;
+
+  // 아이 홈의 오늘 운동 카드처럼 파랑 큰 카드 하나에 오늘 운동을 모두 담는다
   return (
-    <>
-      {head}
-      {main && (
-        <div className="mt-1">
-          <p className="text-lead truncate font-extrabold">
-            {main.title}
-            {items.length > 1 && (
-              <span className="text-ink-soft text-sm font-bold"> 외 {items.length - 1}개</span>
+    <section
+      className="bg-signal-strong shadow-lift rounded-3xl p-5 text-white"
+      aria-label={`${childName}의 오늘 운동`}
+    >
+      <NavLink href={dayHref} className="press block">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-caption flex items-center gap-0.5 font-bold text-white">
+              오늘 운동
+              <ChevronRight aria-hidden className="size-4" />
+            </p>
+            {main && (
+              <>
+                <p className="text-metric mt-1 leading-tight font-extrabold">
+                  {sessions.length}개, {minutes}분
+                </p>
+                <p className="text-caption mt-1 truncate font-semibold text-white">
+                  {main.title}
+                  {items.length > 1 && ` 외 ${items.length - 1}개`}
+                  {phases && ` (${phases})`}
+                </p>
+                <p className="text-caption mt-1.5 font-bold text-white">
+                  {/* 한 만큼이 먼저 — 쉬는 날에 「그래도 할래요」 로 한 것을 「쉬는 날」 로 덮지 않는다 */}
+                  {finished
+                    ? `${withJosa(childName, "이가")} 다 했어요`
+                    : doneCount > 0
+                      ? `${doneCount}개 했어요. ${sessions.length - doneCount}개 남았어요`
+                      : restToday
+                        ? "오늘은 쉬는 날이에요"
+                        : "아직 시작 전이에요"}
+                </p>
+              </>
             )}
-          </p>
-          <p className="text-caption text-ink-soft mt-0.5">
-            {sessions.length}개, {minutes}분{phases && ` (${phases})`}
-          </p>
-          <p
-            className={cn(
-              "text-caption mt-1.5 font-bold",
-              finished ? "text-done" : "text-ink-soft",
-            )}
-          >
-            {/* 한 만큼이 먼저 — 쉬는 날에 「그래도 할래요」 로 한 것을 「쉬는 날」 로 덮지 않는다 */}
-            {finished
-              ? `${withJosa(childName, "이가")} 다 했어요`
-              : doneCount > 0
-                ? `${doneCount}개 했어요. ${sessions.length - doneCount}개 남았어요`
-                : restToday
-                  ? "오늘은 쉬는 날이에요"
-                  : "아직 시작 전이에요"}
-          </p>
+          </div>
+          {pose && <ArtIcon name={pose} className="-my-2 size-20 shrink-0" />}
         </div>
-      )}
+      </NavLink>
 
       {/* 다 했으면 칭찬. 보냈으면 보냈다고만 — 두 번 보내라고 조르지 않는다 */}
-      {main && finished && (
-        <div className="mt-3">
-          {praisedToday ? (
-            <p className="text-done flex min-h-11 items-center justify-center gap-1.5 text-sm font-bold">
-              <Check aria-hidden className="size-4" strokeWidth={3} />
-              오늘 스티커를 붙였어요
-            </p>
-          ) : (
-            <Link
-              href={stickerHref(main.missionId)}
-              className="press bg-signal-strong flex min-h-12 w-full items-center justify-center rounded-2xl text-sm font-extrabold text-white"
-            >
-              칭찬 스티커 붙이기
-            </Link>
-          )}
-        </div>
-      )}
+      {main &&
+        finished &&
+        (praisedToday ? (
+          <p className="mt-4 flex min-h-12 items-center justify-center gap-1.5 rounded-2xl bg-white/15 text-sm font-extrabold">
+            <Check aria-hidden className="size-4" strokeWidth={3} />
+            오늘 스티커를 붙였어요
+          </p>
+        ) : (
+          <Link
+            href={stickerHref(main.missionId)}
+            className="press text-signal-strong mt-4 flex min-h-14 w-full items-center justify-center rounded-2xl bg-white text-lg font-extrabold"
+          >
+            칭찬 스티커 붙이기
+          </Link>
+        ))}
 
       {/* 직접 적은 걸음수 — 서버가 모르는 값이라 부모 확인이 남는다(규칙 2) */}
       {reported.map((m) => {
         const p = m.participants?.find((x) => x.profileId === childProfileId);
         return (
-          <div key={m.missionId} className="border-line mt-3 flex items-center gap-3 border-t pt-3">
+          <div
+            key={m.missionId}
+            className="mt-3 flex items-center gap-3 border-t border-white/25 pt-3"
+          >
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">{m.title}</p>
-              <p className="text-caption text-ink-soft mt-0.5">
+              <p className="text-caption mt-0.5 text-white">
                 {p?.verifiedBy
                   ? verifiedLabel(p.verifiedBy, p.needsGuardianCheck)
                   : "아직 안 적었어요"}
@@ -372,7 +354,7 @@ function TodaySection({
             {p?.needsGuardianCheck && (
               <Link
                 href={stickerHref(m.missionId)}
-                className="press bg-sub text-ink grid min-h-11 shrink-0 place-items-center rounded-xl px-3.5 text-xs font-extrabold"
+                className="press text-signal-strong grid min-h-11 shrink-0 place-items-center rounded-xl bg-white px-3.5 text-xs font-extrabold"
               >
                 확인해 주기
               </Link>
@@ -381,28 +363,42 @@ function TodaySection({
         );
       })}
 
-      {proposal}
+      {waiting && !(restToday && waiting.today) && (
+        <NavLink
+          href={`/plan/${waiting.id}`}
+          className="press mt-3 flex min-h-12 items-center gap-3 border-t border-white/25 pt-3"
+        >
+          <ArtIcon name="icon/menu-ai" className="size-8" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-extrabold">AI 제안이 와 있어요</span>
+            <span className="text-caption block truncate text-white">
+              {waiting.title ?? "오늘 운동 제안"}
+            </span>
+          </span>
+          <ChevronRight aria-hidden className="size-4 shrink-0" />
+        </NavLink>
+      )}
 
       {/* 운동 더하기 — 오늘 운동이 있어도 AI에게 더 받거나 직접 만들어 더한다(9/25 「운동 미션을 추가하는」).
           코치가 짠 것은 등록해야 운동이 된다(규칙 1) */}
       {!waiting && !restToday && (
-        <div className="border-line mt-3 grid grid-cols-2 gap-2 border-t pt-3">
+        <div className="mt-3 grid grid-cols-2 gap-2 border-t border-white/25 pt-3">
           <Link
             href="/plan"
-            className="press bg-signal-soft text-signal-deep flex min-h-11 items-center justify-center gap-1 rounded-2xl px-1.5 text-sm font-extrabold whitespace-nowrap"
+            className="press flex min-h-11 items-center justify-center gap-1 rounded-2xl bg-white/15 px-1.5 text-sm font-extrabold whitespace-nowrap"
           >
-            {/* 360px 에서 반 칸이 140px 남짓이라 「AI 코치에게 더 받기」 는 두 줄로 꺾였다. 320px 폰에서는 그림을 빼야 한 줄에 들어간다 */}
+            {/* 320px 폰에서는 그림을 빼야 한 줄에 들어간다 */}
             <ArtIcon name="icon/menu-ai" className="size-5 shrink-0 max-[339px]:hidden" />
             AI에게 더 받기
           </Link>
           <Link
             href={childFinderHref(childProfileId)}
-            className="press bg-sub flex min-h-11 items-center justify-center rounded-2xl px-1.5 text-sm font-extrabold whitespace-nowrap"
+            className="press flex min-h-11 items-center justify-center rounded-2xl bg-white/15 px-1.5 text-sm font-extrabold whitespace-nowrap"
           >
             직접 만들어 더하기
           </Link>
         </div>
       )}
-    </>
+    </section>
   );
 }

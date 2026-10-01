@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Pause, Play, SkipForward, Volume2, VolumeX } from "lucide-react";
+import { Check, Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -15,7 +15,6 @@ import { VideoThumb } from "@/components/ui/video-thumb";
 import { ClipPlayer } from "@/components/domain/clip-player";
 import { Confetti } from "@/components/scene/confetti";
 import { KiumIsland } from "@/components/scene/kium-island";
-import { StoneTrail } from "@/components/scene/stone-trail";
 import { XpGauge } from "@/components/domain/xp-gauge";
 import { ApiError } from "@/lib/api/client";
 import type { MissionSession } from "@/lib/api/types";
@@ -34,7 +33,7 @@ import { guardiansName } from "@/lib/family";
 import { playLock } from "@/lib/mission";
 import { stageOf } from "@/lib/levels";
 import { newlyUnlocked } from "@/lib/unlocks";
-import { PHASE_LABEL, clock, sessionsOf, stepMinutes, totalMinutes } from "@/lib/session-plan";
+import { PHASE_LABEL, clock, doneAtSeconds, sessionsOf, stepSeconds } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { longDate, today } from "@/lib/today";
 import { cn, withJosa } from "@/lib/utils";
@@ -42,36 +41,37 @@ import { useVoice } from "@/lib/voice";
 import { usePrefsStore } from "@/stores/prefs-store";
 
 /**
- * 오늘 운동 — 한 칸씩 아래로.
+ * 오늘 운동. 삼성 헬스 운동 코칭 화면처럼 한 동작씩 한다.
  *
- * 받은 순서대로 칸이 세로로 이어지고, 왼쪽 선이 길이다(「아래로 향하는 길라잡이」).
- * **지금 칸만 펼친다.** 시범 영상과 타이머가 있고, 시작을 누르면 둘이 같이 돈다.
- * 잡힌 시간이 다 되면 조각이 한 번 터지고, 화면이 다음 칸으로 내려가 10초 쉰 뒤
- * 다음 칸이 시작된다(쉬는 시간은 「+10초」 · 「바로 시작」). 화면을 떠나면(잠금 · 다른 앱) 멈춘다. 영상은 지금 칸 하나만 띄운다 —
- * 여섯 개를 한꺼번에 띄우면 폰이 버벅인다.
+ * 맨 위에 몇 번째 동작인지 보이는 진행 막대, 그 아래 큰 시범 영상, 동작 이름과 큰 남은 시간(원형 링),
+ * 큰 일시정지 단추와 이전, 다음 단추, 다음 동작 미리 보기가 있다. 그 아래에 전체 동작 목록이 있다.
+ * 잡힌 시간이 다 되면 조각이 한 번 터지고 10초 쉰다. 쉬는 동안은 다음 동작의 영상과 이름을 크게 보여 준다.
+ * 화면을 떠나면(잠금, 다른 앱) 멈춘다. 영상은 지금 동작 하나만 띄운다(여러 개를 띄우면 폰이 버벅인다).
  *
- * 소리 안내가 켜져 있으면 말로도 알려 준다 — 「스쿼트 시작!」 「10초 남았어요」 「셋 · 둘 · 하나」
- * 「잘했어요, 다음은 …」(나이키 트레이닝 클럽 · 삼성헬스 운동 코칭). 화면을 안 봐도 따라 할 수 있게.
+ * 타이머는 그 동작 영상의 길이만큼 돈다(`stepSeconds`). 절반 넘게 하면 완료할 수 있다(`doneAtSeconds`).
+ * 동작마다 한 시간은 sessionStorage 에 남겨, 다른 화면에 갔다 오거나 다른 동작을 눌렀다 와도 이어서 한다.
+ *
+ * 소리 안내가 켜져 있으면 말로도 알려 준다(「스쿼트 시작!」 「10초 남았어요」 「셋, 둘, 하나」).
  *
  * 기록은 `TIMER` 다. 우리가 잰 시간이지 영상 완주가 아니다(규칙 2).
- * 이 화면에 「미션」 이라는 말은 없다 — 아이에게는 「오늘 운동」 이다.
+ * 이 화면에 「미션」 이라는 말은 없다. 아이에게는 「오늘 운동」 이다.
  *
- * 아이 화면(`/kid/m/[missionId]`)과 부모 화면(`/parent/m/[missionId]`)이 같이 쓴다. 다른 것은 셋이다.
- *   누가 하는가   아이 화면은 이 기기의 아이, 부모 화면은 로그인한 보호자 자신(`actorId`)
- *   돌아갈 곳     아이 홈, 부모의 운동 탭(`home`)
+ * 아이 화면(`/kid/m/[missionId]`)과 보호자 화면(`/parent/m/[missionId]`)이 같이 쓴다. 다른 것은 셋이다.
+ *   누가 하는가   아이 화면은 이 기기의 아이, 보호자 화면은 로그인한 보호자 자신(`actorId`)
+ *   돌아갈 곳     아이 홈, 보호자의 운동 탭(`home`)
  *   끝 칸         아이는 섬과 경험치, 보호자한테 알리기. 보호자는 한 만큼만 짧게(알릴 사람이 없다)
  */
 
-/** 한 칸을 끝내고 다음 칸이 시작되기까지 — 자세를 바꾸고 숨 고를 만큼 */
+/** 한 칸을 끝내고 다음 칸이 시작되기까지. 자세를 바꾸고 숨 고를 만큼 */
 const REST_SEC = 10;
 /** 쉬는 시간 한 번 늘리기 */
 const REST_MORE = 10;
-/** 말로 셀 때 — 남은 초 */
+/** 말로 셀 때. 남은 초 */
 const COUNT_WORDS: Record<number, string> = { 3: "셋", 2: "둘", 1: "하나" };
 
 type Status = "idle" | "running" | "paused" | "rest" | "blocked" | "ended";
 
-/** 한 칸을 끝냈다고 서버에 보내는 것 — 못 보냈으면 들고 있다가 다시 보낸다 */
+/** 한 칸을 끝냈다고 서버에 보내는 것. 못 보냈으면 들고 있다가 다시 보낸다 */
 interface StepDone {
   position: number;
   profileId: string;
@@ -80,8 +80,31 @@ interface StepDone {
   endedAt: string;
 }
 
-/** 칸마다 잡힌 초. 0분으로 온 칸이 첫 틱에 끝나지 않게 1분부터 */
-const plannedSecOf = (s: MissionSession | undefined) => (s ? stepMinutes(s) : 1) * 60;
+/**
+ * 동작마다 한 만큼. 다른 화면에 갔다 오거나(이 화면이 다시 그려져도) 탭이 다시 열려도 남게 sessionStorage 에 둔다.
+ * 시작 시각도 같이 둔다. 서버는 인정하는 운동 시간을 시작부터 끝까지 걸린 시간까지만 쳐 준다
+ */
+interface PlayMemory {
+  current: number | null;
+  elapsed: Record<number, number>;
+  started: Record<number, string>;
+}
+const EMPTY_MEMORY: PlayMemory = { current: null, elapsed: {}, started: {} };
+
+function readMemory(key: string): PlayMemory {
+  if (!key || typeof window === "undefined") return EMPTY_MEMORY;
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(key) ?? "null") as Partial<PlayMemory> | null;
+    if (!saved || typeof saved !== "object") return EMPTY_MEMORY;
+    return {
+      current: typeof saved.current === "number" ? saved.current : null,
+      elapsed: saved.elapsed && typeof saved.elapsed === "object" ? saved.elapsed : {},
+      started: saved.started && typeof saved.started === "object" ? saved.started : {},
+    };
+  } catch {
+    return EMPTY_MEMORY;
+  }
+}
 
 export function MissionPlay({
   missionId,
@@ -90,11 +113,11 @@ export function MissionPlay({
   forParent = false,
 }: {
   missionId: string;
-  /** 운동하는 사람. 아이 화면은 이 기기의 아이, 부모 화면은 로그인한 보호자 */
+  /** 운동하는 사람. 아이 화면은 이 기기의 아이, 보호자 화면은 로그인한 보호자 */
   actorId: string;
   /** 앱 바의 뒤로와 「홈으로」 가 가는 곳 */
   home: string;
-  /** 부모 화면이면 끝 칸이 짧다. 섬과 경험치, 알리기가 없다 */
+  /** 보호자 화면이면 끝 칸이 짧다. 섬과 경험치, 알리기가 없다 */
   forParent?: boolean;
 }) {
   const kidId = actorId;
@@ -104,29 +127,28 @@ export function MissionPlay({
     error: sessionError,
     refetch: refetchMe,
   } = useSession();
-  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
+  // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다. isLoading 으로 본다
   const {
     data: missions,
     isLoading,
     error: missionsError,
     refetch,
   } = useMissions(familyId, { scope: "ALL" });
-  const { data: progress, isLoading: progressLoading } = useProgress(kidId || undefined);
+  const { data: progress } = useProgress(kidId || undefined);
   const complete = useCompleteSession(missionId, familyId ?? "");
   const { data: family } = useFamilyProfiles(familyId);
-  // 동의를 거둔 아이 — 해도 기록이 남지 않는다(422). 시작하게 두면 한 칸을 다 하고 나서야 안다
+  // 동의를 거둔 아이. 해도 기록이 남지 않는다(422). 시작하게 두면 한 칸을 다 하고 나서야 안다
   const kid = family?.profiles?.find((p) => p.profileId === kidId);
   const noConsent = Boolean(kid?.consentRequired && !kid.consentGiven);
 
   const mission = missions?.missions?.find((m) => m.missionId === missionId);
   /*
-    오늘 이 아이가 할 수 있는 운동인가. 앞날 운동 · 지난 운동 · 형제의 운동은 서버가 칸 끝을 받지 않는다
-    (422 MISSION_NOT_ACTIVE · 403 NOT_A_PARTICIPANT). 전에는 그래도 「시작하기」 가 눌려서, 저장은 안 됐는데
-    칸이 끝난 것처럼 체크되고 마지막에 까닭 없이 「기록을 남기지 못했어요」 가 떴다. 볼 수만 있게 막는다
+    오늘 이 아이가 할 수 있는 운동인가. 앞날 운동, 지난 운동, 형제의 운동은 서버가 칸 끝을 받지 않는다
+    (422 MISSION_NOT_ACTIVE, 403 NOT_A_PARTICIPANT). 볼 수만 있게 막는다
   */
   const now = today();
   const lockedBy = playLock(mission, kidId, now);
-  // 오늘 할 운동이 더 남았나 — 남았으면 이 운동을 끝낸 것이지 「오늘 거」 를 다 한 게 아니다
+  // 오늘 할 운동이 더 남았나. 남았으면 이 운동을 끝낸 것이지 「오늘 거」 를 다 한 게 아니다
   const moreToday = missionsOn(missions?.missions, kidId, now).some(
     (m) =>
       m.missionId !== missionId &&
@@ -136,18 +158,47 @@ export function MissionPlay({
 
   /** 이 화면에서 방금 끝낸 칸. 서버 응답을 기다리지 않고 바로 체크한다 */
   const [doneHere, setDoneHere] = useState<number[]>([]);
-  /** 보내는 중인 칸 수 · 못 보낸 칸. 다 보내기 전에는 「다 했어요」 를 띄우지 않는다 — 저장이 안 됐는데 알리면 부모는 빈 기록을 본다 */
+  /** 보내는 중인 칸 수, 못 보낸 칸. 다 보내기 전에는 「다 했어요」 를 띄우지 않는다 */
   const [saving, setSaving] = useState(0);
   const [unsaved, setUnsaved] = useState<StepDone[]>([]);
   const [saveError, setSaveError] = useState<string | null>(null);
   /**
-   * 다시 보내도 같은 답이 오는 실패(동의 · 참여자 아님 · 없는 운동)면 다시 보내기 대신 갈 곳 —
+   * 다시 보내도 같은 답이 오는 실패(동의, 참여자 아님, 없는 운동)면 다시 보내기 대신 갈 곳.
    * 로그인이 풀렸으면(401) 로그인으로, 그 밖에는 홈으로
    */
   const [stuckTo, setStuckTo] = useState<string | null>(null);
-  const [current, setCurrent] = useState<number | null>(null);
   const [status, setStatus] = useState<Status>("idle");
-  const [elapsed, setElapsed] = useState(0);
+
+  /*
+    동작마다 한 시간과 시작 시각, 지금 동작. 운동하는 사람을 알게 되면(보호자 화면은 로그인 정보를 받은 뒤)
+    그 사람 몫을 sessionStorage 에서 꺼낸다. 바뀌는 대로 다시 적는다
+  */
+  const memoryKey = kidId ? `ff-play-${missionId}-${kidId}` : "";
+  const [memoryOf, setMemoryOf] = useState("");
+  const [current, setCurrent] = useState<number | null>(null);
+  const [elapsedBy, setElapsedBy] = useState<Record<number, number>>({});
+  const [startedBy, setStartedBy] = useState<Record<number, string>>({});
+  if (memoryOf !== memoryKey) {
+    const saved = readMemory(memoryKey);
+    setMemoryOf(memoryKey);
+    setCurrent(saved.current);
+    setElapsedBy(saved.elapsed);
+    setStartedBy(saved.started);
+  }
+  useEffect(() => {
+    if (!memoryKey || memoryOf !== memoryKey) return;
+    try {
+      sessionStorage.setItem(
+        memoryKey,
+        JSON.stringify({ current, elapsed: elapsedBy, started: startedBy }),
+      );
+    } catch {
+      // 저장소를 못 쓰면(사생활 보호 창) 이 화면 안에서만 남는다
+    }
+  }, [memoryKey, memoryOf, current, elapsedBy, startedBy]);
+  /** 플레이어가 알려 준 영상 길이(초). 구간 끝이 안 온 영상만 쓴다 */
+  const [videoSecBy, setVideoSecBy] = useState<Record<number, number>>({});
+
   const [restLeft, setRestLeft] = useState(0);
   /** 이번 쉬는 시간 전체(늘리면 같이 는다). 링이 이 만큼을 한 바퀴로 그린다 */
   const [restTotal, setRestTotal] = useState(REST_SEC);
@@ -156,13 +207,12 @@ export function MissionPlay({
   const { say } = useVoice(voiceOn);
   const [burst, setBurst] = useState(0);
   const [xp, setXp] = useState(0);
-  /** 보호자한테 알렸나 — 끝 칸이 다시 그려져도(다시 받는 동안 뼈대로 내려갔다 올라와도) 잊지 않게 여기에 둔다 */
+  /** 보호자한테 알렸나. 끝 칸이 다시 그려져도 잊지 않게 여기에 둔다 */
   const [told, setTold] = useState(false);
-  const startedAt = useRef<string | null>(null);
   /** 시작할 때의 레벨. 끝나고 올랐는지 견준다 */
   const [levelBefore, setLevelBefore] = useState<number | null>(null);
   /**
-   * 자동 재생이 막혀 멈춘 칸. **한 칸에 한 번만** 멈춘다 — 아이가 눌러서 다시 시작했는데도
+   * 자동 재생이 막혀 멈춘 칸. **한 칸에 한 번만** 멈춘다. 아이가 눌러서 다시 시작했는데도
    * 영상이 안 돌면(유튜브가 막힌 곳 등) 영상 없이 타이머만 간다. 또 멈추면 끝없이 멈춘다.
    */
   const [blockedAt, setBlockedAt] = useState<number | null>(null);
@@ -179,16 +229,25 @@ export function MissionPlay({
         doneHere.includes(s.position) ? { ...s, completed: true, verifiedBy: "TIMER" } : s,
       )
     : [];
+  /** 한 동작의 타이머(초). 영상 길이를 알면 영상 길이 */
+  const secondsOf = (s: MissionSession) => stepSeconds(s, videoSecBy[s.position]);
   const firstOpen = sessions.find((s) => !s.completed)?.position ?? null;
-  const active = status === "ended" || lockedBy ? null : (current ?? firstOpen);
+  // 남겨 둔 지금 동작이 그사이 끝났으면(다른 기기에서) 남은 첫 동작으로
+  const currentOpen = sessions.find((s) => s.position === current && !s.completed)?.position;
+  const active = status === "ended" || lockedBy ? null : (currentOpen ?? firstOpen);
   const activeSession = sessions.find((s) => s.position === active);
   const activeIndex = sessions.findIndex((s) => s.position === active);
-  const plannedSec = plannedSecOf(activeSession);
+  const elapsed = active != null ? (elapsedBy[active] ?? 0) : 0;
+  const plannedSec = activeSession ? secondsOf(activeSession) : 60;
+  /** 이만큼 하면 완료할 수 있다. 타이머의 절반 */
+  const doneAt = activeSession
+    ? doneAtSeconds(activeSession, videoSecBy[activeSession.position])
+    : 30;
+  const halfDone = active != null && elapsed >= doneAt;
   const doneCount = sessions.filter((s) => s.completed).length;
   const allDone = sessions.length > 0 && doneCount === sessions.length;
   const finished = allDone || status === "ended";
-  /** 끝 칸의 제목 — 화면 읽기에도 같은 말로 */
-  /** 화면 읽기에 한 번씩 — 시작 · 멈춤 · 쉼(다음 운동) · 막힘. 초마다 바뀌는 수는 싣지 않는다 */
+  /** 화면 읽기에 한 번씩. 시작, 멈춤, 쉼(다음 운동), 막힘. 초마다 바뀌는 수는 싣지 않는다 */
   const liveLine =
     status === "running"
       ? `${activeSession?.title ?? "운동"} 시작`
@@ -199,6 +258,7 @@ export function MissionPlay({
           : status === "blocked"
             ? "멈췄어요, 눌러서 시작"
             : "";
+  /** 끝 칸의 제목. 화면 읽기에도 같은 말로 */
   const finishLine = allDone
     ? moreToday
       ? "이 운동 다 했어요!"
@@ -217,7 +277,7 @@ export function MissionPlay({
 
   /**
    * 서버에 보낸다. 못 보내면 들고 있다가 「다시 보내기」 로.
-   * 부를 때마다 따로 기다린다 — mutate 에 준 콜백은 마지막 호출 것만 불려서, 못 보낸 칸 여럿을 한꺼번에
+   * 부를 때마다 따로 기다린다. mutate 에 준 콜백은 마지막 호출 것만 불려서, 못 보낸 칸 여럿을 한꺼번에
    * 다시 보내면 앞 칸의 실패가 사라지고 보내는 중 수가 줄지 않아 끝 칸이 뼈대에 멈췄다
    */
   const save = (step: StepDone) => {
@@ -227,13 +287,13 @@ export function MissionPlay({
       .then((res) => setXp((x) => x + (res.xpGained ?? 0)))
       .catch((e: unknown) => {
         setUnsaved((list) => [...list, step]);
-        // 망 · 서버 탓이 아니면(4xx) 다시 보내도 같다. 서버가 받지 않은 칸은 끝낸 칸으로 두지 않고
-        // 다음 칸으로 넘어가지도 않는다 — 다음 칸도 같은 까닭으로 거절된다
+        // 망이나 서버 탓이 아니면(4xx) 다시 보내도 같다. 서버가 받지 않은 칸은 끝낸 칸으로 두지 않고
+        // 다음 칸으로 넘어가지도 않는다. 다음 칸도 같은 까닭으로 거절된다
         if (e instanceof ApiError && e.status < 500 && e.status !== 408 && e.status !== 429) {
           setStuckTo(e.status === 401 ? "/login" : home);
           setDoneHere((list) => list.filter((p) => p !== step.position));
           setCurrent(null);
-          // 다음 칸으로 이어 가면 남지 않을 운동을 더 시킨다(동의를 거둔 아이) — 여기서 멈추고 끝 칸의 말을 띄운다
+          // 다음 칸으로 이어 가면 남지 않을 운동을 더 시킨다(동의를 거둔 아이). 여기서 멈추고 끝 칸의 말을 띄운다
           setStatus("ended");
         }
         setSaveError(
@@ -260,16 +320,18 @@ export function MissionPlay({
   };
 
   /** 한 칸 끝. 조각을 터뜨리고 서버에 알리고, 다음 칸이 있으면 10초 쉰다 */
-  const finishStep = useEffectEvent((position: number, seconds: number) => {
+  const completeStep = (position: number, seconds: number) => {
     const done = [...doneHere, position];
     setDoneHere(done);
     setBurst((b) => b + 1);
+    const endedAt = new Date();
     save({
       position,
       profileId: kidId,
       activeSeconds: Math.round(seconds),
-      startedAt: startedAt.current ?? new Date().toISOString(),
-      endedAt: new Date().toISOString(),
+      // 시작 시각을 잃었으면 한 시간만큼 거슬러 적는다. 지금 시각을 적으면 서버가 끝이 시작보다 빠르다고 거절한다
+      startedAt: startedBy[position] ?? new Date(endedAt.getTime() - seconds * 1000).toISOString(),
+      endedAt: endedAt.toISOString(),
     });
     const next = nextOpen(position, done);
     if (next == null) {
@@ -279,22 +341,32 @@ export function MissionPlay({
     }
     const nextTitle = sessions.find((x) => x.position === next)?.title;
     say(nextTitle ? `잘했어요! 쉬었다가, 다음은 ${nextTitle}` : "잘했어요!");
-    // 다음 칸을 바로 펼치고 그리로 내려간다. 쉬고 나서 시작한다
+    // 다음 칸을 바로 띄우고 쉰다. 쉬고 나서 시작한다
     setCurrent(next);
-    setElapsed(0);
     setRestLeft(REST_SEC);
     setRestTotal(REST_SEC);
     setStatus("rest");
-  });
+  };
+  const finishStep = useEffectEvent((position: number, seconds: number) =>
+    completeStep(position, seconds),
+  );
 
-  /** 타이머 한 번 — 잡힌 시간이 다 되면 그 칸을 끝낸다 */
+  /** 이 동작을 돌린다. 처음 시작한 시각은 한 번만 적는다 */
+  const run = (position: number) => {
+    const at = new Date().toISOString();
+    setStartedBy((m) => (m[position] ? m : { ...m, [position]: at }));
+    setStatus("running");
+  };
+
+  /** 타이머 한 번. 잡힌 시간이 다 되면 그 칸을 끝낸다 */
   const tick = useEffectEvent((delta: number) => {
     if (active == null) return;
     const next = elapsed + delta;
-    setElapsed(next);
+    setElapsedBy((m) => ({ ...m, [active]: next }));
     // 남은 시간이 그 자리를 지나는 순간에 한 번씩 말한다
     const before = plannedSec - elapsed;
     const after = plannedSec - next;
+    if (elapsed < doneAt && next >= doneAt && next < plannedSec) say("절반 했어요");
     if (plannedSec > 20 && before > 10 && after <= 10) say("10초 남았어요");
     for (const [sec, word] of Object.entries(COUNT_WORDS)) {
       if (before > Number(sec) && after <= Number(sec)) say(word);
@@ -302,7 +374,7 @@ export function MissionPlay({
     if (next >= plannedSec) finishStep(active, next);
   });
 
-  /** 쉬는 동안 한 번(1초) — 다 세면 펼쳐 둔 다음 칸을 시작한다 */
+  /** 쉬는 동안 한 번(1초). 다 세면 띄워 둔 다음 칸을 시작한다 */
   const restTick = useEffectEvent(() => {
     if (restLeft > 1) {
       const word = COUNT_WORDS[restLeft - 1];
@@ -311,13 +383,12 @@ export function MissionPlay({
       return;
     }
     setRestLeft(0);
-    startedAt.current = new Date().toISOString();
     if (activeSession) say(`${activeSession.title} 시작!`);
-    setStatus("running");
+    if (active != null) run(active);
   });
 
-  // 타이머. 도는 동안만. 한 번에 1초 넘게 세지 않는다 — 폰이 잠겨 타이머가 늦게 깨도
-  // 그동안을 한 것으로 치지 않는다(타이머로 확인됨 · 규칙 2)
+  // 타이머. 도는 동안만. 한 번에 1초 넘게 세지 않는다. 폰이 잠겨 타이머가 늦게 깨도
+  // 그동안을 한 것으로 치지 않는다(타이머로 확인됨, 규칙 2)
   useEffect(() => {
     if (status !== "running") return;
     let last = performance.now();
@@ -329,7 +400,7 @@ export function MissionPlay({
     return () => clearInterval(id);
   }, [status]);
 
-  // 화면을 떠나면(잠금 · 다른 앱) 멈춘다 — 아무도 안 보는 사이에 칸이 끝나고 다음 칸이 저절로 시작되지 않게
+  // 화면을 떠나면(잠금, 다른 앱) 멈춘다. 아무도 안 보는 사이에 칸이 끝나고 다음 칸이 저절로 시작되지 않게
   useEffect(() => {
     const onHide = () => {
       if (document.visibilityState !== "hidden") return;
@@ -346,28 +417,28 @@ export function MissionPlay({
     return () => clearInterval(id);
   }, [status]);
 
-  // 지금 칸이 바뀌면 그 칸으로 내려간다
+  // 지금 동작이 바뀌면 영상이 보이게 위로 올린다. 처음 들어올 때는 그대로
   const firstScroll = useRef(true);
   useEffect(() => {
     if (active == null) return;
-    const el = document.getElementById(`step-${active}`);
-    if (!el) return;
-    // 처음 들어올 때는 바로, 다음 칸으로 넘어갈 때는 부드럽게
-    el.scrollIntoView({ behavior: firstScroll.current ? "auto" : "smooth", block: "start" });
-    firstScroll.current = false;
+    if (firstScroll.current) {
+      firstScroll.current = false;
+      return;
+    }
+    document.getElementById("coach")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [active]);
 
   /*
-    조작 단추가 바뀌면(시작 → 멈춤 → 쉼) 누른 단추가 사라져 초점이 body 로 떨어졌다 — 자판 · 화면 읽기로는 어디 있는지
-    잃는다(9/30 점검). 누른 단추가 사라졌을 때만 지금 칸의 첫 단추로 돌린다(굴리지 않고)
+    조작 단추가 바뀌면 누른 단추가 사라져 초점이 body 로 떨어졌다. 키보드나 스크린 리더로는 어디 있는지
+    잃는다(9/30 점검). 누른 단추가 사라졌을 때만 가운데 큰 버튼으로 포커스를 옮긴다(스크롤은 하지 않는다)
   */
-  const stepList = useRef<HTMLOListElement>(null);
+  const coach = useRef<HTMLElement>(null);
   const lastFocused = useRef<HTMLElement | null>(null);
   useEffect(() => {
     const was = lastFocused.current;
     if (!was || was.isConnected) return;
     if (document.activeElement && document.activeElement !== document.body) return;
-    stepList.current?.querySelector<HTMLElement>("[data-primary]")?.focus({ preventScroll: true });
+    coach.current?.querySelector<HTMLElement>("[data-primary]")?.focus({ preventScroll: true });
   }, [status, active]);
 
   // 다 끝나면 끝 칸으로
@@ -393,7 +464,7 @@ export function MissionPlay({
     );
   }
 
-  // 하던 중에 거둬졌으면 끝 칸이 말한다 — 하던 화면을 걷어 내지 않는다.
+  // 하던 중에 거둬졌으면 끝 칸이 말한다. 하던 화면을 걷어 내지 않는다.
   // 서버가 받지 않은 칸은 doneHere 에서 빠지고 unsaved 에 남으니 그것도 하던 중으로 본다
   if (noConsent && doneHere.length === 0 && unsaved.length === 0) {
     return (
@@ -421,82 +492,71 @@ export function MissionPlay({
     );
   }
 
-  const totalMin = totalMinutes(sessions);
-  const doneMin = totalMinutes(sessions.filter((s) => s.completed));
+  const doneSec = sessions.filter((s) => s.completed).reduce((sum, s) => sum + secondsOf(s), 0);
+  const doneMin = doneSec > 0 ? Math.max(1, Math.round(doneSec / 60)) : 0;
 
   const start = () => {
     if (active == null) return;
     if (levelBefore == null && progress) setLevelBefore(progress.level);
-    if (status === "idle" || status === "rest" || status === "blocked") {
-      if (activeSession) say(`${activeSession.title} 시작!`);
-    }
+    if (status !== "paused" && activeSession) say(`${activeSession.title} 시작!`);
     if (current == null) setCurrent(active);
-    // 쉬다가 멈춘 칸(화면을 떠났다 온 것)도 처음부터 — 시작 시각을 새로 적는다
-    if (status === "idle" || status === "rest" || (status === "paused" && elapsed === 0)) {
-      setElapsed(0);
-      setRestLeft(0);
-      startedAt.current = new Date().toISOString();
-    }
-    setStatus("running");
+    setRestLeft(0);
+    run(active);
   };
 
-  // 건너뛸 다음 칸이 없고 한 칸도 안 했으면 건너뛰기를 두지 않는다 — 끝 칸에 「0개 했어요」 가 떴다
-  const canSkip = active != null && (nextOpen(active, doneHere) != null || doneCount > 0);
-  const skip = () => {
-    if (active == null) return;
-    const next = nextOpen(active, doneHere);
-    setCurrent(next);
-    setElapsed(0);
-    setStatus(next == null ? "ended" : "idle");
+  /** 다른 동작으로. 하던 시간은 그 동작에 남는다. 돌던 중이면 이어서 돈다 */
+  const goTo = (position: number | null) => {
+    if (position == null) {
+      setCurrent(null);
+      setStatus("ended");
+      return;
+    }
+    setCurrent(position);
+    setRestLeft(0);
+    if (status === "running") {
+      const title = sessions.find((x) => x.position === position)?.title;
+      if (title) say(`${title} 시작!`);
+      run(position);
+    } else {
+      setStatus("idle");
+    }
   };
+
+  const prevOpen =
+    active == null
+      ? null
+      : (sessions.filter((x) => x.position < active && !x.completed).at(-1)?.position ?? null);
+  const upNextPos = active == null ? null : nextOpen(active, doneHere);
+  const upNext = sessions.find((x) => x.position === upNextPos);
+  // 절반 넘게 했으면 다음이 곧 완료다. 아니면 건너뛴다. 건너뛸 칸이 없고 한 칸도 안 했으면 막는다(「0개 했어요」)
+  const canNext = active != null && (halfDone || upNextPos != null || doneCount > 0);
+  const goNext = () => {
+    if (active == null) return;
+    if (halfDone) completeStep(active, elapsed);
+    else goTo(upNextPos);
+  };
+  const left = Math.max(0, plannedSec - elapsed);
+  const startLabel =
+    status === "blocked"
+      ? "눌러서 시작"
+      : status === "rest"
+        ? "바로 시작"
+        : elapsed > 0
+          ? "이어서 하기"
+          : "시작하기";
 
   return (
     <>
       <AppBar backHref={home} title={missionTitle(mission, now)} />
       <Confetti fire={burst} pieces={allDone ? 120 : 50} from={allDone ? "top" : "bottom"} />
 
-      {/* 위에 붙는 징검다리. 몇 칸째인지 늘 보이고, 한 칸 끝내면 키움이가 건너간다 */}
-      <div className="bg-ground sticky top-14 z-20 px-4 pb-2">
-        {/* 레벨을 받은 뒤에 짓는다 — 1단계로 지었다가 받고 나서 다시 지으면 깜빡이고 WebGL 이 하나 더 든다 */}
-        {progressLoading ? (
-          <Skeleton className="h-[72px] w-full rounded-2xl" />
-        ) : (
-          <StoneTrail
-            count={sessions.length}
-            done={sessions.flatMap((s, i) => (s.completed ? [i] : []))}
-            current={activeIndex >= 0 ? activeIndex : null}
-            stage={stageOf(progress?.level).stage}
-            height={72}
-            label={`${sessions.length}칸 중 ${doneCount}칸 건넜어요`}
-          />
-        )}
-        <div className="relative flex items-center justify-center">
-          <p className="text-caption text-ink-soft text-center font-bold">
-            {sessions.length}개 중 {doneCount}개, {totalMin}분 중 {doneMin}분
-          </p>
-          <button
-            type="button"
-            onClick={() => setVoiceOn(!voiceOn)}
-            aria-pressed={voiceOn}
-            aria-label={voiceOn ? "소리 안내 끄기" : "소리 안내 켜기"}
-            className="press text-ink-soft absolute right-0 grid size-11 place-items-center rounded-full"
-          >
-            {voiceOn ? (
-              <Volume2 aria-hidden className="size-5" />
-            ) : (
-              <VolumeX aria-hidden className="size-5" />
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* 끝났다는 말 — 자리는 늘 두고 글자만 바꾼다. 끝 칸과 같이 생기는 알림 자리는 화면 읽기가 읽지 않는다 */}
+      {/* 끝났다는 말. 자리는 늘 두고 글자만 바꾼다 */}
       <p className="sr-only" role="status">
         {finished && unsaved.length === 0 && saving === 0 ? finishLine : liveLine}
       </p>
-      <Stage wide className="pt-1">
+      <Stage wide className="pt-2">
         {lockedBy && !allDone && (
-          // 볼 수만 있는 운동 — 시작 단추 대신 까닭을 맨 위에
+          // 볼 수만 있는 운동. 시작 단추 대신 까닭을 맨 위에
           <section className="card-hero mb-3 text-center" role="status">
             <p className="text-lead font-extrabold">
               {lockedBy === "later"
@@ -521,308 +581,319 @@ export function MissionPlay({
             </NavLink>
           </section>
         )}
-        <ol
-          ref={stepList}
-          className="relative"
-          onFocus={(e) => {
-            lastFocused.current = e.target;
-          }}
-        >
-          {sessions.map((s, i) => (
-            <Step
-              key={s.position}
-              session={s}
-              index={i}
-              last={i === sessions.length - 1}
-              active={s.position === active}
-              status={s.position === active ? status : "idle"}
-              elapsed={s.position === active ? elapsed : 0}
-              restLeft={restLeft}
-              restTotal={restTotal}
-              onMoreRest={() => {
-                setRestLeft((r) => r + REST_MORE);
-                setRestTotal((t) => t + REST_MORE);
-              }}
-              onStart={start}
-              onPause={() => setStatus("paused")}
-              onSkip={canSkip ? skip : undefined}
-              onBlocked={() => {
-                if (blockedAt === s.position) return;
-                setBlockedAt(s.position);
-                setStatus("blocked");
-              }}
-              onPick={() => {
-                if (s.completed || status === "running" || lockedBy) return;
-                setCurrent(s.position);
-                setElapsed(0);
-                setStatus("idle");
-              }}
-            />
-          ))}
 
-          <li id="step-end" className="scroll-mt-24 pt-2 pb-6">
-            {unsaved.length > 0 ? (
-              // 못 보낸 칸이 있으면 「다 했어요」 · 「알리기」 를 띄우지 않는다 — 부모가 빈 기록을 보게 된다
-              <section className="card-hero text-center" role="alert">
-                <p className="text-lead font-extrabold">{saveError ?? "기록을 남기지 못했어요."}</p>
-                {stuckTo ? (
-                  <NavLink
-                    href={stuckTo}
-                    transitionTypes={["nav-back"]}
-                    className="press text-ink-soft mt-2 inline-flex min-h-11 items-center px-4 text-sm font-bold"
-                  >
-                    {stuckTo === "/login"
-                      ? "로그인하러 가기"
-                      : forParent
-                        ? "운동으로 돌아가기"
-                        : "홈으로"}
-                  </NavLink>
+        {activeSession && !finished && (
+          <section
+            ref={coach}
+            id="coach"
+            className="scroll-mt-16"
+            aria-label={`${activeIndex + 1}번째 운동 ${activeSession.title}`}
+            onFocus={(e) => {
+              lastFocused.current = e.target;
+            }}
+          >
+            {/* 진행 막대. 동작 하나가 한 토막이고, 하는 만큼 찬다 */}
+            <div
+              className="flex gap-1"
+              role="img"
+              aria-label={`${sessions.length}개 중 ${doneCount}개 했어요`}
+            >
+              {sessions.map((x) => (
+                <span
+                  key={x.position}
+                  className={cn(
+                    "h-1.5 flex-1 overflow-hidden rounded-full",
+                    x.position === active ? "bg-signal-pale" : "bg-bar",
+                  )}
+                >
+                  <span
+                    className="bg-signal block h-full rounded-full"
+                    style={{
+                      width: `${(x.completed ? 1 : Math.min(1, (elapsedBy[x.position] ?? 0) / secondsOf(x))) * 100}%`,
+                    }}
+                  />
+                </span>
+              ))}
+            </div>
+            <div className="mt-1 flex min-h-11 items-center justify-between">
+              <p className="text-caption text-ink-soft font-extrabold tabular-nums">
+                {activeIndex + 1}/{sessions.length} {PHASE_LABEL[activeSession.phase]}
+              </p>
+              <button
+                type="button"
+                onClick={() => setVoiceOn(!voiceOn)}
+                aria-pressed={voiceOn}
+                aria-label={voiceOn ? "소리 안내 끄기" : "소리 안내 켜기"}
+                className="press text-ink-soft -mr-2 grid size-11 place-items-center rounded-full"
+              >
+                {voiceOn ? (
+                  <Volume2 aria-hidden className="size-5" />
                 ) : (
-                  <button
-                    type="button"
-                    onClick={retry}
-                    disabled={saving > 0}
-                    className="press bg-signal-strong mt-3 flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white"
-                  >
-                    다시 보내기
-                  </button>
+                  <VolumeX aria-hidden className="size-5" />
                 )}
-              </section>
-            ) : finished && saving > 0 ? (
-              <Skeleton className="h-80 w-full rounded-3xl" />
-            ) : lockedBy && !allDone ? null : finished && forParent ? (
-              <ParentFinish allDone={allDone} doneCount={doneCount} minutes={doneMin} home={home} />
-            ) : finished ? (
-              <Finish
-                title={finishLine}
-                allDone={allDone}
-                moreToday={moreToday}
-                doneCount={doneCount}
-                minutes={doneMin}
-                xp={xp}
-                levelBefore={levelBefore}
-                fresh={doneHere.length > 0}
-                familyId={familyId ?? ""}
-                kidId={kidId}
-                missionId={missionId}
-                toldNow={told}
-                onTold={() => setTold(true)}
+              </button>
+            </div>
+
+            {activeSession.clip?.videoId ? (
+              <StepPlayer
+                clip={activeSession.clip}
+                session={activeSession}
+                playing={status === "running"}
+                onBlocked={() => {
+                  if (blockedAt === activeSession.position) return;
+                  setBlockedAt(activeSession.position);
+                  setStatus("blocked");
+                }}
+                onDuration={(sec) => {
+                  const position = activeSession.position;
+                  const len = Math.round(sec);
+                  setVideoSecBy((m) => (m[position] === len ? m : { ...m, [position]: len }));
+                }}
               />
             ) : (
-              // 한 칸이라도 끝낸 뒤에만 — 시작도 안 하고 누르면 「0개 했어요」 를 알리게 된다
-              doneCount > 0 && (
+              <div aria-hidden className="bg-sub aspect-video w-full rounded-2xl" />
+            )}
+
+            <p className="text-caption text-signal-deep mt-4 text-center font-extrabold">
+              {status === "rest" ? "쉬는 시간, 다음 운동" : PHASE_LABEL[activeSession.phase]}
+            </p>
+            <h2 className="page-title mt-0.5 text-center">{activeSession.title}</h2>
+
+            <div className="mt-4 flex justify-center">
+              <Ring
+                value={status === "rest" ? restTotal - restLeft : elapsed}
+                max={status === "rest" ? restTotal : plannedSec}
+                size={184}
+                stroke={12}
+                label={
+                  status === "rest" ? `${restLeft}초 뒤에 시작해요` : `${clock(left)} 남았어요`
+                }
+              >
+                <span className="text-center leading-none">
+                  <span className="text-metric-lg block font-extrabold tabular-nums">
+                    {status === "rest" ? restLeft : clock(left)}
+                  </span>
+                  <span className="text-caption text-ink-soft mt-1 block font-bold">
+                    {status === "rest" ? "초 뒤에 시작해요" : "남았어요"}
+                  </span>
+                </span>
+              </Ring>
+            </div>
+
+            <div className="mt-3 flex min-h-11 items-center justify-center">
+              {status === "rest" ? (
                 <button
                   type="button"
-                  onClick={() => setStatus("ended")}
-                  className="press text-ink-soft mx-auto flex min-h-11 items-center px-4 text-sm font-bold"
+                  onClick={() => {
+                    setRestLeft((r) => r + REST_MORE);
+                    setRestTotal((t) => t + REST_MORE);
+                  }}
+                  className="press bg-sub inline-flex min-h-11 items-center rounded-full px-4 text-sm font-extrabold"
                 >
-                  여기까지 할래요
+                  +{REST_MORE}초 더 쉬기
                 </button>
-              )
+              ) : halfDone ? (
+                <button
+                  type="button"
+                  onClick={() => completeStep(activeSession.position, elapsed)}
+                  className="press bg-done-soft text-done inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-extrabold"
+                >
+                  <Check aria-hidden className="size-4" strokeWidth={3} />
+                  완료하기
+                </button>
+              ) : (
+                <p className="text-caption text-ink-soft font-bold">
+                  {elapsed > 0
+                    ? `${clock(doneAt - elapsed)} 더 하면 완료할 수 있어요`
+                    : "절반 넘게 하면 완료돼요"}
+                </p>
+              )}
+            </div>
+
+            {/* 이전, 일시정지, 다음. 가운데가 가장 크다 */}
+            <div className="mt-3 flex items-center justify-center gap-8">
+              <button
+                type="button"
+                onClick={() => goTo(prevOpen)}
+                disabled={prevOpen == null || status === "rest"}
+                aria-label="이전 운동"
+                className="press bg-sub grid size-14 place-items-center rounded-full disabled:opacity-40"
+              >
+                <SkipBack aria-hidden className="size-6 fill-current" />
+              </button>
+              <button
+                type="button"
+                data-primary
+                onClick={status === "running" ? () => setStatus("paused") : start}
+                aria-label={status === "running" ? "잠깐 멈춤" : startLabel}
+                className={cn(
+                  "press grid size-20 place-items-center rounded-full text-white",
+                  status === "running" ? "bg-ink" : "bg-signal-strong",
+                )}
+              >
+                {status === "running" ? (
+                  <Pause aria-hidden className="size-8 fill-current" />
+                ) : (
+                  <Play aria-hidden className="size-8 translate-x-0.5 fill-current" />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={goNext}
+                disabled={!canNext}
+                aria-label={halfDone ? "완료하고 다음 운동" : "이 운동 건너뛰기"}
+                className="press bg-sub grid size-14 place-items-center rounded-full disabled:opacity-40"
+              >
+                <SkipForward aria-hidden className="size-6 fill-current" />
+              </button>
+            </div>
+            <p aria-hidden className="text-caption text-ink-soft mt-2 text-center font-bold">
+              {status === "running" ? "잠깐 멈춤" : startLabel}
+            </p>
+
+            {/* 다음 동작 미리 보기. 쉬는 동안에는 위 영상이 곧 다음 동작이다 */}
+            {upNext && status !== "rest" && (
+              <div className="card mt-5 flex items-center gap-3">
+                <StepThumb session={upNext} />
+                <span className="min-w-0 flex-1">
+                  <span className="text-caption text-ink-soft block font-bold">다음 운동</span>
+                  <span className="line-clamp-2 text-sm font-extrabold">{upNext.title}</span>
+                </span>
+                <span className="text-caption text-ink-soft shrink-0 font-bold tabular-nums">
+                  {clock(secondsOf(upNext))}
+                </span>
+              </div>
             )}
-          </li>
-        </ol>
+          </section>
+        )}
+
+        <div id="step-end" className="scroll-mt-24 pt-4">
+          {unsaved.length > 0 ? (
+            // 못 보낸 칸이 있으면 「다 했어요」, 「알리기」 를 띄우지 않는다. 보호자가 빈 기록을 보게 된다
+            <section className="card-hero text-center" role="alert">
+              <p className="text-lead font-extrabold">{saveError ?? "기록을 남기지 못했어요."}</p>
+              {stuckTo ? (
+                <NavLink
+                  href={stuckTo}
+                  transitionTypes={["nav-back"]}
+                  className="press text-ink-soft mt-2 inline-flex min-h-11 items-center px-4 text-sm font-bold"
+                >
+                  {stuckTo === "/login"
+                    ? "로그인하러 가기"
+                    : forParent
+                      ? "운동으로 돌아가기"
+                      : "홈으로"}
+                </NavLink>
+              ) : (
+                <button
+                  type="button"
+                  onClick={retry}
+                  disabled={saving > 0}
+                  className="press bg-signal-strong mt-3 flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white"
+                >
+                  다시 보내기
+                </button>
+              )}
+            </section>
+          ) : finished && saving > 0 ? (
+            <Skeleton className="h-80 w-full rounded-3xl" />
+          ) : lockedBy && !allDone ? null : finished && forParent ? (
+            <ParentFinish allDone={allDone} doneCount={doneCount} minutes={doneMin} home={home} />
+          ) : finished ? (
+            <Finish
+              title={finishLine}
+              allDone={allDone}
+              moreToday={moreToday}
+              doneCount={doneCount}
+              minutes={doneMin}
+              xp={xp}
+              levelBefore={levelBefore}
+              fresh={doneHere.length > 0}
+              familyId={familyId ?? ""}
+              kidId={kidId}
+              missionId={missionId}
+              toldNow={told}
+              onTold={() => setTold(true)}
+            />
+          ) : (
+            // 한 칸이라도 끝낸 뒤에만. 시작도 안 하고 누르면 「0개 했어요」 를 알리게 된다
+            doneCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setStatus("ended")}
+                className="press text-ink-soft mx-auto flex min-h-11 items-center px-4 text-sm font-bold"
+              >
+                여기까지 할래요
+              </button>
+            )
+          )}
+        </div>
+
+        {/* 전체 동작. 누르면 그 동작으로 간다(도는 중에는 이전, 다음 단추로) */}
+        {!finished && (
+          <section className="pt-4 pb-6" aria-label="전체 운동">
+            <h3 className="text-sm font-extrabold">전체 운동 {sessions.length}개</h3>
+            <ol className="mt-2 space-y-2">
+              {sessions.map((s, i) => (
+                <li key={s.position}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (s.completed || status === "running" || lockedBy) return;
+                      goTo(s.position);
+                    }}
+                    disabled={s.completed}
+                    aria-current={s.position === active ? "step" : undefined}
+                    className={cn(
+                      "card press flex w-full items-center gap-3 text-left",
+                      s.position === active && "ring-signal ring-2",
+                    )}
+                  >
+                    <span className="relative shrink-0">
+                      <StepThumb session={s} />
+                      {s.completed && (
+                        <span className="bg-ink/50 absolute inset-0 grid place-items-center rounded-xl text-white">
+                          <Check aria-hidden className="size-6" strokeWidth={3} />
+                        </span>
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="line-clamp-2 text-sm font-extrabold">
+                        {i + 1}. {s.title}
+                      </span>
+                      <span className="text-caption text-ink-soft mt-0.5 block">
+                        {PHASE_LABEL[s.phase]} {clock(secondsOf(s))}
+                        {s.completed && ", 다 했어요"}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
       </Stage>
     </>
   );
 }
 
-/** 운동을 받은 사람들 — 「서준 · 하윤의」 */
+/** 운동을 받은 사람들. 「서준, 하윤의」 */
 function ownerNames(participants: { name?: string | null }[] | undefined): string {
   const names = (participants ?? []).map((p) => p.name).filter(Boolean);
   return names.length > 0 ? `${names.join(", ")}의` : "다른 사람";
 }
 
-/** 한 칸. 지금 칸만 펼친다 */
-function Step({
-  session: s,
-  index,
-  last,
-  active,
-  status,
-  elapsed,
-  restLeft,
-  restTotal,
-  onMoreRest,
-  onStart,
-  onPause,
-  onSkip,
-  onBlocked,
-  onPick,
-}: {
-  session: MissionSession;
-  index: number;
-  last: boolean;
-  active: boolean;
-  status: Status;
-  elapsed: number;
-  restLeft: number;
-  restTotal: number;
-  onMoreRest: () => void;
-  onStart: () => void;
-  onPause: () => void;
-  /** 없으면 건너뛰기 단추를 두지 않는다 */
-  onSkip?: () => void;
-  onBlocked: () => void;
-  onPick: () => void;
-}) {
-  const planned = plannedSecOf(s);
-  const left = Math.max(0, planned - elapsed);
-  const clip = s.clip;
-
-  return (
-    <li id={`step-${s.position}`} className="relative scroll-mt-24 pb-3 pl-11">
-      {/* 길. 끝낸 칸까지는 파랑, 그 아래는 회색 */}
-      {!last && (
-        <span
-          aria-hidden
-          className={cn(
-            "absolute top-9 bottom-0 left-[15px] w-0.5 rounded-full",
-            s.completed ? "bg-signal" : "bg-bar",
-          )}
-        />
-      )}
-      <span
-        aria-hidden
-        className={cn(
-          "absolute top-4 left-0 grid size-8 place-items-center rounded-full text-sm font-extrabold",
-          // 다 한 칸은 체크만 — 파랑 동그라미 안의 흰 체크는 「둥근 바탕 안 표시」 였다(9/30 점검)
-          s.completed && "bg-ground text-signal",
-          !s.completed && active && "bg-paper ring-signal text-signal-deep ring-2",
-          !s.completed && !active && "bg-ground text-ink-soft",
-        )}
-      >
-        {s.completed ? <Check className="size-4" strokeWidth={3.2} /> : index + 1}
-      </span>
-
-      {active && !s.completed ? (
-        <section className="card-hero" aria-label={`${index + 1}번째 운동 ${s.title}`}>
-          <p className="text-caption text-signal-deep font-extrabold">{PHASE_LABEL[s.phase]}</p>
-          <h2 className="text-lead mt-0.5 font-extrabold">{s.title}</h2>
-
-          {clip?.videoId && (
-            <div className="mt-3">
-              <StepPlayer
-                clip={clip}
-                session={s}
-                playing={status === "running"}
-                onBlocked={onBlocked}
-              />
-            </div>
-          )}
-
-          {/* 쉬는 동안만 오른쪽에 「+10초 더 쉬기」. 그 밖에는 링 하나 — 옆의 「N분」 은 타이머를 되풀이했다 */}
-          <div
-            className={cn("mt-4 flex items-center gap-4", status !== "rest" && "justify-center")}
-          >
-            <Ring
-              value={status === "rest" ? restTotal - restLeft : elapsed}
-              max={status === "rest" ? restTotal : planned}
-              size={112}
-              stroke={10}
-              label={status === "rest" ? `${restLeft}초 뒤에 시작해요` : `${clock(left)} 남았어요`}
-            >
-              {status === "rest" ? (
-                <span className="text-center leading-none">
-                  <span className="text-metric-lg block font-extrabold">{restLeft}</span>
-                  <span className="text-micro text-ink-soft font-bold">곧 시작해요</span>
-                </span>
-              ) : (
-                <span className="text-center leading-none">
-                  <span className="text-metric block font-extrabold tabular-nums">
-                    {clock(left)}
-                  </span>
-                  <span className="text-micro text-ink-soft font-bold">남았어요</span>
-                </span>
-              )}
-            </Ring>
-            {status === "rest" && (
-              <div className="min-w-0 flex-1">
-                <button
-                  type="button"
-                  onClick={onMoreRest}
-                  className="press bg-sub inline-flex min-h-11 items-center rounded-full px-4 text-sm font-extrabold"
-                >
-                  +{REST_MORE}초 더 쉬기
-                </button>
-              </div>
-            )}
-          </div>
-
-          {status === "blocked" ? (
-            <button
-              type="button"
-              data-primary
-              onClick={onStart}
-              className="press bg-signal-strong mt-4 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white"
-            >
-              <Play aria-hidden className="size-5 fill-current" />
-              눌러서 시작
-            </button>
-          ) : status === "running" ? (
-            <div className={cn("mt-4 grid gap-2", onSkip && "grid-cols-[1fr_auto]")}>
-              <button
-                type="button"
-                data-primary
-                onClick={onPause}
-                className="press bg-sub flex min-h-14 items-center justify-center gap-2 rounded-2xl text-lg font-extrabold"
-              >
-                <Pause aria-hidden className="size-5 fill-current" />
-                잠깐 멈춤
-              </button>
-              {onSkip && (
-                <button
-                  type="button"
-                  onClick={onSkip}
-                  aria-label="이 운동 건너뛰기"
-                  className="press bg-sub grid min-h-14 min-w-14 place-items-center rounded-2xl"
-                >
-                  <SkipForward aria-hidden className="size-5" />
-                </button>
-              )}
-            </div>
-          ) : (
-            <button
-              type="button"
-              data-primary
-              onClick={onStart}
-              className="press bg-signal-strong mt-4 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl text-lg font-extrabold text-white"
-            >
-              <Play aria-hidden className="size-5 fill-current" />
-              {/* 쉬는 동안 화면을 떠나 멈춘 것은 아직 시작 전이다 — 「이어서」 가 아니다 */}
-              {status === "paused" && elapsed > 0
-                ? "이어서 하기"
-                : status === "rest"
-                  ? "바로 시작"
-                  : "시작하기"}
-            </button>
-          )}
-        </section>
-      ) : (
-        <button
-          type="button"
-          onClick={onPick}
-          disabled={s.completed}
-          className={cn("card press flex w-full items-center gap-3 text-left")}
-        >
-          {clip?.videoId ? (
-            <VideoThumb
-              videoId={clip.videoId}
-              src={clip.thumbnailUrl}
-              className="aspect-video w-24 shrink-0 rounded-xl"
-            />
-          ) : (
-            <span className="bg-sub aspect-video w-24 shrink-0 rounded-xl" />
-          )}
-          <span className="min-w-0 flex-1">
-            <span className="line-clamp-2 text-sm font-extrabold">{s.title}</span>
-            <span className="text-caption text-ink-soft mt-0.5 block">
-              {PHASE_LABEL[s.phase]} {stepMinutes(s)}분{s.completed && ", 다 했어요"}
-            </span>
-          </span>
-        </button>
-      )}
-    </li>
+/** 동작 썸네일. 영상이 없으면 같은 크기의 빈 칸 */
+function StepThumb({ session }: { session: MissionSession }) {
+  const clip = session.clip;
+  return clip?.videoId ? (
+    <VideoThumb
+      videoId={clip.videoId}
+      src={clip.thumbnailUrl}
+      className="aspect-video w-24 shrink-0 rounded-xl"
+    />
+  ) : (
+    <span className="bg-sub block aspect-video w-24 shrink-0 rounded-xl" />
   );
 }
 
@@ -835,11 +906,13 @@ function StepPlayer({
   session,
   playing,
   onBlocked,
+  onDuration,
 }: {
   clip: NonNullable<MissionSession["clip"]>;
   session: MissionSession;
   playing: boolean;
   onBlocked: () => void;
+  onDuration: (sec: number) => void;
 }) {
   const { data } = useClips({ phase: session.phase, factor: session.factor ?? null });
   const alternates = (data?.clips ?? []).filter((c) => c.videoId !== clip.videoId).slice(0, 5);
@@ -854,6 +927,7 @@ function StepPlayer({
       playing={playing}
       title={session.title}
       onBlocked={onBlocked}
+      onDuration={onDuration}
     />
   );
 }

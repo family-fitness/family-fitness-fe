@@ -136,6 +136,45 @@ export function stepMinutes(s: { minutes?: number | null }): number {
   return Math.max(1, s.minutes ?? 1);
 }
 
+/** 칸 영상 구간의 길이(초). 구간 끝을 모르면 null */
+export function clipSeconds(
+  clip: { startSec?: number | null; endSec?: number | null } | null | undefined,
+): number | null {
+  if (clip?.endSec == null) return null;
+  const len = clip.endSec - (clip.startSec ?? 0);
+  return Number.isFinite(len) && len > 0 ? Math.round(len) : null;
+}
+
+/**
+ * 서버가 인정하는 가장 짧은 운동 시간(초). 서버는 그 동작에 잡힌 운동 시간(분) × 60 의 절반보다 짧으면
+ * 422 TOO_SHORT 를 준다(BE `SessionCompletionService.creditedSeconds`). 영상이 이보다 짧아도 이만큼은 해야 기록이 남는다
+ */
+export function minCreditSeconds(s: { minutes?: number | null }): number {
+  return Math.ceil(stepMinutes(s) * 30);
+}
+
+/**
+ * 한 동작의 타이머(초). 영상 길이를 알면 영상 길이(구간 끝, 그다음 플레이어가 알려 준 길이),
+ * 모르면 그 동작에 잡힌 운동 시간(분). 서버 하한보다 짧게 잡지 않는다
+ */
+export function stepSeconds(
+  s: { minutes?: number | null; clip?: VideoClipRange | null },
+  measured?: number | null,
+): number {
+  const video = clipSeconds(s.clip) ?? (measured && measured > 0 ? Math.round(measured) : null);
+  return Math.max(video ?? stepMinutes(s) * 60, minCreditSeconds(s));
+}
+
+/** 이만큼 하면 그 칸을 끝낸 것으로 친다 — 타이머의 절반. 서버 하한보다 짧지 않게 */
+export function doneAtSeconds(
+  s: { minutes?: number | null; clip?: VideoClipRange | null },
+  measured?: number | null,
+): number {
+  return Math.max(Math.ceil(stepSeconds(s, measured) / 2), minCreditSeconds(s));
+}
+
+type VideoClipRange = { startSec?: number | null; endSec?: number | null };
+
 /** 세션들의 시간을 합친다. 화면 제목에 쓰는 값 */
 export function totalMinutes(sessions: { minutes?: number | null }[]): number {
   return sessions.reduce((sum, s) => sum + stepMinutes(s), 0);

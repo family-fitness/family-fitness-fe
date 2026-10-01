@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowDown, ArrowUp, Minus, Plus, X } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -14,6 +15,7 @@ import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { NavLink } from "@/components/ui/nav-link";
 import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
+import { VideoThumb } from "@/components/ui/video-thumb";
 import {
   useAvailabilities,
   useCreateMission,
@@ -36,7 +38,7 @@ import { PHASE_LABEL } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { WEEKDAY, monthOf, today, weekdayCode } from "@/lib/today";
 import { cn } from "@/lib/utils";
-import { childFinderHref } from "@/lib/videos";
+import { childFinderHref, clipHref } from "@/lib/videos";
 import { useRoleStore } from "@/stores/role-store";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
@@ -253,20 +255,35 @@ function CustomPlan() {
           <ol className="divide-rows mt-1">
             {moves.map((m, i) => (
               <li key={m.clip.clipId} className="py-3">
-                {/* 첫 줄 — 차례 · 이름 · 빼기. 이름이 잘리지 않게 한 줄을 다 준다 */}
-                <div className="flex items-start gap-2">
+                {/* 첫 줄 — 차례, 썸네일, 이름, 빼기 */}
+                <div className="flex items-center gap-2">
                   <span className="text-signal-deep w-6 shrink-0 text-center text-sm leading-snug font-extrabold tabular-nums">
                     {i + 1}
                   </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm leading-snug font-extrabold">{m.clip.title}</p>
-                    <p className="text-caption text-ink-soft">{PHASE_LABEL[m.clip.phase]}</p>
-                  </div>
+                  {/* 누르면 운동 상세(영상과 설명)로 */}
+                  <Link
+                    href={clipHref(m.clip)}
+                    className="press flex min-w-0 flex-1 items-center gap-3"
+                  >
+                    <VideoThumb
+                      videoId={m.clip.videoId}
+                      src={m.clip.thumbnailUrl}
+                      className="aspect-video w-24 shrink-0 rounded-xl"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="line-clamp-2 text-sm leading-snug font-extrabold">
+                        {m.clip.title}
+                      </span>
+                      <span className="text-caption text-ink-soft block">
+                        {PHASE_LABEL[m.clip.phase]} {m.minutes}분
+                      </span>
+                    </span>
+                  </Link>
                   <button
                     type="button"
                     onClick={() => remove(i)}
                     aria-label={`${m.clip.title} 빼기`}
-                    className="press text-ink-soft -mt-2 -mr-2 grid size-11 shrink-0 place-items-center"
+                    className="press text-ink-soft -mr-2 grid size-11 shrink-0 place-items-center"
                   >
                     <X aria-hidden className="size-4" />
                   </button>

@@ -85,6 +85,35 @@ export function toSessions(moves: RoutineMove[]): MissionSession[] {
   }));
 }
 
+/**
+ * AI 운동 추천이 짠 칸을 담은 동작으로 바꾼다. 「루틴으로 저장」 을 누르면 이 동작들이 담긴 채로
+ * 직접 만들기가 열려 요일을 고르고 저장한다. 영상이 없는 칸은 담을 수 없어 뺀다
+ */
+export function fromSessions(sessions: MissionSession[]): RoutineMove[] {
+  return sessions
+    .filter((s) => s.clip?.videoId)
+    .slice(0, MAX_MOVES)
+    .map((s) => ({
+      clip: {
+        clipId: `ai-${s.position}-${s.clip?.videoId}`,
+        videoId: s.clip?.videoId ?? "",
+        startSec: s.clip?.startSec ?? 0,
+        // 끝이 없으면 영상 한 편이다. 0 으로 채우면 0초에서 끝나는 구간이 된다
+        endSec: s.clip?.endSec as number,
+        title: s.title,
+        factor: (s.factor ?? null) as ClipView["factor"],
+        phase: s.phase,
+        homeOk: true,
+        quiet: true,
+        props: false,
+        favorited: false,
+        mediaUrl: s.clip?.mediaUrl ?? null,
+        thumbnailUrl: s.clip?.thumbnailUrl ?? null,
+      },
+      minutes: Math.min(MOVE_MINUTES.max, Math.max(MOVE_MINUTES.min, Math.round(s.minutes ?? 1))),
+    }));
+}
+
 /** 오늘부터 며칠 — 고를 수 있는 날 */
 export function upcomingDays(from: string, count = 7): string[] {
   return Array.from({ length: count }, (_, i) => daysBefore(-i, from));

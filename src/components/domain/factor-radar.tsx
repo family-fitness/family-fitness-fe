@@ -54,6 +54,7 @@ export function FactorRadar({
   focus,
   note,
   legend = true,
+  seriesLabel,
   className,
 }: {
   points: RadarPoint[] | null | undefined;
@@ -64,6 +65,8 @@ export function FactorRadar({
   /** 또래와 견줄 수 없는 까닭(만 7~10세). 있으면 육각형 위에 한 줄로 쓰고, 칸마다 「없어요」는 숨긴다 */
   note?: string | null;
   legend?: boolean;
+  /** 범례에서 파랑 선의 이름. 아이 화면은 「백분위」 를 쓰지 않으므로 따로 준다 */
+  seriesLabel?: string;
   className?: string;
 }) {
   const hex = toHexagon(points);
@@ -248,7 +251,7 @@ export function FactorRadar({
             <span aria-hidden className="bg-signal relative h-0.5 w-4 rounded-full">
               <span className="bg-signal absolute top-1/2 left-1/2 size-2 -translate-1/2 rounded-full" />
             </span>
-            {name}의 또래 백분위
+            {seriesLabel ?? `${name}의 또래 백분위`}
           </li>
           <li className="flex items-center gap-1.5">
             <svg aria-hidden width="16" height="2" className="overflow-visible">

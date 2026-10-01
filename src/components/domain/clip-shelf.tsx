@@ -8,14 +8,14 @@ import { VideoThumb } from "@/components/ui/video-thumb";
 import { useClips } from "@/lib/api/queries";
 import type { Factor } from "@/lib/fitness-factors";
 import { clock } from "@/lib/session-plan";
-import { finderHref } from "@/lib/videos";
+import { clipHref, finderHref } from "@/lib/videos";
 
 /**
  * 해 볼 운동이 가로로 흐르는 한 줄 — 삼성헬스 홈의 「새로운 컨텐츠」 처럼(9/25).
  *
  * 국민체력100 운동영상의 본운동 클립이다. 보고 있는 아이의 연령대 목록에서, 아이의 키울 힘(서버가 준
  * weakest)이 있으면 그 힘, 없으면 모든 힘. profileId 를 빼면 서버가 로그인한 부모의 연령대(성인)로 걸러
- * 아이 줄에 어른 영상이 떴다. 누르면 운동 찾기에서 그 클립의 시범이 바로 열린다. 옛 「키우고 싶은 힘으로 찾기」
+ * 아이 줄에 어른 영상이 떴다. 누르면 그 동작의 운동 상세가 열린다. 옛 「키우고 싶은 힘으로 찾기」
  * 요인 칸 여섯을 대신한다 — 칸만 있고 볼 것이 없었다.
  */
 export function ClipShelf({
@@ -35,7 +35,6 @@ export function ClipShelf({
   const title = factor ? `${factor} 키우는 운동` : "해 볼 만한 운동";
   // 운동 찾기도 같은 줄(본운동 · 이 힘 · 이 아이)로 연다 — 거르지 않고 열면 첫 40개 밖의 클립은 시범이 안 열렸다
   const more = finderHref({ factor, profileId });
-  const open = (clipId: string) => finderHref({ factor, profileId, clipId });
 
   return (
     <section aria-label={title} className="pt-2">
@@ -52,9 +51,10 @@ export function ClipShelf({
             : clips.map((c) => (
                 <li key={c.clipId} className="w-40 shrink-0">
                   <Link
-                    href={open(c.clipId)}
+                    // 누르면 운동 상세(영상과 설명)로
+                    href={clipHref(c)}
                     className="press block"
-                    aria-label={`${c.title} 시범 보기`}
+                    aria-label={`${c.title} 운동 정보 보기`}
                   >
                     <span className="relative block overflow-hidden rounded-2xl">
                       <VideoThumb
