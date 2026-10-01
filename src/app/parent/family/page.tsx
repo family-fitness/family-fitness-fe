@@ -273,7 +273,9 @@ function RemoveMemberSheet({
         errorMessage(
           e,
           {
-            FORBIDDEN: "가족을 만든 사람만 내보낼 수 있어요.",
+            NOT_FAMILY_OWNER: "가족을 만든 사람만 내보낼 수 있어요.",
+            NOT_SAME_FAMILY: "다른 가족의 사람은 내보낼 수 없어요.",
+            FAMILY_NOT_FOUND: "가족을 찾지 못했어요. 화면을 새로 불러 주세요.",
             CANNOT_REMOVE_SELF: "나는 내보낼 수 없어요. 설정에서 탈퇴할 수 있어요.",
             PROFILE_NOT_FOUND: "이미 우리 가족에 없는 사람이에요.",
           },

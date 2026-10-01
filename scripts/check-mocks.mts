@@ -751,7 +751,11 @@ check(
 
   actAs(DEMO.dad);
   res = await remove(DEMO.familyId, DEMO.kid);
-  check("오너가 아닌 보호자는 구성원을 내보낼 수 없다(403)", res.status === 403, `${res.status}`);
+  check(
+    "오너가 아닌 보호자는 구성원을 내보낼 수 없다(403 NOT_FAMILY_OWNER)",
+    res.status === 403 && (await codeOf(res)) === "NOT_FAMILY_OWNER",
+    `${res.status}`,
+  );
   actAs(DEMO.mom);
 
   res = await remove(DEMO.familyId, DEMO.mom);
@@ -761,9 +765,17 @@ check(
     `${res.status}`,
   );
   res = await remove("00000000-0000-4000-8000-0000000000ff", DEMO.kid);
-  check("다른 가족의 구성원은 내보낼 수 없다(404)", res.status === 404, `${res.status}`);
+  check(
+    "모르는 가족의 구성원은 내보낼 수 없다(404 FAMILY_NOT_FOUND)",
+    res.status === 404 && (await codeOf(res)) === "FAMILY_NOT_FOUND",
+    `${res.status}`,
+  );
   res = await remove(DEMO.familyId, "00000000-0000-4000-8000-0000000000fe");
-  check("가족에 없는 사람은 내보낼 수 없다(404)", res.status === 404, `${res.status}`);
+  check(
+    "가족에 없는 사람은 내보낼 수 없다(404 PROFILE_NOT_FOUND)",
+    res.status === 404 && (await codeOf(res)) === "PROFILE_NOT_FOUND",
+    `${res.status}`,
+  );
   check("거절한 내보내기는 아무도 지우지 않는다", (await familyIds()).length === 3);
 
   // 아이 본인 계정이 탈퇴하면 아이 프로필과 기록이 지워지고 가족은 남는다

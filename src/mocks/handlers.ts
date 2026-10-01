@@ -367,16 +367,17 @@ const identity = [
    */
   http.delete<PathParams>(`${BASE}/families/:familyId/profiles/:profileId`, ({ params }) => {
     const me = acting();
+    // 판정 차례는 BE 와 같다: 가족 없음 404, 오너 아님 403, 가족에 없는 프로필 404, 자기 자신 409
     if (!me || params.familyId !== db.profiles.familyId) {
-      return fail(404, "PROFILE_NOT_FOUND", "가족을 찾을 수 없습니다");
+      return fail(404, "FAMILY_NOT_FOUND", "가족을 찾을 수 없습니다");
     }
     if (!me.isOwner)
-      return fail(403, "FORBIDDEN", "가족을 만든 사람만 구성원을 내보낼 수 있습니다");
+      return fail(403, "NOT_FAMILY_OWNER", "가족을 만든 사람만 구성원을 내보낼 수 있습니다");
+    const target = db.profiles.profiles.find((p) => p.profileId === params.profileId);
+    if (!target) return fail(404, "PROFILE_NOT_FOUND", "가족에 없는 프로필입니다");
     if (params.profileId === me.profileId) {
       return fail(409, "CANNOT_REMOVE_SELF", "자기 자신은 내보낼 수 없습니다");
     }
-    const target = db.profiles.profiles.find((p) => p.profileId === params.profileId);
-    if (!target) return fail(404, "PROFILE_NOT_FOUND", "가족에 없는 프로필입니다");
     forgetProfile(String(params.profileId));
     return new HttpResponse(null, { status: 204 });
   }),
