@@ -11,9 +11,15 @@ import { CardHead } from "@/components/ui/card";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { AvailabilitySlot, Weekday } from "@/lib/api/types";
-import { useAvailability, useFamilyProfiles, useSaveAvailability } from "@/lib/api/queries";
+import type { AvailabilitySlot, ProfileWithSex, Weekday } from "@/lib/api/types";
+import {
+  useAvailabilities,
+  useAvailability,
+  useFamilyProfiles,
+  useSaveAvailability,
+} from "@/lib/api/queries";
 import { errorMessage } from "@/lib/errors";
+import { aloneKids, aloneNotice, dayLabel, sharedDays, type PersonWeek } from "@/lib/schedule";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { useRoleStore } from "@/stores/role-store";
@@ -23,6 +29,8 @@ import { useRoleStore } from "@/stores/role-store";
  *
  * AI 편성이 「몇 분」 의 기본값으로 쓴다. **막는 데 쓰지 않는다** — 적어 둔 시간이
  * 아니라고 운동을 못 하게 하지 않는다. 언제 하겠다는 가족의 약속이다(9/23 회의).
+ * 다만 「같이」 는 아이와 보호자 시간표가 겹치는 날에만 한다(사용자 결정). 그래서 겹치는 요일을
+ * 같이 보이고, 저장했을 때 어떤 보호자와도 겹치는 요일이 없는 아이가 있으면 알린다.
  */
 const DAYS: { code: Weekday; label: string }[] = [
   { code: "MON", label: "월" },
@@ -141,7 +149,12 @@ function Schedule() {
         )}
 
         {who?.profileId && (
-          <WeekEditor key={who.profileId} profileId={who.profileId} name={who.name ?? ""} />
+          <WeekEditor
+            key={who.profileId}
+            profileId={who.profileId}
+            name={who.name ?? ""}
+            people={people}
+          />
         )}
       </Stage>
     </>
@@ -149,12 +162,25 @@ function Schedule() {
 }
 
 /** 한 사람의 한 주. 사람을 바꾸면 새로 그린다(key) — 고치던 것이 다른 사람에게 새지 않게 */
-function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
+function WeekEditor({
+  profileId,
+  name,
+  people,
+}: {
+  profileId: string;
+  name: string;
+  people: ProfileWithSex[];
+}) {
   const { data, isPending, error, refetch, isRefetching } = useAvailability(profileId);
   const save = useSaveAvailability(profileId);
+  // 가족 모두의 한 주 — 겹치는 요일을 센다. 다 받기 전에는 undefined
+  const ids = people.flatMap((p) => (p.profileId ? [p.profileId] : []));
+  const family = useAvailabilities(ids);
   const [draft, setDraft] = useState<AvailabilitySlot[] | null>(null);
   const [saved, setSaved] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  /** 저장하고 나서 알리는 한 줄 — 어떤 보호자와도 겹치는 요일이 없는 아이가 있을 때 */
+  const [notice, setNotice] = useState<string | null>(null);
 
   if (isPending) return <Skeleton className="h-96 w-full rounded-3xl" />;
   // 못 받은 것을 빈 한 주로 그리지 않는다 — 그대로 저장하면 적어 둔 시간이 지워진다
@@ -171,8 +197,24 @@ function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
   const total = slots.reduce((sum, s) => sum + s.minutes, 0);
   const changed = draft != null;
 
+  // 이 사람의 한 주는 고치는 중인 것으로, 다른 사람은 저장된 것으로 본다
+  const weekOf = (p: ProfileWithSex, mine: readonly AvailabilitySlot[]): PersonWeek => ({
+    name: p.name ?? "",
+    slots:
+      p.profileId === profileId
+        ? mine
+        : (family?.find((a) => a.profileId === p.profileId)?.slots ?? []),
+  });
+  const me = people.find((p) => p.profileId === profileId);
+  const kid = me?.role === "CHILD";
+  // 아이면 보호자들과, 보호자면 아이들과 견준다
+  const partners = people.filter(
+    (p) => p.profileId !== profileId && (kid ? p.role !== "CHILD" : p.role === "CHILD"),
+  );
+
   const edit = (next: AvailabilitySlot[]) => {
     setSaved(false);
+    setNotice(null);
     // 요일 차례대로 둔다. 누른 차례로 두면 저장한 목록이 뒤죽박죽이다
     const order = DAYS.map((d) => d.code);
     setDraft([...next].sort((a, b) => order.indexOf(a.day) - order.indexOf(b.day)));
@@ -186,6 +228,21 @@ function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
       await save.mutateAsync(slots);
       setDraft(null);
       setSaved(true);
+      // 아이를 고쳤으면 그 아이를, 보호자를 고쳤으면 아이 모두를 본다
+      if (family) {
+        const kids = people.filter(
+          (p) => p.role === "CHILD" && (!kid || p.profileId === profileId),
+        );
+        const guardians = people.filter((p) => p.role !== "CHILD");
+        setNotice(
+          aloneNotice(
+            aloneKids(
+              kids.map((p) => weekOf(p, slots)),
+              guardians.map((p) => weekOf(p, slots)),
+            ),
+          ),
+        );
+      }
     } catch (e) {
       setProblem(
         errorMessage(
@@ -223,6 +280,52 @@ function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
           })}
         </ol>
       </section>
+
+      {/* 같이 운동할 수 있는 요일 — 아이면 보호자마다, 보호자면 아이마다 */}
+      {slots.length > 0 && partners.length > 0 && family && (
+        <section className="card">
+          <CardHead title="같이 운동할 수 있는 날" />
+          <ul className="divide-rows mt-1">
+            {partners.map((p) => {
+              const other = weekOf(p, slots);
+              const days = sharedDays([slots, other.slots]);
+              return (
+                <li key={p.profileId} className="flex min-h-14 items-center gap-3 py-2.5">
+                  <ProfileAvatar
+                    profileId={p.profileId}
+                    name={p.name}
+                    size="sm"
+                    tone={p.role === "CHILD" ? "signal" : "mark"}
+                  />
+                  <span className="min-w-0 flex-1 truncate text-sm font-bold">{p.name}</span>
+                  {other.slots.length === 0 ? (
+                    <span className="text-caption text-ink-soft shrink-0">아직 적지 않았어요</span>
+                  ) : days.length === 0 ? (
+                    <span className="text-caption text-signal-deep shrink-0 font-bold">
+                      겹치는 요일이 없어요
+                    </span>
+                  ) : (
+                    <span className="flex shrink-0 gap-1">
+                      <span className="sr-only">
+                        {days.map((d) => `${dayLabel(d)}요일`).join(", ")}
+                      </span>
+                      {days.map((d) => (
+                        <span
+                          key={d}
+                          aria-hidden
+                          className="bg-signal-soft text-signal-deep grid size-7 place-items-center rounded-full text-xs font-extrabold"
+                        >
+                          {dayLabel(d)}
+                        </span>
+                      ))}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <section className="card">
         <CardHead title="빠르게 고르기" />
@@ -331,6 +434,11 @@ function WeekEditor({ profileId, name }: { profileId: string; name: string }) {
         {problem && (
           <p role="alert" className="text-signal-deep mb-2 text-center text-sm font-semibold">
             {problem}
+          </p>
+        )}
+        {notice && !changed && (
+          <p role="status" className="text-signal-deep mb-2 text-center text-sm font-semibold">
+            {notice}
           </p>
         )}
         {saved && !changed ? (
