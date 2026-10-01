@@ -7,7 +7,7 @@ import { Fragment, Suspense, useDeferredValue, useEffect, useRef, useState } fro
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { Dock } from "@/components/ui/dock";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, EmptyStateAction } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Sheet } from "@/components/ui/sheet";
@@ -259,6 +259,21 @@ function Finder() {
           <EmptyState
             scene="no-mission"
             title={favoritesOnly ? "아직 즐겨찾기한 동작이 없어요" : "조건에 맞는 동작이 없어요"}
+            description={favoritesOnly ? "하트를 누른 동작이 여기에 모여요" : undefined}
+            // 고른 조건과 즐겨찾기를 모두 끄고 처음 목록으로(나이대는 그대로 둔다)
+            action={
+              <EmptyStateAction
+                onClick={() => {
+                  setFactor(null);
+                  setPhase(null);
+                  setQuiet(false);
+                  setQ("");
+                  setFavoritesOnly(false);
+                }}
+              >
+                전체 보기
+              </EmptyStateAction>
+            }
           />
         ) : (
           <>

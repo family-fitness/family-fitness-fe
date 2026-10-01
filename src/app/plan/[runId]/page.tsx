@@ -140,19 +140,15 @@ function Proposal() {
           <EmptyState
             scene="rest"
             title="제안을 짜지 못했어요"
+            // 왜 못 짰는지. 서버가 준 까닭 코드를 말로
+            description={failureText(run.failureCode)}
             action={
-              <>
-                {/* 왜 못 짰는지 — 서버가 준 까닭 코드를 말로 */}
-                <p className="text-ink-soft text-sm font-semibold">
-                  {failureText(run.failureCode)}
-                </p>
-                <Link
-                  href="/plan"
-                  className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"
-                >
-                  다시 짜기
-                </Link>
-              </>
+              <Link
+                href="/plan"
+                className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"
+              >
+                다시 짜기
+              </Link>
             }
           />
         ) : (

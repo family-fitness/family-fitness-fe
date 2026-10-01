@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { ArtIcon } from "@/components/ui/art-icon";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, EmptyStateAction } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Sheet } from "@/components/ui/sheet";
@@ -88,7 +88,11 @@ export default function NotificationsPage() {
       <>
         <AppBar backHref={back} title="알림" />
         <Stage wide>
-          <EmptyState scene="waiting" title="누구인지 골라 주세요" />
+          <EmptyState
+            scene="waiting"
+            title="누구인지 골라 주세요"
+            action={<EmptyStateAction href="/start">고르러 가기</EmptyStateAction>}
+          />
         </Stage>
       </>
     );
@@ -105,7 +109,18 @@ export default function NotificationsPage() {
     <>
       <AppBar backHref={back} title="알림" />
       <Stage wide className="space-y-4">
-        {items.length === 0 && <EmptyState scene="no-alarm" title="아직 알림이 없어요" />}
+        {items.length === 0 && (
+          <EmptyState
+            scene="no-alarm"
+            title="아직 알림이 없어요"
+            // 무엇이 오면 여기에 쌓이는지. 아이와 부모가 받는 알림이 다르다
+            description={
+              kidView
+                ? "스티커를 받거나 새 운동이 생기면 여기에서 알려 줘요"
+                : "아이가 운동을 마치거나 스티커를 보내면 여기에서 알려 드려요"
+            }
+          />
+        )}
         {fresh.length > 0 && (
           <Group title="새로 온 것" items={fresh} kidView={kidView} until={until} fresh />
         )}

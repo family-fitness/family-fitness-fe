@@ -7,7 +7,7 @@ import { Suspense, useEffect } from "react";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { Card, CardHead } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, EmptyStateAction } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -124,7 +124,8 @@ function Day() {
         <AppBar backHref={back} title="하루 기록" />
         <Stage wide>
           <EmptyState
-            scene="no-record"
+            // 「측정 전」 키움이가 아니다. 아이 화면은 다른 화면처럼 기다리는 키움이, 부모는 인사하는 키움이
+            scene={kidView ? "waiting" : "hello"}
             title={kidView ? "누구인지 골라 주세요" : "아이를 등록해 주세요"}
             action={
               <NavLink
@@ -165,6 +166,15 @@ function Day() {
       : plannedOn(all?.missions ?? [], who.profileId ?? undefined, date, now).filter(
           (m) => !doneEntries.some((e) => e.missionId === m.missionId),
         );
+  // 그날 한 것도, 받은 칭찬도, 할 운동도 없다. 지름 196 빈 링과 「0분」 「0개」 대신 키움이를 세운다.
+  // 쉬기로 한 날은 할 운동을 늘어놓지 않으니 한 것과 칭찬만 본다(규칙 15). 앞날은 잡아 둔 운동이 있는 날만 온다
+  const quiet =
+    date <= now &&
+    summary.moved === 0 &&
+    summary.done === 0 &&
+    summary.stickers === 0 &&
+    doneEntries.length === 0 &&
+    (resting || (summary.total === 0 && planned.length === 0));
   const plannedDays = new Set(
     (all?.missions ?? [])
       .filter((m) => m.participants?.some((p) => p.profileId === who.profileId))
@@ -302,6 +312,37 @@ function Day() {
           </section>
         ) : calendarPending ? (
           <Skeleton className="h-[26rem] w-full rounded-3xl" />
+        ) : quiet ? (
+          <section className="card-hero">
+            {resting ? (
+              <EmptyState
+                size="card"
+                scene="rest"
+                title="쉬기로 한 날이에요"
+                description="쉬는 날에는 운동하지 않아도 이어서 한 날이 끊기지 않아요"
+              />
+            ) : date === now ? (
+              <EmptyState
+                size="card"
+                scene="no-mission"
+                title="오늘 운동 기록이 아직 없어요"
+                description="운동을 하면 여기에 기록이 쌓여요"
+                // 아이는 운동을 만들 수 없다. 운동을 받는 길은 부모 화면에만
+                action={
+                  !kidView && (
+                    <EmptyStateAction
+                      href={`/plan?profileId=${encodeURIComponent(who.profileId ?? "")}`}
+                    >
+                      AI에게 운동 받기
+                    </EmptyStateAction>
+                  )
+                }
+              />
+            ) : (
+              // 지난날은 「빠진 날」 이 아니다. 기록이 없다고만 말한다
+              <EmptyState size="card" scene="no-mission" title="이날은 운동 기록이 없어요" />
+            )}
+          </section>
         ) : (
           <section className="card-hero">
             {/* 쉬는 날 카드를 쓴 날 — 빈 날이 아니라 쉬기로 한 날이다. 그날 움직였으면 한 것이 먼저다(달력 칸과 같게) */}

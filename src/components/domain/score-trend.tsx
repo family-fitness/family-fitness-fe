@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { EmptyState } from "@/components/ui/empty-state";
 import type { FitnessTestSummary } from "@/lib/api/types";
 
 /*
@@ -27,6 +28,18 @@ export function ScoreTrend({ tests }: { tests: FitnessTestSummary[] }) {
   const [active, setActive] = useState<number | null>(null);
 
   if (points.length === 0) return null;
+  // 점이 하나면 이을 선이 없다. 가운데 점 하나만 찍힌 그래프 대신 다음 측정을 기다리는 키움이
+  if (points.length === 1) {
+    return (
+      <EmptyState
+        size="card"
+        // scene/kiumi-no-growth 그림이 오면 이 줄을 no-growth 로 바꾼다
+        scene="no-record"
+        title="한 번 더 측정하면 점수 흐름이 보여요"
+        description="두 번 이상 측정하면 점수가 어떻게 달라졌는지 그래프로 보여 드려요"
+      />
+    );
+  }
 
   const x = (i: number) =>
     points.length === 1

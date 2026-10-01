@@ -130,7 +130,7 @@ export default function ParentHomePage() {
       <>
         {header}
         <Stage className="flex flex-col items-center pt-10 text-center">
-          <Illustration name="scene/kiumi-no-record" size={150} />
+          <Illustration name="scene/kiumi-hello" size={150} />
           <h2 className="mt-4 text-xl font-extrabold">아이를 등록해 주세요</h2>
           <Button size="md" className="mt-5" onClick={() => router.push("/start/child")}>
             아이 등록하기
@@ -253,6 +253,8 @@ function ParentHomeSkeleton() {
 /** 「이번 주」 머리 곁말 — 합친 분 · 운동한 날 */
 function weekMeta(days: string[], logs: Parameters<typeof weekTotals>[1]) {
   const t = weekTotals(days, logs);
+  // 아직 운동한 날이 없으면 비운다. 「0일, 0분 운동」 은 못 한 주처럼 읽힌다(묶음 안의 키움이가 말한다)
+  if (t.active === 0) return undefined;
   return `${t.active}일, ${t.minutes}분 운동`;
 }
 

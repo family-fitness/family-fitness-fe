@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardHead } from "@/components/ui/card";
+import { EmptyState, EmptyStateAction } from "@/components/ui/empty-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DayRings } from "@/components/domain/day-rings";
@@ -52,10 +53,20 @@ export function MonthStats({
   const stickers = days.reduce((sum, d) => sum + d.stickers.length, 0);
   const calendar: Load = error ? "error" : isPending ? "pending" : "ready";
 
-  const cells: StatCell[] = [
-    { key: "days", label: "이번 달 운동한 날", value: active.length, unit: "일", state: calendar },
-    { key: "minutes", label: "움직인 시간", value: minutes, unit: "분", state: calendar },
-  ];
+  // 이번 달에 운동한 날이 없으면 「0일」 「0분」 칸을 세우지 않는다. 아래 최근 기록 카드가 빈 자리를 말한다
+  const cells: StatCell[] =
+    calendar === "ready" && active.length === 0
+      ? []
+      : [
+          {
+            key: "days",
+            label: "이번 달 운동한 날",
+            value: active.length,
+            unit: "일",
+            state: calendar,
+          },
+          { key: "minutes", label: "움직인 시간", value: minutes, unit: "분", state: calendar },
+        ];
   if ((streak ?? 0) >= 2 || streakState !== "ready") {
     cells.push({
       key: "streak",
@@ -74,6 +85,7 @@ export function MonthStats({
       state: calendar,
     });
   }
+  if (cells.length === 0) return null;
 
   return (
     <section aria-label="이번 달" className="card grid grid-cols-2 px-0 py-1">
@@ -183,7 +195,17 @@ export function RecentDays({
           불러오지 못했어요. 다시 불러오기
         </button>
       ) : days.length === 0 ? (
-        <p className="text-ink-soft mt-1 text-sm">최근 기록이 없어요</p>
+        <EmptyState
+          size="card"
+          scene="no-mission"
+          title="최근 운동 기록이 없어요"
+          description="운동한 날마다 여기에 한 줄씩 쌓여요"
+          action={
+            <EmptyStateAction href={`/plan?profileId=${encodeURIComponent(profileId)}`}>
+              AI에게 운동 받기
+            </EmptyStateAction>
+          }
+        />
       ) : (
         <ul className="divide-rows mt-1">
           {days.map((d) => {

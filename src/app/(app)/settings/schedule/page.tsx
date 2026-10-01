@@ -258,27 +258,40 @@ function WeekEditor({
     <>
       <section className="card-hero">
         <p className="metric-label">{name}의 한 주</p>
-        <p className="metric-value text-metric mt-1">
-          {slots.length}
-          <span className="metric-unit">번</span>
-          <span className="text-ink-soft ml-2 text-base font-bold">모두 {total}분</span>
-        </p>
-        {/* 한 주 일곱 칸 — 적어 둔 날만 채운다 */}
-        <ol className="mt-3 grid grid-cols-7 gap-1.5" aria-hidden>
-          {DAYS.map((d) => {
-            const s = byDay.get(d.code);
-            return (
-              // 분은 글자로, 적어 둔 날은 아래 막대로 — 둥근 칸 안에 숫자를 넣지 않는다
-              <li key={d.code} className="flex flex-col items-center gap-1">
-                <span className="text-signal-deep h-5 text-sm font-extrabold tabular-nums">
-                  {s ? s.minutes : ""}
-                </span>
-                <span className={cn("h-1.5 w-full rounded-full", s ? "bg-signal" : "bg-sub")} />
-                <span className="text-micro text-ink-soft font-bold">{d.label}</span>
-              </li>
-            );
-          })}
-        </ol>
+        {slots.length === 0 ? (
+          // 아직 하나도 설정하지 않았다. 「0번 모두 0분」 과 회색 막대 일곱 대신 무엇을 하면 되는지 말한다.
+          // 고치는 화면이라 그림은 두지 않는다
+          <>
+            <p className="text-lead mt-1 font-extrabold">아직 설정한 시간이 없어요</p>
+            <p className="text-ink-soft mt-1 text-sm font-semibold">
+              요일과 시간을 설정하면 AI가 그 시간에 맞춰 운동을 짜 줘요
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="metric-value text-metric mt-1">
+              {slots.length}
+              <span className="metric-unit">번</span>
+              <span className="text-ink-soft ml-2 text-base font-bold">모두 {total}분</span>
+            </p>
+            {/* 한 주 일곱 칸 — 적어 둔 날만 채운다 */}
+            <ol className="mt-3 grid grid-cols-7 gap-1.5" aria-hidden>
+              {DAYS.map((d) => {
+                const s = byDay.get(d.code);
+                return (
+                  // 분은 글자로, 적어 둔 날은 아래 막대로 — 둥근 칸 안에 숫자를 넣지 않는다
+                  <li key={d.code} className="flex flex-col items-center gap-1">
+                    <span className="text-signal-deep h-5 text-sm font-extrabold tabular-nums">
+                      {s ? s.minutes : ""}
+                    </span>
+                    <span className={cn("h-1.5 w-full rounded-full", s ? "bg-signal" : "bg-sub")} />
+                    <span className="text-micro text-ink-soft font-bold">{d.label}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          </>
+        )}
       </section>
 
       {/* 같이 운동할 수 있는 요일 — 아이면 보호자마다, 보호자면 아이마다 */}

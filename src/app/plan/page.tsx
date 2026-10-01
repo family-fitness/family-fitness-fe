@@ -167,7 +167,7 @@ function PlanForm() {
         <AppBar backHref={back} title="오늘 운동 짜기" />
         <Stage wide>
           <EmptyState
-            scene="no-record"
+            scene="hello"
             title="아이를 등록하면 운동을 짜 줘요"
             action={
               <NavLink
@@ -255,7 +255,11 @@ function PlanForm() {
                 <BodyTile label="몸무게" value={weightKg} unit="kg" />
               </dl>
               <div className="mt-2 flex min-h-11 items-center justify-between gap-3">
-                <p className="text-ink-soft text-sm font-bold">아직 재지 않았어요</p>
+                {/* 글만 두지 않고 측정 전 키움이를 작게 같이 */}
+                <p className="text-ink-soft flex items-center gap-2 text-sm font-bold">
+                  <ArtIcon name="scene/kiumi-no-record" className="size-12" />
+                  아직 측정하지 않았어요
+                </p>
                 {/* 만 4세 미만은 잴 수 없다 — 길을 두지 않는다(규칙 4) */}
                 {kid.measurable !== false && (
                   <NavLink

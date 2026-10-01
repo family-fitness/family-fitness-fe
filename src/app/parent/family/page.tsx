@@ -7,6 +7,7 @@ import { AppBar } from "@/components/app-shell/app-bar";
 import { PlainScreen } from "@/components/app-shell/screen";
 import { Stage } from "@/components/app-shell/stage";
 import { CardHead } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ListRow } from "@/components/ui/list-row";
 import { NavLink } from "@/components/ui/nav-link";
 import { ErrorState } from "@/components/ui/error-state";
@@ -113,6 +114,16 @@ export default function MembersPage() {
               />
             ))}
           </ul>
+          {/* 구성원이 나 하나다. 아래 두 버튼으로 가족을 채울 수 있다고 키움이가 먼저 말한다 */}
+          {profiles.length === 1 && (
+            <EmptyState
+              size="card"
+              // scene/kiumi-invite 그림이 오면 이 줄을 invite 로 바꾼다
+              scene="hello"
+              title="아직 함께하는 가족이 없어요"
+              description="아이를 등록하거나 가족을 초대해 보세요"
+            />
+          )}
           {/* 폰 없는 아이는 보호자가 정보를 넣어 등록한다(첫 시작과 같은 흐름, 키와 몸무게, 운동 시간까지).
               폰이 있는 사람은 보호자든 아이든 초대 코드를 먼저 만들고, 받은 사람이 자기 정보를 넣는다(10번) */}
           <div className="mt-2 grid grid-cols-2 gap-2">
