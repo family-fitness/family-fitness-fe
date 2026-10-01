@@ -601,12 +601,17 @@ check(
     demoLeague.standings.every((s) => s.rate == null || (s.score != null && s.score <= 1)),
   scores.join(" "),
 );
+// 달의 첫날에는 모든 집이 하루만 지났다. 늦게 들어와 하루만 해낸 집이 있을 수 없어서 둘째 날부터 본다
+const firstDayOfMonth = toDateString(new Date()).endsWith("-01");
 check(
   "하루만 해낸 100% 집은 달성률이 더 낮은 집보다 아래에 선다",
-  demoLeague.standings.some(
-    (s, i) =>
-      s.rate === 100 && demoLeague.standings.slice(0, i).some((above) => (above.rate ?? 101) < 100),
-  ),
+  firstDayOfMonth ||
+    demoLeague.standings.some(
+      (s, i) =>
+        s.rate === 100 &&
+        demoLeague.standings.slice(0, i).some((above) => (above.rate ?? 101) < 100),
+    ),
+  firstDayOfMonth ? "달의 첫날이라 건너뜀" : "",
 );
 
 /* 운동 찾기: 페이지 나누기, 전체 수, 모든 나이 */
