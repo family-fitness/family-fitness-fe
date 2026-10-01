@@ -1,4 +1,5 @@
 import { INVITE_ERROR_COPY } from "@/lib/invite-copy";
+import { withClipThumbs } from "@/lib/videos";
 
 import type { ApiErrorBody } from "./types";
 
@@ -211,7 +212,8 @@ async function request<T>(path: string, options: Options = {}): Promise<T> {
 
   // 본문 없이 끝나는 응답(204 · 본문 없는 200)도 성공이다 — 읽을 게 없다고 실패로 치지 않는다
   const text = await res.text();
-  return (text ? JSON.parse(text) : undefined) as T;
+  // 유튜브 클립은 서버가 썸네일을 주지 않는다. 클립이 시작하는 화면을 채운다(lib/videos)
+  return (text ? JSON.parse(text, withClipThumbs) : undefined) as T;
 }
 
 /**

@@ -134,6 +134,49 @@ export function videoLink(
   return outside ? { href: outside, inApp: false } : undefined;
 }
 
+/** 유튜브가 주는 영상 대표 썸네일. 한 영상에서 자른 클립은 모두 이 한 장이라 줄마다 같은 그림이 떴다 */
+export function youtubeThumb(videoId: string): string {
+  return `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/mqdefault.jpg`;
+}
+
+const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
+
+/**
+ * 유튜브 클립의 썸네일. 그 동작이 시작하는 순간의 화면이다(`public/thumbs/<영상 id>/<시작 초>.webp`).
+ * AI 저장소 data/frames 의 2초 간격 화면에서 클립(data/release/video_clips.csv)이 시작하는 장만 골라 줄였다.
+ * 화면 왼쪽 위에 동작 이름이 떠 있어서 같은 영상의 클립끼리도 그림이 다르다.
+ * 시작 초를 모르면(영상 한 편) undefined 를 돌려주고 화면은 유튜브 썸네일을 쓴다. 파일이 없으면 VideoThumb 가 유튜브 썸네일로 바꾼다
+ */
+export function clipThumb(
+  videoId: string,
+  startSec: number | null | undefined,
+): string | undefined {
+  if (!YOUTUBE_ID.test(videoId)) return undefined;
+  if (typeof startSec !== "number" || !Number.isInteger(startSec) || startSec < 0) return undefined;
+  return `/thumbs/${videoId}/${startSec}.webp`;
+}
+
+/**
+ * 서버 응답을 읽을 때(`JSON.parse` 의 reviver) 유튜브 클립에 썸네일을 채운다.
+ * 클립은 영상 id 와 시작 초가 있고 mp4 주소도 썸네일도 비어 있는 것이다(공단 영상은 서버가 썸네일을 준다).
+ * 화면은 지금처럼 `thumbnailUrl` 만 넘기면 클립마다 다른 그림이 뜬다
+ */
+export function withClipThumbs(_key: string, value: unknown): unknown {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const v = value as {
+      videoId?: unknown;
+      startSec?: unknown;
+      mediaUrl?: unknown;
+      thumbnailUrl?: unknown;
+    };
+    if (typeof v.videoId === "string" && !v.mediaUrl && !v.thumbnailUrl) {
+      const thumb = clipThumb(v.videoId, v.startSec as number | null | undefined);
+      if (thumb) v.thumbnailUrl = thumb;
+    }
+  }
+  return value;
+}
+
 /** 영상 화면 제목. 주소로 들어오는 값이라 앞뒤 빈칸을 빼고 길이를 자른다 */
 export const WATCH_TITLE_MAX = 60;
 export function watchTitle(raw: string | null | undefined): string {
