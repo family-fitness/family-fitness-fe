@@ -93,6 +93,8 @@
   --radius-tile: 14px;
 
   --width-phone: 30rem;
+  /* 부모 화면 하단 탭의 높이(홈 인디케이터 자리는 뺀 것) */
+  --spacing-tabbar: 3.75rem;
 }
 
 /*
@@ -155,9 +157,12 @@ body {
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
-  /* 탭바를 없앴다. 아래 여백은 홈 인디케이터만큼만 남긴다 */
+  /* 아래 여백은 홈 인디케이터만큼. 부모 화면에 하단 탭이 서면 탭 높이만큼 더 비운다 */
   .app-main {
     padding-bottom: calc(env(safe-area-inset-bottom) + 1.5rem);
+  }
+  html:has(.tab-bar) .app-main {
+    padding-bottom: calc(var(--spacing-tabbar) + env(safe-area-inset-bottom) + 1.5rem);
   }
 
   /* ── 타이포 ── */
@@ -576,4 +581,20 @@ body {
 */
 html:has(.dock) {
   scroll-padding-bottom: 8rem;
+}
+
+/*
+  부모 화면의 하단 탭(`ParentTabBar`). 탭과 아래에 붙는 단추(`Dock`)가 한 화면에 서면 단추가 탭 위에 선다.
+  지금은 탭이 서는 화면에 Dock 이 없다. 나중에 생겨도 단추가 탭에 가려 눌리지 않는 일이 없게 둔다.
+  층 밖에 둔다. Dock 의 bottom-0 (utilities 층)을 이겨야 한다
+*/
+html:has(.tab-bar) .dock {
+  bottom: calc(var(--spacing-tabbar) + env(safe-area-inset-bottom));
+  padding-bottom: 1rem;
+}
+html:has(.tab-bar) {
+  scroll-padding-bottom: calc(var(--spacing-tabbar) + 1rem);
+}
+html:has(.tab-bar):has(.dock) {
+  scroll-padding-bottom: calc(var(--spacing-tabbar) + 8rem);
 }

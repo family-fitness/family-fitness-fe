@@ -72,3 +72,9 @@ export function familyToday(missions: Mission[] | undefined, now: string): Missi
     return start <= now && now <= end;
   });
 }
+
+/** 운동 탭의 사람 한 줄 끝 말. 다 했으면 「다 했어요」, 하는 중이면 몇 개 했는지, 안 했으면 「아직이에요」 */
+export function partLine(part: { done: number; total: number }): string {
+  if (part.total > 0 && part.done >= part.total) return "다 했어요";
+  return part.done > 0 ? `${part.done} / ${part.total}개` : "아직이에요";
+}

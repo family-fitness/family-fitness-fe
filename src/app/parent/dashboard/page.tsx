@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
-import { AppBar } from "@/components/app-shell/app-bar";
+import { HomeHeader } from "@/components/app-shell/home-header";
+import { ParentHeadActions } from "@/components/app-shell/parent-head-actions";
 import { Stage } from "@/components/app-shell/stage";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
@@ -29,7 +30,7 @@ import {
 } from "@/lib/api/queries";
 import { daySummary, dayWork, todayLine } from "@/lib/day";
 import { useSession } from "@/lib/session";
-import { monthGrid, monthLabel, monthOf, today, weekOf } from "@/lib/today";
+import { longDate, monthGrid, monthLabel, monthOf, today, weekOf } from "@/lib/today";
 import { cn } from "@/lib/utils";
 
 /**
@@ -39,6 +40,7 @@ import { cn } from "@/lib/utils";
  *   「이번 달 우리 가족」  운동한 날 · 움직인 시간 · 끝낸 운동 · 받은 칭찬 — 누가 하든 한 곳에 모인다
  *   「구성원」           사람마다 오늘 · 이번 주 · 며칠 이어서. 아직 안 들어온 자리는 초대
  *
+ * 하단 탭의 「가족」 이 여는 화면이다. 탭의 첫 화면이라 뒤로가 없고, 가족 관리는 구성원 묶음 아래에서 들어간다.
  * 이 화면에서는 구성원끼리 점수를 나란히 세우지 않는다 — 한 사람이 한 줄, 오늘 · 이번 주 · 이어서만(규칙 10).
  * 아이들의 신체 점수를 한 번에 보는 자리는 부모 홈의 「우리 아이」 다(9/25 요청, 등록한 차례로).
  * 흐름 시연판(9/17)의 대시보드는 무엇을 보여 줄지만 참고했다. 모양은 이 앱의 결이다.
@@ -75,7 +77,7 @@ export default function FamilyDashboardPage() {
   if (failure) {
     return (
       <>
-        <AppBar backHref="/parent" title="우리 가족" />
+        <HomeHeader eyebrow={longDate()} title="우리 가족" actions={<ParentHeadActions />} />
         <Stage wide>
           <ErrorState
             error={failure}
@@ -119,7 +121,11 @@ export default function FamilyDashboardPage() {
 
   return (
     <>
-      <AppBar backHref="/parent" title={map?.familyName ?? "우리 가족"} />
+      <HomeHeader
+        eyebrow={longDate()}
+        title={map?.familyName ?? "우리 가족"}
+        actions={<ParentHeadActions />}
+      />
       <Stage wide className="space-y-3">
         {/* 첫 묶음 — 이번 달 우리 가족. 누가 했는지 가르지 않고 한 곳에 모은다 */}
         <section className="card-hero" aria-label="이번 달 우리 가족">
@@ -382,7 +388,7 @@ function MemberLine({
 function DashboardSkeleton() {
   return (
     <>
-      <AppBar backHref="/parent" title="우리 가족" />
+      <HomeHeader eyebrow={longDate()} title="우리 가족" actions={<ParentHeadActions />} />
       <Stage wide className="space-y-3">
         <Skeleton className="h-64 w-full rounded-3xl" />
         <Skeleton className="h-80 w-full rounded-3xl" />

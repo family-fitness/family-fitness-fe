@@ -1,15 +1,14 @@
 "use client";
 
-import { Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { HomeHeader } from "@/components/app-shell/home-header";
+import { ParentHeadActions } from "@/components/app-shell/parent-head-actions";
 import { Stage } from "@/components/app-shell/stage";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/error-state";
-import { IconLink } from "@/components/ui/icon-link";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArtIcon } from "@/components/ui/art-icon";
@@ -19,7 +18,6 @@ import { WelcomeSheet } from "@/components/domain/welcome-sheet";
 import { KidsOverview } from "@/components/domain/kids-overview";
 import { StreakChip } from "@/components/domain/streak-chip";
 import { ClipShelf } from "@/components/domain/clip-shelf";
-import { NotificationBell } from "@/components/domain/notification-bell";
 import { PanelCell, PanelCells, WeekPanel, weekTotals } from "@/components/domain/week-panel";
 import {
   useCalendar,
@@ -101,15 +99,8 @@ export default function ParentHomePage() {
       title={map?.familyName ?? "우리집"}
       // 가족 이름을 누르면 가족 대시보드 — 가족 전체를 한 화면에서
       titleHref="/parent/dashboard"
-      actions={
-        <>
-          {/* 아이 바꾸기 알약은 뺐다. 화면을 내리면 따라오지 않았고, 바로 아래 「우리 아이」 에서 아이를 고른다 */}
-          <NotificationBell profileId={profile?.profileId ?? undefined} />
-          <IconLink href="/settings" label="설정">
-            <Settings className="size-6" strokeWidth={1.8} />
-          </IconLink>
-        </>
-      }
+      // 아이 바꾸기 알약은 뺐다. 화면을 내리면 따라오지 않았고, 바로 아래 「우리 아이」 에서 아이를 고른다
+      actions={<ParentHeadActions />}
     />
   );
 
@@ -199,7 +190,7 @@ export default function ParentHomePage() {
                 리그를 못 받으면(서버에 아직 없으면) 칸을 두지 않는다 — 누르면 오류 화면이다 */}
             {!leagueError && (
               <PanelCell
-                href="/parent/league?from=home"
+                href="/parent/league"
                 label="가족 리그"
                 note={leagueNote(league)}
                 art={

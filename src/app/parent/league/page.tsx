@@ -1,9 +1,9 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { Fragment, Suspense } from "react";
+import { Fragment } from "react";
 
-import { AppBar } from "@/components/app-shell/app-bar";
+import { HomeHeader } from "@/components/app-shell/home-header";
+import { ParentHeadActions } from "@/components/app-shell/parent-head-actions";
 import { Stage } from "@/components/app-shell/stage";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
@@ -31,7 +31,7 @@ import {
   zoneOf,
 } from "@/lib/league";
 import { useSession } from "@/lib/session";
-import { monthLabel, monthOf, today } from "@/lib/today";
+import { longDate, monthLabel, monthOf, today } from "@/lib/today";
 import { cn, withJosa } from "@/lib/utils";
 
 /**
@@ -43,17 +43,8 @@ import { cn, withJosa } from "@/lib/utils";
  * 체력이 좋은 집도 식구가 많은 집도 유리하지 않다. 이름은 가족 단위로만 — 집 안에서 누가 더 했는지는
  * 어디에도 나오지 않는다(규칙 10). 흐름 시연판(9/17)의 리그는 흐름만 참고했다.
  */
+/** 하단 탭의 「리그」 가 여는 화면. 탭의 첫 화면이라 뒤로가 없다. 홈의 칸과 대시보드의 줄에서도 들어온다 */
 export default function LeaguePage() {
-  return (
-    <Suspense fallback={<LeagueSkeleton backHref="/parent/dashboard" />}>
-      <League />
-    </Suspense>
-  );
-}
-
-function League() {
-  // 부모 홈 칸에서 왔으면 홈으로, 대시보드 줄에서 왔으면 대시보드로
-  const backHref = useSearchParams().get("from") === "home" ? "/parent" : "/parent/dashboard";
   const {
     familyId,
     isPending: sessionPending,
@@ -85,7 +76,7 @@ function League() {
   if (failure) {
     return (
       <>
-        <AppBar backHref={backHref} title="가족 리그" />
+        <LeagueHeader />
         <Stage wide>
           <ErrorState
             error={failure}
@@ -99,14 +90,12 @@ function League() {
   // 우리 가족 프로필은 가족 · 레벨 · 업적이 다 와야 모양이 선다 — 먼저 그리면 아이 줄 · 업적 줄이 뒤늦게 붙어
   // 아래 카드가 180px 밀렸다. 못 받은 것은 기다리지 않는다(없는 채로 선다)
   const profileLoading = mapLoading || progresses.some((q) => q.isLoading);
-  if (sessionPending || leagueLoading || profileLoading) {
-    return <LeagueSkeleton backHref={backHref} />;
-  }
+  if (sessionPending || leagueLoading || profileLoading) return <LeagueSkeleton />;
   // 가족이 없으면 리그도 없다 — 꺼진 조회를 기다리며 뼈대만 돌지 않게
   if (!league) {
     return (
       <>
-        <AppBar backHref={backHref} title="가족 리그" />
+        <LeagueHeader />
         <Stage wide>
           <EmptyState scene="waiting" title="아직 리그가 없어요" />
         </Stage>
@@ -134,7 +123,7 @@ function League() {
 
   return (
     <>
-      <AppBar backHref={backHref} title="가족 리그" />
+      <LeagueHeader />
       <Stage wide className="space-y-3">
         {/* 첫 묶음 — 우리 가족 프로필. 레벨이 오르고 업적이 쌓일수록 화려해진다(9/25) */}
         <FamilyProfile
@@ -280,10 +269,14 @@ function League() {
   );
 }
 
-function LeagueSkeleton({ backHref }: { backHref: string }) {
+function LeagueHeader() {
+  return <HomeHeader eyebrow={longDate()} title="가족 리그" actions={<ParentHeadActions />} />;
+}
+
+function LeagueSkeleton() {
   return (
     <>
-      <AppBar backHref={backHref} title="가족 리그" />
+      <LeagueHeader />
       {/* 실제 세 묶음과 같은 자리 — 우리 가족 프로필 · 이번 달 · 순위(390 폭에서 잰 높이) */}
       <Stage wide className="space-y-3">
         <Skeleton className="h-110 w-full rounded-3xl" />

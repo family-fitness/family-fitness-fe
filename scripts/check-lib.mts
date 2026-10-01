@@ -18,7 +18,7 @@ import {
   zoneOf,
 } from "@/lib/league";
 import { NO_PEER_NORMS_NOTE, memberNoPeerNormsNote, noPeerNormsNote } from "@/lib/fitness-factors";
-import { VERIFIED_COPY, familyToday, partAction, partOf, playLock } from "@/lib/mission";
+import { VERIFIED_COPY, familyToday, partAction, partLine, partOf, playLock } from "@/lib/mission";
 import { projectOrtho } from "@/lib/ortho";
 import { withJosa } from "@/lib/utils";
 import {
@@ -117,6 +117,7 @@ import {
   withdrawalCase,
 } from "@/lib/withdrawal";
 import { homeOf, modeFor } from "@/lib/role-mode";
+import { PARENT_TABS, parentTabOf } from "@/lib/parent-tabs";
 
 import { ApiError } from "@/lib/api/client";
 import {
@@ -1907,6 +1908,12 @@ check(
   );
   check("참여자가 아니면 내 몫이 없다", partOf(run(), "DAD") === null);
   check(
+    "사람마다 한 만큼은 다 했어요, 몇 개 했는지, 아직이에요 가운데 하나",
+    partLine({ done: 3, total: 3 }) === "다 했어요" &&
+      partLine({ done: 2, total: 3 }) === "2 / 3개" &&
+      partLine({ done: 0, total: 3 }) === "아직이에요",
+  );
+  check(
     "내 몫의 단추는 시작하기, 이어서 하기, 다 했어요",
     partAction({ done: 0, total: 3 }) === "시작하기" &&
       partAction({ done: 2, total: 3 }) === "이어서 하기" &&
@@ -1949,6 +1956,46 @@ check(
 check(
   "아이 화면은 아이 홈, 부모 화면은 부모 홈, 정하지 못했으면 누가 쓰는지 고르는 화면",
   homeOf("kid") === "/kid" && homeOf("parent") === "/parent" && homeOf(null) === "/start",
+);
+
+/* ─── 부모 화면의 하단 탭 ─────────────────────────────── */
+
+check(
+  "하단 탭은 홈, 운동, 기록, 리그, 가족 다섯 칸이다",
+  same(
+    PARENT_TABS.map((t) => t.label),
+    ["홈", "운동", "기록", "리그", "가족"],
+  ),
+);
+check(
+  "탭마다 첫 화면에서 그 탭이 켜진다",
+  parentTabOf("/parent") === "home" &&
+    parentTabOf("/parent/workout") === "workout" &&
+    parentTabOf("/parent/records") === "records" &&
+    parentTabOf("/parent/league") === "league" &&
+    parentTabOf("/parent/dashboard") === "family",
+);
+check("주소 끝의 빗금은 없는 것으로 본다", parentTabOf("/parent/league/") === "league");
+check(
+  "탭의 첫 화면이 아니면 탭을 두지 않는다(운동하기, 칭찬 스티커, 가족 관리, 측정, 아이 화면)",
+  [
+    "/parent/m/x",
+    "/parent/sticker/x",
+    "/parent/child/x",
+    "/parent/family",
+    "/plan",
+    "/calendar",
+    "/p/x/measure",
+    "/kid",
+    "/kid/m/x",
+    "/settings",
+  ].every((p) => parentTabOf(p) === null),
+);
+check(
+  "탭이 가는 곳은 저마다 다르고 모두 탭이 켜지는 곳이다",
+  PARENT_TABS.length === 5 &&
+    new Set(PARENT_TABS.map((t) => t.href)).size === PARENT_TABS.length &&
+    PARENT_TABS.every((t) => parentTabOf(t.href) === t.id),
 );
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
