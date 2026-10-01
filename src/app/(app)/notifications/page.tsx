@@ -285,7 +285,11 @@ function Row({ item, fresh }: { item: NotificationView; fresh: boolean }) {
         <p className={cn("text-sm leading-snug", fresh ? "font-extrabold" : "font-bold")}>
           {item.title}
         </p>
-        {item.body && <p className="text-caption text-ink-soft mt-0.5 line-clamp-2">{item.body}</p>}
+        {item.body && (
+          <p className="text-caption text-ink-soft mt-0.5 line-clamp-2 wrap-anywhere">
+            {item.body}
+          </p>
+        )}
         <p className="text-micro text-faint mt-1 font-semibold">{whenOf(item.createdAt)}</p>
       </div>
       {href && <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />}

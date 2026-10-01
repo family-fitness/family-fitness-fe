@@ -113,6 +113,7 @@ import {
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { BAND_COPY, FOCUS_COPY } from "@/lib/api/types";
+import { MEMO_MAX, oneLine } from "@/lib/stickers";
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -1398,6 +1399,17 @@ check(
       article(TERMS_OF_SERVICE, 9) === "측정 결과와 운동의 성격",
   );
 }
+
+/* ─── 칭찬 한마디는 한 덩어리 글이다 ─────────────────── */
+
+check("한마디의 줄바꿈은 띄어쓰기 하나로 바꾼다", oneLine("최고야\n사랑해") === "최고야 사랑해");
+check(
+  "붙여 넣은 글의 줄바꿈 여러 개도 띄어쓰기 하나로",
+  oneLine("오늘도\r\n\n잘했어") === "오늘도 잘했어",
+  JSON.stringify(oneLine("오늘도\r\n\n잘했어")),
+);
+check("줄바꿈이 없으면 그대로 둔다", oneLine("끝까지 했네 ") === "끝까지 했네 ");
+check("한마디는 서버가 받는 길이(100자) 안이다", MEMO_MAX > 0 && MEMO_MAX <= 100);
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);
