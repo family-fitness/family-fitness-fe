@@ -8,9 +8,9 @@ import { afterFileFailure, fileType, watchHref } from "@/lib/videos";
 /*
   운동 한 칸의 시범 영상.
 
-  **영상이 운동의 길이를 정하지 않는다.** 타이머가 정한다(9/23 회의 — "무조건 시간으로").
-  클립은 1분 남짓인데 잡힌 시간이 4분이면, 타이머가 도는 동안 클립을 되풀이한다.
-  그래서 이 플레이어는 스스로 끝나지 않고, 위에서 `playing` 으로 켜고 끈다.
+  타이머는 영상 길이만큼 돈다(10/1 사용자 결정 「영상 길이와 운동 시간을 같게」). 구간 끝을 모르면 플레이어가 영상
+  길이를 `onDuration` 으로 위에 알린다. 서버 하한 때문에 타이머가 영상보다 길면 그동안 클립을 되풀이한다.
+  이 플레이어는 스스로 끝나지 않고, 위에서 `playing` 으로 켜고 끈다.
 
   자동 재생이 막히는 경우가 있다. 한 칸을 끝내고 다음 칸으로 스스로 넘어갈 때는
   누른 손가락이 없어서, 브라우저(특히 아이폰)가 소리 있는 재생을 막는다. 그러면 소리를
@@ -74,6 +74,8 @@ interface PlayerProps {
   onBlocked?: () => void;
   /** 못 틀었을 때 「다른 영상 보기」. 없으면 그 단추를 두지 않는다 */
   onOther?: () => void;
+  /** 플레이어가 알려 준 영상 길이(초). 구간 끝을 모를 때 타이머를 영상 길이에 맞춘다 */
+  onDuration?: (sec: number) => void;
 }
 
 /** 대신 틀 수 있는 영상 한 편 — 같은 동작의 다른 클립 */
@@ -178,6 +180,7 @@ function YoutubePlayer({
   title,
   onBlocked,
   onOther,
+  onDuration,
 }: PlayerProps) {
   const frame = useRef<HTMLIFrameElement>(null);
   /** 받은 상태 — 재생 중인지 · 몇 초인지. 유튜브가 바뀔 때마다 알려 준다 */
@@ -195,6 +198,10 @@ function YoutubePlayer({
   useEffect(() => {
     blocked.current = onBlocked;
   }, [onBlocked]);
+  const measured = useRef(onDuration);
+  useEffect(() => {
+    measured.current = onDuration;
+  }, [onDuration]);
 
   /** 플레이어에게 한마디 — 붙기 전에 보낸 말은 사라진다 */
   const send = (func: string, args: unknown[] = []) => {
@@ -232,7 +239,14 @@ function YoutubePlayer({
           break;
         case "initialDelivery":
         case "infoDelivery": {
-          const info = message.info as { playerState?: number; currentTime?: number } | null;
+          const info = message.info as {
+            playerState?: number;
+            currentTime?: number;
+            duration?: number;
+          } | null;
+          // 구간 끝을 모르면 영상 끝까지가 한 칸이다. 그 길이를 위에 알린다
+          if (endSec == null && typeof info?.duration === "number" && info.duration > startSec)
+            measured.current?.(info.duration - startSec);
           if (typeof info?.playerState === "number") {
             playerState.current = info.playerState;
             setRolling(info.playerState === PLAYING);
@@ -273,7 +287,7 @@ function YoutubePlayer({
       setReady(false);
       setRolling(false);
     };
-  }, [videoId, startSec]);
+  }, [videoId, startSec, endSec]);
 
   // 켜고 끄기 · 되풀이. 못 불러온 영상은 건드리지 않는다 — 준비된 뒤에 막히면(비공개 · 임베드 금지)
   // 보는 고리가 막힌 재생으로 읽어 아이의 타이머를 세웠다
@@ -395,6 +409,7 @@ function FilePlayer({
   title,
   onBlocked,
   onOther,
+  onDuration,
 }: Omit<PlayerProps, "videoId"> & { src: string; poster: string | null }) {
   const video = useRef<HTMLVideoElement>(null);
   // 못 튼 파일을 기억한다 — 같은 자리에 다른 영상이 오면(시범 보기에서 다른 동작을 누르면) 다시 틀어 본다
@@ -477,8 +492,10 @@ function FilePlayer({
         preload="metadata"
         controlsList="nodownload"
         className="aspect-video w-full"
-        onLoadedMetadata={() => {
+        onLoadedMetadata={(e) => {
           if (startSec > 0) rewind();
+          const len = (endSec ?? e.currentTarget.duration) - startSec;
+          if (Number.isFinite(len) && len > 0) onDuration?.(len);
         }}
         // 클립 끝에 닿으면 처음으로. 잡힌 시간이 클립보다 길다
         onTimeUpdate={(e) => {
