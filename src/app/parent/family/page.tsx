@@ -418,7 +418,7 @@ function PendingInvites({
                 setCancelOpen(true);
               }}
               aria-label={`${pendingInviteTitle(invite)} 취소`}
-              className="press text-signal-deep text-caption min-h-11 shrink-0 px-2 font-bold"
+              className="press text-signal-deep text-caption min-h-11 min-w-11 shrink-0 px-2 font-bold"
             >
               취소
             </button>
