@@ -92,6 +92,13 @@ import {
   yearsBefore,
 } from "@/lib/date-pick";
 import { daysBefore } from "@/lib/today";
+import {
+  WITHDRAWAL_COPY,
+  WITHDRAWN_NOTICE,
+  WITHDRAWN_PATH,
+  cameAfterWithdrawal,
+  withdrawalCase,
+} from "@/lib/withdrawal";
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -1136,6 +1143,81 @@ check(
   !VERIFIED_COPY.VIDEO_PROGRESS.includes("끝까지"),
   VERIFIED_COPY.VIDEO_PROGRESS,
 );
+
+/* ─── 계정 탈퇴: 누가 탈퇴하는지에 따라 안내가 다르다 ─────────────────── */
+
+{
+  const owner = { profileId: "mom", role: "PARENT" as const, isOwner: true };
+  const guardian = { profileId: "dad", role: "PARENT" as const, isOwner: false };
+  const child = { profileId: "kid", role: "CHILD" as const, isOwner: false };
+
+  check(
+    "프로필이 없는 계정은 가족이 없는 계정이다",
+    withdrawalCase({ me: undefined, members: undefined }) === "NO_FAMILY",
+  );
+  check(
+    "아이 본인 계정은 아이 안내를 받는다",
+    withdrawalCase({ me: child, members: [owner, child] }) === "CHILD",
+  );
+  check(
+    "오너가 아닌 보호자는 보호자 안내를 받는다",
+    withdrawalCase({ me: guardian, members: [owner, guardian, child] }) === "GUARDIAN",
+  );
+  check(
+    "다른 구성원이 있는 오너는 먼저 내보내라는 안내를 받는다",
+    withdrawalCase({ me: owner, members: [owner, child] }) === "OWNER_WITH_MEMBERS",
+  );
+  check(
+    "혼자 남은 오너는 가족까지 지워진다는 안내를 받는다",
+    withdrawalCase({ me: owner, members: [owner] }) === "OWNER_ALONE",
+  );
+  check(
+    "가족 목록을 아직 못 받은 오너는 서버에 맡긴다",
+    withdrawalCase({ me: owner, members: undefined }) === "OWNER_ALONE",
+  );
+  check(
+    "서버가 FAMILY_NOT_EMPTY 로 돌려보내면 받아 둔 목록이 혼자여도 오너 안내로 바꾼다",
+    withdrawalCase({ me: owner, members: [owner], familyNotEmpty: true }) === "OWNER_WITH_MEMBERS",
+  );
+
+  const blocked = WITHDRAWAL_COPY.OWNER_WITH_MEMBERS;
+  check("다른 구성원이 남은 오너에게는 탈퇴 버튼이 없다", blocked.canWithdraw === false);
+  check(
+    "다른 구성원이 남은 오너에게 가족 관리에서 내보낸 뒤 탈퇴하라고 말한다",
+    blocked.lines.includes("가족 관리에서 다른 구성원을 모두 내보낸 뒤에 탈퇴할 수 있어요"),
+  );
+  check(
+    "나머지 경우는 모두 탈퇴할 수 있다",
+    (["NO_FAMILY", "CHILD", "GUARDIAN", "OWNER_ALONE"] as const).every(
+      (c) => WITHDRAWAL_COPY[c].canWithdraw,
+    ),
+  );
+  check(
+    "혼자 남은 오너에게 가족 정보도 지워지고 되돌릴 수 없다고 말한다",
+    WITHDRAWAL_COPY.OWNER_ALONE.lines.some((l) => l.includes("가족 정보")) &&
+      WITHDRAWAL_COPY.OWNER_ALONE.lines.some((l) => l.includes("되돌릴 수 없어요")),
+  );
+  check(
+    "오너가 아닌 보호자에게 가족과 아이 기록은 남는다고 말한다",
+    WITHDRAWAL_COPY.GUARDIAN.lines.some((l) => l.includes("가족과 아이 기록은 그대로 남아요")),
+  );
+  const allCopy = [
+    ...Object.values(WITHDRAWAL_COPY).flatMap((c) => [c.title, ...c.lines]),
+    WITHDRAWN_NOTICE,
+  ];
+  check(
+    "탈퇴 안내 글에 가운데 점과 긴 대시를 쓰지 않는다",
+    allCopy.every((l) => !/[·—–]/.test(l)),
+    allCopy.filter((l) => /[·—–]/.test(l)).join(" / "),
+  );
+  check("탈퇴하면 로그인 화면으로 보낸다", WITHDRAWN_PATH.startsWith("/login?"));
+  check(
+    "탈퇴하고 온 로그인 화면만 탈퇴 안내를 띄운다",
+    cameAfterWithdrawal(new URLSearchParams(WITHDRAWN_PATH.split("?")[1])) &&
+      !cameAfterWithdrawal(new URLSearchParams("")) &&
+      !cameAfterWithdrawal(new URLSearchParams("claimCode=K7M2QT")),
+  );
+}
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);
