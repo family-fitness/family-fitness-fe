@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { ChildPanel } from "@/components/domain/child-panel";
 import { InviteSheet } from "@/components/domain/invite-sheet";
+import { WelcomeSheet } from "@/components/domain/welcome-sheet";
 import { KidsOverview } from "@/components/domain/kids-overview";
 import { ChildPill } from "@/components/domain/child-pill";
 import { StreakChip } from "@/components/domain/streak-chip";
@@ -238,6 +239,8 @@ export default function ParentHomePage() {
         members={family?.profiles ?? []}
         loading={!family}
       />
+      {/* 처음 들어올 때 한 번 — 사용법 세 줄 */}
+      <WelcomeSheet who="parent" />
     </>
   );
 }

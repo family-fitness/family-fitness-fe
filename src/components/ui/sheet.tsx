@@ -35,6 +35,13 @@ function unlockScroll(id: string) {
   if (openSheets.length === 0) document.documentElement.style.overflow = savedOverflow;
 }
 
+/** 초점을 돌려줄 곳이 없을 때 — 이 화면의 제목(h1). 누를 수 없는 제목도 초점만은 받게 한다 */
+function pageHeading(): HTMLElement | null {
+  const heading = document.querySelector<HTMLElement>("h1");
+  if (heading && !heading.hasAttribute("tabindex")) heading.tabIndex = -1;
+  return heading;
+}
+
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -110,16 +117,23 @@ export function Sheet({
       cancelAnimationFrame(focus);
       window.removeEventListener("keydown", onKey);
       unlockScroll(id);
-      // 연 자리가 그사이 사라졌으면(고른 뒤 목록이 바뀜) 거기로 돌리지 않는다
-      if (before?.isConnected) before.focus({ preventScroll: true });
+      // 연 자리가 그사이 사라졌으면(고른 뒤 단추가 「보냈어요」 로 바뀜) · 저절로 열렸으면 화면 제목으로 —
+      // 초점이 body 로 떨어지면 화면 읽기가 화면을 처음부터 다시 읽는다
+      const back = before?.isConnected && before !== document.body ? before : pageHeading();
+      back?.focus({ preventScroll: true });
     };
   }, [open, id]);
 
   /** Tab 이 시트 밖으로 나가지 않게 — 뒤 화면을 더듬게 되면 열린 시트가 보이지 않는다 */
   const trapTab = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== "Tab") return;
-    const items = panel.current?.querySelectorAll<HTMLElement>(FOCUSABLE);
-    if (!items || items.length === 0) return;
+    // Tab 이 실제로 닿는 것만 — 숨긴 파일 입력(사진 고르기)처럼 tabIndex -1 · aria-hidden · 안 보이는 것을 끝으로 셌더니
+    // 마지막 단추에서 Tab 이 시트 밖 뒤 화면으로 빠졌다(9/30 점검)
+    const items = [...(panel.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])].filter(
+      (el) =>
+        el.tabIndex >= 0 && !el.closest('[aria-hidden="true"]') && el.getClientRects().length > 0,
+    );
+    if (items.length === 0) return;
     const first = items[0];
     const last = items[items.length - 1];
     if (
@@ -180,7 +194,7 @@ export function Sheet({
             type="button"
             onClick={onClose}
             aria-label="닫기"
-            className="press text-ink-soft -m-2 grid size-10 shrink-0 place-items-center rounded-full"
+            className="press text-ink-soft -m-2 grid size-11 shrink-0 place-items-center rounded-full"
           >
             <X className="size-5" />
           </button>

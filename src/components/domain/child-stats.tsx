@@ -178,7 +178,7 @@ export function RecentDays({
         <button
           type="button"
           onClick={() => void refetch()}
-          className="press text-ink-soft mt-1 min-h-10 text-sm font-bold"
+          className="press text-ink-soft mt-1 min-h-11 text-sm font-bold"
         >
           불러오지 못했어요. 다시 불러오기
         </button>
@@ -205,15 +205,13 @@ export function RecentDays({
                     </span>
                   </span>
                   <DayRings log={d} size={40} stroke={5} gap={2} />
+                  {/* 분은 둘째 줄로 — 오른쪽 칸을 따로 두면 320 폭에서 제목이 두세 글자로 잘렸다(9/30 점검) */}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-bold">{titles}</span>
+                    <span className="line-clamp-2 text-sm font-bold">{titles}</span>
                     <span className="text-caption text-ink-soft block whitespace-nowrap tabular-nums">
-                      {s.total > 0 ? `${s.done} / ${s.total}개` : ""}
+                      {s.total > 0 && `${s.done} / ${s.total}개, `}
+                      <b className="text-ink font-extrabold">{d.minutes}</b>분
                     </span>
-                  </span>
-                  <span className="w-12 shrink-0 text-right text-base font-extrabold tabular-nums">
-                    {d.minutes}
-                    <span className="text-ink-soft text-caption ml-0.5 font-bold">분</span>
                   </span>
                   {/* 스티커 자리는 늘 비워 둔다 — 있는 줄 · 없는 줄의 분이 한 세로줄에 서게 */}
                   <span className="size-8 shrink-0">

@@ -38,6 +38,7 @@ import {
   daySummary,
   dayWork,
   didSomething,
+  isOpenMonth,
   isRealDate,
   missionsOn,
   missionTitle,
@@ -81,7 +82,14 @@ import {
   onboardingSteps,
 } from "@/lib/onboarding";
 
-import { PRIVACY_HREF, PRIVACY_POLICY, TERMS_HREF, TERMS_OF_SERVICE } from "@/lib/legal";
+import {
+  CONSENT_TERMS,
+  PRIVACY_HREF,
+  PRIVACY_POLICY,
+  TERMS_HREF,
+  TERMS_OF_SERVICE,
+} from "@/lib/legal";
+import { verifiedLabel } from "@/lib/mission";
 import { REVIEW_WAYS, afterSignIn, reviewDestination } from "@/lib/review-login";
 import {
   childBirthRule,
@@ -400,6 +408,23 @@ check(
 check(
   "직접 적어 낸 걸음수는 확인 전에도 한 것으로 보인다",
   didSomething({ ...dayLog.entries[1], completed: false }),
+);
+check(
+  "직접 적은 기록 — 부모가 확인하면 확인함, 모르면 확인 필요(확인된 척하지 않는다)",
+  verifiedLabel("SELF_REPORT", false) === "직접 적었어요(부모 확인함)" &&
+    verifiedLabel("SELF_REPORT", true) === "직접 적었어요(부모 확인 필요)" &&
+    verifiedLabel("SELF_REPORT", undefined) === "직접 적었어요(부모 확인 필요)" &&
+    verifiedLabel("TIMER", false) === "타이머로 확인했어요",
+);
+check(
+  "캘린더가 보여 줄 달 — 2020년 1월부터 다음 달까지, 그 밖(0000-01 · 2031-01)은 아니다",
+  isOpenMonth("2026-10", "2026-09-30") &&
+    isOpenMonth("2020-01", "2026-09-30") &&
+    !isOpenMonth("2026-11", "2026-09-30") &&
+    !isOpenMonth("0000-01", "2026-09-30") &&
+    !isOpenMonth("2031-01", "2026-09-30") &&
+    !isOpenMonth("2026-13", "2026-09-30") &&
+    isOpenMonth("2027-01", "2026-12-15"),
 );
 check("달력에 있는 날", isRealDate("2026-09-23") && isRealDate("2024-02-29"));
 check(
@@ -1280,36 +1305,97 @@ check(
 
 /* ─── 약관과 방침의 탈퇴 문구가 탈퇴 규칙과 같다 ─────────────────── */
 
+// 약관과 방침은 조문 틀이다(담당자 c2440b9). 조 이름으로 찾아 그 조의 글(항과 호)을 한 줄씩 본다
 {
-  const section = (doc: typeof TERMS_OF_SERVICE, heading: string) =>
-    doc.sections.find((s) => s.heading === heading)?.lines ?? [];
-  const terms = section(TERMS_OF_SERVICE, "탈퇴");
-  const keep = section(PRIVACY_POLICY, "보관과 파기");
+  const lines = (doc: typeof TERMS_OF_SERVICE, title: string) =>
+    (doc.articles.find((a) => a.title === title)?.body ?? []).flatMap((b) =>
+      typeof b === "string"
+        ? [b]
+        : "items" in b
+          ? b.items
+          : b.rows.map((r) => `${r.label} ${r.text}`),
+    );
+  const terms = lines(TERMS_OF_SERVICE, "이용계약의 해지");
+  const keep = lines(PRIVACY_POLICY, "개인정보의 파기 절차 및 방법");
   check(
-    "약관은 언제든 탈퇴할 수 있고 그 사람의 정보를 바로 지운다고 말한다",
-    terms.some((l) => l.includes("언제든 탈퇴할 수 있어요")) &&
-      terms.some((l) => l.includes("그 사람의 정보를 바로 지워요")),
+    "약관은 설정의 계정 탈퇴에서 언제든 탈퇴할 수 있고 그 회원의 정보를 지체 없이 파기한다고 말한다",
+    terms.some((l) => l.includes("언제든지 설정의 계정 탈퇴에서")) &&
+      terms.some((l) => l.includes("그 회원의 정보를 지체 없이 파기")),
     terms.join(" / "),
   );
   check(
-    "약관은 가족을 만든 사람이 다른 구성원을 내보낸 뒤 탈퇴하고 그때 가족 정보도 지운다고 말한다",
+    "약관은 가족을 만든 회원이 다른 구성원을 모두 내보낸 뒤 탈퇴하고 그때 가족 정보도 파기한다고 말한다",
     terms.some(
-      (l) => l.includes("다른 구성원을 모두 내보낸 뒤") && l.includes("가족 정보도 지워요"),
+      (l) => l.includes("다른 구성원을 모두 내보낸 뒤") && l.includes("가족의 정보도 함께 파기"),
     ),
   );
   check(
-    "약관은 한 사람이 탈퇴해도 가족의 정보를 모두 지운다고 말하지 않는다",
-    terms.every((l) => !l.includes("가족의 정보를 지워요")),
+    "약관은 다른 보호자가 없다고 가족과 자녀 정보를 함께 지운다고 말하지 않는다(가족을 만든 회원만 가족을 지운다)",
+    terms.every((l) => !l.includes("다른 보호자가 없으면")),
   );
   check(
-    "방침의 보관과 파기는 내보낸 구성원의 정보도 바로 지운다고 말한다",
-    keep.some((l) => l.includes("내보낸 구성원의 정보도 바로 지워요")) &&
-      terms.some((l) => l.includes("내보낸 구성원의 정보도 바로 지워요")),
+    "방침의 파기와 약관의 해지는 내보낸 구성원의 정보도 지체 없이 파기한다고 말한다",
+    keep.some((l) => l.includes("내보낸 구성원의 개인정보도 지체 없이 파기")) &&
+      terms.some((l) => l.includes("내보낸 구성원의 정보도 지체 없이 파기")),
     keep.join(" / "),
   );
   check(
-    "탈퇴 문구에 가운데 점과 긴 대시를 쓰지 않는다",
-    [...terms, ...keep].every((l) => !/[·—–]/.test(l)),
+    "방침의 파기는 탈퇴하면 그 회원의 개인정보를 지체 없이 파기한다고 말한다",
+    keep.some((l) => l.includes("탈퇴하면 운영자는 그 회원의 개인정보를 지체 없이 파기")),
+  );
+  check(
+    "약관과 방침은 로그인 화면에서도 볼 수 있다고 적는다(/privacy, /terms)",
+    (TERMS_OF_SERVICE.articles.find((a) => a.title === "약관의 게시와 개정")?.body ?? []).some(
+      (b) => typeof b === "string" && b.includes("로그인 화면과 설정 화면"),
+    ) && (PRIVACY_POLICY.preamble ?? "").includes("로그인 화면과 설정 화면"),
+  );
+}
+
+/* ─── 약관, 방침, 동의서는 화면 글이다. 가운데 점과 긴 대시를 쓰지 않는다 ─────────────────── */
+
+{
+  const blockText = (
+    b: string | { items: string[] } | { rows: { label: string; text: string }[] },
+  ) =>
+    typeof b === "string" ? [b] : "items" in b ? b.items : b.rows.flatMap((r) => [r.label, r.text]);
+  const docText = (doc: typeof TERMS_OF_SERVICE) => [
+    doc.title,
+    doc.preamble ?? "",
+    ...doc.articles.flatMap((a) => [a.title, ...a.body.flatMap(blockText)]),
+    ...(doc.addendum ?? []),
+  ];
+  const consentText = Object.values(CONSENT_TERMS).flatMap((c) => [
+    c.title,
+    c.lead,
+    c.refusal,
+    ...c.rows.flatMap((r) => [r.label, r.text]),
+  ]);
+  const all = [...docText(PRIVACY_POLICY), ...docText(TERMS_OF_SERVICE), ...consentText];
+  const bad = all.filter((l) => /[·—–]/.test(l));
+  check("약관, 방침, 동의서 글에 가운데 점과 긴 대시가 없다", bad.length === 0, bad[0]);
+}
+
+/* ─── 약관 · 방침 — 글 안에서 조 번호로 서로 가리키는 곳. 조를 넣거나 빼면 번호가 밀린다 ─── */
+{
+  const article = (doc: { articles: { title: string }[] }, n: number) =>
+    doc.articles[n - 1]?.title ?? "";
+  check(
+    "건강정보 동의가 가리키는 방침 제7조는 국외 이전",
+    article(PRIVACY_POLICY, 7).includes("국외 이전") &&
+      CONSENT_TERMS.health.rows.some((r) => r.text.includes("개인정보처리방침 제7조")),
+  );
+  check(
+    "방침 제9조가 가리키는 방침 제12조는 개인정보 보호책임자",
+    article(PRIVACY_POLICY, 12) === "개인정보 보호책임자",
+  );
+  check(
+    "방침 제5조가 가리키는 제1조는 처리 목적",
+    article(PRIVACY_POLICY, 1) === "개인정보의 처리 목적",
+  );
+  check(
+    "약관 제11조 · 제12조가 가리키는 제8조는 회원의 의무 · 제9조는 측정 결과와 운동",
+    article(TERMS_OF_SERVICE, 8) === "회원의 의무" &&
+      article(TERMS_OF_SERVICE, 9) === "측정 결과와 운동의 성격",
   );
 }
 

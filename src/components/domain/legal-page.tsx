@@ -1,31 +1,69 @@
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
-import type { LegalDoc } from "@/lib/legal";
+import type { LegalBlock, LegalDoc } from "@/lib/legal";
 
 /**
  * 개인정보처리방침 · 이용약관 한 편 — 로그인 화면 아래와 설정에서 들어온다. 뒤로는 들어온 곳으로 돌아가고,
  * 주소로 곧장 열었으면 첫 화면으로 간다(로그인 전이면 첫 화면이 로그인으로 보낸다).
  * 설명 문구를 두지 않는 규칙의 예외다(법이 요구하는 글 · AGENTS 「피할 목록」).
+ *
+ * 조마다 「제N조(제목)」. 번호는 여기서 붙인다 — 글에 적으면 조를 하나 넣을 때마다 뒤 번호를 다 고쳐야 한다.
  */
 export function LegalPage({ doc }: { doc: LegalDoc }) {
   return (
     <>
       <AppBar back title={doc.title} />
       <Stage wide className="space-y-3">
-        <article className="card">
-          {doc.sections.map((section) => (
-            <section key={section.heading} className="border-line border-b py-3.5 last:border-b-0">
-              <h2 className="text-sm font-extrabold">{section.heading}</h2>
-              <ul className="text-ink-soft mt-1.5 space-y-1 text-sm leading-relaxed">
-                {section.lines.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
+        <article className="card text-sm leading-relaxed">
+          {doc.preamble && <p className="text-ink-soft pt-1 pb-3.5">{doc.preamble}</p>}
+          {doc.articles.map((article, i) => (
+            <section
+              key={article.title}
+              className="border-line space-y-2 border-t py-3.5 first:border-t-0"
+            >
+              <h2 className="font-extrabold">
+                제{i + 1}조({article.title})
+              </h2>
+              {article.body.map((block, j) => (
+                <Block key={j} block={block} />
+              ))}
             </section>
           ))}
+          {doc.addendum && (
+            <section className="border-line space-y-2 border-t py-3.5">
+              <h2 className="font-extrabold">부칙</h2>
+              {doc.addendum.map((line) => (
+                <p key={line} className="text-ink-soft">
+                  {line}
+                </p>
+              ))}
+            </section>
+          )}
         </article>
-        <p className="text-caption text-faint px-1">시행일 {doc.effective}</p>
       </Stage>
     </>
+  );
+}
+
+function Block({ block }: { block: LegalBlock }) {
+  if (typeof block === "string") return <p className="text-ink-soft">{block}</p>;
+  if ("items" in block) {
+    return (
+      <ol className="text-ink-soft list-decimal space-y-1 pl-5">
+        {block.items.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ol>
+    );
+  }
+  return (
+    <dl className="border-line divide-rows border-y">
+      {block.rows.map((row) => (
+        <div key={row.label} className="py-2">
+          <dt className="text-caption text-ink-soft font-bold">{row.label}</dt>
+          <dd className="mt-0.5 break-words">{row.text}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }

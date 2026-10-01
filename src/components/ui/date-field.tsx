@@ -69,7 +69,8 @@ export function DateField({
           className,
         )}
       >
-        <span className="truncate">{shown}</span>
+        {/* 고르기 전 안내 글은 다른 입력 칸의 보기 글자처럼 보통 굵기로 */}
+        <span className={cn("truncate", !value && "font-normal")}>{shown}</span>
         <CalendarDays aria-hidden className="text-ink-soft size-5 shrink-0" />
       </button>
       {used &&

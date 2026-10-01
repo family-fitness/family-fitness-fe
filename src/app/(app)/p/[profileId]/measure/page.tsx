@@ -16,7 +16,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MeasureField } from "@/components/domain/measure-field";
 import { errorMessage } from "@/lib/errors";
-import type { AgeGroup, FitnessItem, FitnessTestSource } from "@/lib/api/types";
+import type { FitnessItem, FitnessTestSource } from "@/lib/api/types";
 import { useCreateFitnessTest, useFamilyProfiles, useFitnessItems } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { REMEASURE_DAYS } from "@/lib/remeasure";
@@ -29,18 +29,6 @@ import { ArtIcon } from "@/components/ui/art-icon";
 
 /** RHF 필드 이름. 항목 코드가 "012" 라 그대로 쓰면 경로 파서가 숫자로 본다 */
 const field = (itemCode: string) => `item_${itemCode}`;
-
-/** 몸 칸의 자리 글자 — 그 연령대에 흔한 값쯤. 전에는 어른에게도 아이 키 · 몸무게(138 / 34)가 떴다 */
-const BODY_EXAMPLE: Record<
-  AgeGroup,
-  { heightCm: number; weightKg: number; bodyFatPct: number; waistCm: number }
-> = {
-  유아기: { heightCm: 110, weightKg: 19, bodyFatPct: 18, waistCm: 52 },
-  유소년: { heightCm: 145, weightKg: 38, bodyFatPct: 20, waistCm: 62 },
-  청소년: { heightCm: 165, weightKg: 55, bodyFatPct: 20, waistCm: 70 },
-  성인: { heightCm: 168, weightKg: 65, bodyFatPct: 25, waistCm: 80 },
-  어르신: { heightCm: 160, weightKg: 60, bodyFatPct: 28, waistCm: 85 },
-};
 
 export default function MeasurePage() {
   const router = useRouter();
@@ -210,11 +198,14 @@ export default function MeasurePage() {
     );
   }
 
-  const example = BODY_EXAMPLE[profile.ageGroup ?? "성인"];
-
   const onSubmit = handleSubmit(async (form) => {
     setServerError(null);
 
+    // 앞날에 잰 기록은 없다. 달력이 오늘까지만 고르게 하지만, 빈 날짜와 앞날은 보내기 전에 한 번 더 막는다
+    if (!testedOn || testedOn > today()) {
+      setServerError("측정한 날짜를 다시 봐 주세요.");
+      return;
+    }
     // 몸 칸이 범위를 벗어났으면 보내지 않는다 — 빼고 보내면 적은 줄 알았던 키가 사라진다
     const wrongBody = [
       heightProblem && "키",
@@ -294,11 +285,12 @@ export default function MeasurePage() {
       <Stage wide>
         <form onSubmit={onSubmit} className="space-y-3">
           {/* 언제 · 어디서 쟀는지. 센터 결과지를 며칠 뒤에 옮겨 적는 경우가 많다 */}
-          <fieldset className="card space-y-3">
+          <fieldset className="card min-w-0 space-y-3">
             <legend className="sr-only">언제 쟀나요</legend>
             <p aria-hidden className="card-head">
               언제 쟀나요
             </p>
+            {/* 앱 달력은 고른 날을 지울 수 없고 오늘 뒤 날짜는 막혀 있다. 폰 기본 달력처럼 「지우기」 로 날짜가 비는 일이 없다 */}
             <DateField
               label="측정한 날짜"
               value={testedOn}
@@ -306,7 +298,8 @@ export default function MeasurePage() {
               rule={measuredRule()}
             />
 
-            <div className="flex gap-2">
+            {/* 크게 키운 화면(200%)에서도 넘치지 않게 줄을 바꾼다 */}
+            <div className="flex flex-wrap gap-2">
               {(
                 [
                   ["SELF_INPUT", "집에서 직접"],
@@ -333,7 +326,7 @@ export default function MeasurePage() {
               <BodyInput
                 label="키"
                 unit="cm"
-                placeholder={String(pendingBody?.heightCm ?? example.heightCm)}
+                placeholder={pendingBody?.heightCm != null ? String(pendingBody.heightCm) : ""}
                 value={heightCm}
                 onChange={setHeightCm}
                 hint={rangeHint("heightCm")}
@@ -342,7 +335,7 @@ export default function MeasurePage() {
               <BodyInput
                 label="몸무게"
                 unit="kg"
-                placeholder={String(pendingBody?.weightKg ?? example.weightKg)}
+                placeholder={pendingBody?.weightKg != null ? String(pendingBody.weightKg) : ""}
                 value={weightKg}
                 onChange={setWeightKg}
                 hint={rangeHint("weightKg")}
@@ -351,7 +344,7 @@ export default function MeasurePage() {
               <BodyInput
                 label="체지방률(선택)"
                 unit="%"
-                placeholder={String(example.bodyFatPct)}
+                placeholder=""
                 value={bodyFatPct}
                 onChange={setBodyFatPct}
                 hint={rangeHint("bodyFatPct")}
@@ -360,7 +353,7 @@ export default function MeasurePage() {
               <BodyInput
                 label="허리둘레(선택)"
                 unit="cm"
-                placeholder={String(example.waistCm)}
+                placeholder=""
                 value={waistCm}
                 onChange={setWaistCm}
                 hint={rangeHint("waistCm")}

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { DesktopBanner } from "@/components/app-shell/desktop-banner";
 
 import { MswProvider } from "@/providers/msw-provider";
 import { PwaProvider } from "@/providers/pwa-provider";
@@ -11,6 +12,8 @@ export const metadata: Metadata = {
   description: "국민체력100 데이터로 그리는 우리 가족 체력 지도",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "체력키움" },
   applicationName: "체력키움",
+  // 로그인 뒤에서만 도는 앱이다 — 초대 링크(코드가 주소에 있다)가 어디 걸려도 검색에 올라가지 않게
+  robots: { index: false, follow: false },
   // 주소만 붙여 넣어도 무엇인지 보이게. 카톡으로 오가는 링크가 첫 입구다
   openGraph: {
     type: "website",
@@ -44,6 +47,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <MswProvider>
           <QueryProvider>
             <div className="app-frame relative z-[1]">{children}</div>
+            {/* 데스크톱 옆 빈자리 배너 — 넓은 화면에서만 */}
+            <DesktopBanner />
           </QueryProvider>
         </MswProvider>
       </body>

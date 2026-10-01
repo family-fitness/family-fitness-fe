@@ -3,6 +3,7 @@
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -176,7 +177,7 @@ export default function FamilyDashboardPage() {
               className="press border-line mt-2 flex min-h-12 items-center gap-3 border-t pt-3"
             >
               <ArtIcon name="icon/menu-ai" className="size-8" />
-              <span className="min-w-0 flex-1 text-sm font-extrabold">AI 코치에게 운동 받기</span>
+              <span className="min-w-0 flex-1 text-sm font-extrabold">AI에게 운동 받기</span>
               <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
             </NavLink>
           )}
@@ -206,7 +207,7 @@ export default function FamilyDashboardPage() {
             <button
               type="button"
               onClick={() => setInviting(null)}
-              className="press bg-signal-soft text-signal-deep flex min-h-11 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold"
+              className="press bg-sub flex min-h-11 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold"
             >
               <ArtIcon name="icon/menu-invite" className="size-5" />
               초대하기
@@ -330,7 +331,8 @@ function MemberLine({
             </span>
           )}
         </span>
-        <span className="text-caption text-ink-soft block truncate">
+        {/* 자르지 않고 두 줄로 — 320 폭에서 「아직 안 들어옴」 · 오늘 몇 개가 잘려 지금 상태가 안 보였다 */}
+        <span className="text-caption text-ink-soft block">
           {child ? "자녀" : "부모"}, {member.ageGroup}
           {/* 아이는 부모 폰을 빌려 쓰는 게 기본이라 계정이 없어도 오늘을 적는다. 부모 자리만 「아직 안 들어옴」 */}
           {!child && hasAccount === false ? (
@@ -360,13 +362,16 @@ function MemberLine({
         <div className="flex min-h-16 items-center gap-3 py-3">
           {body}
           {hasAccount === false && (
-            <button
-              type="button"
+            // 구성원 줄의 초대는 가족 관리와 같은 테두리 단추 — 네 가지 모양으로 그려져 있었다(9/30 점검)
+            <Button
+              size="md"
+              variant="outline"
               onClick={onInvite}
-              className="press bg-sub grid min-h-10 shrink-0 place-items-center rounded-xl px-3 text-xs font-extrabold"
+              aria-label={`${member.name ?? "이 자리"} 초대하기`}
+              className="shrink-0"
             >
               초대하기
-            </button>
+            </Button>
           )}
         </div>
       )}

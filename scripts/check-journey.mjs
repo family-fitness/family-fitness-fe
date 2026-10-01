@@ -39,6 +39,8 @@ const ctx = await browser.newContext({
   deviceScaleFactor: SHOTS ? 2 : 1,
   locale: "ko-KR",
 });
+// 처음 한 번 뜨는 환영 안내는 본 것으로 — 화면을 덮으면 누를 것을 못 누른다
+await ctx.addInitScript(() => localStorage.setItem("ff-welcome", "parent,kid"));
 // 이 맥의 말하기 엔진은 말을 끊을 때 화면을 멈춘다 — check-play 와 같이 재운다
 await ctx.addInitScript(() => {
   if ("speechSynthesis" in window) {
@@ -47,7 +49,7 @@ await ctx.addInitScript(() => {
   }
 });
 // 유튜브는 막는다. 없어도 타이머로 끝까지 가야 한다
-await ctx.route(/youtube\.com|ytimg\.com|openapi\.kspo\.or\.kr/, (r) => r.abort());
+await ctx.route(/youtube(-nocookie)?\.com|ytimg\.com|openapi\.kspo\.or\.kr/, (r) => r.abort());
 const page = await ctx.newPage();
 const errs = [];
 page.on("pageerror", (e) => {
@@ -148,11 +150,12 @@ await shot("result", true);
 // ── 3. AI 편성 → 등록 ──────────────────────────────────────
 await step("결과에서 AI에게 운동 받기로", async () => {
   await page.getByRole("link", { name: /AI에게 운동 받기/ }).click();
-  await page.waitForURL(/\/plan$/, { timeout: 15000 });
+  // 잰 아이로 짠다 — 결과에서는 그 아이를 주소(?profileId=)로 넘긴다
+  await page.waitForURL(/\/plan(\?profileId=[^&]+)?$/, { timeout: 15000 });
   await page.waitForTimeout(1200);
 });
 await shot("plan", true);
-await step("코치에게 보내면 짜는 과정이 보이고 제안으로 넘어간다", async () => {
+await step("AI에게 보내면 짜는 과정이 보이고 제안으로 넘어간다", async () => {
   await page.getByRole("button", { name: /AI에게 \d+분 운동 받기/ }).click();
   await page.waitForURL(/\/plan\/run\//, { timeout: 15000 });
   await page.waitForTimeout(1500);

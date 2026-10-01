@@ -37,7 +37,15 @@ export const AUTH_STORAGE_KEY = "ff-auth";
 let accessToken: string | null = null;
 
 /** 로그인 후 받은 토큰을 메모리에 둔다. 새로고침하면 저장소(ff-auth)에서 다시 읽는다(currentToken) */
+/**
+ * 로그인 한 판의 번호. 밖에서 토큰을 바꾸면(로그인 · 로그아웃) 판이 바뀐다 — 그 전에 나간 새로 받기가
+ * 늦게 돌아와도 토큰을 되살리지 않게. 로그아웃 직후 늦게 온 새 토큰이 저장소에 다시 적혀, 공용 태블릿의
+ * 다음 사람이 앞 가족으로 들어갈 수 있었다(9/30 보안 점검).
+ */
+let generation = 0;
+
 export function setAccessToken(token: string | null) {
+  generation += 1;
   accessToken = token;
 }
 
@@ -116,6 +124,7 @@ function refreshOnce(): Promise<boolean> {
   if (refreshing) return refreshing;
   const token = savedRefreshToken();
   if (!token) return Promise.resolve(false);
+  const started = generation;
   refreshing = fetch(`${BASE}/auth/refresh`, {
     method: "POST",
     credentials: "include",
@@ -129,6 +138,8 @@ function refreshOnce(): Promise<boolean> {
         refreshToken?: string;
       } | null;
       if (!body?.accessToken) return false;
+      // 그 사이 로그아웃했거나 다른 계정이 들어왔다 — 옛 판의 토큰을 적지 않는다
+      if (generation !== started) return false;
       accessToken = body.accessToken;
       persistTokens(body.accessToken, body.refreshToken ?? token);
       tokenSink?.({ accessToken: body.accessToken, refreshToken: body.refreshToken ?? token });

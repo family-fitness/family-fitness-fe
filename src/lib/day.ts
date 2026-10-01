@@ -1,5 +1,6 @@
 import type { DayLog, Mission, MissionSession, SessionPhase, VerifiedBy } from "./api/types";
 import { sessionsOf, stepMinutes } from "./session-plan";
+import { monthOf, shiftMonth } from "./today";
 
 /**
  * 하루 기록 한 장의 셈 — 큰 링 · 칸 · 요약 줄 · 요일 줄의 작은 링이 같은 값을 쓴다.
@@ -90,6 +91,15 @@ export function isRealDate(value: string | null | undefined): value is string {
   if (Number.isNaN(d.getTime())) return false;
   const back = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   return back === value;
+}
+
+/**
+ * 주소창의 달이 캘린더가 보여 줄 달인가 — 2020년 1월부터 다음 달까지(달력의 「다음 달」 도 거기서 멈춘다).
+ * 그 밖이면 이번 달로 본다. `0000-01` 은 Date 가 1900년으로 읽어 1900년치 기록을 달라고 했다
+ */
+export function isOpenMonth(value: string | null | undefined, now: string): value is string {
+  if (!value || !/^\d{4}-(0[1-9]|1[0-2])$/.test(value)) return false;
+  return value >= "2020-01" && value <= shiftMonth(monthOf(now), 1);
 }
 
 /**

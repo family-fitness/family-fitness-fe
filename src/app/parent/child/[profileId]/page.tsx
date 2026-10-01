@@ -12,10 +12,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FactorView } from "@/components/domain/factor-view";
 import { MonthStats, RecentDays } from "@/components/domain/child-stats";
 import { LevelBuddy } from "@/components/domain/level-buddy";
-import { GrowthPole } from "@/components/scene/growth-pole";
 import { AchievementGrid } from "@/components/domain/achievement-grid";
 import { FactorTable } from "@/components/domain/factor-table";
 import { IslandCard } from "@/components/domain/island-card";
+import { GrowthRuler } from "@/components/scene/growth-ruler";
 import { ScoreTrend } from "@/components/domain/score-trend";
 import { REMEASURE_DAYS } from "@/lib/remeasure";
 import type { FitnessTestSummary } from "@/lib/api/types";
@@ -31,7 +31,7 @@ import { stageOf } from "@/lib/levels";
 import { useSession } from "@/lib/session";
 import { daysSince } from "@/lib/today";
 import { useBodyStore } from "@/stores/body-store";
-import { formatDate, withJosa } from "@/lib/utils";
+import { cn, formatDate, withJosa } from "@/lib/utils";
 import { ArtIcon } from "@/components/ui/art-icon";
 
 /**
@@ -120,8 +120,6 @@ export default function ChildDetailPage() {
   const testedOn = member?.latest?.testedOn ?? latest?.testedOn ?? null;
   const tests = history?.tests ?? [];
   const stage = stageOf(progress?.level);
-  // 키 자의 키움이 — 레벨을 받은 뒤에 세운다. 모르는 채 1단계로 지었다가 받고 나서 다시 지으면 깜빡이고 WebGL 이 하나 더 든다
-  const poleStage = progress ? stage.stage : progressError ? stageOf(undefined).stage : null;
 
   return (
     <>
@@ -186,7 +184,6 @@ export default function ChildDetailPage() {
           profileId={profileId}
           name={name}
           measurable={profile.measurable !== false}
-          stage={poleStage}
           tests={tests}
           fallback={
             latest?.heightCm && latest?.weightKg && latest?.testedOn
@@ -221,16 +218,16 @@ export default function ChildDetailPage() {
 }
 
 /**
- * 키 · 몸무게. 마지막 값과, 처음 잰 때보다 얼마나 자랐는지.
+ * 키 · 몸무게. 마지막 값, 키 자(잰 날마다 눈금 · 키 · 몸무게 · 날짜), 잰 기록 줄.
  *
  * 서버가 이력을 주면 이력으로, 아직이면 최근 회차나 기기에 둔 값으로.
  * 다시 재기는 덮어쓰기가 아니라 추가다 — 지난 값이 남아야 자란 걸 보여 준다(규칙 11).
+ * 키 자 옆의 키움이만 뺐다(9/29 「캐릭터 세워 두진 말고」 · 9/30 「통으로 없애냐」) — 입체 자는 둔다.
  */
 function BodyGrowth({
   profileId,
   name,
   measurable,
-  stage,
   tests,
   fallback,
   lastTestedOn,
@@ -239,30 +236,30 @@ function BodyGrowth({
   name: string;
   /** 만 4세 미만이면 측정 단추를 없앤다(규칙 4) */
   measurable: boolean;
-  /** 키 자에 세울 키움이 단계. 레벨을 받기 전이면 null — 자를 아직 세우지 않는다 */
-  stage: ReturnType<typeof stageOf>["stage"] | null;
   tests: FitnessTestSummary[];
   fallback: { heightCm: number; weightKg: number; measuredOn: string } | undefined;
   lastTestedOn: string | null | undefined;
 }) {
   const withBody = tests
-    .filter((t) => t.heightCm != null && t.weightKg != null)
+    .filter(
+      (t): t is FitnessTestSummary & { heightCm: number; weightKg: number } =>
+        t.heightCm != null && t.weightKg != null,
+    )
     .sort((a, b) => a.testedOn.localeCompare(b.testedOn));
   const first = withBody[0];
   const now = withBody[withBody.length - 1];
   const height = now?.heightCm ?? fallback?.heightCm ?? null;
   const weight = now?.weightKg ?? fallback?.weightKg ?? null;
   const measuredOn = now?.testedOn ?? fallback?.measuredOn ?? null;
-  const grew =
-    first && now && first !== now && first.heightCm != null && now.heightCm != null
-      ? Math.round((now.heightCm - first.heightCm) * 10) / 10
-      : null;
+  const grew = first && now && first !== now ? round1(now.heightCm - first.heightCm) : null;
   const due = (daysSince(lastTestedOn) ?? 0) >= REMEASURE_DAYS;
-  // 잰 키를 오래된 것부터. 이력이 아직 없으면 기기에 적어 둔 한 번이라도
-  const records = withBody.length
-    ? withBody.map((t) => ({ date: t.testedOn, heightCm: t.heightCm as number }))
+  // 잰 기록 줄은 최근 것부터
+  const newestFirst = [...withBody].reverse();
+  // 키 자의 눈금 — 이력이 아직 없으면 최근 회차나 기기에 적어 둔 한 번이라도
+  const rulerRecords = withBody.length
+    ? withBody.map((t) => ({ date: t.testedOn, heightCm: t.heightCm, weightKg: t.weightKg }))
     : fallback
-      ? [{ date: fallback.measuredOn, heightCm: fallback.heightCm }]
+      ? [{ date: fallback.measuredOn, heightCm: fallback.heightCm, weightKg: fallback.weightKg }]
       : [];
 
   return (
@@ -291,17 +288,48 @@ function BodyGrowth({
       ) : (
         <p className="text-ink-soft mt-1 text-sm">아직 안 적었어요</p>
       )}
-      {records.length > 0 &&
-        (stage != null ? (
-          <GrowthPole records={records} stage={stage} className="mt-2" />
-        ) : (
-          <Skeleton className="mt-2 h-56 w-full rounded-2xl" />
-        ))}
+
+      {/* 키 자 — 잰 날마다 눈금 하나, 옆에 키 · 몸무게 · 날짜(9/30 다시). 한 번만 쟀어도 선다 */}
+      {rulerRecords.length > 0 && <GrowthRuler records={rulerRecords} className="mt-3" />}
       {grew != null && grew > 0 && first && (
-        <p className="text-caption text-ink-soft mt-2.5 font-semibold">
+        <p className="text-caption text-ink-soft mt-1 font-semibold">
           {formatDate(first.testedOn)}보다 <b className="text-ink">{grew}cm</b> 자랐어요
         </p>
       )}
+
+      {/* 잰 기록 줄 — 두 번 넘게 쟀을 때만. 한 번은 위 값 칸이 말한다 */}
+      {withBody.length > 1 && (
+        <>
+          <ul className="divide-rows border-line mt-3 border-t" aria-label="잰 기록">
+            {newestFirst.map((t, i) => {
+              const before = newestFirst[i + 1];
+              const diff = before ? round1(t.heightCm - before.heightCm) : null;
+              return (
+                <li key={t.fitnessTestId} className="flex min-h-11 items-center gap-3 py-2">
+                  <span className="text-ink-soft w-20 shrink-0 text-sm font-semibold">
+                    {formatDate(t.testedOn)}
+                  </span>
+                  <span className="min-w-0 flex-1 text-sm font-bold">
+                    {t.heightCm}cm, {t.weightKg}kg
+                  </span>
+                  {/* 지난번보다 — 줄었다고 경고색을 칠하지 않는다(규칙 8) */}
+                  {diff != null && diff !== 0 && (
+                    <span
+                      className={cn(
+                        "text-sm font-extrabold",
+                        diff > 0 ? "text-signal-deep" : "text-ink-soft",
+                      )}
+                    >
+                      {diff > 0 ? `+${diff}` : diff}cm
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </>
+      )}
+
       {measurable && (
         <NavLink
           href={`/p/${profileId}/measure`}
@@ -317,4 +345,9 @@ function BodyGrowth({
       )}
     </Card>
   );
+}
+
+/** 소수 한 자리 — 0.1cm 까지만 적는다 */
+function round1(n: number) {
+  return Math.round(n * 10) / 10;
 }

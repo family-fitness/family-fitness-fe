@@ -54,6 +54,8 @@
   --color-baseline: #8b939c;
   /* 강조하지 않는 막대. 오늘 칸만 파랑이고 나머지는 이 회색 */
   --color-bar: #cfd5dc;
+  /* 데스크톱에서 폰 너비 화면 둘레 — 바탕보다 한 단계 어둡게 */
+  --color-gutter: #e4e7ec;
 
   /* 기록 강조 — 마스코트 노랑 */
   --color-mark: #ffb800;
@@ -117,7 +119,7 @@ html {
   color-scheme: light;
 
   /* 데스크톱 거터. 앱 화면이 기기처럼 떠 보이게 한 단계 더 어둡게 */
-  background-color: #e4e7ec;
+  background-color: var(--color-gutter);
   overflow-x: hidden;
   /* 시트가 뒤 화면을 잠그면 스크롤바가 사라진다 — 그 폭만큼 화면이 옆으로 튀지 않게 자리를 늘 둔다 */
   scrollbar-gutter: stable;
@@ -267,7 +269,7 @@ body {
   /* 고른 칩. 검정으로 채우면 흑백 앱처럼 보인다 — 국민체력100 파랑을 쓴다 */
   .chip-on {
     background: var(--color-signal-strong);
-    color: #ffffff;
+    color: var(--color-paper);
   }
 
   /* 카드 안의 목록은 다시 카드로 감싸지 않고 선으로 나눈다 */
@@ -383,6 +385,10 @@ body {
     transform-origin: left;
     animation: fill 0.7s cubic-bezier(0.16, 0.84, 0.3, 1) both;
   }
+  /* 보일 때까지 기다리는 막대(RecordBar) — 화면에 들어오면 data-seen 이 붙어 자란다 */
+  .fill[data-wait]:not([data-seen]) {
+    animation-play-state: paused;
+  }
 }
 
 @layer base {
@@ -399,6 +405,11 @@ body {
   :focus-visible {
     outline: 2px solid var(--color-signal);
     outline-offset: 2px;
+  }
+  /* 위 막대(56px) · 노치 밑으로 초점이 숨지 않게 — Shift+Tab 으로 올라가면 붙어 있는 막대가 초점 칸을 덮었다(9/30 점검).
+     운동하기의 칸(scroll-mt-24)은 이것과 더해 징검다리 머리(160px) 밑에 선다 */
+  html {
+    scroll-padding-top: calc(3.5rem + env(safe-area-inset-top) + 0.5rem);
   }
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -452,7 +463,8 @@ body {
   .field-focus:focus {
     outline: none;
     border-color: var(--color-signal);
-    box-shadow: 0 0 0 3px var(--color-signal-soft);
+    /* 연한 고리(signal-soft)는 흰 바탕에서 1.1:1 이라 1px 테두리만 보였다 — 파랑 고리로(9/30 점검) */
+    box-shadow: 0 0 0 2px var(--color-signal);
   }
 }
 

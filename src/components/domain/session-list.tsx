@@ -37,7 +37,8 @@ export function SessionList({ sessions }: { sessions: MissionSession[] }) {
                   <span aria-hidden className="bg-sub aspect-video w-24 shrink-0 rounded-xl" />
                 )}
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-bold">{s.title}</span>
+                  {/* 동작 이름은 두 줄까지 — 「척추 들어올리기 (고양…」 처럼 무슨 동작인지가 잘렸다 */}
+                  <span className="line-clamp-2 text-sm font-bold">{s.title}</span>
                   <span className="text-caption text-ink-soft block">
                     {s.factor && <span className="mr-2">{s.factor}</span>}
                     {stepMinutes(s)}분

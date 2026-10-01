@@ -157,7 +157,8 @@ function KidLine({
               </span>
             )}
           </span>
-          <span className="text-caption text-ink-soft block truncate">
+          {/* 자르지 않고 두 줄로 — 320 폭에서 「오늘 2 / 6개 · 3일…」 로 이어서 한 날이 잘렸다 */}
+          <span className="text-caption text-ink-soft block">
             {status ??
               (missionsFailed ? (
                 "불러오지 못했어요"

@@ -76,8 +76,8 @@ export default function StartPage() {
     return (
       <Stage className="flex min-h-dvh flex-col justify-center gap-6">
         <Skeleton className="h-8 w-56" />
-        <Skeleton className="h-48 w-full rounded-3xl" />
-        <Skeleton className="h-48 w-full rounded-3xl" />
+        <Skeleton className="h-28 w-full rounded-3xl" />
+        <Skeleton className="h-28 w-full rounded-3xl" />
       </Stage>
     );
   }
@@ -85,52 +85,36 @@ export default function StartPage() {
   return (
     <Stage className="flex min-h-dvh flex-col justify-center gap-5 py-8">
       <div>
-        <h1 className="text-[1.6rem] leading-tight font-extrabold">누가 쓰고 있나요?</h1>
+        <h1 className="page-title">누가 쓰고 있나요?</h1>
       </div>
 
-      <RoleCard title="아이" tone="kid" onClick={goKid} art={<LevelBuddy stage={2} size={92} />} />
+      <RoleCard title="아이" onClick={goKid} art={<LevelBuddy stage={2} size={80} />} />
 
       {/* 자녀 계정에는 부모 칸을 내지 않는다 */}
       {!childAccount && (
         <RoleCard
           title="부모"
-          tone="parent"
           onClick={goParent}
-          art={<ArtIcon name="icon/role-parent" className="size-16 shrink-0" />}
+          art={<ArtIcon name="icon/role-parent" className="size-20" />}
         />
       )}
     </Stage>
   );
 }
 
-/** 고르는 칸. */
-function RoleCard({
-  art,
-  title,
-  tone,
-  onClick,
-}: {
-  art: ReactNode;
-  title: string;
-  tone: "kid" | "parent";
-  onClick: () => void;
-}) {
-  const kid = tone === "kid";
+/**
+ * 고르는 칸. 아이 · 부모 두 칸은 같은 크기다 — 아이 칸만 크게 두었더니 한쪽이 유독 커 보였다(9/30).
+ * 그림 자리도 같은 80px 상자. 파랑 테를 두르면 이미 고른 것처럼 보여 테는 없다
+ */
+function RoleCard({ art, title, onClick }: { art: ReactNode; title: string; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      /* 아이 칸이 더 크다(주인공). 파랑 테를 두르면 이미 고른 것처럼 보여 테는 없다 */
-      className={
-        kid
-          ? "press card-hero flex items-center gap-4 text-left"
-          : "press card flex items-center gap-4 text-left"
-      }
+      className="press card flex min-h-28 items-center gap-5 text-left"
     >
-      {art}
-      <span className={kid ? "min-w-0 text-2xl font-extrabold" : "min-w-0 text-xl font-extrabold"}>
-        {title}
-      </span>
+      <span className="grid size-20 shrink-0 place-items-center">{art}</span>
+      <span className="min-w-0 text-2xl font-extrabold">{title}</span>
     </button>
   );
 }

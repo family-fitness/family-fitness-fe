@@ -8,6 +8,7 @@ import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { Card, CardHead } from "@/components/ui/card";
 import { Dock } from "@/components/ui/dock";
+import { EmptyState } from "@/components/ui/empty-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StickerArt } from "@/components/domain/sticker-art";
@@ -127,6 +128,20 @@ function StickerForm() {
       );
     }
   };
+
+  // 주소창의 번호가 이 가족의 아이가 아니다(없는 번호 · 어른) — 「아이」 에게 붙이는 틀을 세우지 않는다.
+  // 세우면 아무 번호로나 칭찬을 보냈다(9/30 보안 점검)
+  const target = family?.profiles?.find((p) => p.profileId === profileId);
+  if (family && target?.role !== "CHILD") {
+    return (
+      <>
+        <AppBar backHref="/parent" title="칭찬 스티커" />
+        <Stage wide>
+          <EmptyState scene="waiting" title="찾을 수 없는 아이예요" />
+        </Stage>
+      </>
+    );
+  }
 
   if (sent > 0 && sticker) {
     return (

@@ -2,6 +2,7 @@
 
 import { useEffect, type ReactNode } from "react";
 
+import { useAuthStore } from "@/stores/auth-store";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
@@ -12,10 +13,12 @@ import { useRoleStore } from "@/stores/role-store";
 export default function KidAreaLayout({ children }: { children: ReactNode }) {
   const mode = useRoleStore((s) => s.mode);
   const setMode = useRoleStore((s) => s.setMode);
+  const signedIn = useAuthStore((s) => Boolean(s.accessToken));
 
+  // 들어와 있을 때만 — 나간 기기에서 바로가기로 들어오면 아이 모드가 되어, 다음에 들어온 부모가 아이 홈에 갇혔다
   useEffect(() => {
-    if (mode !== "kid") setMode("kid");
-  }, [mode, setMode]);
+    if (signedIn && mode !== "kid") setMode("kid");
+  }, [signedIn, mode, setMode]);
 
   return children;
 }

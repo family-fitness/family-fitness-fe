@@ -13,7 +13,7 @@
  */
 
 /** 배포할 때마다 올린다. 올리면 옛 저장분이 지워진다 */
-const VERSION = "v3";
+const VERSION = "v4";
 const SHELL = `shell-${VERSION}`;
 const ASSETS = `assets-${VERSION}`;
 

@@ -17,7 +17,8 @@ import { PanelCell, PanelCells, WeekPanel } from "@/components/domain/week-panel
 import { KiumIsland } from "@/components/scene/kium-island";
 import { NotificationBell } from "@/components/domain/notification-bell";
 import { XpGauge } from "@/components/domain/xp-gauge";
-import type { Mission } from "@/lib/api/types";
+import { WelcomeSheet } from "@/components/domain/welcome-sheet";
+import type { CheerLog, Mission } from "@/lib/api/types";
 import type { ProfileWithSex } from "@/lib/api/types";
 import {
   useCalendar,
@@ -32,6 +33,7 @@ import { callName } from "@/lib/family";
 import { badgeArt, stageOf } from "@/lib/levels";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
+import { FACTOR_POSE, poseArt } from "@/lib/poses";
 import { dayOf, longDate, today, weekOf } from "@/lib/today";
 import { stickerOf } from "@/lib/stickers";
 import { useRoleStore } from "@/stores/role-store";
@@ -72,6 +74,8 @@ export default function KidHomePage() {
     refetch: refetchCalendar,
   } = useCalendar(familyId, childProfileId ?? undefined, week);
   const { data: cheers } = useCheers(familyId, childProfileId ?? undefined);
+  // 오늘 운동을 알렸는지 · 부모가 붙여 줬는지 — 아이가 보낸 것도 봐야 해서 가족 것 전부
+  const { data: familyCheers } = useCheers(familyId);
   const { data: family } = useFamilyProfiles(familyId);
   // 보호자는 프로필 이름으로 부른다(엄마 · 아빠로 박지 않는다)
   const nameOf = (profileId: string, fallback: string) =>
@@ -201,9 +205,18 @@ export default function KidHomePage() {
             </button>
           </div>
         ) : mine.length > 0 && !todo ? (
-          // 다 했으면 쉬는 날이어도 다 했다고 — 「그래도 할래요」 로 한 것을 덮지 않는다
+          // 다 했으면 쉬는 날이어도 다 했다고 — 「그래도 할래요」 로 한 것을 덮지 않는다.
+          // 알렸으면 부모가 붙여 줄 때까지 「기다리는 중」, 붙여 주면 그 스티커(규칙 12) — 운동하기 화면과 같은 말
+          <DoneToday
+            missionIds={mine.map((m) => m.missionId ?? "")}
+            kidId={childProfileId}
+            cheers={familyCheers?.cheers}
+            nameOf={nameOf}
+          />
+        ) : todo && me.consentRequired && !me.consentGiven ? (
+          // 보호자가 동의를 거뒀다 — 해도 기록이 남지 않는다. 시작을 권하지 않고 지금 상태만(아이가 풀 일이 아니다)
           <div className="card-hero text-center">
-            <p className="text-lead font-extrabold">오늘 거 다 했어요!</p>
+            <p className="text-lead font-extrabold">지금은 기록을 남길 수 없어요</p>
           </div>
         ) : restToday && !started ? (
           // 쉬는 날 카드를 쓴 날 — 「안 한 날」 이 아니라 「쉬기로 한 날」. 그래도 하고 싶으면 한다
@@ -253,7 +266,13 @@ export default function KidHomePage() {
                 label="받은 스티커"
                 // 누가 붙여 줬는지 — 보호자의 프로필 이름. 스티커 말은 그림이 한다
                 note={nameOf(sticker.fromProfileId, sticker.fromName)}
-                art={<StickerArt id={sticker.stickerId} className="size-10" />}
+                art={
+                  <>
+                    <StickerArt id={sticker.stickerId} className="size-10" />
+                    {/* 그림만 있으면 화면 읽기로는 무슨 스티커인지 모른다 */}
+                    <span className="sr-only">{stickerOf(sticker.stickerId)?.label}</span>
+                  </>
+                }
               />
             )}
             <PanelCell
@@ -301,11 +320,53 @@ export default function KidHomePage() {
           </PanelCells>
         </WeekPanel>
       </Stage>
+      {/* 처음 들어올 때 한 번 — 사용법 세 줄 */}
+      <WelcomeSheet who="kid" />
     </>
   );
 }
 
 /** 오늘 운동 — 파랑 큰 카드. 누르면 바로 운동하기로 */
+/**
+ * 오늘 거 다 한 뒤 — 알렸으면 「알렸어요 · 기다리는 중」, 부모가 붙여 주면 그 스티커와 누가 붙였는지.
+ * 재촉하지 않는다 — 알리지 않았으면 다 했다는 말만(알리기는 운동하기 끝 칸에 있다)
+ */
+function DoneToday({
+  missionIds,
+  kidId,
+  cheers,
+  nameOf,
+}: {
+  missionIds: string[];
+  kidId: string | null;
+  cheers: CheerLog[] | undefined;
+  nameOf: (profileId: string, fallback: string) => string;
+}) {
+  const about = (cheers ?? []).filter((c) => c.missionId && missionIds.includes(c.missionId));
+  const told = about.some((c) => c.fromProfileId === kidId);
+  const praise = about
+    .filter((c) => c.toProfileId === kidId && c.stickerId && stickerOf(c.stickerId))
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0];
+
+  return (
+    <div className="card-hero flex flex-col items-center text-center">
+      {praise && <StickerArt id={praise.stickerId} className="mb-2 size-20" />}
+      <p className="text-lead font-extrabold">오늘 거 다 했어요!</p>
+      {praise ? (
+        <p className="text-caption text-ink-soft mt-1 font-bold">
+          {nameOf(praise.fromProfileId, praise.fromName)}, {stickerOf(praise.stickerId)?.label}
+        </p>
+      ) : (
+        told && (
+          <p className="text-caption text-ink-soft mt-1 font-bold">
+            알렸어요. 답을 기다리는 중이에요
+          </p>
+        )
+      )}
+    </div>
+  );
+}
+
 function TodayHero({ mission, profileId }: { mission: Mission; profileId: string | null }) {
   const sessions = sessionsOf(mission, profileId);
   const minutes = totalMinutes(sessions);
@@ -315,20 +376,28 @@ function TodayHero({ mission, profileId }: { mission: Mission; profileId: string
     .map(([p, n]) => `${PHASE_LABEL[p].replace("운동", "")} ${n}`)
     .join(", ");
   const done = sessions.filter((s) => s.completed).length;
+  // 본운동이 기르는 힘을 하는 키움이(9/30) — 동작 그림이 들어오기 전에는 자리를 두지 않는다
+  const factor = sessions.find((s) => s.phase === "MAIN")?.factor;
+  const pose = factor && FACTOR_POSE[factor] ? poseArt(FACTOR_POSE[factor]) : null;
 
   return (
     <NavLink
       href={`/kid/m/${mission.missionId}`}
       className="press bg-signal-strong shadow-lift block rounded-3xl p-5 text-white"
     >
-      <p className="text-caption font-bold text-white">오늘 운동</p>
-      <p className="text-metric mt-1 leading-tight font-extrabold">
-        {sessions.length}개, {minutes}분
-      </p>
-      <p className="text-caption mt-1 font-semibold text-white">
-        {phases}
-        {done > 0 && ` 중 ${done}개 했어요`}
-      </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-caption font-bold text-white">오늘 운동</p>
+          <p className="text-metric mt-1 leading-tight font-extrabold">
+            {sessions.length}개, {minutes}분
+          </p>
+          <p className="text-caption mt-1 font-semibold text-white">
+            {phases}
+            {done > 0 && ` 중 ${done}개 했어요`}
+          </p>
+        </div>
+        {pose && <ArtIcon name={pose} className="-my-2 size-20" />}
+      </div>
       <span className="text-signal-strong mt-4 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-white text-lg font-extrabold">
         <Play aria-hidden className="size-5 fill-current" />
         {done > 0 ? "이어서 하기" : "시작하기"}
