@@ -149,10 +149,8 @@ export default function SettingsPage() {
         </ul>
 
         <section className="card">
+          {/* 이름 · 버전만 — 「…그리는 우리 가족 체력 지도」 같은 소개 줄은 설명 문구다(9/25) */}
           <p className="font-extrabold">우리가족 체력키움</p>
-          <p className="text-ink-soft mt-1 text-sm">
-            국민체력100 데이터로 그리는 우리 가족 체력 지도
-          </p>
           <p className="text-ink-soft mt-1 text-sm">버전 {version}</p>
         </section>
 

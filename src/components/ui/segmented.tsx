@@ -33,7 +33,7 @@ export function Segmented<T extends string>({
             aria-pressed={on}
             onClick={() => onChange(o.value)}
             className={cn(
-              "press min-h-10 min-w-12 rounded-full px-3.5 text-xs font-extrabold transition-colors",
+              "press min-h-11 min-w-12 rounded-full px-3.5 text-xs font-extrabold transition-colors",
               on ? "bg-paper text-signal-deep shadow-card" : "text-ink-soft",
             )}
           >

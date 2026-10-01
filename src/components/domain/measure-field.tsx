@@ -35,7 +35,7 @@ export function MeasureField({
           {item.equipment && <span className="text-ink-soft text-caption">{item.equipment}</span>}
         </div>
 
-        <p className="text-ink-soft mt-0.5 text-xs">
+        <p id={`${item.itemCode}-about`} className="text-ink-soft mt-0.5 text-xs">
           {item.factor}
           {range && (
             <span className="text-ink-soft ml-2">
@@ -51,12 +51,16 @@ export function MeasureField({
             type="number"
             inputMode="decimal"
             step="any"
-            aria-describedby={error ? `${item.itemCode}-error` : undefined}
+            // 요인 · 적을 수 있는 범위 · 단위를 화면 읽기도 늘 듣는다 — 틀렸을 때만 이어 붙이면 무엇을 적을지 몰랐다
+            aria-describedby={`${item.itemCode}-about ${item.itemCode}-unit${error ? ` ${item.itemCode}-error` : ""}`}
             aria-invalid={error ? true : undefined}
             className={cn("field pr-14", error && "border-signal-deep")}
             {...register}
           />
-          <span className="text-ink-soft absolute top-1/2 right-4 -translate-y-1/2 text-sm font-semibold">
+          <span
+            id={`${item.itemCode}-unit`}
+            className="text-ink-soft absolute top-1/2 right-4 -translate-y-1/2 text-sm font-semibold"
+          >
             {item.unit}
           </span>
         </div>

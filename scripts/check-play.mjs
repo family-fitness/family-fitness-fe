@@ -18,6 +18,8 @@ const HIDE = `nextjs-portal, [data-nextjs-toast], .tsqd-parent-container { displ
 
 const browser = await chromium.launch({ channel: "chrome" });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+// 처음 한 번 뜨는 환영 안내는 본 것으로 — 화면을 덮으면 누를 것을 못 누른다
+await context.addInitScript(() => localStorage.setItem("ff-welcome", "parent,kid"));
 await context.addInitScript(
   ([kid]) => {
     localStorage.setItem(
@@ -46,7 +48,9 @@ await context.addInitScript(() => {
   }
 });
 // 유튜브 스크립트 · 영상과 공단 mp4 는 막는다. 없어도 타이머로 끝까지 가야 한다
-await context.route(/youtube\.com|ytimg\.com|openapi\.kspo\.or\.kr/, (route) => route.abort());
+await context.route(/youtube(-nocookie)?\.com|ytimg\.com|openapi\.kspo\.or\.kr/, (route) =>
+  route.abort(),
+);
 
 const page = await context.newPage();
 const errors = [];

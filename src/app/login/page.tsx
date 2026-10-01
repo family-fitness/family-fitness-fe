@@ -27,7 +27,7 @@ import { useRoleStore } from "@/stores/role-store";
 const DEV_ACCOUNTS: { id: string; label: string; claimCode?: string }[] = [
   { id: "demo-fresh", label: "가족이 없는 새 계정" },
   { id: "demo-parent", label: "은영, 가족 3명" },
-  // 백엔드 시드의 두 번째 부모와 그 자리의 초대코드 — 코드를 들고 가야 서버가 코드 넣는 단계로 보낸다
+  // 백엔드 시드의 두 번째 부모와 그 자리의 초대코드 — 들어간 뒤 그 코드의 자리 미리 보기로 간다
   { id: "demo-parent-2", label: "초대받은 계정", claimCode: "K7M2QT" },
 ];
 
@@ -38,21 +38,24 @@ const REDIRECT_PATH = "/login";
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
 /**
- * 개발용 계정을 내는가 — 개발 서버, 목 서버를 켠 빌드, 구글 키가 없는 빌드. 구글 키가 없으면
- * 구글 단추가 없어 들어갈 길이 하나도 없다(로컬 백엔드에 붙인 빌드). 운영 서버는 개발 로그인을 막는다.
+ * 개발용 계정을 내는가 — 개발 서버, 목 서버를 켠 빌드, 그리고 빌드에 `NEXT_PUBLIC_DEV_LOGIN=enabled` 를
+ * 준 경우(로컬 백엔드에 붙여 보는 빌드)뿐이다.
+ * 「구글 키가 없으면」 도 열었더니 키를 빠뜨린 실제 서버 빌드에 개발 계정이 떠서, 누구나 같은 개발 계정으로
+ * 들어가 앞사람 가족을 볼 수 있었다(9/30 보안 점검). 키가 없으면 들어갈 길이 없는 편이 낫다.
  *
  * 세 조건 모두 process.env 를 그대로 쓴다. 빌드가 이 값을 false 로 풀어야 개발용 계정 목록과
- * 「구글 없이 들어가기」 가 운영 번들에서 빠진다. GOOGLE_CLIENT_ID 변수를 거치면 압축기가 풀지 못해
- * 화면에는 안 보여도 번들에 남았다.
+ * 「구글 없이 들어가기」 가 운영 번들에서 빠진다(값은 next.config 의 env 가 빌드할 때 박는다).
+ * 변수를 거치면 압축기가 풀지 못해 화면에는 안 보여도 번들에 남았다.
  */
 const DEV_LOGIN =
   process.env.NODE_ENV === "development" ||
   process.env.NEXT_PUBLIC_API_MOCKING === "enabled" ||
-  !process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  process.env.NEXT_PUBLIC_DEV_LOGIN === "enabled";
 
 /**
- * 구글 키가 없는 빌드(로컬 백엔드에 붙인 개발 서버)에서 「구글로 시작하기」 가 대신 들어가는 계정.
- * 처음 구글로 들어온 사람과 같게 — 부를 때마다 가족 없는 새 계정이라 가족 만들기부터 걷는다.
+ * 구글 키가 없는 개발 빌드(개발 서버, 목 빌드, 개발 로그인을 켠 빌드)에서 「구글로 시작하기」 가 대신 들어가는 계정.
+ * 처음 구글로 들어온 사람과 같게, 부를 때마다 가족 없는 새 계정이라 가족 만들기부터 걷는다.
+ * 개발 로그인이 꺼진 빌드에 구글 키가 없으면 단추를 눌리지 않게 둔다(들어갈 길이 없는 편이 낫다)
  */
 const GOOGLE_STAND_IN = "demo-fresh";
 
@@ -114,7 +117,11 @@ function LoginContent() {
 
   const code = params.get("code");
   const state = params.get("state");
-  // 초대 링크로 들어왔다가 로그인하는 경우. 코드를 같이 넘겨야 바로 프로필에 붙는다
+  /**
+   * 초대 링크로 들어왔다가 로그인하는 경우. 코드는 로그인에 싣지 않는다 — 실으면 서버가 로그인과 함께
+   * 그 자리에 붙여서, 남이 보낸 링크로 로그인한 사람이 「OO네 · 아빠 자리」 를 보지도 못하고 남의 가족에
+   * 들어갔다(9/30 보안 점검). 로그인한 뒤 코드 화면에서 자리를 보고 직접 누른다.
+   */
   const claimCode = params.get("claimCode") ?? undefined;
   // 설정에서 탈퇴하고 넘어왔다. 한 줄로 알린다
   const withdrawn = cameAfterWithdrawal(params);
@@ -134,7 +141,6 @@ function LoginContent() {
         ? googleLogin.mutateAsync({
             authorizationCode: code,
             redirectUri: `${window.location.origin}${REDIRECT_PATH}`,
-            claimCode: saved.claimCode,
           })
         : Promise.reject(new Error("state mismatch"));
     exchange
@@ -155,7 +161,7 @@ function LoginContent() {
     // 초대 링크로 들고 온 코드가 먼저다
     const claim = claimCode ?? account.claimCode;
     try {
-      const auth = await devLogin.mutateAsync({ providerUserId: account.id, claimCode: claim });
+      const auth = await devLogin.mutateAsync({ providerUserId: account.id });
       signIn(auth);
       router.replace(afterSignIn(auth, claim));
     } catch (e) {
@@ -176,13 +182,16 @@ function LoginContent() {
     window.location.assign(url.toString());
   };
 
-  /** 구글 키가 없는 빌드 — 구글에 다녀온 셈 치고 새 계정으로 들어간다. 들어가는 화면은 구글과 같다 */
+  /**
+   * 구글 키가 없는 개발 빌드에서는 구글에 다녀온 셈 치고 새 계정으로 들어간다. 들어가는 화면은 구글과 같다.
+   * 초대코드는 로그인에 싣지 않는다(구글 로그인과 같다). 들어간 뒤 코드 화면에서 자리를 보고 누른다
+   */
   const standIn = async () => {
     setError(null);
     setSigning("stand-in");
     try {
       const [auth] = await Promise.all([
-        devLogin.mutateAsync({ providerUserId: GOOGLE_STAND_IN, claimCode }),
+        devLogin.mutateAsync({ providerUserId: GOOGLE_STAND_IN }),
         new Promise((done) => setTimeout(done, STAND_IN_MIN_MS)),
       ]);
       signIn(auth);
@@ -254,7 +263,10 @@ function LoginContent() {
         <h1 className="page-title -mt-1">우리가족 체력키움</h1>
       </div>
 
-      {/* 구글 키가 없는 빌드에서도 단추는 선다 — 누르면 구글 대신 새 계정으로 같은 길을 걷는다 */}
+      {/*
+        구글 키가 없는 개발 빌드에서도 단추는 선다. 누르면 구글 대신 새 계정으로 같은 길을 걷는다.
+        개발 로그인이 꺼진 빌드에 구글 키가 없으면 단추는 서 있되 눌리지 않는다
+      */}
       <div className="mb-auto space-y-3">
         {withdrawn && (
           <p role="status" className="text-ink-soft text-body text-center font-semibold">
@@ -264,12 +276,15 @@ function LoginContent() {
         <Button
           size="block"
           variant="outline"
-          onClick={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? toGoogle : standIn}
+          disabled={!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && !DEV_LOGIN}
+          onClick={
+            process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? toGoogle : DEV_LOGIN ? standIn : undefined
+          }
         >
           <GoogleMark />
           구글로 시작하기
         </Button>
-        {!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && (
+        {!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && DEV_LOGIN && (
           <p className="text-ink-soft text-caption text-center">
             구글 키가 없는 개발 빌드예요. 누르면 새 계정으로 들어가요
           </p>

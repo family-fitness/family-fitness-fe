@@ -108,6 +108,16 @@ export default function ResultPage() {
     measured: true,
     compared: radar.some((p) => p.percentile != null) || items.some((e) => e.percentile != null),
   });
+  /*
+    「잘하고 있는 영역」 · 「지금 키우기 좋은 영역」 은 band 의 말이다(BAND_COPY). 요약은 그 항목의 band 가 같은 말일 때만 한다 —
+    또래 평균(50)에 선 요인을 「잘하고 있는」, 줄에는 「꾸준히 하고 있는 영역」 이라 적힌 요인을 「지금 키우기 좋은」 이라 불러
+    한 화면이 서로 다른 말을 했다(9/30 점검). band 는 서버가 정한 그대로 본다
+  */
+  const bandOf = (code: string | undefined) => items.find((i) => i.itemCode === code)?.band;
+  const showStrong = onlyOneFactor
+    ? Boolean(strongest)
+    : bandOf(strongest?.itemCode) === "strength";
+  const showWeak = !onlyOneFactor && bandOf(weakest?.itemCode) === "growth";
 
   return (
     <>
@@ -139,17 +149,19 @@ export default function ResultPage() {
         )}
 
         {/* 잘하는 것을 먼저 말한다 */}
-        {(strongest || weakest) && (
+        {(showStrong || showWeak) && (
           <section className="card divide-rows py-1">
-            <FactorLine
-              label={onlyOneFactor ? "지금 재 본 영역" : "잘하고 있는 영역"}
-              factor={strongest?.factor}
-              withRadar={radar.length > 0}
-            />
-            {!onlyOneFactor && weakest && (
+            {showStrong && (
+              <FactorLine
+                label={onlyOneFactor ? "지금 재 본 영역" : "잘하고 있는 영역"}
+                factor={strongest?.factor}
+                withRadar={radar.length > 0}
+              />
+            )}
+            {showWeak && (
               <FactorLine
                 label="지금 키우기 좋은 영역"
-                factor={weakest.factor}
+                factor={weakest?.factor}
                 withRadar={radar.length > 0}
               />
             )}
@@ -179,7 +191,8 @@ export default function ResultPage() {
                   value={`${entry.value}${entry.unit ?? ""}`}
                   percentile={entry.percentile}
                   caption={entry.topPercentText}
-                  delay={index * 0.08}
+                  // 위 육각형이 다 차오른 뒤에(0.7초) — 한 화면에 둘이 같이 자랐다
+                  delay={0.7 + index * 0.08}
                 />
                 {/* 상태 — 딱지 대신 글자 한 줄 */}
                 {entry.band && <BandChip band={entry.band} className="mt-1.5 block" />}
@@ -190,7 +203,10 @@ export default function ResultPage() {
 
         {/* 다음에 뭘 할지 */}
         <Link
-          href="/plan"
+          // 잰 아이의 운동으로 — 아이가 둘이면 홈에서 고른 아이가 아닐 수 있다
+          href={
+            profile?.role === "CHILD" ? `/plan?profileId=${encodeURIComponent(profileId)}` : "/plan"
+          }
           className="press bg-signal-strong flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
         >
           <ArtIcon name="icon/menu-ai" className="size-5" />

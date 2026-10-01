@@ -18,9 +18,16 @@ import { DateField } from "@/components/ui/date-field";
 import { Field } from "@/components/ui/field";
 import { errorMessage } from "@/lib/errors";
 import type { ProfileSummary } from "@/lib/api/types";
-import { useCreateProfile, useFamilyProfiles, useRemoveMember } from "@/lib/api/queries";
+import {
+  useCreateProfile,
+  useCurrentMissions,
+  useFamilyProfiles,
+  useRemoveMember,
+} from "@/lib/api/queries";
+import { missionsOn } from "@/lib/day";
 import { canRemoveMember, removeMemberCopy } from "@/lib/family";
 import { useSession } from "@/lib/session";
+import { today } from "@/lib/today";
 import { guardianBirthRule } from "@/lib/date-pick";
 import { cn } from "@/lib/utils";
 import { usePhotoStore } from "@/stores/photo-store";
@@ -42,6 +49,7 @@ export default function MembersPage() {
   const { data: family, isLoading, error: familyError, refetch } = useFamilyProfiles(familyId);
   const error = sessionError ?? (family ? null : familyError);
   const childProfileId = useRoleStore((s) => s.childProfileId);
+  const { data: missions } = useCurrentMissions(familyId);
 
   const [adding, setAdding] = useState(false);
   // 초대 시트 — 닫힘(undefined) · 이 자리로(id). 가족 대시보드와 같은 시트다
@@ -72,6 +80,12 @@ export default function MembersPage() {
   const mySupportMode = profile?.supportMode ?? undefined;
   // 내가 오너인지는 가족 목록의 내 줄로 본다. 아직 없으면 `/me` 의 내 프로필로
   const me = profiles.find((p) => p.profileId === profile?.profileId) ?? profile;
+  // 스티커는 오늘 한 운동에 붙인다 — 직접 적은 기록이 먼저(스티커가 곧 확인이다). 한 게 없으면 그냥 칭찬이다
+  const todays = missionsOn(missions?.missions, kid?.profileId, today());
+  const mineIn = (m: (typeof todays)[number]) =>
+    m.participants?.find((p) => p.profileId === kid?.profileId);
+  const cheerFor =
+    todays.find((m) => mineIn(m)?.needsGuardianCheck) ?? todays.find((m) => mineIn(m)?.completed);
 
   return (
     <>
@@ -128,7 +142,7 @@ export default function MembersPage() {
           <ListRow href="/settings/schedule" art="icon/menu-schedule" title="운동할 수 있는 시간" />
           {kid?.profileId && (
             <ListRow
-              href={`/parent/sticker/${kid.profileId}`}
+              href={`/parent/sticker/${kid.profileId}${cheerFor?.missionId ? `?missionId=${encodeURIComponent(cheerFor.missionId)}` : ""}`}
               art="icon/menu-cheer"
               title="칭찬 스티커 붙이기"
             />
@@ -211,7 +225,12 @@ function MemberRow({
             <span className="text-done text-xs font-bold">연결됨</span>
           ) : (
             // 코드는 이 자리 하나에 맞는다 — 시트에서 만들고 복사 · 공유한다
-            <Button size="md" variant="outline" onClick={onInvite}>
+            <Button
+              size="md"
+              variant="outline"
+              onClick={onInvite}
+              aria-label={`${profile.name ?? "이 자리"} 초대하기`}
+            >
               초대하기
             </Button>
           )}

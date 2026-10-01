@@ -48,7 +48,16 @@ export function ChildPill({
           tone="sub"
           className="bg-paper text-signal-deep max-[380px]:hidden"
         />
-        <span className="max-w-20 truncate">{current.name}</span>
+        {/* 320 폭에서는 이름을 숨긴다 — 가족 이름(h1)이 「서…」 로 잘렸다(9/30 점검). 아바타 첫 글자가 누구인지 말한다.
+            이름이 길어도 숨긴다 — 잘린 이름은 알려 주는 것 없이 가족 이름 자리만 먹었다 */}
+        <span
+          className={cn(
+            "max-w-20 truncate max-[359px]:hidden",
+            (current.name ?? "").length > 5 && "hidden",
+          )}
+        >
+          {current.name}
+        </span>
         <ChevronDown aria-hidden className="size-4" strokeWidth={2.6} />
       </button>
 

@@ -695,14 +695,16 @@ check(
   `${fresh.rate} · ${fresh.rank}`,
 );
 
-// 아무도 안 잰 가족은 편성을 받지 못한다 — 실제 서버와 같은 코드(화면이 「아직 재지 않았어요」 로 옮긴다)
+// 아무도 안 잰 가족도 편성을 받는다 — 연령대 · 키 · 몸무게로(9/30 시연). ▲ 지금 서버는 422 NO_MEASURED_MEMBER
 const unmeasuredRun = await post(`/families/${freshFamily.familyId}/coach/runs`, {
   date: toDateString(new Date()),
   minutes: 20,
+  heightCm: 125,
+  weightKg: 26,
 });
 check(
-  "아무도 안 잰 가족은 편성이 422 NO_MEASURED_MEMBER",
-  unmeasuredRun.status === 422 && (await codeOf(unmeasuredRun)) === "NO_MEASURED_MEMBER",
+  "아무도 안 잰 가족도 편성을 받는다(202)",
+  unmeasuredRun.status === 202,
   `${unmeasuredRun.status}`,
 );
 

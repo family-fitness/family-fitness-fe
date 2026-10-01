@@ -12,19 +12,46 @@ const APP_VERSION = (
 ).version;
 
 const BACKEND_ORIGIN = process.env.BACKEND_ORIGIN ?? "http://localhost:8080";
+/** 목 서버를 켠 빌드 — /api 는 브라우저 안에서 가로채인다 */
+const MOCKING = process.env.NEXT_PUBLIC_API_MOCKING === "enabled";
+/** `next build` 로 만든 것. 개발 서버는 HMR · eval 을 써서 CSP 를 걸지 않는다 */
+const PRODUCTION = process.env.NODE_ENV === "production";
+
+/**
+ * 스크립트 · 연결 · 그림의 출처를 좁힌다(9/30 보안 점검). 토큰과 아이 사진이 이 기기 저장소에 있어서,
+ * 끼어든 스크립트가 있어도 밖으로 보내지 못하게 `connect-src 'self'` 가 먼저다.
+ * Next 의 인라인 스크립트 때문에 'unsafe-inline' 은 둔다(nonce 없는 정적 화면들이다).
+ * 유튜브 — 쿠키 없는 임베드 · 썸네일만 연다. 유튜브 스크립트는 들이지 않는다 — 플레이어는 말(postMessage)로 부린다.
+ */
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https://i.ytimg.com https://img.youtube.com",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "frame-src https://www.youtube-nocookie.com",
+  "worker-src 'self'",
+  "manifest-src 'self'",
+  "media-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'none'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
 
 const nextConfig: NextConfig = {
+  /** 응답마다 「X-Powered-By: Next.js」 를 붙이지 않는다 — 무엇으로 만들었는지 밖에 알릴 까닭이 없다 */
+  poweredByHeader: false,
+
   /**
    * 개발 서버가 AGENTS.md · CLAUDE.md 를 만들지 않게 한다. develop 에는 웹 프론트를 돌리는 파일만 둔다 —
    * 두 파일이 없으면 `next dev` 가 새로 만들어, 모르고 커밋하면 문서가 다시 올라간다.
    */
   agentRules: false,
 
-  /** 응답에 X-Powered-By: Next.js 를 붙이지 않는다 — 아래 보안 헤더를 넣을 때 이것만 빠져 있었다 */
-  poweredByHeader: false,
-
   /**
-   * 목 서버 스위치와 구글 키를 빌드할 때 값으로 못 박는다.
+   * 목 서버 스위치, 구글 키, 개발 로그인 스위치를 빌드할 때 값으로 못 박는다.
    *
    * `NEXT_PUBLIC_*` 은 빌드할 때 값이 있어야 번들에 박힌다. 값이 없으면 서버 쪽 코드는 `next start`
    * 를 띄울 때 환경에서 다시 읽고, 브라우저 쪽 번들은 undefined 로 본다. 그래서 운영 서버를
@@ -37,6 +64,7 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_API_MOCKING: process.env.NEXT_PUBLIC_API_MOCKING ?? "",
     NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "",
+    NEXT_PUBLIC_DEV_LOGIN: process.env.NEXT_PUBLIC_DEV_LOGIN ?? "",
     NEXT_PUBLIC_APP_VERSION: APP_VERSION,
   },
 
@@ -52,6 +80,8 @@ const nextConfig: NextConfig = {
    * MSW 를 켠 상태에서는 요청이 브라우저 안에서 가로채여 여기까지 오지 않는다.
    */
   async rewrites() {
+    // 목 빌드는 /api 를 넘길 곳이 없다. 넘기면 모르는 포트로 가거나 자기 자신에게 돌아와 멈췄다(9/30 보안 점검)
+    if (MOCKING) return [];
     return [
       {
         source: "/api/v1/:path*",
@@ -78,8 +108,7 @@ const nextConfig: NextConfig = {
    * 내용 유형을 멋대로 추측하지 못하게 하고, 다른 사이트가 이 화면을 액자에
    * 넣어 그 위에 가짜 버튼을 얹지 못하게 막는다. 카메라·마이크·위치는 쓰지 않는다.
    *
-   * 스크립트 출처를 제한하는 CSP 는 유튜브 API 와 Next 의 인라인 스크립트를
-   * 같이 봐야 해서 배포 설정이 굳은 뒤에 따로 넣는다.
+   * 빌드한 것에는 출처를 좁히는 CSP 와 HTTPS 고정(HSTS)까지 건다. 개발 서버는 HMR 때문에 액자 막기만.
    */
   async headers() {
     return [
@@ -88,8 +117,11 @@ const nextConfig: NextConfig = {
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "Content-Security-Policy", value: PRODUCTION ? CSP : "frame-ancestors 'none'" },
           { key: "X-Frame-Options", value: "DENY" },
+          // 다른 창이 이 창을 붙잡지 못하게. 구글 로그인은 창을 통째로 옮겨 가서 막히지 않는다
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          ...(PRODUCTION ? [{ key: "Strict-Transport-Security", value: "max-age=31536000" }] : []),
           {
             key: "Permissions-Policy",
             /*

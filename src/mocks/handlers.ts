@@ -66,6 +66,12 @@ const authGate = [
 const CLAIM_ID = "demo-parent-2";
 const FRESH_ID = "demo-fresh";
 
+/** 시연 가족의 두 보호자 계정 — `/me` 가 지금 들어온 사람의 것을 준다 */
+const ACCOUNTS: Record<string, { userId: string; email: string }> = {
+  [DEMO.mom]: { userId: "00000000-0000-4000-8000-000000000001", email: "eunyoung@example.com" },
+  [DEMO.dad]: { userId: "00000000-0000-4000-8000-000000000002", email: "dohyun@example.com" },
+};
+
 /** 초대를 기다리는 계정 — 부모가 낸 자리에 붙는다 */
 const CLAIM_ME = {
   userId: "00000000-0000-4000-8000-000000000002",
@@ -98,6 +104,13 @@ function signIn(providerUserId: string | undefined) {
     );
   if (providerUserId !== FRESH_ID && !demoIntact) resetToDemo();
   if (providerUserId === CLAIM_ID) {
+    // 이 탭에서 벌써 자리에 붙었으면 그 자리(도현)로 — 다시 들어올 때마다 코드를 묻지 않는다
+    const seat = db.profiles.profiles.find((p) => p.profileId === DEMO.dad);
+    if (seat?.inviteStatus === "CLAIMED") {
+      setStage("home");
+      setActingProfile(DEMO.dad);
+      return { ...token, userId: CLAIM_ME.userId, nextStep: "HOME", profiles: [seat] };
+    }
     setStage("claim");
     return { ...token, ...CLAIM_ME };
   }
@@ -170,13 +183,18 @@ const identity = [
     if (db.stage === "fresh") return HttpResponse.json(FRESH_ME);
     const me = acting();
     if (!me) return HttpResponse.json(fixtures.me);
-    // 지금 가족에서 — 픽스처를 돌려주면 참여 방식을 바꿔도 `/me` 는 옛 값을 말한다
+    // 지금 가족에서 — 픽스처를 돌려주면 참여 방식을 바꿔도 `/me` 는 옛 값을 말한다.
+    // 계정은 지금 누구로 들어왔는지로 — 도현으로 들어와도 은영의 계정이 떴다
+    const account = ACCOUNTS[me.profileId] ?? {
+      userId: FRESH_ME.userId,
+      email: "new-family@example.com",
+    };
     return HttpResponse.json({
-      userId: fixtures.me.userId,
+      userId: account.userId,
       nextStep: "HOME",
       profiles: [me],
       // ▲ 요청한 칸 — 설정의 「로그인 계정」
-      email: "eunyoung@example.com",
+      email: account.email,
     });
   }),
 
@@ -426,6 +444,9 @@ const identity = [
     if (dad) {
       dad.hasAccount = true;
       dad.inviteStatus = "CLAIMED";
+      // 남겨 둔다 — 안 남기면 새로고침 뒤 은영의 대시보드에 도현이 다시 「아직 안 들어옴」 이다
+      syncMapMember(dad);
+      saveFamily();
     }
     setStage("home");
     setActingProfile(DEMO.dad);
@@ -527,6 +548,7 @@ function syncMapMember(profile: Profile) {
   const member = db.fitnessMap.members.find((m) => m.profileId === profile.profileId);
   if (!member) return;
   member.supportMode = profile.supportMode;
+  member.hasAccount = profile.hasAccount;
   member.measurable = profile.measurable;
   member.consentGiven = profile.consentGiven;
 }

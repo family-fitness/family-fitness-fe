@@ -401,6 +401,12 @@ interface PlanRequest {
   focusFactor: string | null;
   /** 부모도 같이 하나. 참여 방식에서 기본값이 온다 */
   withParent: boolean;
+  /**
+   * 가입 때 적은 키 · 몸무게. 안 잰 아이는 이것과 나이 · 성별로 짠다(9/30 시연).
+   * ▲ 요청: 지금 서버는 받지 않는다(BACKEND_API) — 받게 되면 그대로 쓴다
+   */
+  heightCm?: number;
+  weightKg?: number;
 }
 
 export function useStartCoachRun(familyId: Uuid) {
@@ -419,8 +425,11 @@ export function useStartCoachRun(familyId: Uuid) {
   });
 }
 
-/** RUNNING 인 동안 0.7초마다 묻는다(서버가 시작할 때 준 pollAfterMs 와 같은 값) */
-export function useCoachRun(runId: Uuid | undefined) {
+/**
+ * RUNNING 인 동안 0.7초마다 묻는다(서버가 시작할 때 준 pollAfterMs 와 같은 값).
+ * `poll` 이 false 면 묻기를 쉰다 — 단계가 한참 안 움직이면 화면이 멈춘다(서버가 RUNNING 에 멈추면 끝없이 물었다)
+ */
+export function useCoachRun(runId: Uuid | undefined, poll = true) {
   return useQuery({
     queryKey: qk.coach.run(runId ?? ""),
     queryFn: () => api.get<CoachRun>(path`/coach/runs/${runId}`),
@@ -431,7 +440,9 @@ export function useCoachRun(runId: Uuid | undefined) {
       const e = q.state.error;
       const settled =
         e instanceof ApiError && e.status < 500 && e.status !== 408 && e.status !== 429;
-      return q.state.data?.status === "RUNNING" && !settled ? 700 : false;
+      if (!poll || q.state.data?.status !== "RUNNING" || settled) return false;
+      // 못 받으면(429 · 5xx · 망) 점점 늦게 — 0.7 · 1.4 · 2.8 … 15초까지. 힘든 서버를 0.7초마다 두드리지 않는다
+      return Math.min(700 * 2 ** q.state.fetchFailureCount, 15_000);
     },
   });
 }

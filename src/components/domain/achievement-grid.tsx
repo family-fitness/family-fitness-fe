@@ -34,7 +34,8 @@ export function AchievementGrid({ achievements }: { achievements: AchievementVie
                   setPicked(a);
                   setOpen(true);
                 }}
-                className="press bg-sub flex w-full flex-col items-center gap-1.5 rounded-2xl px-1.5 py-3"
+                // 한 줄의 칸은 같은 높이로 — 이름이 두 줄인 칸만 키가 컸다
+                className="press bg-sub flex h-full w-full flex-col items-center gap-1.5 rounded-2xl px-1.5 py-3"
                 aria-label={`${a.title}, ${got ? "받았어요" : "아직 못 받았어요"}`}
               >
                 <ArtIcon

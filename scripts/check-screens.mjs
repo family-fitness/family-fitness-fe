@@ -55,7 +55,7 @@ const ROUTES = [
 ];
 
 /** 손가락이 닿는 최소 크기 */
-const MIN_TAP = 40;
+const MIN_TAP = 44;
 /**
  * 무시할 콘솔 잡음 — 남의 것(유튜브 · 썸네일 · 파비콘 · next/image)을 못 받은 것만. 우리 API 의 400 · 404 는
  * 잡음이 아니다 — 전에는 400 · 404 를 통째로 넘겨 우리 요청이 틀려도 몰랐다
@@ -103,6 +103,8 @@ const PARENT_ONLY = [`/p/${KID}/result`, `/p/${KID}/measure`, "/parent"];
 
 const browser = await chromium.launch({ channel: "chrome" });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+// 처음 한 번 뜨는 환영 안내는 본 것으로 — 화면을 덮으면 누를 것을 못 누른다
+await context.addInitScript(() => localStorage.setItem("ff-welcome", "parent,kid"));
 
 /** 로그인한 채로, 정해진 역할로 본다 */
 function seed(mode) {
@@ -159,11 +161,24 @@ for (const route of ROUTES) {
 
       const small = [...document.querySelectorAll("button, a[href], [role=tab], input")].filter(
         (el) => {
+          // 개발 서버에만 뜨는 TanStack Query 도구 단추는 앱이 아니다
+          if (
+            el.closest(".tsqd-parent-container, .tsqd-open-btn-container") ||
+            el.matches(".tsqd-open-btn")
+          )
+            return false;
           const b = el.getBoundingClientRect();
           return b.width > 0 && (b.height < minTap || b.width < minTap);
         },
       );
-      if (small.length > 0) out.push(`누르기 작은 것 ${small.length}개`);
+      if (small.length > 0) {
+        const names = small
+          .slice(0, 3)
+          .map((el) =>
+            (el.getAttribute("aria-label") || el.textContent || el.tagName).trim().slice(0, 14),
+          );
+        out.push(`누르기 작은 것 ${small.length}개: ${names.join(" · ")}`);
+      }
 
       const unnamed = [...document.querySelectorAll("button, a[href]")].filter(
         (el) => !(el.getAttribute("aria-label") || el.textContent || "").trim(),
@@ -263,6 +278,8 @@ for (const route of ROUTES) {
 /* ─── 아이 모드로 한 번 더 ─────────────────────────────────── */
 
 const kidContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+// 처음 한 번 뜨는 환영 안내는 본 것으로 — 화면을 덮으면 누를 것을 못 누른다
+await kidContext.addInitScript(() => localStorage.setItem("ff-welcome", "parent,kid"));
 await kidContext.addInitScript(...seed("kid"));
 
 for (const route of KID_ROUTES) {
@@ -301,6 +318,8 @@ for (const route of PARENT_ONLY) {
  * 여기서는 **가로 스크롤만** 본다. 누르는 크기와 제목 수는 폭과 무관하다.
  */
 const narrow = await browser.newContext({ viewport: { width: 320, height: 720 } });
+// 처음 한 번 뜨는 환영 안내는 본 것으로 — 화면을 덮으면 누를 것을 못 누른다
+await narrow.addInitScript(() => localStorage.setItem("ff-welcome", "parent,kid"));
 await narrow.addInitScript(...seed("parent"));
 
 for (const route of ROUTES) {

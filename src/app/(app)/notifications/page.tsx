@@ -208,11 +208,25 @@ function Thanks({ item, to, until }: { item: NotificationView; to: string; until
     }
   };
 
-  if (!kidId || isPending) return null;
+  if (!kidId) return null;
+  // 보냈는지 받는 동안은 자리만 — 다 받고 줄이 생기면 알림 목록이 한 칸씩 아래로 밀렸다
+  if (isPending) {
+    return (
+      <div aria-hidden className="-mt-1 pb-3 pl-15">
+        <div className="flex min-h-11 items-center">
+          <Skeleton className="h-4 w-24" />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="-mt-1 pb-3 pl-15">
+      {/* 보냈다는 말은 늘 있는 자리에서 읽어 준다 — 단추가 「보냈어요」 줄로 바뀌기만 하면 조용했다 */}
+      <span className="sr-only" role="status">
+        {justSent ? "고마워요를 보냈어요" : ""}
+      </span>
       {sent ? (
-        <p className="text-caption text-done flex min-h-10 items-center gap-1 font-bold">
+        <p className="text-caption text-done flex min-h-11 items-center gap-1 font-bold">
           <Check aria-hidden className="size-4" strokeWidth={3} />
           고마워요를 보냈어요
         </p>
@@ -221,7 +235,9 @@ function Thanks({ item, to, until }: { item: NotificationView; to: string; until
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="press text-signal-deep inline-flex min-h-10 items-center text-sm font-extrabold"
+          // 알림마다 같은 이름이면 화면 읽기로는 누구에게 보내는지 모른다
+          aria-label={`${item.title} · 고마워요 보내기`}
+          className="press text-signal-deep inline-flex min-h-11 items-center text-sm font-extrabold"
         >
           고마워요 보내기
         </button>
