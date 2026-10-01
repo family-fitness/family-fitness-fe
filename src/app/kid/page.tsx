@@ -6,12 +6,15 @@ import { useRouter } from "next/navigation";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { ArtIcon } from "@/components/ui/art-icon";
+import { CardHead } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { IconLink } from "@/components/ui/icon-link";
 import { Illustration } from "@/components/ui/illustration";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ClipShelf } from "@/components/domain/clip-shelf";
+import { FactorRadar } from "@/components/domain/factor-radar";
 import { StickerArt } from "@/components/domain/sticker-art";
 import { StreakChip } from "@/components/domain/streak-chip";
 import { PanelCell, PanelCells, WeekPanel } from "@/components/domain/week-panel";
@@ -19,7 +22,7 @@ import { KiumIsland } from "@/components/scene/kium-island";
 import { NotificationBell } from "@/components/domain/notification-bell";
 import { XpGauge } from "@/components/domain/xp-gauge";
 import { WelcomeSheet } from "@/components/domain/welcome-sheet";
-import type { CheerLog, Mission } from "@/lib/api/types";
+import type { CheerLog, FitnessMapMember, Mission } from "@/lib/api/types";
 import type { ProfileWithSex } from "@/lib/api/types";
 import {
   useCalendar,
@@ -27,10 +30,12 @@ import {
   useFamilyProfiles,
   useFitnessMap,
   useCurrentMissions,
+  useLatestFitnessTest,
   useProgress,
 } from "@/lib/api/queries";
 import { missionsOn } from "@/lib/day";
 import { callName } from "@/lib/family";
+import { memberNoPeerNormsNote } from "@/lib/fitness-factors";
 import { badgeArt, stageOf } from "@/lib/levels";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
@@ -45,8 +50,9 @@ import { useRoleStore } from "@/stores/role-store";
  * 맨 위는 **키움 섬**이다 — 운동한 날마다 나무가 하나씩 자라고, 가운데 선 캐릭터는
  * 경험치가 차면 레벨 둘마다 모습이 자란다. 섬은 손으로 돌리고 누르면 캐릭터가 뛴다.
  * 해야 할 일은 오늘 운동 카드의 큰 버튼 하나다. 나머지는 보는 것이다.
+ * 오늘 운동 아래에 내 체력 육각형, 이번 주, 맨 아래 국민체력100 영상 줄. 보호자 홈과 같은 차례다(10/1).
  *
- * 여기에 없는 것: 등급, 약한 요인, 형제 비교, 체력 육각형(규칙 10).
+ * 여기에 없는 것: 등급, 약한 요인, 형제 비교(규칙 10).
  */
 export default function KidHomePage() {
   const router = useRouter();
@@ -248,6 +254,9 @@ export default function KidHomePage() {
           </div>
         )}
 
+        {/* 내 체력 — 보호자 홈과 같은 육각형. 측정하지 않았으면 0점으로 그리지 않는다 */}
+        <KidFitnessCard me={me} />
+
         {/* 오늘 한 만큼 — 부모 홈과 같은 링. 비어 있어도 탓하지 않는다 */}
         {/* 둘째 묶음 — 이번 주. 링 · 요일 탑 · 받은 스티커 · 업적 · 신체 점수를 한 덩어리로(9/25 「큰 묶음 둘」) */}
         <WeekPanel
@@ -337,10 +346,44 @@ export default function KidHomePage() {
             />
           </PanelCells>
         </WeekPanel>
+
+        {/* 국민체력100 영상 줄 — 보호자 홈과 같다. 아이에게는 약한 힘을 말하지 않아서 힘으로 거르지 않는다 */}
+        <ClipShelf factor={null} profileId={childProfileId ?? undefined} />
       </Stage>
       {/* 처음 들어올 때 한 번 — 사용법 세 줄 */}
       <WelcomeSheet who="kid" />
     </>
+  );
+}
+
+/** 내 체력 육각형. 보호자 홈과 같은 그림이고, 범례에 「백분위」 대신 「내 체력」 이라고 쓴다 */
+function KidFitnessCard({ me }: { me: FitnessMapMember }) {
+  const { data: latest, isPending } = useLatestFitnessTest(me.profileId);
+  const testedOn = me.latest?.testedOn ?? latest?.testedOn ?? null;
+  return (
+    <section className="card-hero" aria-label="내 체력">
+      <CardHead title="내 체력" />
+      {testedOn == null ? (
+        // 측정하지 않았으면 빈 육각형과 0점 대신 안내만. 측정은 보호자가 한다
+        <EmptyState
+          size="card"
+          scene="no-record"
+          title="아직 체력을 측정하지 않았어요"
+          description="측정하면 여섯 가지 체력을 한눈에 볼 수 있어요"
+          className="py-1"
+        />
+      ) : isPending ? (
+        <Skeleton className="mx-auto mt-2 aspect-[320/290] w-full max-w-80 rounded-3xl" />
+      ) : (
+        <FactorRadar
+          points={latest?.radar}
+          name={me.name ?? "나"}
+          note={memberNoPeerNormsNote(me, testedOn)}
+          seriesLabel="내 체력"
+          className="mx-auto mt-2 max-w-80"
+        />
+      )}
+    </section>
   );
 }
 
