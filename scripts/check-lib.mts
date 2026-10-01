@@ -114,6 +114,8 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { BAND_COPY, FOCUS_COPY } from "@/lib/api/types";
 import { MEMO_MAX, oneLine } from "@/lib/stickers";
+import { aloneKids, aloneNotice, sharedDays, togetherBlock } from "@/lib/schedule";
+import type { AvailabilitySlot, Weekday } from "@/lib/api/types";
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -1410,6 +1412,113 @@ check(
 );
 check("줄바꿈이 없으면 그대로 둔다", oneLine("끝까지 했네 ") === "끝까지 했네 ");
 check("한마디는 서버가 받는 길이(100자) 안이다", MEMO_MAX > 0 && MEMO_MAX <= 100);
+
+/* ─── 운동 시간표가 겹치는 요일 ─────────────────── */
+
+{
+  const week = (...days: Weekday[]): AvailabilitySlot[] =>
+    days.map((day) => ({ day, start: "19:00", minutes: 20 }));
+  const weekdays = week("MON", "TUE", "WED", "THU", "FRI");
+  const weekend = week("SAT", "SUN");
+  const kid = { name: "서준", slots: week("MON", "WED", "FRI", "SAT") };
+  const mom = { name: "은영", slots: week("SAT") };
+  const dad = { name: "도현", slots: week("SUN") };
+  const blank = { name: "지호", slots: [] };
+
+  check(
+    "평일만인 아이와 주말만인 보호자는 겹치는 요일이 없다",
+    same(sharedDays([weekdays, weekend]), []),
+  );
+  check("겹치는 요일만 남긴다", same(sharedDays([kid.slots, mom.slots]), ["SAT"]));
+  check(
+    "셋이 고르면 셋 모두 적어 둔 요일만",
+    same(sharedDays([weekdays, week("MON", "TUE", "SAT"), week("TUE", "MON")]), ["MON", "TUE"]),
+  );
+  check(
+    "시간표를 아예 비워 둔 사람은 빼고 본다",
+    same(sharedDays([kid.slots, []]), ["MON", "WED", "FRI", "SAT"]),
+  );
+  check("모두 비워 뒀으면 겹치는 요일이 없다", same(sharedDays([[], []]), []));
+  check("아무도 안 골랐으면 겹치는 요일이 없다", same(sharedDays([]), []));
+  check(
+    "요일은 월요일부터 차례대로",
+    same(sharedDays([week("SUN", "MON", "FRI"), week("FRI", "SUN", "MON")]), ["MON", "FRI", "SUN"]),
+  );
+
+  check("둘 다 적어 둔 요일이면 같이 할 수 있다", togetherBlock("SAT", kid, mom) === null);
+  check(
+    "보호자가 그 요일을 적어 두지 않았으면 보호자 이름으로 막는다",
+    togetherBlock("MON", kid, dad) ===
+      "월요일은 도현이 운동할 수 있는 날이 아니라서 같이 할 수 없어요",
+    String(togetherBlock("MON", kid, dad)),
+  );
+  check(
+    "아이가 그 요일을 적어 두지 않았으면 아이 이름으로 막는다",
+    togetherBlock("SUN", kid, dad) ===
+      "일요일은 서준이 운동할 수 있는 날이 아니라서 같이 할 수 없어요",
+    String(togetherBlock("SUN", kid, dad)),
+  );
+  check(
+    "둘 다 아니면 둘 다 부른다",
+    togetherBlock("THU", kid, mom) ===
+      "목요일은 서준과 은영이 운동할 수 있는 날이 아니라서 같이 할 수 없어요",
+    String(togetherBlock("THU", kid, mom)),
+  );
+  check(
+    "받침 없는 이름에도 조사를 맞춘다",
+    togetherBlock("MON", { name: "지호", slots: weekend }, { name: "아빠", slots: weekend }) ===
+      "월요일은 지호와 아빠가 운동할 수 있는 날이 아니라서 같이 할 수 없어요",
+    String(
+      togetherBlock("MON", { name: "지호", slots: weekend }, { name: "아빠", slots: weekend }),
+    ),
+  );
+  check(
+    "보호자 시간표가 아예 비어 있으면 막지 않는다",
+    togetherBlock("THU", kid, { name: "도현", slots: [] }) === null,
+  );
+  check(
+    "아이 시간표가 아예 비어 있으면 보호자 시간표만 본다",
+    togetherBlock("SAT", blank, mom) === null &&
+      togetherBlock("MON", blank, mom) ===
+        "월요일은 은영이 운동할 수 있는 날이 아니라서 같이 할 수 없어요",
+    String(togetherBlock("MON", blank, mom)),
+  );
+
+  check("한 보호자와라도 겹치면 혼자인 아이가 아니다", same(aloneKids([kid], [mom, dad]), []));
+  check(
+    "어떤 보호자와도 겹치는 요일이 없는 아이를 찾는다",
+    same(aloneKids([kid, { name: "지우", slots: weekdays }], [mom, dad]), ["지우"]),
+  );
+  check(
+    "보호자 시간표가 하나라도 비어 있으면 그 보호자와는 막히지 않는다",
+    same(aloneKids([{ name: "지우", slots: weekdays }], [dad, { name: "은영", slots: [] }]), []),
+  );
+  check("시간표를 비워 둔 아이는 찾지 않는다", same(aloneKids([blank], [mom, dad]), []));
+  check("보호자가 없으면 찾지 않는다", same(aloneKids([kid], []), []));
+
+  check(
+    "겹치는 요일이 없는 아이를 이름으로 알린다",
+    aloneNotice(["서준"]) ===
+      "서준과 보호자가 겹치는 요일이 없어요. 같이 운동하려면 요일을 하나 이상 맞춰 주세요",
+    String(aloneNotice(["서준"])),
+  );
+  check(
+    "아이가 여럿이면 쉼표로 잇는다",
+    aloneNotice(["서준", "지호"]) ===
+      "서준, 지호와 보호자가 겹치는 요일이 없어요. 같이 운동하려면 요일을 하나 이상 맞춰 주세요",
+    String(aloneNotice(["서준", "지호"])),
+  );
+  check("모두 겹치면 알리지 않는다", aloneNotice([]) === null);
+  const lines = [
+    togetherBlock("THU", kid, mom),
+    togetherBlock("MON", kid, dad),
+    aloneNotice(["서준", "지호"]),
+  ];
+  check(
+    "시간표 안내 글에 가운데 점과 긴 대시를 쓰지 않는다",
+    lines.every((l) => l !== null && !/[·—–]/.test(l)),
+  );
+}
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);
