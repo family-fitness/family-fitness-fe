@@ -846,6 +846,143 @@ check(
   check("가족이 없는 계정은 탈퇴할 수 있다(204)", res.status === 204, `${res.status}`);
 }
 
+/* ─── 8. 가족 초대 코드 만들기, 목록, 취소 ───────────────────── */
+
+type PendingInvite = {
+  code?: string;
+  role?: string;
+  expiresAt?: string;
+  createdAt?: string;
+  issuedByName?: string | null;
+};
+const CONSENT = { personalData: true, healthData: true };
+const invitesPath = (familyId: string = DEMO.familyId) => `/families/${familyId}/invites`;
+const pendingCodes = async () =>
+  (((await (await get(invitesPath())).json()) as { invites?: PendingInvite[] }).invites ?? []).map(
+    (i) => i.code,
+  );
+
+{
+  // 서준이네 은영(보호자)으로 다시 들어온다. 앞 검사에서 식구가 빠졌으면 서준이네로 되돌린다
+  await post("/auth/dev-login", { providerUserId: "demo-parent" });
+
+  let res = await post(invitesPath(), { role: "PARENT" });
+  const parentInvite = (await res.json().catch(() => ({}))) as {
+    code?: string;
+    role?: string;
+    expiresAt?: string;
+    familyId?: string;
+  };
+  check(
+    "보호자는 보호자 초대 코드를 만든다(201)",
+    res.status === 201 &&
+      /^[A-Z0-9]{6}$/.test(parentInvite.code ?? "") &&
+      parentInvite.role === "PARENT" &&
+      parentInvite.familyId === DEMO.familyId &&
+      Date.parse(parentInvite.expiresAt ?? "") > Date.now(),
+    `${res.status} ${JSON.stringify(parentInvite)}`,
+  );
+
+  res = await post(invitesPath(), { role: "CHILD" });
+  check(
+    "아이 초대는 보호자 동의가 없으면 만들지 않는다(422 CONSENT_REQUIRED)",
+    res.status === 422 && (await codeOf(res)) === "CONSENT_REQUIRED",
+    `${res.status}`,
+  );
+  res = await post(invitesPath(), {
+    role: "CHILD",
+    guardianConsent: { personalData: true, healthData: false },
+  });
+  check(
+    "동의를 하나만 해도 아이 초대를 만들지 않는다(422)",
+    res.status === 422 && (await codeOf(res)) === "CONSENT_REQUIRED",
+    `${res.status}`,
+  );
+  res = await post(invitesPath(), { role: "CHILD", guardianConsent: CONSENT });
+  const childInvite = (await res.json().catch(() => ({}))) as { code?: string; role?: string };
+  check(
+    "보호자 동의를 받으면 아이 초대 코드를 만든다(201)",
+    res.status === 201 && childInvite.role === "CHILD" && !!childInvite.code,
+    `${res.status}`,
+  );
+  check("두 코드는 서로 다르다", childInvite.code !== parentInvite.code);
+
+  res = await post(invitesPath(), { role: "OWNER" });
+  check(
+    "모르는 역할이면 400",
+    res.status === 400 && (await codeOf(res)) === "BAD_REQUEST",
+    `${res.status}`,
+  );
+  res = await post(invitesPath("00000000-0000-4000-8000-0000000000ff"), { role: "PARENT" });
+  check(
+    "다른 가족의 초대 코드는 만들 수 없다(403 NOT_SAME_FAMILY)",
+    res.status === 403 && (await codeOf(res)) === "NOT_SAME_FAMILY",
+    `${res.status}`,
+  );
+
+  // 아이 계정으로 보면 만들지도 보지도 못한다
+  setActingProfile(DEMO.kid);
+  res = await post(invitesPath(), { role: "PARENT" });
+  check(
+    "아이 계정은 초대 코드를 만들 수 없다(403 NOT_A_PARENT)",
+    res.status === 403 && (await codeOf(res)) === "NOT_A_PARENT",
+    `${res.status}`,
+  );
+  res = await get(invitesPath());
+  check(
+    "아이 계정은 초대 목록을 볼 수 없다(403 NOT_A_PARENT)",
+    res.status === 403 && (await codeOf(res)) === "NOT_A_PARENT",
+    `${res.status}`,
+  );
+  setActingProfile(DEMO.mom);
+
+  const listed = ((await (await get(invitesPath())).json()) as { invites?: PendingInvite[] })
+    .invites;
+  const mine = listed?.find((i) => i.code === parentInvite.code);
+  check(
+    "아직 쓰지 않은 초대가 목록에 역할, 기한, 만든 때, 만든 사람과 함께 나온다",
+    !!mine &&
+      mine.role === "PARENT" &&
+      !!mine.expiresAt &&
+      !!mine.createdAt &&
+      mine.issuedByName === "은영",
+    JSON.stringify(mine),
+  );
+  check(
+    "목록은 새로 만든 것이 먼저다",
+    (listed ?? []).every(
+      (item, i, all) =>
+        i === 0 || Date.parse(all[i - 1].createdAt ?? "") >= Date.parse(item.createdAt ?? ""),
+    ),
+  );
+  check(
+    "기한이 지난 초대는 목록에 없다",
+    (listed ?? []).every((i) => Date.parse(i.expiresAt ?? "") > Date.now()),
+  );
+  check(
+    "자리 초대(등록한 구성원의 코드)는 가족 초대 목록에 섞이지 않는다",
+    !(listed ?? []).some((i) => i.code === "K7M2QT"),
+  );
+
+  res = await send("DELETE", `${invitesPath()}/${childInvite.code}`);
+  check("보호자는 초대를 취소한다(204)", res.status === 204, `${res.status}`);
+  check("취소한 초대는 목록에서 빠진다", !(await pendingCodes()).includes(childInvite.code));
+  res = await send("DELETE", `${invitesPath()}/${childInvite.code}`);
+  check(
+    "없는 초대를 취소하면 404 INVITE_NOT_FOUND",
+    res.status === 404 && (await codeOf(res)) === "INVITE_NOT_FOUND",
+    `${res.status}`,
+  );
+  setActingProfile(DEMO.kid);
+  res = await send("DELETE", `${invitesPath()}/${parentInvite.code}`);
+  check(
+    "아이 계정은 초대를 취소할 수 없다(403 NOT_A_PARENT)",
+    res.status === 403 && (await codeOf(res)) === "NOT_A_PARENT",
+    `${res.status}`,
+  );
+  setActingProfile(DEMO.mom);
+}
+
 server.close();
 console.log(failed === 0 ? "\n전부 통과" : `\n${failed}건 실패`);
 process.exit(failed === 0 ? 0 : 1);

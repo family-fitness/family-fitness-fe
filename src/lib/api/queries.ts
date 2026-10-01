@@ -31,8 +31,11 @@ import type {
   FitnessMap,
   FitnessTestHistory,
   FitnessTestResult,
+  FamilyInvite,
+  GuardianConsent,
   InviteCode,
   InvitePeek,
+  PendingInviteList,
   NotificationList,
   LatestWithBody,
   MeResponse,
@@ -66,6 +69,7 @@ const qk = {
     calendar: (familyId: Uuid, profileId?: Uuid, from?: string, to?: string) =>
       ["family", familyId, "calendar", profileId ?? "-", from ?? "-", to ?? "-"] as const,
     league: (familyId: Uuid, month: string) => ["family", familyId, "league", month] as const,
+    invites: (familyId: Uuid) => ["family", familyId, "invites"] as const,
     restDays: (familyId: Uuid, month: string) => ["family", familyId, "rest-days", month] as const,
   },
   profile: {
@@ -258,10 +262,42 @@ export function useRemoveMember(familyId: Uuid) {
   });
 }
 
-/** 가족 단위가 아니라 프로필 단위 코드. 계정이 안 붙은 프로필에만 발급된다 */
+/** 자리 초대. 가족 단위가 아니라 프로필 단위 코드다. 계정이 안 붙은 프로필에만 발급된다 */
 export function useOpenInvite() {
   return useMutation({
     mutationFn: (profileId: Uuid) => api.post<InviteCode>(path`/profiles/${profileId}/invite`),
+  });
+}
+
+/**
+ * 가족 초대 코드를 만든다(보호자만). 보호자로 부를지 아이로 부를지만 정하고, 이름과 생년월일은 받은 사람이 넣는다.
+ * 아이로 부르면 보호자 동의가 있어야 한다(없으면 422 CONSENT_REQUIRED)
+ */
+export function useCreateFamilyInvite(familyId: Uuid | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { role: Role; guardianConsent?: GuardianConsent }) =>
+      api.post<FamilyInvite>(path`/families/${familyId}/invites`, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.family.invites(familyId ?? "") }),
+  });
+}
+
+/** 아직 쓰지 않았고 기한이 남은 가족 초대(보호자만) */
+export function useFamilyInvites(familyId: Uuid | undefined) {
+  return useQuery({
+    queryKey: qk.family.invites(familyId ?? ""),
+    queryFn: () => api.get<PendingInviteList>(path`/families/${familyId}/invites`),
+    enabled: Boolean(familyId),
+  });
+}
+
+/** 가족 초대를 취소한다(204). 이미 쓰였거나 없으면 404 INVITE_NOT_FOUND */
+export function useCancelFamilyInvite(familyId: Uuid | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (code: string) => api.delete<void>(path`/families/${familyId}/invites/${code}`),
+    // 없다는 답(404)도 목록에서 빠져야 맞다 — 성공과 실패 모두 다시 받는다
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.family.invites(familyId ?? "") }),
   });
 }
 

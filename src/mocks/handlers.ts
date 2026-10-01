@@ -38,6 +38,7 @@ import {
 import { clips } from "./clips";
 import { coaching } from "./coach";
 import { history } from "./history";
+import { invites } from "./invites";
 import { league } from "./league";
 import { notifications } from "./notifications";
 import { progress, progressOf } from "./progress";
@@ -933,6 +934,7 @@ const missions = [
 export const handlers = [
   ...authGate,
   ...identity,
+  ...invites,
   ...fitness,
   ...coaching,
   ...missions,

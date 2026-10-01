@@ -71,7 +71,18 @@ export type ProfileSummary = S["ProfileSummary"];
 export type MeResponse = S["MeResponse"];
 export type AuthResponse = S["AuthResponse"];
 export type FamilyProfiles = S["FamilyProfilesResponse"];
+/** 자리 초대 — 보호자가 먼저 등록한 구성원(폰 없던 아이)에게 계정을 붙이는 코드 */
 export type InviteCode = S["InviteResponse"];
+/**
+ * 가족 초대 — 자리 없이 코드부터 만든다. 받은 사람이 자기 이름, 생년월일, 성별을 넣고 들어온다.
+ * 아이로 초대하면 만들 때 보호자 동의(`GuardianConsent`)를 함께 보낸다
+ */
+export type FamilyInvite = S["FamilyInviteResponse"];
+/** 아직 쓰지 않았고 기한이 남은 가족 초대 한 장 */
+export type PendingInvite = S["FamilyInviteView"];
+export type PendingInviteList = S["FamilyInviteListResponse"];
+/** 만 14세 미만 아이를 등록하거나 아이로 초대할 때 받는 보호자 동의. 둘 다 true 여야 한다 */
+export type GuardianConsent = { personalData: boolean; healthData: boolean };
 /** 가족을 만들면 돌아오는 것 — 가족 id 와 만든 사람의 프로필 */
 export type FamilyCreated = S["FamilyCreatedResponse"];
 export type Cheer = S["CheerResponse"];
