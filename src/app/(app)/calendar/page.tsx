@@ -22,6 +22,7 @@ import { longDate, monthGrid, monthLabel, monthOf, shiftMonth, today } from "@/l
 import { cn } from "@/lib/utils";
 import { useIsKidView } from "@/lib/view-role";
 import { useRoleStore } from "@/stores/role-store";
+import { useTabStore } from "@/stores/tab-store";
 
 /**
  * 캘린더 — 부모와 아이가 같이 본다.
@@ -92,7 +93,9 @@ function Calendar() {
       scroll: false,
     });
 
-  const back = kidView ? "/kid" : "/parent";
+  // 부모는 들어온 탭으로 돌아간다. 기록 탭에서 왔으면 기록 탭, 홈에서 왔으면 홈
+  const parentBack = useTabStore((s) => s.last);
+  const back = kidView ? "/kid" : parentBack;
   const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
     return (

@@ -108,10 +108,9 @@ function ClaimContent() {
     setFailure(null);
     try {
       const res = await claim.mutateAsync(claimBody(code, family ? seat : null, form));
-      // 가입 도중이라는 걸 다음 화면이 알아야 한다. 고르고 나서 멈추면 안 된다
-      router.replace(
-        res.nextStep === "SUPPORT_MODE" ? "/settings/support-mode?from=claim" : "/start",
-      );
+      // 가입 도중이라는 걸 다음 화면이 알아야 한다. 고르고 나서 멈추면 안 된다.
+      // 그 밖에는 스플래시가 계정의 역할로 아이 홈이나 부모 홈을 정한다(누가 쓰는지 묻지 않는다)
+      router.replace(res.nextStep === "SUPPORT_MODE" ? "/settings/support-mode?from=claim" : "/");
     } catch (e) {
       setFailure(e);
     }

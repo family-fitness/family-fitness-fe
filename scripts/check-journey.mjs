@@ -336,15 +336,12 @@ await step("대시보드 → 초대 코드 만들기", async () => {
 await shot("invite-code");
 
 // ── 7. 둘째 아이 ───────────────────────────────────────────
-await step("부모 홈 알약 → 아이 등록하기 → 둘째 아이 첫 시작", async () => {
+await step("부모 홈 「우리 아이」 → 아이 등록하기 → 둘째 아이 첫 시작", async () => {
   await page.goto(B + "/parent", { waitUntil: "load" });
   await page.waitForTimeout(2000);
-  // 오른쪽 위 이름 알약 — 「우리 아이」 묶음에도 아이 줄 · 아이 등록하기가 있어 알약과 그 시트로 좁힌다
-  await page.getByRole("button", { name: /보고 있는 아이/ }).click({ timeout: 8000 });
-  await page.waitForTimeout(800);
-  await shot("child-pill-sheet");
+  // 오른쪽 위 아이 알약은 없앴다. 아이 등록하기는 「우리 아이」 묶음 아래에 있다
   await page
-    .getByRole("dialog")
+    .getByRole("region", { name: "우리 아이" })
     .getByRole("link", { name: /아이 등록하기/ })
     .click({ timeout: 8000 });
   await page.waitForURL(/\/start\/child/, { timeout: 10000 });

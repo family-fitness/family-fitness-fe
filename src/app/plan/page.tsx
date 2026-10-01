@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import { childFinderHref } from "@/lib/videos";
 import { useBodyStore } from "@/stores/body-store";
 import { useRoleStore } from "@/stores/role-store";
+import { useTabStore } from "@/stores/tab-store";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
 /**
@@ -75,6 +76,8 @@ function PlanForm() {
   const childProfileId = useRoleStore((s) => s.childProfileId);
   // 방금 잰 아이의 결과에서 왔으면 그 아이로 — 홈에서 고른 아이로 짜면 다른 아이의 제안이 된다
   const wanted = useSearchParams().get("profileId");
+  // 뒤로는 들어온 탭으로. 운동 탭에서 왔으면 운동 탭, 홈에서 왔으면 홈
+  const back = useTabStore((s) => s.last);
   const kids = (map?.members ?? []).filter((m) => m.role === "CHILD");
   const kid =
     kids.find((k) => k.profileId === wanted) ??
@@ -134,7 +137,7 @@ function PlanForm() {
   if (failure) {
     return (
       <>
-        <AppBar backHref="/parent" title="오늘 운동 짜기" />
+        <AppBar backHref={back} title="오늘 운동 짜기" />
         <Stage wide>
           <ErrorState
             error={failure}
@@ -148,7 +151,7 @@ function PlanForm() {
   if (sessionPending || mapLoading) {
     return (
       <>
-        <AppBar backHref="/parent" title="오늘 운동 짜기" />
+        <AppBar backHref={back} title="오늘 운동 짜기" />
         <Stage wide className="space-y-3">
           <Skeleton className="h-80 w-full rounded-3xl" />
           <Skeleton className="h-40 w-full rounded-3xl" />
@@ -161,7 +164,7 @@ function PlanForm() {
   if (!kid) {
     return (
       <>
-        <AppBar backHref="/parent" title="오늘 운동 짜기" />
+        <AppBar backHref={back} title="오늘 운동 짜기" />
         <Stage wide>
           <EmptyState
             scene="no-record"
@@ -239,7 +242,7 @@ function PlanForm() {
 
   return (
     <>
-      <AppBar backHref="/parent" title="오늘 운동 짜기" />
+      <AppBar backHref={back} title="오늘 운동 짜기" />
       <Stage wide className="space-y-3 pb-28">
         <section className="card-hero">
           <p className="text-lead font-extrabold">{name}의 체력</p>

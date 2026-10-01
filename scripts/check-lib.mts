@@ -18,7 +18,7 @@ import {
   zoneOf,
 } from "@/lib/league";
 import { NO_PEER_NORMS_NOTE, memberNoPeerNormsNote, noPeerNormsNote } from "@/lib/fitness-factors";
-import { VERIFIED_COPY } from "@/lib/mission";
+import { VERIFIED_COPY, familyToday, partAction, partLine, partOf, playLock } from "@/lib/mission";
 import { projectOrtho } from "@/lib/ortho";
 import { withJosa } from "@/lib/utils";
 import {
@@ -116,6 +116,8 @@ import {
   cameAfterWithdrawal,
   withdrawalCase,
 } from "@/lib/withdrawal";
+import { homeOf, modeFor } from "@/lib/role-mode";
+import { PARENT_TABS, parentTabOf } from "@/lib/parent-tabs";
 
 import { ApiError } from "@/lib/api/client";
 import {
@@ -1867,6 +1869,134 @@ check(
     page.includes("unusedInvite(") && page.includes("UNUSED_INVITE_COPY"),
   );
 }
+
+/* ─── 부모가 자기 몫의 운동을 한다 ─────────────────────── */
+
+{
+  const now = "2026-10-01";
+  const run = (over: Record<string, unknown> = {}) =>
+    ({
+      missionId: "m",
+      startDate: now,
+      endDate: now,
+      targetMetric: "TIMER_MINUTES",
+      sessions: [
+        { position: 1, phase: "WARMUP", title: "a", minutes: 1 },
+        { position: 2, phase: "MAIN", title: "b", minutes: 4 },
+        { position: 3, phase: "COOLDOWN", title: "c", minutes: 1 },
+      ],
+      participants: [
+        { profileId: "KID", completed: false, doneSessions: [1, 2] },
+        { profileId: "MOM", completed: false, doneSessions: [] },
+      ],
+      ...over,
+    }) as unknown as Parameters<typeof plannedDay>[0];
+
+  check("함께 하는 보호자는 오늘 운동을 할 수 있다", playLock(run(), "MOM", now) === null);
+  check("참여자가 아니면 볼 수만 있다", playLock(run(), "DAD", now) === "other");
+  check(
+    "앞날 운동은 그날 하고 지난 운동은 볼 수만 있다",
+    playLock(run({ startDate: "2026-10-02", endDate: "2026-10-02" }), "MOM", now) === "later" &&
+      playLock(run({ startDate: "2026-09-29", endDate: "2026-09-30" }), "MOM", now) === "over",
+  );
+  check("운동을 아직 못 받았으면 막지 않는다", playLock(undefined, "MOM", now) === null);
+
+  check(
+    "내 몫은 내가 끝낸 칸으로 센다. 아이가 끝낸 칸이 내 것이 되지 않는다",
+    same(partOf(run(), "MOM"), { done: 0, total: 3 }) &&
+      same(partOf(run(), "KID"), { done: 2, total: 3 }),
+  );
+  check("참여자가 아니면 내 몫이 없다", partOf(run(), "DAD") === null);
+  check(
+    "사람마다 한 만큼은 다 했어요, 몇 개 했는지, 아직이에요 가운데 하나",
+    partLine({ done: 3, total: 3 }) === "다 했어요" &&
+      partLine({ done: 2, total: 3 }) === "2 / 3개" &&
+      partLine({ done: 0, total: 3 }) === "아직이에요",
+  );
+  check(
+    "내 몫의 단추는 시작하기, 이어서 하기, 다 했어요",
+    partAction({ done: 0, total: 3 }) === "시작하기" &&
+      partAction({ done: 2, total: 3 }) === "이어서 하기" &&
+      partAction({ done: 3, total: 3 }) === "다 했어요",
+  );
+
+  const list = familyToday(
+    [
+      run({ missionId: "today" }),
+      run({ missionId: "long", startDate: "2026-09-28", endDate: "2026-10-04" }),
+      run({ missionId: "steps", targetMetric: "STEPS" }),
+      run({ missionId: "later", startDate: "2026-10-02", endDate: "2026-10-02" }),
+      run({ missionId: "over", startDate: "2026-09-30", endDate: "2026-09-30" }),
+    ],
+    now,
+  );
+  check(
+    "오늘 가족 운동은 오늘이 기간 안에 드는 것만, 걸음수는 빼고",
+    same(
+      list.map((m) => m.missionId),
+      ["today", "long"],
+    ),
+  );
+  check("운동을 못 받았으면 빈 목록", familyToday(undefined, now).length === 0);
+}
+
+/* ─── 이 기기를 누가 쓰는지는 계정의 역할로 정한다 ─────────────── */
+
+check("정해 둔 것이 없으면 보호자 계정은 부모 화면이다", modeFor("PARENT", null) === "parent");
+check("정해 둔 것이 없으면 자녀 계정은 아이 화면이다", modeFor("CHILD", null) === "kid");
+check(
+  "보호자가 폰을 아이에게 빌려준 중이면 아이 화면을 그대로 둔다",
+  modeFor("PARENT", "kid") === "kid",
+);
+check("자녀 계정은 기기에 부모가 남아 있어도 아이 화면이다", modeFor("CHILD", "parent") === "kid");
+check(
+  "계정의 역할을 모르면 정해 둔 것만 따르고 없으면 정하지 않는다",
+  modeFor(undefined, "parent") === "parent" && modeFor(undefined, null) === null,
+);
+check(
+  "아이 화면은 아이 홈, 부모 화면은 부모 홈, 정하지 못했으면 누가 쓰는지 고르는 화면",
+  homeOf("kid") === "/kid" && homeOf("parent") === "/parent" && homeOf(null) === "/start",
+);
+
+/* ─── 부모 화면의 하단 탭 ─────────────────────────────── */
+
+check(
+  "하단 탭은 홈, 운동, 기록, 리그, 가족 다섯 칸이다",
+  same(
+    PARENT_TABS.map((t) => t.label),
+    ["홈", "운동", "기록", "리그", "가족"],
+  ),
+);
+check(
+  "탭마다 첫 화면에서 그 탭이 켜진다",
+  parentTabOf("/parent") === "home" &&
+    parentTabOf("/parent/workout") === "workout" &&
+    parentTabOf("/parent/records") === "records" &&
+    parentTabOf("/parent/league") === "league" &&
+    parentTabOf("/parent/dashboard") === "family",
+);
+check("주소 끝의 빗금은 없는 것으로 본다", parentTabOf("/parent/league/") === "league");
+check(
+  "탭의 첫 화면이 아니면 탭을 두지 않는다(운동하기, 칭찬 스티커, 가족 관리, 측정, 아이 화면)",
+  [
+    "/parent/m/x",
+    "/parent/sticker/x",
+    "/parent/child/x",
+    "/parent/family",
+    "/plan",
+    "/calendar",
+    "/p/x/measure",
+    "/kid",
+    "/kid/m/x",
+    "/settings",
+  ].every((p) => parentTabOf(p) === null),
+);
+check(
+  "탭이 가는 곳은 저마다 다르고 모두 탭이 켜지는 곳이다",
+  PARENT_TABS.length === 5 &&
+    new Set(PARENT_TABS.map((t) => t.href)).size === PARENT_TABS.length &&
+    PARENT_TABS.every((t) => parentTabOf(t.href) === t.id),
+);
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);

@@ -385,7 +385,7 @@ await walk(
       }
       await page.getByRole("heading", { level: 1 }).waitFor({ timeout: 10000 });
     });
-    // 진짜 서버의 체험 가족 이름(「체험 가족」)을 넣어 본다. 아이 알약 · 알림 · 설정과 한 줄에 선다
+    // 진짜 서버의 체험 가족 이름(「체험 가족」)을 넣어 본다. 알림, 설정과 한 줄에 선다
     await h.step("360px 에서 가족 이름이 잘리지 않는다", async () => {
       const cut = await page.getByRole("heading", { level: 1 }).evaluate(async (h1) => {
         const span = h1.querySelector("span") ?? h1;
