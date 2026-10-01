@@ -708,6 +708,7 @@ export interface components {
       measurable?: boolean;
       consentRequired?: boolean;
       consentGiven?: boolean;
+      isOwner?: boolean;
     };
     AddMemberRequest: {
       name: string;

@@ -22,6 +22,7 @@ Object.defineProperty(globalThis, "location", {
 import { setupServer } from "msw/node";
 
 import { DEMO, handlers, setActingProfile } from "@/mocks/handlers";
+import { setStage } from "@/mocks/db";
 import { streakOf } from "@/mocks/progress";
 import { daysBefore, toDateString } from "@/lib/today";
 
@@ -172,6 +173,25 @@ check(
     ?.map((m) => m.itemCodes?.join("/"))
     .join(", ")}`,
 );
+
+// 가족을 만든 첫 보호자가 오너다. /me 와 가족 구성원 응답 모두 isOwner 를 싣는다
+{
+  const me = (await (await get("/me")).json()) as { profiles?: { isOwner?: boolean }[] };
+  const family = (await (await get(`/families/${DEMO.familyId}/profiles`)).json()) as {
+    profiles?: { profileId?: string; isOwner?: boolean }[];
+  };
+  check("가족을 만든 첫 보호자는 /me 에서 오너다", me.profiles?.[0]?.isOwner === true);
+  const owners = (family.profiles ?? []).filter((p) => p.isOwner).map((p) => p.profileId);
+  check(
+    "가족 구성원 응답에서 오너는 가족을 만든 보호자 한 사람이다",
+    owners.length === 1 && owners[0] === DEMO.mom,
+    owners.join(", "),
+  );
+  check(
+    "오너가 아닌 구성원도 isOwner 를 false 로 싣는다",
+    (family.profiles ?? []).every((p) => typeof p.isOwner === "boolean"),
+  );
+}
 
 /* ─── 1. 코치 제안은 미션이 아니다 ─────────────────────────── */
 
@@ -581,12 +601,17 @@ check(
     demoLeague.standings.every((s) => s.rate == null || (s.score != null && s.score <= 1)),
   scores.join(" "),
 );
+// 달의 첫날에는 모든 집이 하루만 지났다. 늦게 들어와 하루만 해낸 집이 있을 수 없어서 둘째 날부터 본다
+const firstDayOfMonth = toDateString(new Date()).endsWith("-01");
 check(
   "하루만 해낸 100% 집은 달성률이 더 낮은 집보다 아래에 선다",
-  demoLeague.standings.some(
-    (s, i) =>
-      s.rate === 100 && demoLeague.standings.slice(0, i).some((above) => (above.rate ?? 101) < 100),
-  ),
+  firstDayOfMonth ||
+    demoLeague.standings.some(
+      (s, i) =>
+        s.rate === 100 &&
+        demoLeague.standings.slice(0, i).some((above) => (above.rate ?? 101) < 100),
+    ),
+  firstDayOfMonth ? "달의 첫날이라 건너뜀" : "",
 );
 
 /* 운동 찾기: 페이지 나누기, 전체 수, 모든 나이 */
@@ -660,7 +685,8 @@ const freshFamily = (await (
     familyName: "검사네",
     owner: { name: "검사", birthDate: "1988-01-01", sex: "F" },
   })
-).json()) as { familyId?: string };
+).json()) as { familyId?: string; ownerProfile?: { isOwner?: boolean } };
+check("새로 만든 가족은 만든 보호자가 오너다", freshFamily.ownerProfile?.isOwner === true);
 const fresh = (await (await get(`/families/${freshFamily.familyId}/league`)).json()) as League;
 check("새 가족은 브론즈에서 시작한다", fresh.tier === "BRONZE", fresh.tier);
 check(
@@ -679,6 +705,144 @@ check(
   unmeasuredRun.status === 422 && (await codeOf(unmeasuredRun)) === "NO_MEASURED_MEMBER",
   `${unmeasuredRun.status}`,
 );
+
+/* ─── 7. 계정 탈퇴와 구성원 내보내기 ─────────────────────────── */
+
+{
+  const remove = (familyId: string, profileId: string) =>
+    send("DELETE", `/families/${familyId}/profiles/${profileId}`);
+  const familyIds = async () =>
+    (
+      (
+        (await (await get(`/families/${DEMO.familyId}/profiles`)).json()) as {
+          profiles?: { profileId?: string }[];
+        }
+      ).profiles ?? []
+    ).map((p) => p.profileId);
+  const testsOf = async (profileId: string) =>
+    (
+      ((await (await get(`/profiles/${profileId}/fitness-tests`)).json()) as { tests?: unknown[] })
+        .tests ?? []
+    ).length;
+  const mapIds = async () =>
+    (
+      (
+        (await (await get(`/families/${DEMO.familyId}/fitness-map`)).json()) as {
+          members?: { profileId?: string }[];
+        }
+      ).members ?? []
+    ).map((m) => m.profileId);
+
+  /** 그 사람이 제 폰으로 들어온 셈 친다. 탈퇴한 계정은 가족이 없는 계정이 되므로 단계도 같이 되돌린다 */
+  const actAs = (profileId: string) => {
+    setStage("home");
+    setActingProfile(profileId);
+  };
+
+  // 서준이네 은영(오너)으로 다시 들어온다
+  await post("/auth/dev-login", { providerUserId: "demo-parent" });
+  let res = await send("DELETE", "/me");
+  check(
+    "다른 구성원이 있는 오너는 탈퇴할 수 없다(409 FAMILY_NOT_EMPTY)",
+    res.status === 409 && (await codeOf(res)) === "FAMILY_NOT_EMPTY",
+    `${res.status}`,
+  );
+  check("탈퇴를 거절하면 가족이 그대로다", (await familyIds()).length === 3);
+
+  actAs(DEMO.dad);
+  res = await remove(DEMO.familyId, DEMO.kid);
+  check(
+    "오너가 아닌 보호자는 구성원을 내보낼 수 없다(403 NOT_FAMILY_OWNER)",
+    res.status === 403 && (await codeOf(res)) === "NOT_FAMILY_OWNER",
+    `${res.status}`,
+  );
+  actAs(DEMO.mom);
+
+  res = await remove(DEMO.familyId, DEMO.mom);
+  check(
+    "오너는 자기 자신을 내보낼 수 없다(409 CANNOT_REMOVE_SELF)",
+    res.status === 409 && (await codeOf(res)) === "CANNOT_REMOVE_SELF",
+    `${res.status}`,
+  );
+  res = await remove("00000000-0000-4000-8000-0000000000ff", DEMO.kid);
+  check(
+    "모르는 가족의 구성원은 내보낼 수 없다(404 FAMILY_NOT_FOUND)",
+    res.status === 404 && (await codeOf(res)) === "FAMILY_NOT_FOUND",
+    `${res.status}`,
+  );
+  res = await remove(DEMO.familyId, "00000000-0000-4000-8000-0000000000fe");
+  check(
+    "가족에 없는 사람은 내보낼 수 없다(404 PROFILE_NOT_FOUND)",
+    res.status === 404 && (await codeOf(res)) === "PROFILE_NOT_FOUND",
+    `${res.status}`,
+  );
+  check("거절한 내보내기는 아무도 지우지 않는다", (await familyIds()).length === 3);
+
+  // 아이 본인 계정이 탈퇴하면 아이 프로필과 기록이 지워지고 가족은 남는다
+  actAs(DEMO.kid);
+  res = await send("DELETE", "/me");
+  check("아이 본인 계정은 탈퇴할 수 있다(204)", res.status === 204, `${res.status}`);
+  actAs(DEMO.mom);
+  check(
+    "탈퇴한 아이는 가족과 가족 지도에서 빠진다",
+    !(await familyIds()).includes(DEMO.kid) && !(await mapIds()).includes(DEMO.kid),
+  );
+  check("탈퇴한 아이의 측정 기록이 지워진다", (await testsOf(DEMO.kid)) === 0);
+  check("다른 구성원의 기록은 남는다", (await testsOf(DEMO.mom)) > 0);
+
+  // 오너가 아닌 보호자가 탈퇴하면 그 사람만 빠지고 가족과 다른 기록은 남는다
+  actAs(DEMO.dad);
+  res = await send("DELETE", "/me");
+  check("오너가 아닌 보호자는 탈퇴할 수 있다(204)", res.status === 204, `${res.status}`);
+  actAs(DEMO.mom);
+  const afterDad = await familyIds();
+  check(
+    "탈퇴한 보호자만 빠지고 가족은 남는다",
+    afterDad.length === 1 && afterDad[0] === DEMO.mom,
+    afterDad.join(", "),
+  );
+  check("탈퇴한 보호자의 측정 기록이 지워진다", (await testsOf(DEMO.dad)) === 0);
+
+  // 다시 들어오면 서준이네가 처음 모습으로 돌아온다. 오너가 구성원을 내보낸다
+  await post("/auth/dev-login", { providerUserId: "demo-parent" });
+  check("다시 들어오면 시연 가족 셋이 다 있다", (await familyIds()).length === 3);
+  res = await remove(DEMO.familyId, DEMO.kid);
+  check("오너는 구성원을 내보낼 수 있다(204)", res.status === 204, `${res.status}`);
+  check(
+    "내보낸 구성원은 가족과 가족 지도에서 빠지고 기록이 지워진다",
+    !(await familyIds()).includes(DEMO.kid) &&
+      !(await mapIds()).includes(DEMO.kid) &&
+      (await testsOf(DEMO.kid)) === 0,
+  );
+  const missions = (
+    (
+      (await (await get(`/families/${DEMO.familyId}/missions`)).json()) as {
+        missions?: { participants?: { profileId?: string }[] }[];
+      }
+    ).missions ?? []
+  ).flatMap((m) => m.participants ?? []);
+  check(
+    "내보낸 구성원은 운동 참여자에서도 빠진다",
+    missions.every((p) => p.profileId !== DEMO.kid),
+  );
+  res = await remove(DEMO.familyId, DEMO.dad);
+  check("오너는 다른 보호자도 내보낼 수 있다(204)", res.status === 204, `${res.status}`);
+
+  // 혼자 남은 오너는 탈퇴할 수 있고 가족까지 지워진다
+  res = await send("DELETE", "/me");
+  check("혼자 남은 오너는 탈퇴할 수 있다(204)", res.status === 204, `${res.status}`);
+  const afterOwner = (await (await get("/me")).json()) as { nextStep?: string };
+  check(
+    "오너가 탈퇴하면 가족이 없는 상태가 된다",
+    afterOwner.nextStep === "CREATE_FAMILY",
+    `${afterOwner.nextStep}`,
+  );
+
+  // 가족이 없는 계정도 탈퇴할 수 있다
+  await post("/auth/dev-login", { providerUserId: "demo-fresh" });
+  res = await send("DELETE", "/me");
+  check("가족이 없는 계정은 탈퇴할 수 있다(204)", res.status === 204, `${res.status}`);
+}
 
 server.close();
 console.log(failed === 0 ? "\n전부 통과" : `\n${failed}건 실패`);

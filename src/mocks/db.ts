@@ -952,6 +952,31 @@ export function acting(): Profile | undefined {
   return db.profiles.profiles.find((p) => p.profileId === db.actingProfileId);
 }
 
+/**
+ * 한 사람을 가족에서 지운다. 프로필과 그 사람의 기록(측정, 측정 이력, 키와 몸무게, 운동할 수 있는 시간,
+ * 참여한 운동, 주고받은 칭찬)을 지우고 가족과 다른 사람의 기록은 남긴다. 탈퇴와 구성원 내보내기가 같이 쓴다
+ */
+export function forgetProfile(profileId: string) {
+  db.profiles.profiles = db.profiles.profiles.filter((p) => p.profileId !== profileId);
+  db.fitnessMap.members = db.fitnessMap.members.filter((m) => m.profileId !== profileId);
+  delete db.latest[profileId];
+  delete db.tests[profileId];
+  delete db.availability[profileId];
+  delete db.body[profileId];
+  // 그 사람만 하던 운동은 통째로 지운다. 같이 하던 운동은 그 사람만 빠진다
+  db.missions = db.missions
+    .map((m) => ({
+      ...m,
+      participants: (m.participants ?? []).filter((p) => p.profileId !== profileId),
+    }))
+    .filter((m) => m.participants.length > 0);
+  db.cheers = db.cheers.filter((c) => c.fromProfileId !== profileId && c.toProfileId !== profileId);
+  saveFamily();
+  saveMissions();
+  saveCheers(db.cheers);
+  saveExtra("latest", "tests", "availability", "body");
+}
+
 /** 서버와 같은 봉투 모양으로 실패를 돌려준다 */
 export function fail(status: number, code: string, message: string) {
   return HttpResponse.json<ApiErrorBody>({ error: { code, message } }, { status });

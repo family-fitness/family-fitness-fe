@@ -14,7 +14,8 @@
         "supportMode": "FULL",
         "measurable": true,
         "consentRequired": false,
-        "consentGiven": true
+        "consentGiven": true,
+        "isOwner": true
       }
     ]
   },
@@ -34,6 +35,7 @@
         "measurable": true,
         "consentRequired": false,
         "consentGiven": true,
+        "isOwner": true,
         "sex": "F"
       },
       {
@@ -48,6 +50,7 @@
         "measurable": true,
         "consentRequired": true,
         "consentGiven": true,
+        "isOwner": false,
         "sex": "M"
       },
       {
@@ -62,6 +65,7 @@
         "measurable": true,
         "consentRequired": false,
         "consentGiven": true,
+        "isOwner": false,
         "sex": "M"
       }
     ]

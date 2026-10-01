@@ -14,6 +14,7 @@ import { errorMessage } from "@/lib/errors";
 import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
 import { REVIEW_WAYS, afterSignIn, reviewDestination, type ReviewKind } from "@/lib/review-login";
 import { useDevLogin, useGoogleLogin, useReviewLogin } from "@/lib/api/queries";
+import { WITHDRAWN_NOTICE, cameAfterWithdrawal } from "@/lib/withdrawal";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRoleStore } from "@/stores/role-store";
 
@@ -115,6 +116,8 @@ function LoginContent() {
   const state = params.get("state");
   // 초대 링크로 들어왔다가 로그인하는 경우. 코드를 같이 넘겨야 바로 프로필에 붙는다
   const claimCode = params.get("claimCode") ?? undefined;
+  // 설정에서 탈퇴하고 넘어왔다. 한 줄로 알린다
+  const withdrawn = cameAfterWithdrawal(params);
   /** 심사용 계정의 세 흐름을 고르는 시트 */
   const [picking, setPicking] = useState(false);
   /** 인가코드는 한 번만 쓸 수 있다 — 개발 모드에서 effect 가 두 번 돌아도 한 번만 바꾼다 */
@@ -253,6 +256,11 @@ function LoginContent() {
 
       {/* 구글 키가 없는 빌드에서도 단추는 선다 — 누르면 구글 대신 새 계정으로 같은 길을 걷는다 */}
       <div className="mb-auto space-y-3">
+        {withdrawn && (
+          <p role="status" className="text-ink-soft text-body text-center font-semibold">
+            {WITHDRAWN_NOTICE}
+          </p>
+        )}
         <Button
           size="block"
           variant="outline"
