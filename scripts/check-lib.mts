@@ -70,6 +70,7 @@ import {
   canRemoveMember,
   familySetupPath,
   guardiansName,
+  NEW_ACCOUNT_CHOICES,
   mustAddChild,
   mustSetUpFamily,
   openWithoutChild,
@@ -90,7 +91,13 @@ import {
   TERMS_OF_SERVICE,
 } from "@/lib/legal";
 import { verifiedLabel } from "@/lib/mission";
-import { REVIEW_WAYS, afterSignIn, reviewDestination } from "@/lib/review-login";
+import {
+  REVIEW_WAYS,
+  UNUSED_INVITE_COPY,
+  afterSignIn,
+  reviewDestination,
+  unusedInvite,
+} from "@/lib/review-login";
 import {
   childBirthRule,
   guardianBirthRule,
@@ -109,6 +116,28 @@ import {
   cameAfterWithdrawal,
   withdrawalCase,
 } from "@/lib/withdrawal";
+
+import { ApiError } from "@/lib/api/client";
+import {
+  CLAIM_ERROR_COPY,
+  INVITE_ROLE_NAME,
+  blocksClaim,
+  claimBody,
+  claimErrorMessage,
+  familyInviteBody,
+  inviteBirthRule,
+  inviteCodeTitle,
+  inviteLink,
+  invitePeekLine,
+  inviteShareText,
+  isFamilyInvite,
+  joinButtonLabel,
+  joinProblem,
+  joinReady,
+  normalizeCode,
+  pendingInviteDetail,
+  pendingInviteTitle,
+} from "@/lib/invite";
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -742,7 +771,22 @@ check("보호자가 없으면 「보호자」", guardiansName([]) === "보호자
 
 /* ─── 가족이 없는 계정 ─────────────────────────────────── */
 
-check("가족이 없으면 가족 만들기로 보낸다", familySetupPath("CREATE_FAMILY") === "/start/family");
+check(
+  "가족이 없는 새 계정은 가족 만들기로 곧장 가지 않고 시작을 고르는 화면으로",
+  familySetupPath("CREATE_FAMILY") === "/start/welcome",
+);
+check(
+  "시작을 고르는 화면은 새 가족 만들기와 초대 코드로 참여하기 둘이다",
+  same(
+    NEW_ACCOUNT_CHOICES.map((c) => [c.title, c.href]),
+    [
+      ["새 가족 만들기", "/start/family"],
+      ["초대 코드로 참여하기", "/claim"],
+    ],
+  ) &&
+    NEW_ACCOUNT_CHOICES.every((c) => c.description.trim() !== "" && !/[·—–]/.test(c.description)),
+);
+check("시작을 고르는 화면이 있다", existsSync("src/app/start/welcome/page.tsx"));
 check("초대코드로 합류하기 전이면 합류 화면으로 보낸다", familySetupPath("CLAIM") === "/claim");
 check(
   "가족이 있거나 아직 모르면 보내지 않는다",
@@ -760,7 +804,7 @@ check(
     "/calendar",
     "/plan",
     "/notifications",
-  ].every((p) => mustSetUpFamily({ nextStep: "CREATE_FAMILY", pathname: p }) === "/start/family"),
+  ].every((p) => mustSetUpFamily({ nextStep: "CREATE_FAMILY", pathname: p }) === "/start/welcome"),
 );
 check(
   "합류 전 계정이 부모 홈에 들어오면 합류 화면으로 보낸다",
@@ -1026,6 +1070,12 @@ check(
     page.includes("REVIEW_WAYS") && page.includes("reviewLogin.mutateAsync(kind)"),
   );
   check("개발용 로그인 묶음은 그대로 둔다", page.includes("개발용으로 구글 없이 들어가기"));
+  check(
+    "로그인 화면에 초대 코드로 시작하는 입구가 있고, 넣은 코드를 들고 구글 로그인으로 간다",
+    page.includes("초대 코드가 있어요") &&
+      page.includes("useInvitePeek") &&
+      page.includes("start(entered)"),
+  );
 }
 
 /* ─── 키울 요인을 부르는 두 이름(결정 7) ─────────────────── */
@@ -1517,6 +1567,304 @@ check("한마디는 서버가 받는 길이(100자) 안이다", MEMO_MAX > 0 && 
   check(
     "시간표 안내 글에 가운데 점과 긴 대시를 쓰지 않는다",
     lines.every((l) => l !== null && !/[·—–]/.test(l)),
+  );
+}
+
+/* ─── 가족 초대 코드 만들기 ─────────────────────────────── */
+
+check(
+  "초대할 역할은 보호자와 아이 둘이다",
+  INVITE_ROLE_NAME.PARENT === "보호자" && INVITE_ROLE_NAME.CHILD === "아이",
+);
+check(
+  "보호자 초대는 역할만 보낸다(동의 칸을 싣지 않는다)",
+  same(familyInviteBody("PARENT", { personalData: false, healthData: false }), {
+    role: "PARENT",
+  }),
+);
+check(
+  "아이 초대는 동의를 하나라도 안 했으면 만들지 않는다",
+  familyInviteBody("CHILD", { personalData: true, healthData: false }) === null &&
+    familyInviteBody("CHILD", { personalData: false, healthData: true }) === null,
+);
+check(
+  "아이 초대는 아이 등록과 같은 보호자 동의를 함께 보낸다",
+  same(familyInviteBody("CHILD", { personalData: true, healthData: true }), {
+    role: "CHILD",
+    guardianConsent: { personalData: true, healthData: true },
+  }),
+);
+check(
+  "초대 링크는 이 앱의 합류 화면에 코드를 붙인다",
+  inviteLink("https://kium.app", "H3N8WD") === "https://kium.app/claim?code=H3N8WD" &&
+    inviteLink("https://kium.app", "A B") === "https://kium.app/claim?code=A%20B",
+);
+check(
+  "가족 초대 코드의 제목은 역할로, 자리 초대는 그 사람 이름으로",
+  inviteCodeTitle({ role: "PARENT" }) === "보호자 초대 코드" &&
+    inviteCodeTitle({ role: "CHILD" }) === "아이 초대 코드" &&
+    inviteCodeTitle({ role: "PARENT", seatName: "도현" }) === "도현 자리 초대 코드",
+);
+check(
+  "공유 글은 가족 이름, 역할, 코드를 말한다",
+  inviteShareText({ familyName: "서준이네", code: "H3N8WD", role: "PARENT" }) ===
+    "서준이네에 보호자로 초대해요. 초대 코드 H3N8WD" &&
+    inviteShareText({ familyName: "서준이네", code: "Q2W3E4", role: "CHILD" }) ===
+      "서준이네에 아이로 초대해요. 초대 코드 Q2W3E4",
+  inviteShareText({ familyName: "서준이네", code: "Q2W3E4", role: "CHILD" }),
+);
+check(
+  "자리 초대의 공유 글은 그 사람 자리로 부른다",
+  inviteShareText({ familyName: "서준이네", code: "K7M2QT", role: "PARENT", seatName: "도현" }) ===
+    "서준이네에 도현 자리로 초대해요. 초대 코드 K7M2QT",
+);
+check(
+  "보낸 초대 한 줄은 역할과 기한, 보낸 사람",
+  pendingInviteTitle({ role: "CHILD" }) === "아이 초대" &&
+    pendingInviteDetail({ expiresAt: "2026-10-08", issuedByName: "은영" }) ===
+      "10월 8일까지, 은영님이 보냈어요" &&
+    pendingInviteDetail({ expiresAt: "2026-10-08", issuedByName: null }) === "10월 8일까지",
+);
+check(
+  "초대 문구에 가운데 점과 긴 대시를 쓰지 않는다",
+  [
+    inviteCodeTitle({ role: "CHILD" }),
+    inviteShareText({ familyName: "서준이네", code: "Q2W3E4", role: "CHILD" }),
+    pendingInviteDetail({ expiresAt: "2026-10-08", issuedByName: "은영" }),
+  ].every((l) => !/[·—–]/.test(l)),
+);
+{
+  const page = readFileSync("src/app/parent/family/page.tsx", "utf8");
+  const sheet = readFileSync("src/components/domain/invite-sheet.tsx", "utf8");
+  check(
+    "가족 관리의 「보호자 더하기」(정보 먼저 입력)는 초대로 바뀐다",
+    !page.includes("보호자 더하기") && !page.includes("useCreateProfile"),
+  );
+  check(
+    "폰 없는 아이는 지금처럼 「아이 등록하기」 로 넣는다",
+    page.includes("아이 등록하기") && page.includes('href="/start/child"'),
+  );
+  check(
+    "초대 시트는 가족 초대 코드를 만들고 자리 초대도 남긴다",
+    sheet.includes("useCreateFamilyInvite") && sheet.includes("useOpenInvite"),
+  );
+  check(
+    "가족 관리는 아직 쓰지 않은 초대를 보이고 취소할 수 있다",
+    page.includes("useFamilyInvites") && page.includes("useCancelFamilyInvite"),
+  );
+}
+
+/* ─── 초대 코드로 참여하기 ─────────────────────────────── */
+
+{
+  const ON = "2026-10-01";
+  const familyPeek = { kind: "FAMILY" as const, familyName: "서준이네", role: "PARENT" as const };
+  const kidPeek = { ...familyPeek, role: "CHILD" as const };
+  const seatPeek = {
+    kind: "PROFILE" as const,
+    familyName: "서준이네",
+    profileName: "도현",
+    role: "PARENT" as const,
+  };
+  const adult = {
+    name: " 지수 ",
+    birthDate: "1990-05-05",
+    sex: "F" as const,
+    height: "",
+    weight: "",
+  };
+
+  check(
+    "코드는 대문자와 숫자 여섯 자리로 다듬는다",
+    normalizeCode(" h3n-8wd ") === "H3N8WD" && normalizeCode("abcdefgh") === "ABCDEF",
+  );
+  check(
+    "kind 가 FAMILY 일 때만 가족 초대다. 안 주는 서버는 자리 초대로 본다",
+    isFamilyInvite(familyPeek) &&
+      !isFamilyInvite(seatPeek) &&
+      !isFamilyInvite({}) &&
+      !isFamilyInvite(undefined),
+  );
+  check(
+    "미리 보기 한 줄은 가족 초대면 가족과 역할, 자리 초대면 그 자리",
+    invitePeekLine(familyPeek) === "서준이네에 보호자로 초대받았어요" &&
+      invitePeekLine(kidPeek) === "서준이네에 아이로 초대받았어요" &&
+      invitePeekLine(seatPeek) === "서준이네 도현 자리",
+  );
+  check(
+    "생년월일 고르기는 지금 쓰는 규칙 그대로(보호자, 아이)",
+    same(inviteBirthRule("PARENT", ON), guardianBirthRule(ON)) &&
+      same(inviteBirthRule("CHILD", ON), childBirthRule(ON)),
+  );
+  check(
+    "이름, 생년월일, 성별을 다 넣어야 참여할 수 있다",
+    joinReady("PARENT", adult, ON) &&
+      !joinReady("PARENT", { ...adult, name: "  " }, ON) &&
+      !joinReady("PARENT", { ...adult, birthDate: "" }, ON) &&
+      !joinReady("PARENT", { ...adult, sex: null }, ON),
+  );
+  check(
+    "보호자로 초대받았는데 만 14세 미만이면 까닭을 말하고 막는다",
+    joinProblem("PARENT", { ...adult, birthDate: "2015-05-05" }, ON) ===
+      "보호자는 만 14세부터 참여할 수 있어요" &&
+      !joinReady("PARENT", { ...adult, birthDate: "2015-05-05" }, ON),
+  );
+  check(
+    "아이로 초대받았으면 어린 나이도 된다",
+    joinProblem("CHILD", { ...adult, birthDate: "2018-03-05" }, ON) === null &&
+      joinReady("CHILD", { ...adult, birthDate: "2018-03-05" }, ON),
+  );
+  check(
+    "키와 몸무게는 비워도 되고, 적었으면 범위 안이어야 한다",
+    joinReady("PARENT", { ...adult, height: "165", weight: "55" }, ON) &&
+      joinProblem("PARENT", { ...adult, height: "400" }, ON) === "230cm보다 작아야 해요." &&
+      !joinReady("PARENT", { ...adult, height: "400" }, ON),
+  );
+  check(
+    "자리 초대는 코드만 보낸다",
+    same(claimBody("K7M2QT", seatPeek, adult), { claimCode: "K7M2QT" }) &&
+      same(claimBody("K7M2QT", undefined, adult), { claimCode: "K7M2QT" }),
+  );
+  check(
+    "가족 초대는 이름(앞뒤 빈칸 없이), 생년월일, 성별을 싣고 적은 키와 몸무게만 싣는다",
+    same(claimBody("H3N8WD", familyPeek, adult), {
+      claimCode: "H3N8WD",
+      name: "지수",
+      birthDate: "1990-05-05",
+      sex: "F",
+    }) &&
+      same(claimBody("H3N8WD", familyPeek, { ...adult, height: "165.5", weight: "55" }), {
+        claimCode: "H3N8WD",
+        name: "지수",
+        birthDate: "1990-05-05",
+        sex: "F",
+        heightCm: 165.5,
+        weightKg: 55,
+      }),
+  );
+  check(
+    "참여 단추는 가족 초대면 「가족 참여하기」, 자리 초대면 그 자리로",
+    joinButtonLabel(familyPeek) === "가족 참여하기" &&
+      joinButtonLabel(seatPeek) === "도현 자리로 들어가기" &&
+      joinButtonLabel(undefined) === "가족 참여하기",
+  );
+  const claimPage = readFileSync("src/app/claim/page.tsx", "utf8");
+  check(
+    "합류 화면은 가족 초대면 지금 쓰는 달력 부품으로 생년월일을 받는다",
+    claimPage.includes("DateField") && claimPage.includes("inviteBirthRule"),
+  );
+}
+
+/* ─── 초대 코드 오류 안내 ─────────────────────────────── */
+
+{
+  const err = (code: string, status = 409) => new ApiError(status, code, "");
+  // BE 와 맞춘 claim 의 오류 전부
+  const claimCodes = [
+    "BAD_REQUEST",
+    "UNDER_14_NOT_ALLOWED",
+    "CODE_NOT_FOUND",
+    "ALREADY_CLAIMED",
+    "CODE_EXPIRED",
+    "ALREADY_MEMBER",
+    "ALREADY_IN_FAMILY",
+    "TOO_MANY",
+  ];
+  check(
+    "합류 화면의 표는 claim 오류 코드를 빠짐없이 말한다",
+    claimCodes.every((c) => (CLAIM_ERROR_COPY[c] ?? "").trim() !== ""),
+    claimCodes.filter((c) => !CLAIM_ERROR_COPY[c]).join(", "),
+  );
+  check(
+    "다른 가족에 이미 있는 계정은 까닭과 해결법(설정에서 탈퇴)을 듣는다",
+    claimErrorMessage(err("ALREADY_IN_FAMILY")) ===
+      "이미 다른 가족에 참여한 계정이에요. 설정에서 계정을 탈퇴한 뒤 다시 시도해 주세요.",
+  );
+  check(
+    "이미 이 가족인 사람(초대한 보호자)은 초대받는 분의 기기에서 넣으라고 듣는다",
+    claimErrorMessage(err("ALREADY_MEMBER")) ===
+      "이미 이 가족의 구성원이에요. 초대받는 분의 기기에서 코드를 입력해 주세요.",
+  );
+  check(
+    "모르는 실패는 「들어가지 못했어요」 하나로 끝내지 않고 다시 해 보라고 한다",
+    claimErrorMessage(err("SOMETHING_NEW", 500)) ===
+      "가족에 참여하지 못했어요. 잠시 뒤에 다시 해 주세요." &&
+      claimErrorMessage(new Error("network")) ===
+        "가족에 참여하지 못했어요. 잠시 뒤에 다시 해 주세요.",
+  );
+  check(
+    "미리 보기가 이 코드로는 못 들어간다고 하면 단추를 잠근다",
+    [
+      "CODE_NOT_FOUND",
+      "CODE_EXPIRED",
+      "ALREADY_CLAIMED",
+      "ALREADY_MEMBER",
+      "ALREADY_IN_FAMILY",
+      "TOO_MANY",
+    ].every((c) => blocksClaim(err(c))) &&
+      !blocksClaim(err("UNAUTHORIZED", 401)) &&
+      !blocksClaim(err("UNKNOWN", 500)) &&
+      !blocksClaim(new Error("network")),
+  );
+  const common = [
+    "CODE_NOT_FOUND",
+    "CODE_EXPIRED",
+    "ALREADY_CLAIMED",
+    "ALREADY_MEMBER",
+    "ALREADY_IN_FAMILY",
+    "INVITE_NOT_FOUND",
+    "FAMILY_NOT_FOUND",
+    "UNDER_14_NOT_ALLOWED",
+  ];
+  check(
+    "여러 화면에서 같은 뜻인 초대 코드 오류는 공통 문구(COMMON_MESSAGE)에도 있다",
+    common.every((c) => !!err(c).commonMessage),
+    common.filter((c) => !err(c).commonMessage).join(", "),
+  );
+  check(
+    "공통 문구와 합류 화면이 같은 코드를 같은 말로 한다",
+    ["CODE_NOT_FOUND", "CODE_EXPIRED", "ALREADY_MEMBER", "ALREADY_IN_FAMILY"].every(
+      (c) => err(c).commonMessage === CLAIM_ERROR_COPY[c],
+    ),
+  );
+  check(
+    "오류 문구에 가운데 점과 긴 대시를 쓰지 않는다",
+    [...Object.values(CLAIM_ERROR_COPY), ...common.map((c) => err(c).commonMessage ?? "")].every(
+      (l) => !/[·—–]/.test(l),
+    ),
+  );
+  const claimPage = readFileSync("src/app/claim/page.tsx", "utf8");
+  check(
+    "합류 화면은 lib/invite 의 표 하나로 말한다",
+    claimPage.includes("claimErrorMessage") && !claimPage.includes("들어가지 못했어요"),
+  );
+}
+
+/* ─── 가족이 있는 계정이 초대 코드를 들고 로그인했다 ─────────── */
+
+check(
+  "가족이 있는 계정(홈, 참여 방식)이 코드를 들고 로그인하면 코드를 쓰지 않은 것이다",
+  unusedInvite({ nextStep: "HOME" }, "H3N8WD") &&
+    unusedInvite({ nextStep: "SUPPORT_MODE" }, "H3N8WD"),
+);
+check(
+  "가족이 없는 계정이나 코드 없이 들어온 계정은 알리지 않는다",
+  !unusedInvite({ nextStep: "CLAIM" }, "H3N8WD") &&
+    !unusedInvite({ nextStep: "CREATE_FAMILY" }, "H3N8WD") &&
+    !unusedInvite({ nextStep: "HOME" }, undefined) &&
+    !unusedInvite({ nextStep: "HOME" }, ""),
+);
+check(
+  "코드를 쓰지 않았다는 안내는 까닭과 해결법을 말한다",
+  UNUSED_INVITE_COPY.title === "이미 가족이 있는 계정이라 초대 코드를 쓰지 않았어요" &&
+    UNUSED_INVITE_COPY.detail.includes("설정에서 계정을 탈퇴한 뒤") &&
+    ![UNUSED_INVITE_COPY.title, UNUSED_INVITE_COPY.detail].some((l) => /[·—–]/.test(l)),
+);
+{
+  const page = readFileSync("src/app/login/page.tsx", "utf8");
+  check(
+    "로그인 화면은 버려질 뻔한 코드를 한 번 알린다",
+    page.includes("unusedInvite(") && page.includes("UNUSED_INVITE_COPY"),
   );
 }
 

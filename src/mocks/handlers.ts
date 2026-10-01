@@ -9,6 +9,7 @@ import {
   BASE,
   DEMO,
   acting,
+  ageGroupOf,
   bandOf,
   gradeOf,
   mockCertification,
@@ -16,6 +17,7 @@ import {
   fail,
   fixtures,
   forgetProfile,
+  mapMemberOf,
   resetToDemo,
   saveCheers,
   saveExtra,
@@ -38,6 +40,7 @@ import {
 import { clips } from "./clips";
 import { coaching } from "./coach";
 import { history } from "./history";
+import { invites } from "./invites";
 import { league } from "./league";
 import { notifications } from "./notifications";
 import { progress, progressOf } from "./progress";
@@ -87,13 +90,28 @@ const FRESH_ME = {
 };
 
 /**
+ * 가족이 있는 계정의 다음 단계. 초대로 들어온 보호자가 참여 방식을 고르기 전에 앱을 닫았으면
+ * 다시 열 때도 참여 방식으로(BE 와 같다)
+ */
+function nextStepOf(me: Profile): "SUPPORT_MODE" | "HOME" {
+  return me.role === "PARENT" && me.inviteStatus === "CLAIMED" && me.supportMode == null
+    ? "SUPPORT_MODE"
+    : "HOME";
+}
+
+/**
  * 어떤 계정으로 들어왔나에 따라 단계를 정하고 토큰을 준다.
  *
  * 로그인 응답에 `/me` 와 같은 모양을 얹어 준다 — 화면이 들어오자마자
  * 어디로 갈지 알아야 스플래시에서 한 번 더 왕복하지 않는다.
+ *
+ * 초대 코드를 들고 와도 로그인은 코드를 쓰지 않는다(BE 와 같다). 가족이 없는 계정이면 nextStep 이 CLAIM 이고,
+ * 가족이 있는 계정이면 코드와 상관없이 HOME 이다
  */
-function signIn(providerUserId: string | undefined) {
+function signIn(providerUserId: string | undefined, claimCode?: string | null) {
   const token = { accessToken: "mock-access-token", refreshToken: "mock-refresh-token" };
+  // 없는 코드를 넣은 횟수는 계정마다 센다
+  db.claimMisses = 0;
 
   // 새 계정으로 만든 가족이 탭에 남아 있으면 서준이네로 되돌린다 — 시연 계정이 남의 집을 보지 않게.
   // 탈퇴하거나 내보내서 서준이네 식구가 빠졌어도 되돌린다. 다시 들어온 시연 계정은 식구 셋을 본다
@@ -109,12 +127,16 @@ function signIn(providerUserId: string | undefined) {
     if (seat?.inviteStatus === "CLAIMED") {
       setStage("home");
       setActingProfile(DEMO.dad);
-      return { ...token, userId: CLAIM_ME.userId, nextStep: "HOME", profiles: [seat] };
+      return { ...token, userId: CLAIM_ME.userId, nextStep: nextStepOf(seat), profiles: [seat] };
     }
     setStage("claim");
     return { ...token, ...CLAIM_ME };
   }
   if (providerUserId === FRESH_ID) {
+    if (claimCode) {
+      setStage("claim");
+      return { ...token, ...FRESH_ME, nextStep: "CLAIM" };
+    }
     setStage("fresh");
     return { ...token, ...FRESH_ME };
   }
@@ -158,24 +180,6 @@ function startFamily(familyName: string, owner: Profile) {
   saveExtra("latest", "tests", "availability", "body", "hasCoachRun", "leagueTier");
 }
 
-/** 프로필 하나를 체력 지도의 한 줄로 */
-function mapMemberOf(profile: Profile): MapMember {
-  return {
-    profileId: profile.profileId,
-    name: profile.name,
-    role: profile.role,
-    ageGroup: profile.ageGroup,
-    sex: profile.sex,
-    hasAccount: profile.hasAccount,
-    supportMode: profile.supportMode,
-    measurable: profile.measurable,
-    consentRequired: profile.consentRequired,
-    consentGiven: profile.consentGiven,
-    headline: null,
-    latest: null,
-  } as MapMember;
-}
-
 const identity = [
   /** 지금 로그인한 계정이 관리하는 프로필. */
   http.get(`${BASE}/me`, () => {
@@ -191,7 +195,7 @@ const identity = [
     };
     return HttpResponse.json({
       userId: account.userId,
-      nextStep: "HOME",
+      nextStep: nextStepOf(me),
       profiles: [me],
       // ▲ 요청한 칸 — 설정의 「로그인 계정」
       email: account.email,
@@ -206,8 +210,11 @@ const identity = [
   }),
 
   http.post(`${BASE}/auth/dev-login`, async ({ request }) => {
-    const body = (await request.json().catch(() => ({}))) as { providerUserId?: string };
-    return HttpResponse.json(signIn(body.providerUserId));
+    const body = (await request.json().catch(() => ({}))) as {
+      providerUserId?: string;
+      claimCode?: string | null;
+    };
+    return HttpResponse.json(signIn(body.providerUserId, body.claimCode));
   }),
 
   /**
@@ -238,11 +245,14 @@ const identity = [
    * 실제로 겪는 상태가 그거다.
    */
   http.post(`${BASE}/auth/google`, async ({ request }) => {
-    const body = (await request.json().catch(() => ({}))) as { authorizationCode?: string };
+    const body = (await request.json().catch(() => ({}))) as {
+      authorizationCode?: string;
+      claimCode?: string | null;
+    };
     if (!body.authorizationCode) {
       return fail(400, "INVALID_CODE", "인가코드가 없습니다");
     }
-    return HttpResponse.json(signIn(FRESH_ID));
+    return HttpResponse.json(signIn(FRESH_ID, body.claimCode));
   }),
 
   /**
@@ -400,64 +410,6 @@ const identity = [
     return new HttpResponse(null, { status: 204 });
   }),
 
-  http.post<PathParams>(`${BASE}/profiles/:profileId/invite`, () =>
-    HttpResponse.json(
-      {
-        claimCode: "K7M2QT",
-        expiresAt: new Date(Date.now() + 7 * 864e5).toISOString(),
-        // 목은 지금 연 주소로 — 3000 에 박아 두면 다른 포트로 띄운 개발 서버에서 링크가 남의 곳으로 간다
-        shareUrl: `${location.origin}/claim?code=K7M2QT`,
-      },
-      { status: 201 },
-    ),
-  ),
-
-  /**
-   * ▲ 서버에 아직 없다. 제안 모양으로 답한다.
-   * 코드가 어느 **자리**인지 넣기 전에 보여 줘야, 받는 사람이 역할을 고를 수
-   * 없다는 것이 화면에서 사실이 된다.
-   */
-  http.get<PathParams>(`${BASE}/invites/:claimCode`, ({ params }) => {
-    if (String(params.claimCode).toUpperCase() !== "K7M2QT") {
-      return fail(404, "CODE_NOT_FOUND", "코드를 찾을 수 없습니다");
-    }
-    const seat = db.profiles.profiles.find((p) => p.profileId === DEMO.dad);
-    const inviter = db.profiles.profiles.find((p) => p.profileId === DEMO.mom);
-    if (!seat) return fail(404, "CODE_NOT_FOUND", "코드를 찾을 수 없습니다");
-    return HttpResponse.json({
-      familyName: db.profiles.familyName,
-      profileName: seat.name,
-      role: seat.role,
-      ageGroup: seat.ageGroup,
-      invitedByName: inviter?.name ?? null,
-      expiresAt: new Date(Date.now() + 7 * 864e5).toISOString(),
-    });
-  }),
-
-  http.post(`${BASE}/profiles/claim`, async ({ request }) => {
-    const { claimCode } = (await request.json()) as { claimCode: string };
-    if (claimCode?.toUpperCase() !== "K7M2QT") {
-      return fail(404, "CODE_NOT_FOUND", "코드를 찾을 수 없습니다");
-    }
-    // 코드가 맞으면 그 프로필이 내 것이 된다. 도현에게 발급된 초대다
-    const dad = db.profiles.profiles.find((p) => p.profileId === DEMO.dad);
-    if (dad) {
-      dad.hasAccount = true;
-      dad.inviteStatus = "CLAIMED";
-      // 남겨 둔다 — 안 남기면 새로고침 뒤 은영의 대시보드에 도현이 다시 「아직 안 들어옴」 이다
-      syncMapMember(dad);
-      saveFamily();
-    }
-    setStage("home");
-    setActingProfile(DEMO.dad);
-    return HttpResponse.json({
-      profileId: DEMO.dad,
-      familyId: DEMO.familyId,
-      role: "PARENT",
-      nextStep: "SUPPORT_MODE",
-    });
-  }),
-
   http.patch<PathParams>(
     `${BASE}/profiles/:profileId/support-mode`,
     async ({ params, request }) => {
@@ -535,14 +487,6 @@ const identity = [
     return HttpResponse.json({ cheers });
   }),
 ];
-
-function ageGroupOf(age: number): AgeGroup {
-  if (age <= 6) return "유아기";
-  if (age <= 12) return "유소년";
-  if (age <= 18) return "청소년";
-  if (age <= 64) return "성인";
-  return "어르신";
-}
 
 function syncMapMember(profile: Profile) {
   const member = db.fitnessMap.members.find((m) => m.profileId === profile.profileId);
@@ -933,6 +877,7 @@ const missions = [
 export const handlers = [
   ...authGate,
   ...identity,
+  ...invites,
   ...fitness,
   ...coaching,
   ...missions,

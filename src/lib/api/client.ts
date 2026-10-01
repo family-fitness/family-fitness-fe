@@ -1,3 +1,5 @@
+import { INVITE_ERROR_COPY } from "@/lib/invite-copy";
+
 import type { ApiErrorBody } from "./types";
 
 /** 백엔드 호출 규칙을 한 군데로 모은다. */
@@ -29,6 +31,10 @@ const COMMON_MESSAGE: Record<string, string> = {
   CONSENT_REQUIRED: "보호자 동의가 필요해요.",
   NOT_MEASURABLE: "만 4세부터 측정할 수 있어요.",
   TEMPORARILY_UNAVAILABLE: "지금은 연결이 어려워요.",
+  FAMILY_NOT_FOUND: "가족을 찾지 못했어요. 화면을 새로 불러 주세요.",
+  UNDER_14_NOT_ALLOWED: "보호자는 만 14세부터 될 수 있어요.",
+  // 초대 코드 — 없음, 기한 지남, 이미 씀, 이미 이 가족, 이미 다른 가족, 취소된 초대
+  ...INVITE_ERROR_COPY,
 };
 
 /** 토큰을 담아 두는 저장소 이름. auth-store 가 이 이름으로 persist 한다 */

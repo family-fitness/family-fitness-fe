@@ -7,13 +7,22 @@ import { Suspense, useEffect, useRef, useState } from "react";
 
 import { PlainScreen } from "@/components/app-shell/screen";
 import { LevelBuddy } from "@/components/domain/level-buddy";
+import { ArtIcon } from "@/components/ui/art-icon";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { KiumIsland } from "@/components/scene/kium-island";
 import { errorMessage } from "@/lib/errors";
 import { PRIVACY_HREF, TERMS_HREF } from "@/lib/legal";
-import { REVIEW_WAYS, afterSignIn, reviewDestination, type ReviewKind } from "@/lib/review-login";
-import { useDevLogin, useGoogleLogin, useReviewLogin } from "@/lib/api/queries";
+import {
+  REVIEW_WAYS,
+  UNUSED_INVITE_COPY,
+  afterSignIn,
+  reviewDestination,
+  unusedInvite,
+  type ReviewKind,
+} from "@/lib/review-login";
+import { useDevLogin, useGoogleLogin, useInvitePeek, useReviewLogin } from "@/lib/api/queries";
+import { blocksClaim, claimErrorMessage, invitePeekLine, normalizeCode } from "@/lib/invite";
 import { WITHDRAWN_NOTICE, cameAfterWithdrawal } from "@/lib/withdrawal";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRoleStore } from "@/stores/role-store";
@@ -54,7 +63,7 @@ const DEV_LOGIN =
 
 /**
  * 구글 키가 없는 개발 빌드(개발 서버, 목 빌드, 개발 로그인을 켠 빌드)에서 「구글로 시작하기」 가 대신 들어가는 계정.
- * 처음 구글로 들어온 사람과 같게, 부를 때마다 가족 없는 새 계정이라 가족 만들기부터 걷는다.
+ * 처음 구글로 들어온 사람과 같게, 부를 때마다 가족 없는 새 계정이라 시작 고르기(새 가족 만들기, 초대 코드로 참여하기)부터 걷는다.
  * 개발 로그인이 꺼진 빌드에 구글 키가 없으면 단추를 눌리지 않게 둔다(들어갈 길이 없는 편이 낫다)
  */
 const GOOGLE_STAND_IN = "demo-fresh";
@@ -120,13 +129,36 @@ function LoginContent() {
   /**
    * 초대 링크로 들어왔다가 로그인하는 경우. 코드는 로그인에 싣지 않는다 — 실으면 서버가 로그인과 함께
    * 그 자리에 붙여서, 남이 보낸 링크로 로그인한 사람이 「OO네 · 아빠 자리」 를 보지도 못하고 남의 가족에
-   * 들어갔다(9/30 보안 점검). 로그인한 뒤 코드 화면에서 자리를 보고 직접 누른다.
+   * 들어갔다(9/30 보안 점검). 이 탭에 들고 있다가 로그인한 뒤 그 코드로 합류 화면에 가서, 자리를 보고 직접 누른다.
    */
-  const claimCode = params.get("claimCode") ?? undefined;
+  const claimCode = normalizeCode(params.get("claimCode") ?? "") || undefined;
+  /** 이 빌드에 들어갈 길이 있나 — 구글 키, 아니면 개발 로그인 */
+  const canSignIn = Boolean(process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) || DEV_LOGIN;
+  /** 「초대 코드가 있어요」 시트 — 링크 없이 코드만 받은 사람이 코드를 넣고 로그인한다 */
+  const [inviting, setInviting] = useState(false);
+  const [entered, setEntered] = useState("");
+  // 넣은 코드가 어느 가족의 초대인지 로그인 전에 본다. ▲ 지금 BE 는 미리 보기를 로그인한 계정에만 열어 401 이 온다.
+  // 그러면 미리 보기 없이 코드를 들고 로그인하고, 합류 화면이 미리 보기와 오류를 보인다
+  const enteredPeek = useInvitePeek(inviting ? entered : "");
+  const linkPeek = useInvitePeek(claimCode ?? "");
+  const enteredBlocked = blocksClaim(enteredPeek.error);
   // 설정에서 탈퇴하고 넘어왔다. 한 줄로 알린다
   const withdrawn = cameAfterWithdrawal(params);
   /** 심사용 계정의 세 흐름을 고르는 시트 */
   const [picking, setPicking] = useState(false);
+  /**
+   * 가족이 있는 계정이 초대 코드를 들고 로그인했다. 로그인은 코드를 쓰지 않아서 전에는 아무 말 없이 버려졌다.
+   * 한 번 알리고, 확인을 누르면 갈 주소를 담아 둔다
+   */
+  const [unused, setUnused] = useState<string | null>(null);
+  /** 로그인한 뒤 갈 곳으로. 들고 온 코드가 쓰이지 않았으면 먼저 알린다 */
+  const proceed = (auth: Parameters<typeof afterSignIn>[0], withCode: string | undefined) => {
+    if (unusedInvite(auth, withCode)) {
+      setUnused(afterSignIn(auth, withCode));
+      return;
+    }
+    router.replace(afterSignIn(auth, withCode));
+  };
   /** 인가코드는 한 번만 쓸 수 있다 — 개발 모드에서 effect 가 두 번 돌아도 한 번만 바꾼다 */
   const exchanged = useRef<string | null>(null);
 
@@ -146,7 +178,7 @@ function LoginContent() {
     exchange
       .then((auth) => {
         signIn(auth);
-        router.replace(afterSignIn(auth, saved?.claimCode));
+        proceed(auth, saved?.claimCode);
       })
       .catch((e) => {
         setSigning(null);
@@ -163,14 +195,17 @@ function LoginContent() {
     try {
       const auth = await devLogin.mutateAsync({ providerUserId: account.id });
       signIn(auth);
-      router.replace(afterSignIn(auth, claim));
+      proceed(auth, claim);
     } catch (e) {
       setError(errorMessage(e, "들어가지 못했어요."));
     }
   };
 
-  /** 구글 인가 요청. 코드 교환은 백엔드가 한다 — 시크릿이 브라우저에 오면 안 된다 */
-  const toGoogle = () => {
+  /**
+   * 구글 인가 요청. 코드 교환은 백엔드가 한다 — 시크릿이 브라우저에 오면 안 된다.
+   * 들고 가는 초대 코드는 이 탭에 남겨 두고, 돌아와 로그인한 뒤 그 코드로 합류 화면에 간다
+   */
+  const toGoogle = (withCode: string | undefined) => {
     setError(null);
     setSigning("google");
     const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
@@ -178,7 +213,7 @@ function LoginContent() {
     url.searchParams.set("redirect_uri", `${window.location.origin}${REDIRECT_PATH}`);
     url.searchParams.set("response_type", "code");
     url.searchParams.set("scope", "openid email profile");
-    url.searchParams.set("state", rememberOAuth(claimCode));
+    url.searchParams.set("state", rememberOAuth(withCode));
     window.location.assign(url.toString());
   };
 
@@ -186,7 +221,7 @@ function LoginContent() {
    * 구글 키가 없는 개발 빌드에서는 구글에 다녀온 셈 치고 새 계정으로 들어간다. 들어가는 화면은 구글과 같다.
    * 초대코드는 로그인에 싣지 않는다(구글 로그인과 같다). 들어간 뒤 코드 화면에서 자리를 보고 누른다
    */
-  const standIn = async () => {
+  const standIn = async (withCode: string | undefined) => {
     setError(null);
     setSigning("stand-in");
     try {
@@ -195,7 +230,7 @@ function LoginContent() {
         new Promise((done) => setTimeout(done, STAND_IN_MIN_MS)),
       ]);
       signIn(auth);
-      router.replace(afterSignIn(auth, claimCode));
+      proceed(auth, withCode);
     } catch (e) {
       setSigning(null);
       setError(errorMessage(e, "들어가지 못했어요."));
@@ -209,7 +244,7 @@ function LoginContent() {
    *   FAMILY   체험 가족의 보호자로 바로 홈. 역할을 부모로 정해 두지 않으면 처음 보는 기기에서
    *            「누가 쓰고 있나요」 를 한 번 더 거쳤다. 정하는 건 `signIn` 뒤에 — 새 계정이 들어오면
    *            `signIn` 이 기기에 남은 역할을 비운다
-   *   FRESH    평소 가입과 같이 스플래시가 가족 만들기로 보낸다
+   *   FRESH    평소 가입과 같이 스플래시가 시작 고르기(새 가족 만들기, 초대 코드로 참여하기)로 보낸다
    *   INVITED  서버가 준 초대코드를 채운 합류 화면으로
    */
   const review = async (kind: ReviewKind) => {
@@ -239,6 +274,24 @@ function LoginContent() {
       );
     }
   };
+
+  /**
+   * 구글로 시작하기 — 구글 키가 없는 개발 빌드는 구글 대신 새 계정으로 같은 길을 걷는다.
+   * 개발 로그인이 꺼진 빌드에 구글 키가 없으면 아무것도 하지 않는다(단추도 눌리지 않는다)
+   */
+  const start = (withCode: string | undefined) => {
+    if (process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) toGoogle(withCode);
+    else if (DEV_LOGIN) void standIn(withCode);
+  };
+
+  /** 「초대 코드가 있어요」 에서 넣은 코드를 들고 로그인한다 */
+  const continueWithCode = () => {
+    if (!canSignIn || entered.length !== 6 || enteredBlocked) return;
+    setInviting(false);
+    start(entered);
+  };
+
+  if (unused) return <UnusedInvite onDone={() => router.replace(unused)} />;
 
   // 구글로 떠나는 중 · 돌아와 코드를 바꾸는 중에는 단추 대신 들어가는 화면. 두 번 누르거나 멈춘 줄 알고 닫지 않게
   if (signing) {
@@ -273,13 +326,19 @@ function LoginContent() {
             {WITHDRAWN_NOTICE}
           </p>
         )}
+        {/* 초대 링크로 왔다 — 어느 가족의 초대인지 보이고, 로그인하면 그 코드로 참여 화면에 간다 */}
+        {claimCode && (
+          <p role="status" className="text-ink-soft text-body text-center font-semibold">
+            {linkPeek.data ? invitePeekLine(linkPeek.data) : `초대 코드 ${claimCode}`}
+            <br />
+            로그인하면 가족 참여로 이어져요
+          </p>
+        )}
         <Button
           size="block"
           variant="outline"
-          disabled={!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && !DEV_LOGIN}
-          onClick={
-            process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? toGoogle : DEV_LOGIN ? standIn : undefined
-          }
+          disabled={!canSignIn}
+          onClick={() => start(claimCode)}
         >
           <GoogleMark />
           구글로 시작하기
@@ -288,6 +347,21 @@ function LoginContent() {
           <p className="text-ink-soft text-caption text-center">
             구글 키가 없는 개발 빌드예요. 누르면 새 계정으로 들어가요
           </p>
+        )}
+        {/* 링크 없이 코드만 받은 사람의 입구. 코드를 넣고 구글 로그인으로 이어진다 */}
+        {!claimCode && (
+          <Button
+            size="block"
+            variant="soft"
+            disabled={!canSignIn}
+            onClick={() => {
+              setEntered("");
+              setInviting(true);
+            }}
+          >
+            <ArtIcon name="icon/menu-invite" className="size-5" />
+            초대 코드가 있어요
+          </Button>
         )}
 
         {/* 심사위원이 구글 계정 없이 둘러보는 길 — 운영 빌드에도 늘 있다. 누르면 세 흐름 가운데 고른다 */}
@@ -327,6 +401,41 @@ function LoginContent() {
       </div>
 
       <LegalLinks />
+
+      <Sheet open={inviting} onClose={() => setInviting(false)} title="초대 코드 입력">
+        <div className="space-y-3 pb-2">
+          <input
+            value={entered}
+            onChange={(e) => setEntered(normalizeCode(e.target.value))}
+            onKeyDown={(e) => e.key === "Enter" && continueWithCode()}
+            placeholder="ABC123"
+            inputMode="text"
+            autoCapitalize="characters"
+            autoComplete="off"
+            aria-label="초대 코드 여섯 자리"
+            className="border-line focus:border-signal placeholder:text-faint board-num field-focus h-16 w-full rounded-xl border bg-transparent text-center text-2xl tracking-[0.35em]"
+          />
+          {enteredPeek.data && (
+            <p className="text-body text-center font-extrabold">
+              {invitePeekLine(enteredPeek.data)}
+            </p>
+          )}
+          {enteredBlocked && (
+            <p role="alert" className="text-signal-deep text-center text-sm font-semibold">
+              {claimErrorMessage(enteredPeek.error)}
+            </p>
+          )}
+          <Button
+            size="block"
+            disabled={
+              !canSignIn || entered.length !== 6 || enteredBlocked || enteredPeek.isFetching
+            }
+            onClick={continueWithCode}
+          >
+            구글로 계속하기
+          </Button>
+        </div>
+      </Sheet>
 
       <Sheet open={picking} onClose={() => setPicking(false)} title="어떻게 둘러볼까요">
         <ul className="space-y-2 pb-2">
@@ -369,6 +478,22 @@ function LegalLinks() {
         이용약관
       </Link>
     </nav>
+  );
+}
+
+/** 가족이 있는 계정이라 들고 온 초대 코드를 쓰지 않았다 — 까닭과 해결법을 한 번 보이고 가던 곳으로 */
+function UnusedInvite({ onDone }: { onDone: () => void }) {
+  return (
+    <PlainScreen className="flex min-h-dvh flex-col items-center justify-center gap-5 text-center">
+      <LevelBuddy stage={3} size={120} />
+      <div className="space-y-2" role="status">
+        <p className="page-title text-balance break-keep">{UNUSED_INVITE_COPY.title}</p>
+        <p className="text-ink-soft text-body">{UNUSED_INVITE_COPY.detail}</p>
+      </div>
+      <Button size="block" onClick={onDone}>
+        확인
+      </Button>
+    </PlainScreen>
   );
 }
 

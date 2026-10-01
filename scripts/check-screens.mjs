@@ -21,6 +21,7 @@ const ROUTES = [
   "/login",
   "/claim",
   "/start",
+  "/start/welcome",
   "/start/family",
   "/start/child",
   "/start/who",

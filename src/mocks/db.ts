@@ -7,6 +7,7 @@
 import { HttpResponse } from "msw";
 
 import type {
+  AgeGroup,
   CheerLog,
   FitnessTestSummary,
   LeagueTier,
@@ -403,6 +404,33 @@ export type Profile = Concrete<ProfileSummary> & {
   birthDate?: string;
 };
 export type MapMember = Concrete<FitnessMap>["members"][number];
+
+/** 만 나이로 연령대를 고른다. 서버와 같은 구간이다 */
+export function ageGroupOf(age: number): AgeGroup {
+  if (age <= 6) return "유아기";
+  if (age <= 12) return "유소년";
+  if (age <= 18) return "청소년";
+  if (age <= 64) return "성인";
+  return "어르신";
+}
+
+/** 프로필 하나를 체력 지도의 한 줄로 */
+export function mapMemberOf(profile: Profile): MapMember {
+  return {
+    profileId: profile.profileId,
+    name: profile.name,
+    role: profile.role,
+    ageGroup: profile.ageGroup,
+    sex: profile.sex,
+    hasAccount: profile.hasAccount,
+    supportMode: profile.supportMode,
+    measurable: profile.measurable,
+    consentRequired: profile.consentRequired,
+    consentGiven: profile.consentGiven,
+    headline: null,
+    latest: null,
+  } as MapMember;
+}
 export type MissionRow = Concrete<Mission>;
 /**
  * 참여자 한 사람 — 끝낸 칸을 사람마다 든다(`MissionParticipant.doneSessions`).
@@ -434,6 +462,7 @@ const ACTING_KEY = "ff-mock-acting";
 const STAGE_KEY = "ff-mock-stage";
 const FAMILY_KEY = "ff-mock-family";
 const REST_KEY = "ff-mock-rest";
+const INVITE_KEY = "ff-mock-invites";
 /** 측정 · 측정 이력 · 키 몸무게 · 운동 시간 · 코치를 돌렸는지 · 리그 티어 */
 const EXTRA_KEY = "ff-mock-extra";
 
@@ -489,7 +518,109 @@ export const db = {
   restDays: loadRestDays(),
   /** 이번 달 가족 리그 티어. 시연 가족은 골드, 새로 만든 가족은 브론즈에서 시작한다 */
   leagueTier: loadExtra<LeagueTier>("leagueTier", "GOLD"),
+  /** 초대 코드. 가족 초대와 자리 초대를 같이 든다 */
+  invites: loadInvites(),
+  /**
+   * 없는 코드를 넣은 횟수. 서버는 계정마다 세어 열 번을 넘기면 429 TOO_MANY 로 막는다.
+   * 미리 보기와 코드 쓰기가 같은 셈을 쓴다. 다시 로그인하면 0 부터 센다
+   */
+  claimMisses: 0,
 };
+
+/**
+ * 초대 코드 한 장.
+ *
+ *   FAMILY   가족 초대. 받은 사람이 자기 이름, 생년월일, 성별을 넣고 새 구성원이 된다
+ *   PROFILE  자리 초대. 보호자가 먼저 등록한 구성원(폰 없던 아이)에게 계정을 붙인다
+ *
+ * 쓴 코드는 지우지 않고 쓴 때를 적어 둔다. 다시 쓰면 409 ALREADY_CLAIMED 다
+ */
+export type InviteRow = {
+  code: string;
+  kind: "FAMILY" | "PROFILE";
+  familyId: string;
+  /** 낼 때의 가족 이름. 미리 보기가 싣는다 */
+  familyName: string;
+  role: "PARENT" | "CHILD";
+  /** 자리 초대만. 그 자리의 프로필 */
+  profileId: string | null;
+  issuedBy: string | null;
+  issuedByName: string | null;
+  createdAt: string;
+  expiresAt: string;
+  claimedAt: string | null;
+  /** 아이 가족 초대만. 만들 때 받은 보호자 동의 */
+  guardianConsent: { personalData: boolean; healthData: boolean } | null;
+};
+
+/**
+ * 서준이네에 심어 둔 초대 코드.
+ *
+ *   K7M2QT  도현(아빠) 자리 초대. 백엔드 시드와 같은 코드다
+ *   H3N8WD  아직 쓰지 않은 보호자 가족 초대. 가족 관리의 「보낸 초대」 에 보인다
+ *   X4T7EM  기한이 지난 아이 가족 초대. 목록에 없고, 넣으면 410 이다
+ */
+export function seedInvites(now: number = Date.now()): InviteRow[] {
+  const day = 864e5;
+  const at = (ms: number) => new Date(ms).toISOString();
+  const base = {
+    familyId: DEMO.familyId,
+    familyName: "서준이네",
+    issuedBy: DEMO.mom,
+    issuedByName: "은영",
+    claimedAt: null,
+  };
+  return [
+    {
+      ...base,
+      code: "K7M2QT",
+      kind: "PROFILE",
+      role: "PARENT",
+      profileId: DEMO.dad,
+      createdAt: at(now - day),
+      expiresAt: at(now + 6 * day),
+      guardianConsent: null,
+    },
+    {
+      ...base,
+      code: "H3N8WD",
+      kind: "FAMILY",
+      role: "PARENT",
+      profileId: null,
+      createdAt: at(now - 2 * day),
+      expiresAt: at(now + 5 * day),
+      guardianConsent: null,
+    },
+    {
+      ...base,
+      code: "X4T7EM",
+      kind: "FAMILY",
+      role: "CHILD",
+      profileId: null,
+      createdAt: at(now - 9 * day),
+      expiresAt: at(now - 2 * day),
+      guardianConsent: { personalData: true, healthData: true },
+    },
+  ];
+}
+
+function loadInvites(): InviteRow[] {
+  try {
+    const saved = sessionStorage.getItem(INVITE_KEY);
+    if (saved) return JSON.parse(saved) as InviteRow[];
+  } catch {
+    return seedInvites();
+  }
+  return seedInvites();
+}
+
+export function saveInvites() {
+  try {
+    sessionStorage.setItem(INVITE_KEY, JSON.stringify(db.invites));
+  } catch {
+    // 저장이 안 돼도 이번 화면에서는 돈다
+  }
+}
 
 /** 키 · 몸무게 — 시연 가족 */
 function demoBody(): Record<string, { heightCm: number; weightKg: number }> {
@@ -545,6 +676,7 @@ export function resetToDemo() {
   db.hasCoachRun = true;
   db.restDays = [];
   db.leagueTier = "GOLD";
+  db.invites = seedInvites();
 }
 
 /**

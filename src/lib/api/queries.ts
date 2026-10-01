@@ -23,6 +23,7 @@ import type {
   CalendarView,
   Cheer,
   CheerLogList,
+  ClaimBody,
   CoachApproveResult,
   CoachRejectResult,
   TargetMetric,
@@ -31,8 +32,11 @@ import type {
   FitnessMap,
   FitnessTestHistory,
   FitnessTestResult,
+  FamilyInvite,
+  GuardianConsent,
   InviteCode,
   InvitePeek,
+  PendingInviteList,
   NotificationList,
   LatestWithBody,
   MeResponse,
@@ -66,6 +70,7 @@ const qk = {
     calendar: (familyId: Uuid, profileId?: Uuid, from?: string, to?: string) =>
       ["family", familyId, "calendar", profileId ?? "-", from ?? "-", to ?? "-"] as const,
     league: (familyId: Uuid, month: string) => ["family", familyId, "league", month] as const,
+    invites: (familyId: Uuid) => ["family", familyId, "invites"] as const,
     restDays: (familyId: Uuid, month: string) => ["family", familyId, "rest-days", month] as const,
   },
   profile: {
@@ -258,10 +263,42 @@ export function useRemoveMember(familyId: Uuid) {
   });
 }
 
-/** 가족 단위가 아니라 프로필 단위 코드. 계정이 안 붙은 프로필에만 발급된다 */
+/** 자리 초대. 가족 단위가 아니라 프로필 단위 코드다. 계정이 안 붙은 프로필에만 발급된다 */
 export function useOpenInvite() {
   return useMutation({
     mutationFn: (profileId: Uuid) => api.post<InviteCode>(path`/profiles/${profileId}/invite`),
+  });
+}
+
+/**
+ * 가족 초대 코드를 만든다(보호자만). 보호자로 부를지 아이로 부를지만 정하고, 이름과 생년월일은 받은 사람이 넣는다.
+ * 아이로 부르면 보호자 동의가 있어야 한다(없으면 422 CONSENT_REQUIRED)
+ */
+export function useCreateFamilyInvite(familyId: Uuid | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { role: Role; guardianConsent?: GuardianConsent }) =>
+      api.post<FamilyInvite>(path`/families/${familyId}/invites`, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.family.invites(familyId ?? "") }),
+  });
+}
+
+/** 아직 쓰지 않았고 기한이 남은 가족 초대(보호자만) */
+export function useFamilyInvites(familyId: Uuid | undefined) {
+  return useQuery({
+    queryKey: qk.family.invites(familyId ?? ""),
+    queryFn: () => api.get<PendingInviteList>(path`/families/${familyId}/invites`),
+    enabled: Boolean(familyId),
+  });
+}
+
+/** 가족 초대를 취소한다(204). 이미 쓰였거나 없으면 404 INVITE_NOT_FOUND */
+export function useCancelFamilyInvite(familyId: Uuid | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (code: string) => api.delete<void>(path`/families/${familyId}/invites/${code}`),
+    // 없다는 답(404)도 목록에서 빠져야 맞다 — 성공과 실패 모두 다시 받는다
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.family.invites(familyId ?? "") }),
   });
 }
 
@@ -283,14 +320,17 @@ export function useInvitePeek(code: string) {
   });
 }
 
-/** 다음에 갈 곳은 서버가 정한다 — 부모면 SUPPORT_MODE, 자녀면 HOME */
+/**
+ * 초대 코드로 가족에 참여한다. 자리 초대는 코드만, 가족 초대는 이름, 생년월일, 성별을 함께 보낸다.
+ * 다음에 갈 곳은 서버가 정한다 — 부모면 SUPPORT_MODE, 자녀면 HOME
+ */
 export function useClaimProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (claimCode: string) =>
+    mutationFn: (body: ClaimBody) =>
       api.post<{ profileId: Uuid; familyId: Uuid; role: Role; nextStep: NextStep }>(
         "/profiles/claim",
-        { claimCode },
+        body,
       ),
     // 이 계정의 세상이 바뀐다(가족이 생긴다) — 받아 둔 옛 `/me` 로 다음 화면이 길을 정하지 않게 비운다.
     // 코드 미리 보기는 남긴다 — 지우면 떠나는 동안 코드 화면이 다시 물어 방금 쓴 코드를 「이미 쓴 코드」 라 했다

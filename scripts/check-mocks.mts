@@ -846,6 +846,436 @@ check(
   check("가족이 없는 계정은 탈퇴할 수 있다(204)", res.status === 204, `${res.status}`);
 }
 
+/* ─── 8. 가족 초대 코드 만들기, 목록, 취소 ───────────────────── */
+
+type PendingInvite = {
+  code?: string;
+  role?: string;
+  expiresAt?: string;
+  createdAt?: string;
+  issuedByName?: string | null;
+};
+const CONSENT = { personalData: true, healthData: true };
+const invitesPath = (familyId: string = DEMO.familyId) => `/families/${familyId}/invites`;
+const pendingCodes = async () =>
+  (((await (await get(invitesPath())).json()) as { invites?: PendingInvite[] }).invites ?? []).map(
+    (i) => i.code,
+  );
+
+{
+  // 서준이네 은영(보호자)으로 다시 들어온다. 앞 검사에서 식구가 빠졌으면 서준이네로 되돌린다
+  await post("/auth/dev-login", { providerUserId: "demo-parent" });
+
+  let res = await post(invitesPath(), { role: "PARENT" });
+  const parentInvite = (await res.json().catch(() => ({}))) as {
+    code?: string;
+    role?: string;
+    expiresAt?: string;
+    familyId?: string;
+  };
+  check(
+    "보호자는 보호자 초대 코드를 만든다(201)",
+    res.status === 201 &&
+      /^[A-Z0-9]{6}$/.test(parentInvite.code ?? "") &&
+      parentInvite.role === "PARENT" &&
+      parentInvite.familyId === DEMO.familyId &&
+      Date.parse(parentInvite.expiresAt ?? "") > Date.now(),
+    `${res.status} ${JSON.stringify(parentInvite)}`,
+  );
+
+  res = await post(invitesPath(), { role: "CHILD" });
+  check(
+    "아이 초대는 보호자 동의가 없으면 만들지 않는다(422 CONSENT_REQUIRED)",
+    res.status === 422 && (await codeOf(res)) === "CONSENT_REQUIRED",
+    `${res.status}`,
+  );
+  res = await post(invitesPath(), {
+    role: "CHILD",
+    guardianConsent: { personalData: true, healthData: false },
+  });
+  check(
+    "동의를 하나만 해도 아이 초대를 만들지 않는다(422)",
+    res.status === 422 && (await codeOf(res)) === "CONSENT_REQUIRED",
+    `${res.status}`,
+  );
+  res = await post(invitesPath(), { role: "CHILD", guardianConsent: CONSENT });
+  const childInvite = (await res.json().catch(() => ({}))) as { code?: string; role?: string };
+  check(
+    "보호자 동의를 받으면 아이 초대 코드를 만든다(201)",
+    res.status === 201 && childInvite.role === "CHILD" && !!childInvite.code,
+    `${res.status}`,
+  );
+  check("두 코드는 서로 다르다", childInvite.code !== parentInvite.code);
+
+  res = await post(invitesPath(), { role: "OWNER" });
+  check(
+    "모르는 역할이면 400",
+    res.status === 400 && (await codeOf(res)) === "BAD_REQUEST",
+    `${res.status}`,
+  );
+  res = await post(invitesPath("00000000-0000-4000-8000-0000000000ff"), { role: "PARENT" });
+  check(
+    "다른 가족의 초대 코드는 만들 수 없다(403 NOT_SAME_FAMILY)",
+    res.status === 403 && (await codeOf(res)) === "NOT_SAME_FAMILY",
+    `${res.status}`,
+  );
+
+  // 아이 계정으로 보면 만들지도 보지도 못한다
+  setActingProfile(DEMO.kid);
+  res = await post(invitesPath(), { role: "PARENT" });
+  check(
+    "아이 계정은 초대 코드를 만들 수 없다(403 NOT_A_PARENT)",
+    res.status === 403 && (await codeOf(res)) === "NOT_A_PARENT",
+    `${res.status}`,
+  );
+  res = await get(invitesPath());
+  check(
+    "아이 계정은 초대 목록을 볼 수 없다(403 NOT_A_PARENT)",
+    res.status === 403 && (await codeOf(res)) === "NOT_A_PARENT",
+    `${res.status}`,
+  );
+  setActingProfile(DEMO.mom);
+
+  const listed = ((await (await get(invitesPath())).json()) as { invites?: PendingInvite[] })
+    .invites;
+  const mine = listed?.find((i) => i.code === parentInvite.code);
+  check(
+    "아직 쓰지 않은 초대가 목록에 역할, 기한, 만든 때, 만든 사람과 함께 나온다",
+    !!mine &&
+      mine.role === "PARENT" &&
+      !!mine.expiresAt &&
+      !!mine.createdAt &&
+      mine.issuedByName === "은영",
+    JSON.stringify(mine),
+  );
+  check(
+    "목록은 새로 만든 것이 먼저다",
+    (listed ?? []).every(
+      (item, i, all) =>
+        i === 0 || Date.parse(all[i - 1].createdAt ?? "") >= Date.parse(item.createdAt ?? ""),
+    ),
+  );
+  check(
+    "기한이 지난 초대는 목록에 없다",
+    (listed ?? []).every((i) => Date.parse(i.expiresAt ?? "") > Date.now()),
+  );
+  check(
+    "자리 초대(등록한 구성원의 코드)는 가족 초대 목록에 섞이지 않는다",
+    !(listed ?? []).some((i) => i.code === "K7M2QT"),
+  );
+
+  res = await send("DELETE", `${invitesPath()}/${childInvite.code}`);
+  check("보호자는 초대를 취소한다(204)", res.status === 204, `${res.status}`);
+  check("취소한 초대는 목록에서 빠진다", !(await pendingCodes()).includes(childInvite.code));
+  res = await send("DELETE", `${invitesPath()}/${childInvite.code}`);
+  check(
+    "없는 초대를 취소하면 404 INVITE_NOT_FOUND",
+    res.status === 404 && (await codeOf(res)) === "INVITE_NOT_FOUND",
+    `${res.status}`,
+  );
+  setActingProfile(DEMO.kid);
+  res = await send("DELETE", `${invitesPath()}/${parentInvite.code}`);
+  check(
+    "아이 계정은 초대를 취소할 수 없다(403 NOT_A_PARENT)",
+    res.status === 403 && (await codeOf(res)) === "NOT_A_PARENT",
+    `${res.status}`,
+  );
+  setActingProfile(DEMO.mom);
+}
+
+/* ─── 9. 초대 코드로 가족에 참여한다 ─────────────────────────── */
+
+{
+  type Peek = {
+    kind?: string;
+    role?: string;
+    familyName?: string;
+    profileName?: string | null;
+    invitedByName?: string | null;
+  };
+  type Claimed = { profileId?: string; familyId?: string; role?: string; nextStep?: string };
+  type Member = {
+    profileId?: string;
+    name?: string;
+    role?: string;
+    hasAccount?: boolean;
+    consentGiven?: boolean;
+  };
+  const peek = (code: string) => get(`/invites/${code}`);
+  const claim = (body: Record<string, unknown>) => post("/profiles/claim", body);
+  const login = async (providerUserId: string, claimCode?: string) =>
+    (await (await post("/auth/dev-login", { providerUserId, claimCode })).json()) as {
+      nextStep?: string;
+    };
+  const members = async () =>
+    (
+      (await (await get(`/families/${DEMO.familyId}/profiles`)).json()) as {
+        profiles?: Member[];
+      }
+    ).profiles ?? [];
+  const make = async (body: Record<string, unknown>) =>
+    ((await (await post(invitesPath(), body)).json()) as { code?: string }).code ?? "";
+  const adult = { name: "지수", birthDate: daysBefore(365 * 36), sex: "F" };
+
+  // 서준이네 은영이 보호자 초대와 아이 초대를 하나씩 만든다
+  await login("demo-parent");
+  const parentCode = await make({ role: "PARENT" });
+  const childCode = await make({ role: "CHILD", guardianConsent: CONSENT });
+
+  let res = await fetch(`${BASE}/invites/${parentCode}`);
+  check("미리 보기는 로그인한 계정만 부른다(토큰 없이 401)", res.status === 401, `${res.status}`);
+  // 가족이 없는 새 계정으로 미리 본다
+  await login("demo-fresh");
+  res = await peek(parentCode);
+  const familyPeek = (await res.json().catch(() => ({}))) as Peek & { ageGroup?: string | null };
+  check(
+    "가족 초대를 미리 보면 kind FAMILY 와 역할, 가족 이름, 보낸 사람이 오고 자리 이름과 연령대는 null",
+    res.status === 200 &&
+      familyPeek.kind === "FAMILY" &&
+      familyPeek.role === "PARENT" &&
+      familyPeek.familyName === "서준이네" &&
+      familyPeek.profileName === null &&
+      familyPeek.ageGroup === null &&
+      familyPeek.invitedByName === "은영",
+    `${res.status} ${JSON.stringify(familyPeek)}`,
+  );
+  res = await peek("K7M2QT");
+  const seatPeek = (await res.json().catch(() => ({}))) as Peek;
+  check(
+    "자리 초대를 미리 보면 kind PROFILE 과 자리 이름이 온다",
+    seatPeek.kind === "PROFILE" && seatPeek.role === "PARENT" && seatPeek.profileName === "도현",
+    JSON.stringify(seatPeek),
+  );
+  res = await peek("X4T7EM");
+  check(
+    "기한이 지난 코드를 미리 보면 410 CODE_EXPIRED",
+    res.status === 410 && (await codeOf(res)) === "CODE_EXPIRED",
+    `${res.status}`,
+  );
+  res = await peek("ZZZZZZ");
+  check(
+    "없는 코드를 미리 보면 404 CODE_NOT_FOUND",
+    res.status === 404 && (await codeOf(res)) === "CODE_NOT_FOUND",
+    `${res.status}`,
+  );
+
+  // (나) 초대한 은영이 제 폰에서 코드를 넣는다
+  await login("demo-parent");
+  res = await peek(parentCode);
+  check("미리 보기는 계정에 가족이 있는지 보지 않는다(200)", res.status === 200, `${res.status}`);
+  res = await claim({ claimCode: parentCode });
+  check(
+    "가족이 있는 계정은 정보 없이 코드만 보내도 409 ALREADY_MEMBER 를 먼저 받는다",
+    res.status === 409 && (await codeOf(res)) === "ALREADY_MEMBER",
+    `${res.status}`,
+  );
+  res = await claim({ claimCode: parentCode, ...adult });
+  check(
+    "이 가족 구성원이 가족 초대 코드를 넣으면 409 ALREADY_MEMBER",
+    res.status === 409 && (await codeOf(res)) === "ALREADY_MEMBER",
+    `${res.status}`,
+  );
+  res = await claim({ claimCode: "K7M2QT" });
+  check(
+    "자리 초대 코드도 이 가족 구성원이 넣으면 409 ALREADY_MEMBER",
+    res.status === 409 && (await codeOf(res)) === "ALREADY_MEMBER",
+    `${res.status}`,
+  );
+
+  // 가족 없는 새 계정이 초대 코드를 들고 로그인한다
+  const fresh = await login("demo-fresh", parentCode);
+  check(
+    "가족 없는 계정이 코드를 들고 로그인하면 nextStep CLAIM",
+    fresh.nextStep === "CLAIM",
+    `${fresh.nextStep}`,
+  );
+  res = await claim({ claimCode: parentCode });
+  check(
+    "가족 초대는 이름, 생년월일, 성별이 없으면 400",
+    res.status === 400 && (await codeOf(res)) === "BAD_REQUEST",
+    `${res.status}`,
+  );
+  res = await claim({ claimCode: parentCode, ...adult, birthDate: daysBefore(365 * 11) });
+  check(
+    "보호자 초대에 만 14세 미만 생년월일이면 422 UNDER_14_NOT_ALLOWED",
+    res.status === 422 && (await codeOf(res)) === "UNDER_14_NOT_ALLOWED",
+    `${res.status}`,
+  );
+  res = await claim({ claimCode: parentCode, ...adult, heightCm: 400 });
+  check("키가 범위를 벗어나면 400", res.status === 400, `${res.status}`);
+  res = await claim({ claimCode: "ZZZZZZ", ...adult, birthDate: "2999-01-01" });
+  check(
+    "미래 생년월일은 코드를 찾기 전에 400",
+    res.status === 400 && (await codeOf(res)) === "BAD_REQUEST",
+    `${res.status}`,
+  );
+  res = await claim({ claimCode: parentCode, ...adult, name: "가".repeat(21) });
+  check("이름이 20자를 넘으면 400", res.status === 400, `${res.status}`);
+  res = await claim({ claimCode: "ZZZZZZ", ...adult });
+  check(
+    "없는 코드면 404 CODE_NOT_FOUND",
+    res.status === 404 && (await codeOf(res)) === "CODE_NOT_FOUND",
+    `${res.status}`,
+  );
+  res = await claim({ claimCode: "X4T7EM", ...adult, birthDate: daysBefore(365 * 8) });
+  check(
+    "기한이 지난 코드면 410 CODE_EXPIRED",
+    res.status === 410 && (await codeOf(res)) === "CODE_EXPIRED",
+    `${res.status}`,
+  );
+
+  res = await claim({
+    claimCode: parentCode.toLowerCase(),
+    ...adult,
+    name: " 지수 ",
+    heightCm: 165,
+    weightKg: 55,
+  });
+  const joined = (await res.json().catch(() => ({}))) as Claimed;
+  check(
+    "보호자 초대로 들어오면 서준이네 보호자가 되고 다음은 참여 방식",
+    res.status === 200 &&
+      joined.role === "PARENT" &&
+      joined.familyId === DEMO.familyId &&
+      joined.nextStep === "SUPPORT_MODE",
+    `${res.status} ${JSON.stringify(joined)}`,
+  );
+  const jisu = (await members()).find((p) => p.profileId === joined.profileId);
+  check(
+    "들어온 사람이 넣은 이름으로 가족에 생기고 계정이 붙는다",
+    jisu?.name === "지수" && jisu.hasAccount === true && jisu.role === "PARENT",
+    JSON.stringify(jisu),
+  );
+  const meAfter = (await (await get("/me")).json()) as { nextStep?: string };
+  check(
+    "참여 방식을 고르기 전에 다시 열면 참여 방식으로",
+    meAfter.nextStep === "SUPPORT_MODE",
+    `${meAfter.nextStep}`,
+  );
+
+  // 같은 코드를 다른 새 계정이 넣는다
+  await login("demo-fresh");
+  res = await claim({ claimCode: parentCode, ...adult, name: "민호", sex: "M" });
+  check(
+    "이미 쓴 코드는 409 ALREADY_CLAIMED",
+    res.status === 409 && (await codeOf(res)) === "ALREADY_CLAIMED",
+    `${res.status}`,
+  );
+  res = await peek(parentCode);
+  check(
+    "이미 쓴 코드를 미리 보면 409 ALREADY_CLAIMED",
+    res.status === 409 && (await codeOf(res)) === "ALREADY_CLAIMED",
+    `${res.status}`,
+  );
+
+  // 폰이 있는 아이가 아이 초대로 들어온다. 이름과 생일은 아이가 넣는다
+  res = await claim({
+    claimCode: childCode,
+    name: "하린",
+    birthDate: daysBefore(365 * 8),
+    sex: "F",
+  });
+  const kidJoined = (await res.json().catch(() => ({}))) as Claimed;
+  check(
+    "아이 초대로 들어오면 아이가 되고 다음은 홈",
+    res.status === 200 && kidJoined.role === "CHILD" && kidJoined.nextStep === "HOME",
+    `${res.status} ${JSON.stringify(kidJoined)}`,
+  );
+  const harin = (await members()).find((p) => p.profileId === kidJoined.profileId);
+  check(
+    "아이는 초대할 때 받은 보호자 동의를 그대로 쓴다",
+    harin?.consentGiven === true && harin.hasAccount === true && harin.role === "CHILD",
+    JSON.stringify(harin),
+  );
+
+  await login("demo-parent");
+  const left = await pendingCodes();
+  check(
+    "쓴 초대는 보호자의 목록에서 빠진다",
+    !left.includes(parentCode) && !left.includes(childCode),
+  );
+
+  // (다) 가족이 있는 계정이 코드를 들고 로그인해도 코드를 쓰지 않는다
+  const home = await login("demo-parent", "H3N8WD");
+  check(
+    "가족이 있는 계정은 코드를 들고 로그인해도 홈으로 간다",
+    home.nextStep === "HOME",
+    `${home.nextStep}`,
+  );
+  check("그 코드는 쓰이지 않고 남는다", (await pendingCodes()).includes("H3N8WD"));
+
+  // (가) 새 계정이 먼저 자기 가족을 만들고 나서 코드를 넣는다
+  const another = await make({ role: "PARENT" });
+  await login("demo-fresh");
+  await post("/families", { familyName: "민호네", owner: { ...adult, name: "민호", sex: "M" } });
+  res = await peek(another);
+  check(
+    "다른 가족에 이미 있는 계정도 미리 보기는 받는다(가족 이름은 낼 때의 이름)",
+    res.status === 200 && ((await res.json()) as Peek).familyName === "서준이네",
+    `${res.status}`,
+  );
+  res = await claim({ claimCode: another });
+  check(
+    "다른 가족에 이미 있는 계정은 정보 없이 코드만 보내도 409 ALREADY_IN_FAMILY",
+    res.status === 409 && (await codeOf(res)) === "ALREADY_IN_FAMILY",
+    `${res.status}`,
+  );
+  res = await claim({ claimCode: another, ...adult, name: "민호", sex: "M" });
+  check(
+    "다른 가족에 이미 있는 계정이 코드를 넣으면 409 ALREADY_IN_FAMILY",
+    res.status === 409 && (await codeOf(res)) === "ALREADY_IN_FAMILY",
+    `${res.status}`,
+  );
+
+  // 자리 초대 — 도현 자리 코드로 들어온다
+  await login("demo-parent-2");
+  res = await claim({ claimCode: "K7M2QT" });
+  const dad = (await res.json().catch(() => ({}))) as Claimed;
+  check(
+    "자리 초대는 코드만으로 그 자리에 붙는다",
+    res.status === 200 && dad.profileId === DEMO.dad && dad.nextStep === "SUPPORT_MODE",
+    `${res.status} ${JSON.stringify(dad)}`,
+  );
+  await login("demo-fresh");
+  res = await claim({ claimCode: "K7M2QT" });
+  check(
+    "이미 계정이 붙은 자리의 코드는 409 ALREADY_CLAIMED",
+    res.status === 409 && (await codeOf(res)) === "ALREADY_CLAIMED",
+    `${res.status}`,
+  );
+  // 이 탭에서 벌써 도현 자리에 붙었다 — 다시 들어오면 코드를 묻지 않는다. 참여 방식을 아직 안 골라 그 화면으로
+  const again = await login("demo-parent-2");
+  check(
+    "초대받은 계정으로 다시 들어오면 코드를 다시 묻지 않고 참여 방식으로",
+    again.nextStep === "SUPPORT_MODE",
+    `${again.nextStep}`,
+  );
+
+  // 없는 코드를 너무 많이 넣으면 막는다. 다시 로그인하면 처음부터 센다
+  await login("demo-fresh");
+  let last = res;
+  for (let i = 0; i < 12; i++) last = await claim({ claimCode: "ZZZZZZ" });
+  check(
+    "없는 코드를 열 번 넘게 넣으면 다음 요청은 429 TOO_MANY",
+    last.status === 429 && (await codeOf(last)) === "TOO_MANY",
+    `${last.status}`,
+  );
+  await login("demo-fresh");
+  res = await claim({ claimCode: "ZZZZZZ" });
+  check("다시 로그인하면 처음부터 센다", res.status === 404, `${res.status}`);
+
+  // 기한이 지났지만 쓰지 않은 초대는 취소할 수 있다
+  await login("demo-parent");
+  res = await send("DELETE", `${invitesPath()}/X4T7EM`);
+  check("기한이 지났어도 쓰지 않은 초대는 취소한다(204)", res.status === 204, `${res.status}`);
+  res = await post(invitesPath("00000000-0000-4000-8000-0000000000ff"), { role: "OWNER" });
+  check(
+    "초대 만들기는 본문(역할)부터 본다 — 다른 가족이어도 모르는 역할이면 400",
+    res.status === 400,
+    `${res.status}`,
+  );
+}
+
 server.close();
 console.log(failed === 0 ? "\n전부 통과" : `\n${failed}건 실패`);
 process.exit(failed === 0 ? 0 : 1);

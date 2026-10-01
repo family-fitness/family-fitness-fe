@@ -51,12 +51,37 @@ export function openWithoutChild(pathname: string): boolean {
   return OPEN_WITHOUT_CHILD.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
+/** 가족이 없는 새 계정이 가는 곳 — 새 가족을 만들지, 초대 코드로 참여할지 고른다 */
+export const NEW_ACCOUNT_PATH = "/start/welcome";
+
 /**
- * 가족이 아직 없으면 먼저 가야 할 곳. 가족이 없으면 가족 만들기, 초대코드로 합류하기 전이면 합류 화면.
- * 스플래시와 앱 화면 가드가 같이 쓴다. 가족이 있거나 `/me` 를 아직 못 받았으면 null.
+ * 가족이 없는 새 계정이 고르는 두 길.
+ *
+ * 전에는 새 계정이 곧장 가족 만들기로 갔다. 초대받은 사람이 링크가 아니라 앱부터 열면 자기 가족을 먼저 만들었고,
+ * 그 뒤로는 어떤 초대 코드도 409 ALREADY_IN_FAMILY 로 막혔다(받은 피드백). 그래서 먼저 고르게 한다
  */
-export function familySetupPath(nextStep: NextStep | undefined): "/start/family" | "/claim" | null {
-  if (nextStep === "CREATE_FAMILY") return "/start/family";
+export const NEW_ACCOUNT_CHOICES: readonly {
+  href: "/start/family" | "/claim";
+  title: string;
+  description: string;
+}[] = [
+  { href: "/start/family", title: "새 가족 만들기", description: "우리 가족을 처음 등록해요" },
+  {
+    href: "/claim",
+    title: "초대 코드로 참여하기",
+    description: "가족에게 받은 초대 코드를 입력해요",
+  },
+];
+
+/**
+ * 가족이 아직 없으면 먼저 가야 할 곳. 가족이 없으면 시작을 고르는 화면(새 가족 만들기, 초대 코드로 참여하기),
+ * 초대 코드를 들고 로그인했으면 합류 화면. 스플래시와 앱 화면 가드가 같이 쓴다.
+ * 가족이 있거나 `/me` 를 아직 못 받았으면 null.
+ */
+export function familySetupPath(
+  nextStep: NextStep | undefined,
+): typeof NEW_ACCOUNT_PATH | "/claim" | null {
+  if (nextStep === "CREATE_FAMILY") return NEW_ACCOUNT_PATH;
   if (nextStep === "CLAIM") return "/claim";
   return null;
 }
@@ -74,7 +99,7 @@ export function mustSetUpFamily({
 }: {
   nextStep: NextStep | undefined;
   pathname: string;
-}): "/start/family" | "/claim" | null {
+}): typeof NEW_ACCOUNT_PATH | "/claim" | null {
   if (pathname === "/settings" || pathname.startsWith("/settings/")) return null;
   return familySetupPath(nextStep);
 }
