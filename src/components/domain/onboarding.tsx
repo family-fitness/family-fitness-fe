@@ -25,7 +25,7 @@ import {
 import { bodyError, bodyValue, rangeHint } from "@/lib/body";
 import { type DateRule, childBirthRule, guardianBirthRule } from "@/lib/date-pick";
 import { errorMessage } from "@/lib/errors";
-import { NEED_CHILD_COPY } from "@/lib/family";
+import { NEED_CHILD_COPY, NEW_ACCOUNT_PATH } from "@/lib/family";
 import type { ConsentKind } from "@/lib/legal";
 import {
   CREATE_AT,
@@ -211,9 +211,16 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
     roleMode !== "kid" &&
     family != null &&
     !family.profiles?.some((p) => p.role === "CHILD");
+  // 가족 만들기의 첫 화면에서 뒤로 가면 새 가족 만들기와 초대 코드로 참여하기를 고르는 화면으로
   const exit = () =>
     router.replace(
-      noChildYet ? "/settings" : mode === "child" && roleMode !== "kid" ? "/parent" : "/start",
+      noChildYet
+        ? "/settings"
+        : mode === "family"
+          ? NEW_ACCOUNT_PATH
+          : roleMode !== "kid"
+            ? "/parent"
+            : "/start",
     );
   /** 화면의 「뒤로」 — 기록에 쌓인 칸이면 폰의 뒤로와 같은 길로 간다. 둘이 어긋나면 폰의 뒤로가 한 번 헛돈다 */
   const stepBack = () => {

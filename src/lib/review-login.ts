@@ -22,7 +22,7 @@ export const REVIEW_WAYS: readonly { kind: ReviewKind; title: string; descriptio
   {
     kind: "INVITED",
     title: "초대받은 보호자로 들어가 보기",
-    description: "초대코드를 넣고 가족에 합류해 봐요",
+    description: "초대 코드를 입력하고 가족에 참여해 봐요",
   },
 ];
 
@@ -44,7 +44,7 @@ export function afterSignIn(auth: SignedIn, claimCode: string | null | undefined
 
 /**
  * 심사용 계정으로 들어온 뒤 갈 곳. INVITED 는 서버가 준 초대코드(`inviteCode`)를 채운 합류 화면으로,
- * 나머지는 스플래시가 단계대로(체험 가족은 홈, 처음 가입은 가족 만들기) 보낸다
+ * 나머지는 스플래시가 단계대로(체험 가족은 홈, 처음 가입은 새 가족 만들기와 초대 코드로 참여하기를 고르는 화면) 보낸다
  */
 export function reviewDestination(auth: SignedIn & { inviteCode?: string | null }): string {
   return afterSignIn(auth, auth.inviteCode);

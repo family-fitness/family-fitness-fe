@@ -70,6 +70,7 @@ import {
   canRemoveMember,
   familySetupPath,
   guardiansName,
+  NEW_ACCOUNT_CHOICES,
   mustAddChild,
   mustSetUpFamily,
   openWithoutChild,
@@ -764,7 +765,22 @@ check("보호자가 없으면 「보호자」", guardiansName([]) === "보호자
 
 /* ─── 가족이 없는 계정 ─────────────────────────────────── */
 
-check("가족이 없으면 가족 만들기로 보낸다", familySetupPath("CREATE_FAMILY") === "/start/family");
+check(
+  "가족이 없는 새 계정은 가족 만들기로 곧장 가지 않고 시작을 고르는 화면으로",
+  familySetupPath("CREATE_FAMILY") === "/start/welcome",
+);
+check(
+  "시작을 고르는 화면은 새 가족 만들기와 초대 코드로 참여하기 둘이다",
+  same(
+    NEW_ACCOUNT_CHOICES.map((c) => [c.title, c.href]),
+    [
+      ["새 가족 만들기", "/start/family"],
+      ["초대 코드로 참여하기", "/claim"],
+    ],
+  ) &&
+    NEW_ACCOUNT_CHOICES.every((c) => c.description.trim() !== "" && !/[·—–]/.test(c.description)),
+);
+check("시작을 고르는 화면이 있다", existsSync("src/app/start/welcome/page.tsx"));
 check("초대코드로 합류하기 전이면 합류 화면으로 보낸다", familySetupPath("CLAIM") === "/claim");
 check(
   "가족이 있거나 아직 모르면 보내지 않는다",
@@ -782,7 +798,7 @@ check(
     "/calendar",
     "/plan",
     "/notifications",
-  ].every((p) => mustSetUpFamily({ nextStep: "CREATE_FAMILY", pathname: p }) === "/start/family"),
+  ].every((p) => mustSetUpFamily({ nextStep: "CREATE_FAMILY", pathname: p }) === "/start/welcome"),
 );
 check(
   "합류 전 계정이 부모 홈에 들어오면 합류 화면으로 보낸다",
@@ -1048,6 +1064,12 @@ check(
     page.includes("REVIEW_WAYS") && page.includes("reviewLogin.mutateAsync(kind)"),
   );
   check("개발용 로그인 묶음은 그대로 둔다", page.includes("개발용으로 구글 없이 들어가기"));
+  check(
+    "로그인 화면에 초대 코드로 시작하는 입구가 있고, 넣은 코드를 들고 구글 로그인으로 간다",
+    page.includes("초대 코드가 있어요") &&
+      page.includes("useInvitePeek") &&
+      page.includes("start(entered)"),
+  );
 }
 
 /* ─── 키울 요인을 부르는 두 이름(결정 7) ─────────────────── */

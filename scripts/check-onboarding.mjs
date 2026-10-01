@@ -14,7 +14,7 @@
  *   3. 첫 시작 중간에 닫았다가 다시 열면 아이 등록이 아니라 가족 화면부터. 아이를 만든 뒤 새로고침하면 이어 간다.
  *      「지금 잴래요」 측정 화면의 뒤로가 홈으로 가는지
  *   4. 심사용 계정 → 세 흐름을 고르는 시트 → 들어가는 화면. 360px 폰에서
- *      체험 가족은 역할 고르기 없이 부모 홈(가족 이름이 잘리지 않는지), 처음 가입은 가족 만들기,
+ *      체험 가족은 역할 고르기 없이 부모 홈(가족 이름이 잘리지 않는지), 처음 가입은 시작 고르기에서 가족 만들기,
  *      초대받은 보호자는 코드가 채워진 합류 화면에서 자리로 들어가 참여 방식까지
  *   5. 첫 시작 중간에 폰이나 브라우저의 뒤로를 누르면 한 화면 앞으로 가고 적은 것이 남는다.
  *      가족과 아이를 만든 뒤에는 그 앞으로 가지 않는다
@@ -103,6 +103,9 @@ await walk("새 가족 만들기", async (h) => {
   });
   await h.step("가족 없는 계정으로 들어가기", async () => {
     await page.getByRole("button", { name: /새 계정/ }).click();
+    // 새 계정은 새 가족 만들기와 초대 코드로 참여하기를 먼저 고른다
+    await h.until(/\/start\/welcome/);
+    await page.getByRole("link", { name: /새 가족 만들기/ }).click();
     await h.until(/\/start\/family/);
   });
   /** 첫 시작 — 한 화면에 질문 하나. 칸마다 「다음」 */
@@ -192,6 +195,9 @@ for (const viewport of [
         await page.goto(`${BASE}/login`, { waitUntil: "load", timeout: 30000 });
         await h.settle(2400);
         await page.getByRole("button", { name: /새 계정/ }).click();
+        // 새 계정은 새 가족 만들기와 초대 코드로 참여하기를 먼저 고른다
+        await h.until(/\/start\/welcome/);
+        await page.getByRole("link", { name: /새 가족 만들기/ }).click();
         await h.until(/\/start\/family/);
       });
       await h.step("만 14세가 안 된 생년월일을 고른다", async () => {
@@ -285,6 +291,9 @@ await walk("중간에 닫아도 아이 없는 가족이 생기지 않고 두 번
     await page.goto(`${BASE}/login`, { waitUntil: "load", timeout: 30000 });
     await h.settle(2400);
     await page.getByRole("button", { name: /새 계정/ }).click();
+    // 새 계정은 새 가족 만들기와 초대 코드로 참여하기를 먼저 고른다
+    await h.until(/\/start\/welcome/);
+    await page.getByRole("link", { name: /새 가족 만들기/ }).click();
     await h.until(/\/start\/family/);
     await family();
     await child();
@@ -296,6 +305,11 @@ await walk("중간에 닫아도 아이 없는 가족이 생기지 않고 두 번
   await h.step("다시 열면 아이 등록이 아니라 가족 화면부터", async () => {
     if (/\/start\/child/.test(page.url())) {
       problems.push("중간에 닫기\n    다시 열었더니 아이 등록부터 묻는다");
+    }
+    // 가족이 아직 없으니 시작 고르기부터 — 새 가족 만들기를 고르면 가족 화면이다
+    if (/\/start\/welcome/.test(page.url())) {
+      await page.getByRole("link", { name: /새 가족 만들기/ }).click();
+      await h.until(/\/start\/family/);
     }
     await page.getByRole("heading", { name: /저는 키움이에요/ }).waitFor({ timeout: 10000 });
     if ((await page.getByRole("button", { name: "뒤로" }).count()) === 0) {
@@ -392,6 +406,9 @@ await walk(
     const { page } = h;
     await reviewAs(h, "처음부터 가입해 보기");
     await h.step("가족 만들기로 간다", async () => {
+      // 새 계정은 새 가족 만들기와 초대 코드로 참여하기를 먼저 고른다
+      await h.until(/\/start\/welcome/);
+      await page.getByRole("link", { name: /새 가족 만들기/ }).click();
       await h.until(/\/start\/family/);
       await page.getByRole("heading", { name: /저는 키움이에요/ }).waitFor({ timeout: 8000 });
     });
@@ -434,6 +451,9 @@ await walk("폰의 뒤로는 한 화면 앞으로", async (h) => {
     await page.goto(`${BASE}/login`, { waitUntil: "load", timeout: 30000 });
     await h.settle(2400);
     await page.getByRole("button", { name: /새 계정/ }).click();
+    // 새 계정은 새 가족 만들기와 초대 코드로 참여하기를 먼저 고른다
+    await h.until(/\/start\/welcome/);
+    await page.getByRole("link", { name: /새 가족 만들기/ }).click();
     await h.until(/\/start\/family/);
     await page.getByLabel("가족 이름").fill("바다네");
     await page.getByLabel("보호자 이름").fill("수진");
@@ -488,6 +508,9 @@ await walk("새로고침 뒤 폰의 뒤로는 빈 앞 화면으로 가지 않는
     await page.goto(`${BASE}/login`, { waitUntil: "load", timeout: 30000 });
     await h.settle(2400);
     await page.getByRole("button", { name: /새 계정/ }).click();
+    // 새 계정은 새 가족 만들기와 초대 코드로 참여하기를 먼저 고른다
+    await h.until(/\/start\/welcome/);
+    await page.getByRole("link", { name: /새 가족 만들기/ }).click();
     await h.until(/\/start\/family/);
     await page.getByLabel("가족 이름").fill("구름네");
     await page.getByLabel("보호자 이름").fill("민호");

@@ -42,7 +42,8 @@ export default function SplashPage() {
 
       전에는 `CREATE_FAMILY` 를 역할 고르기(`/start`)로 보냈다. 가족도 아이도 없는데
       「아이」 를 고를 수 있는 화면이 먼저 뜨는 건 말이 안 된다 — 고를 자리가 없다.
-      가족 만들기로 곧장 보낸다.
+      가족 만들기로 곧장 보내자, 초대받은 사람이 앱부터 열면 자기 가족을 먼저 만들어 초대 코드가 막혔다.
+      그래서 새 가족 만들기와 초대 코드로 참여하기를 고르는 화면(`/start/welcome`)으로 보낸다.
     */
     const setup = familySetupPath(data.nextStep);
     if (setup) {

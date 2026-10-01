@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
@@ -25,7 +26,8 @@ import {
   joinReady,
   normalizeCode,
 } from "@/lib/invite";
-import { useSignOut } from "@/lib/session";
+import { NEW_ACCOUNT_PATH } from "@/lib/family";
+import { useSession, useSignOut } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { Initial } from "@/components/ui/initial";
@@ -48,6 +50,9 @@ function ClaimContent() {
   const token = useAuthStore((s) => s.accessToken);
   const claim = useClaimProfile();
   const signOut = useSignOut();
+  // 가족이 없는 계정은 새 가족 만들기와 초대 코드로 참여하기를 고르는 화면에서 왔다. 거기로 돌아갈 수 있다
+  const { nextStep } = useSession();
+  const noFamily = nextStep === "CREATE_FAMILY" || nextStep === "CLAIM";
 
   const [code, setCode] = useState(() => normalizeCode(params.get("code") ?? ""));
   const [form, setForm] = useState<JoinForm>(EMPTY_FORM);
@@ -113,6 +118,16 @@ function ClaimContent() {
 
   return (
     <PlainScreen className="flex min-h-dvh flex-col justify-center gap-7 py-8">
+      {noFamily && (
+        <button
+          type="button"
+          onClick={() => router.replace(NEW_ACCOUNT_PATH)}
+          aria-label="뒤로"
+          className="press text-ink-soft fixed top-[calc(env(safe-area-inset-top)+0.5rem)] left-2 grid size-11 place-items-center rounded-full"
+        >
+          <ChevronLeft aria-hidden className="size-6" />
+        </button>
+      )}
       <div className="flex flex-col items-center text-center">
         <ArtIcon name="icon/menu-invite" className="size-16" />
         <h1 className="page-title mt-3">초대 코드를 입력해 주세요</h1>
