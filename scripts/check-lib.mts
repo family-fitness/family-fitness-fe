@@ -116,6 +116,7 @@ import {
   cameAfterWithdrawal,
   withdrawalCase,
 } from "@/lib/withdrawal";
+import { homeOf, modeFor } from "@/lib/role-mode";
 
 import { ApiError } from "@/lib/api/client";
 import {
@@ -1867,6 +1868,24 @@ check(
     page.includes("unusedInvite(") && page.includes("UNUSED_INVITE_COPY"),
   );
 }
+
+/* ─── 이 기기를 누가 쓰는지는 계정의 역할로 정한다 ─────────────── */
+
+check("정해 둔 것이 없으면 보호자 계정은 부모 화면이다", modeFor("PARENT", null) === "parent");
+check("정해 둔 것이 없으면 자녀 계정은 아이 화면이다", modeFor("CHILD", null) === "kid");
+check(
+  "보호자가 폰을 아이에게 빌려준 중이면 아이 화면을 그대로 둔다",
+  modeFor("PARENT", "kid") === "kid",
+);
+check("자녀 계정은 기기에 부모가 남아 있어도 아이 화면이다", modeFor("CHILD", "parent") === "kid");
+check(
+  "계정의 역할을 모르면 정해 둔 것만 따르고 없으면 정하지 않는다",
+  modeFor(undefined, "parent") === "parent" && modeFor(undefined, null) === null,
+);
+check(
+  "아이 화면은 아이 홈, 부모 화면은 부모 홈, 정하지 못했으면 누가 쓰는지 고르는 화면",
+  homeOf("kid") === "/kid" && homeOf("parent") === "/parent" && homeOf(null) === "/start",
+);
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);

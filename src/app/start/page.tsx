@@ -13,7 +13,12 @@ import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 import { ArtIcon } from "@/components/ui/art-icon";
 
-/** 부모인가 아이인가. */
+/**
+ * 부모인가 아이인가.
+ *
+ * 들어올 때마다 묻지 않는다. 스플래시가 계정의 역할로 정한다(`modeFor`). 이 화면은 보호자가 설정의
+ * 「누가 쓰는지 바꾸기」 로 자기 폰을 아이에게 빌려줄 때(그리고 돌려받을 때) 쓴다.
+ */
 export default function StartPage() {
   const router = useRouter();
   const { profile, familyId, nextStep, isPending, error, refetch } = useSession();

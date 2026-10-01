@@ -13,8 +13,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import type { SupportMode } from "@/lib/api/types";
 import { useUpdateSupportMode } from "@/lib/api/queries";
+import { homeOf, modeFor } from "@/lib/role-mode";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
+import { useRoleStore } from "@/stores/role-store";
 import { ArtIcon } from "@/components/ui/art-icon";
 
 /** 참여 방식 — 셋 중 하나. 이름과 그림만 둔다(풀이 줄을 달지 않는다) */
@@ -129,7 +131,17 @@ function SupportModePageContent() {
         )}
 
         {joining && (
-          <Button size="block" disabled={!current} onClick={() => router.replace("/start")}>
+          <Button
+            size="block"
+            disabled={!current}
+            onClick={() => {
+              // 누가 쓰는지 묻지 않는다. 이 화면은 보호자만 오니 부모 홈이다(폰을 아이에게 빌려준 중이면 아이 홈)
+              const role = useRoleStore.getState();
+              const next = modeFor(profile?.role, role.mode);
+              if (next && next !== role.mode) role.setMode(next);
+              router.replace(homeOf(next));
+            }}
+          >
             다 골랐어요
           </Button>
         )}
