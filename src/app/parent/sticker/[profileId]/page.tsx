@@ -2,7 +2,7 @@
 
 import { Check } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useLayoutEffect, useRef, useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -24,7 +24,7 @@ import {
 import { errorMessage } from "@/lib/errors";
 import { PRAISES } from "@/lib/praise";
 import { useSession } from "@/lib/session";
-import { MEMO_MAX, STICKERS, stickerOf } from "@/lib/stickers";
+import { MEMO_MAX, STICKERS, oneLine, stickerOf } from "@/lib/stickers";
 import { today } from "@/lib/today";
 import { cn, withJosa } from "@/lib/utils";
 
@@ -32,7 +32,7 @@ import { cn, withJosa } from "@/lib/utils";
  * 칭찬 스티커 붙이기 — 부모가 아이에게.
  *
  * **고르기만 해도 붙는다.** 퇴근하고 지친 부모에게 글쓰기를 시키면 그날로 안 보낸다(규칙 12).
- * 스티커 이름이 곧 한마디다. 메모는 덧붙이고 싶을 때만, 한 줄.
+ * 스티커 이름이 곧 한마디다. 메모는 덧붙이고 싶을 때만. 긴 글은 칸 안에서 줄을 바꿔 다 보인다.
  *
  * 붙인 스티커는 그날 캘린더에 붙고 아이에게 알림이 간다. 개수를 세지 않는다.
  * 아이가 직접 적은 기록(걸음수)이면 스티커가 곧 확인이다.
@@ -88,6 +88,14 @@ function StickerForm() {
 
   const [picked, setPicked] = useState<string | null>(null);
   const [memo, setMemo] = useState("");
+  // 한마디 칸은 글에 맞춰 높아진다. 한 줄 칸이면 긴 글의 앞부분이 칸 밖으로 밀려 안 보였다
+  const memoRef = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = memoRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [memo]);
   const [sent, setSent] = useState(0);
   const [problem, setProblem] = useState<string | null>(null);
 
@@ -206,12 +214,18 @@ function StickerForm() {
               {log.entries.map((e) => e.title).join(", ")}
             </p>
           )}
-          {/* 고른 것 하나가 크게 — 둥근 회색 면에 담지 않는다 */}
-          <div className="mt-4 grid h-36 place-items-center">
+          {/* 고른 것 하나가 크게 — 둥근 회색 면에 담지 않는다. 한마디가 길면 상자가 글만큼 늘어난다 */}
+          <div className="mt-4 grid min-h-36 place-items-center">
             {sticker ? (
-              <div key={sticker.id} className="badge-pop flex flex-col items-center gap-1">
-                <StickerArt id={sticker.id} className="size-24" />
-                <p className="text-sm font-extrabold">{memo.trim() || sticker.label}</p>
+              <div
+                key={sticker.id}
+                className="badge-pop flex max-w-full flex-col items-center gap-1"
+              >
+                <StickerArt id={sticker.id} className="size-24 shrink-0" />
+                {/* 띄어쓰기 없이 길게 쓴 글도 상자 안에서 줄을 바꾼다 */}
+                <p className="text-center text-sm font-extrabold wrap-anywhere">
+                  {memo.trim() || sticker.label}
+                </p>
               </div>
             ) : (
               <span
@@ -249,14 +263,33 @@ function StickerForm() {
 
         <Card>
           <CardHead title="한마디 더" />
-          <input
-            type="text"
-            value={memo}
-            onChange={(e) => setMemo(e.target.value.slice(0, MEMO_MAX))}
-            placeholder={sticker ? sticker.label : "한마디"}
-            aria-label="한마디"
-            className="field mt-2"
-          />
+          <div className="relative mt-2">
+            <textarea
+              ref={memoRef}
+              rows={2}
+              value={memo}
+              maxLength={MEMO_MAX}
+              // 알림과 캘린더에는 한 덩어리 글로 보인다. 줄바꿈은 띄어쓰기로 바꾼다
+              onChange={(e) => setMemo(oneLine(e.target.value).slice(0, MEMO_MAX))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                }
+              }}
+              enterKeyHint="done"
+              placeholder={sticker ? sticker.label : "한마디"}
+              aria-label="한마디"
+              aria-describedby="memo-count"
+              className="field block h-auto resize-none py-3 pb-7 leading-snug wrap-anywhere"
+            />
+            <span
+              id="memo-count"
+              className="text-micro text-faint pointer-events-none absolute right-3 bottom-2 font-semibold tabular-nums"
+            >
+              {memo.length}/{MEMO_MAX}
+            </span>
+          </div>
           <div className="scroll-row -mx-4.5 mt-2 px-4.5">
             <ul className="flex gap-2">
               {PRAISES.slice(0, 5).map((text) => (

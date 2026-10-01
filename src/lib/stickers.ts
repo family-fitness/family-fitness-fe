@@ -44,5 +44,13 @@ export function stickerOf(id: string | null | undefined): Sticker | undefined {
   return STICKERS.find((s) => s.id === id);
 }
 
-/** 메모 길이. 한 줄로 읽히게 */
+/** 메모 길이. 서버는 100자까지 받는다(BE `CheerRequest.message`). 알림 두 줄 안에 읽히게 60자 */
 export const MEMO_MAX = 60;
+
+/**
+ * 한마디의 줄바꿈을 띄어쓰기 하나로 바꾼다. 알림과 캘린더는 한마디를 한 덩어리 글로 보여서,
+ * 줄을 바꿔 쓰면 앞뒤 말이 띄어쓰기 없이 붙어 보였다
+ */
+export function oneLine(text: string): string {
+  return text.replace(/[\r\n]+/g, " ");
+}

@@ -406,7 +406,9 @@ function Day() {
                     </p>
                     {/* 스티커 이름을 그대로 적어 보낸 말은 한 번만 — 같은 말이 두 줄이면 틀린 화면처럼 보인다 */}
                     {st.message && st.message.trim() !== stickerOf(st.stickerId)?.label && (
-                      <p className="text-body mt-1.5 leading-snug font-semibold">{st.message}</p>
+                      <p className="text-body mt-1.5 leading-snug font-semibold wrap-anywhere">
+                        {st.message}
+                      </p>
                     )}
                   </div>
                 </li>

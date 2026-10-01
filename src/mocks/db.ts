@@ -355,7 +355,10 @@ export const DEMO_SCHEDULE: Readonly<
   Record<string, readonly { day: string; start: string; minutes: number }[]>
 > = seedAvailability();
 
-/** 아이는 월 · 수 · 금 저녁과 토요일 오전, 엄마는 토요일 오전에 같이 */
+/**
+ * 아이는 월 · 수 · 금 저녁과 토요일 오전, 엄마는 토요일 오전에 같이.
+ * 아빠는 일요일 오전만이라 아이와 겹치는 요일이 없다 — 「같이」 는 겹치는 날에만 켜진다
+ */
 function seedAvailability(): Record<string, { day: string; start: string; minutes: number }[]> {
   return {
     [KID_ID]: [
@@ -365,6 +368,7 @@ function seedAvailability(): Record<string, { day: string; start: string; minute
       { day: "SAT", start: "10:00", minutes: 30 },
     ],
     "00000000-0000-4000-8000-000000000011": [{ day: "SAT", start: "10:00", minutes: 30 }],
+    "00000000-0000-4000-8000-000000000013": [{ day: "SUN", start: "10:00", minutes: 30 }],
   };
 }
 

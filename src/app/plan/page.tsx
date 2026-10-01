@@ -28,6 +28,7 @@ import {
 } from "@/lib/api/queries";
 import { errorMessage } from "@/lib/errors";
 import { FACTORS, isFactor, memberNoPeerNormsNote, type Factor } from "@/lib/fitness-factors";
+import { togetherBlock } from "@/lib/schedule";
 import { useSession } from "@/lib/session";
 import { today, weekdayCode } from "@/lib/today";
 import { cn } from "@/lib/utils";
@@ -88,6 +89,8 @@ function PlanForm() {
   const { data: current } = useLatestCoachRun(familyId, kid?.profileId);
 
   const { data: availability } = useAvailability(kid?.profileId);
+  // 「같이」 는 아이와 나(보호자)의 시간표가 오늘 요일에 겹칠 때만
+  const { data: myWeek } = useAvailability(profile?.profileId);
   // 고르기 전에는 오늘 적어 둔 시간이 기본이다. 적어 둔 게 없으면 20분
   const [picked, setPicked] = useState<number | null>(null);
   const todaySlot = availability?.slots.find((s) => s.day === weekdayCode());
@@ -102,9 +105,20 @@ function PlanForm() {
   // 처음 한 번만 읽으면 새로고침 직후(/me 가 오기 전)에는 늘 「혼자」 였다
   const [pickedWithParent, setWithParent] = useState<boolean | null>(null);
   const weekend = weekdayCode() === "SAT" || weekdayCode() === "SUN";
+  // 「같이」 는 아이와 나의 시간표가 오늘 요일에 겹칠 때만 한다(사용자 결정). 겹치지 않으면
+  // 「매번 같이」 와 「주말에는 같이」 의 기본값도 끈다. 두 시간표를 다 받기 전에는 막지 않는다
+  const notTogether =
+    kid && availability && myWeek
+      ? togetherBlock(
+          weekdayCode(),
+          { name: kid.name ?? "아이", slots: availability.slots },
+          { name: profile?.name ?? "나", slots: myWeek.slots },
+        )
+      : null;
   const withParent =
-    pickedWithParent ??
-    (profile?.supportMode === "FULL" || (profile?.supportMode === "WEEKEND" && weekend));
+    !notTogether &&
+    (pickedWithParent ??
+      (profile?.supportMode === "FULL" || (profile?.supportMode === "WEEKEND" && weekend)));
   const [error, setError] = useState<string | null>(null);
   /** 막힌 까닭이 「이미 있는 제안」 이면 그리로 가는 길 */
   const [existing, setExisting] = useState(false);
@@ -382,10 +396,26 @@ function PlanForm() {
               <Chip on={!withParent} onClick={() => setWithParent(false)}>
                 <Named name={name} tail="혼자" spaced />
               </Chip>
-              <Chip on={withParent} onClick={() => setWithParent(true)}>
+              <Chip
+                on={withParent}
+                disabled={Boolean(notTogether)}
+                onClick={() => setWithParent(true)}
+              >
                 <Named name={profile?.name ?? "나"} tail="도 같이" />
               </Chip>
             </div>
+            {/* 같이를 못 켜는 날은 까닭과 시간표로 가는 길을 둔다 */}
+            {notTogether && (
+              <div className="mt-2">
+                <p className="text-caption text-ink-soft">{notTogether}</p>
+                <NavLink
+                  href="/settings/schedule"
+                  className="press text-signal-deep inline-flex min-h-11 items-center text-sm font-bold"
+                >
+                  운동할 수 있는 시간 바꾸기
+                </NavLink>
+              </div>
+            )}
           </div>
         </section>
         {error && (
@@ -461,10 +491,12 @@ function BodyTile({
 
 function Chip({
   on,
+  disabled,
   onClick,
   children,
 }: {
   on: boolean;
+  disabled?: boolean;
   onClick: () => void;
   children: ReactNode;
 }) {
@@ -472,8 +504,9 @@ function Chip({
     <button
       type="button"
       aria-pressed={on}
+      disabled={disabled}
       onClick={onClick}
-      className={cn("chip press max-w-full", on && "chip-on")}
+      className={cn("chip press max-w-full disabled:opacity-40", on && "chip-on")}
     >
       {children}
     </button>
