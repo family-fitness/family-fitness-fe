@@ -367,6 +367,21 @@
             "min": 0,
             "max": 150
           }
+        },
+        {
+          "itemCode": "044",
+          "itemName": "눈-손협응력(벽패스)",
+          "itemLabel": "눈-손협응력(벽패스)",
+          "unit": "회",
+          "factor": "협응력",
+          "higherIsBetter": true,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "벽과 공",
+          "range": {
+            "min": 0,
+            "max": 60
+          }
         }
       ]
     },
@@ -524,6 +539,196 @@
           }
         }
       ]
+    },
+    "청소년": {
+      "ageGroup": "청소년",
+      "items": [
+        {
+          "itemCode": "009",
+          "itemName": "윗몸말아올리기",
+          "itemLabel": "윗몸말아올리기",
+          "unit": "회",
+          "factor": "근지구력",
+          "higherIsBetter": true,
+          "inputGroup": "EASY",
+          "optional": false,
+          "equipment": null,
+          "range": {
+            "min": 0,
+            "max": 120
+          }
+        },
+        {
+          "itemCode": "010",
+          "itemName": "반복점프",
+          "itemLabel": "반복점프",
+          "unit": "회",
+          "factor": "근지구력",
+          "higherIsBetter": true,
+          "inputGroup": "EASY",
+          "optional": false,
+          "equipment": null,
+          "range": {
+            "min": 0,
+            "max": 120
+          }
+        },
+        {
+          "itemCode": "012",
+          "itemName": "앉아윗몸앞으로굽히기",
+          "itemLabel": "앉아윗몸앞으로굽히기",
+          "unit": "cm",
+          "factor": "유연성",
+          "higherIsBetter": true,
+          "inputGroup": "EASY",
+          "optional": false,
+          "equipment": null,
+          "range": {
+            "min": -30,
+            "max": 40
+          }
+        },
+        {
+          "itemCode": "014",
+          "itemName": "체공시간",
+          "itemLabel": "체공시간",
+          "unit": "초",
+          "factor": "순발력",
+          "higherIsBetter": true,
+          "inputGroup": "EASY",
+          "optional": false,
+          "equipment": null,
+          "range": {
+            "min": 0,
+            "max": 2
+          }
+        },
+        {
+          "itemCode": "013",
+          "itemName": "일리노이",
+          "itemLabel": "일리노이",
+          "unit": "초",
+          "factor": "민첩성",
+          "higherIsBetter": false,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "공간",
+          "range": {
+            "min": 5,
+            "max": 60
+          }
+        },
+        {
+          "itemCode": "017",
+          "itemName": "눈-손협응력",
+          "itemLabel": "눈-손협응력",
+          "unit": "초",
+          "factor": "협응력",
+          "higherIsBetter": false,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "장비",
+          "range": {
+            "min": 0,
+            "max": 120
+          }
+        },
+        {
+          "itemCode": "020",
+          "itemName": "왕복오래달리기",
+          "itemLabel": "20m 왕복오래달리기",
+          "unit": "회",
+          "factor": "심폐지구력",
+          "higherIsBetter": true,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "공간",
+          "range": {
+            "min": 0,
+            "max": 150
+          }
+        },
+        {
+          "itemCode": "028",
+          "itemName": "상대악력",
+          "itemLabel": "상대악력",
+          "unit": "%",
+          "factor": "근력",
+          "higherIsBetter": true,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "악력계",
+          "range": {
+            "min": 0,
+            "max": 150
+          }
+        },
+        {
+          "itemCode": "035",
+          "itemName": "트레드밀VO2max",
+          "itemLabel": "트레드밀VO2max",
+          "unit": "ml/kg/min",
+          "factor": "심폐지구력",
+          "higherIsBetter": true,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "장비",
+          "range": {
+            "min": 10,
+            "max": 90
+          }
+        },
+        {
+          "itemCode": "037",
+          "itemName": "스텝검사VO2max",
+          "itemLabel": "스텝검사VO2max",
+          "unit": "ml/kg/min",
+          "factor": "심폐지구력",
+          "higherIsBetter": true,
+          "inputGroup": "EQUIPMENT",
+          "optional": true,
+          "equipment": "장비",
+          "range": {
+            "min": 10,
+            "max": 90
+          }
+        }
+      ]
+    },
+    "어르신": {
+      "ageGroup": "어르신",
+      "items": [
+        {
+          "itemCode": "012",
+          "itemName": "앉아윗몸앞으로굽히기",
+          "itemLabel": "앉아윗몸앞으로굽히기",
+          "unit": "cm",
+          "factor": "유연성",
+          "higherIsBetter": true,
+          "inputGroup": "EASY",
+          "optional": false,
+          "equipment": null,
+          "range": {
+            "min": -30,
+            "max": 40
+          }
+        },
+        {
+          "itemCode": "028",
+          "itemName": "상대악력",
+          "itemLabel": "상대악력",
+          "unit": "%",
+          "factor": "근력",
+          "higherIsBetter": true,
+          "inputGroup": "EASY",
+          "optional": false,
+          "equipment": "악력계",
+          "range": {
+            "min": 0,
+            "max": 150
+          }
+        }
+      ]
     }
   },
   "latestByProfile": {
@@ -557,7 +762,7 @@
           "itemCode": "012",
           "itemLabel": "앉아윗몸앞으로굽히기",
           "unit": "cm",
-          "value": 4,
+          "value": -1,
           "percentile": 24,
           "grade": "참가",
           "band": "growth",
@@ -567,7 +772,7 @@
           "itemCode": "020",
           "itemLabel": "15m 왕복오래달리기",
           "unit": "회",
-          "value": 70,
+          "value": 85,
           "percentile": 79,
           "grade": "2등급",
           "band": "strength",
@@ -577,7 +782,7 @@
           "itemCode": "028",
           "itemLabel": "상대악력",
           "unit": "%",
-          "value": 41.3,
+          "value": 40.6,
           "percentile": 50,
           "grade": "3등급",
           "band": "steady",

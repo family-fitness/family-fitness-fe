@@ -136,17 +136,15 @@ export function withMedia<T extends { videoId?: string | null }>(clip: T): T {
 /**
  * 국민체력100 1등급 줄이 보는 종목 — AI `grade_thresholds.csv` 에서 연령대마다 한 나이를 옮겼다.
  * 목은 이걸로 **모자란 종목만** 말한다. 기준값 · 2 · 3등급 줄은 옮기지 않았다 — 판정은 서버가 한다.
- * 청소년 · 어르신은 픽스처에 항목이 없어 기준 없음으로 둔다
+ * 어르신은 AI 가 등급을 내지 않아(AI `items.py` 어르신 기준항목은 012, 028 둘) 기준 없음으로 둔다
  */
 const FIRST_GRADE_ITEMS: Partial<Record<string, string[][]>> = {
   유아기: [["020"], ["028"], ["009"], ["012"], ["050"], ["022"], ["051"]],
   유소년: [["020"], ["028"], ["009"], ["012"], ["043"], ["022"], ["044"]],
   // 035 · 037 은 둘 중 하나만 재면 된다
+  청소년: [["020"], ["035", "037"], ["028"], ["009"], ["010"], ["012"], ["013"], ["014"], ["017"]],
   성인: [["020"], ["035", "037"], ["028"], ["019"], ["012"], ["021"], ["040"], ["022"], ["041"]],
 };
-
-/** 픽스처 항목 목록에 없는 종목 이름 */
-const MORE_LABELS: Record<string, string> = { "044": "눈-손협응력(벽패스)" };
 
 /** 같은 나이 참가자의 등급 비율 — AI `grade_distribution.csv` 의 11세 · 35세 줄(시연 가족 나이쯤) */
 const PEER_GRADES: Partial<Record<string, [number, number, number, number]>> = {
@@ -174,8 +172,7 @@ export function mockCertification(
   const rows = FIRST_GRADE_ITEMS[ageGroup];
   if (!rows) return { grade: null, status: "NO_CRITERIA", missingItems: [], peers };
   const catalogue = fixtures.itemsByAgeGroup[ageGroup]?.items ?? [];
-  const labelOf = (code: string) =>
-    catalogue.find((i) => i.itemCode === code)?.itemLabel ?? MORE_LABELS[code] ?? code;
+  const labelOf = (code: string) => catalogue.find((i) => i.itemCode === code)?.itemLabel ?? code;
   const missingItems = rows
     .filter((codes) => !codes.some((code) => measured.includes(code)))
     .map((itemCodes) => ({ itemCodes, label: itemCodes.map(labelOf).join(" 또는 ") }));
@@ -192,6 +189,9 @@ export function mockCertification(
  * 두 항목(윗몸말아올리기 · 제자리멀리뛰기)을 더 잰 것으로 둔다.
  * 반복옆뛰기(민첩성)는 **일부러 안 잰 채로** 둔다 — 안 잰 요인을 비워 그리는 것도
  * 첫 화면에서 보여야 한다(규칙 8).
+ *
+ * 값과 백분위는 AI `value_quantiles.csv` 의 유소년 남 11세 칸에서 서로 맞게 골랐다(픽스처의 세 항목도).
+ * 만 7~10세는 또래 기준이 없어 백분위가 나오지 않으니, 서준은 만 11세로 본다
  */
 const KID_ID = "00000000-0000-4000-8000-000000000012";
 const KID_EXTRA = [
@@ -209,7 +209,7 @@ const KID_EXTRA = [
     itemCode: "022",
     itemLabel: "제자리멀리뛰기",
     unit: "cm",
-    value: 156,
+    value: 160,
     percentile: 66,
     grade: "2등급",
     band: "steady",
@@ -220,26 +220,35 @@ const KID_EXTRA = [
 /**
  * 시연 가족 부모의 측정. 체력 지도는 엄마 62 · 아빠 29 로 잰 사람인데 픽스처의 `latest` 는 빈 회차라,
  * 대시보드는 점수를 말하고 측정 결과 화면은 「아직 측정하지 않았어요」 를 말했다. 지도와 같은 날 · 같은 점수로 채운다
+ *
+ * 보호자는 성인 국민체력100 항목으로 쟀다. 육각형 여섯 요인을 다 채운다(근력 028, 근지구력 019, 유연성 012,
+ * 심폐지구력 020, 순발력 041, 민첩성 021). 전에는 네 요인만 차서 두 꼭지점이 「없어요」 였고, 값과 백분위도 서로
+ * 맞지 않았다(여자 성인체공시간 0.52초를 55로 적었는데 AI 표로는 97). 지금 값은 AI `value_quantiles.csv` 의
+ * 성인 여 38세, 성인 남 40세 칸으로 셈한 백분위 그대로다
  */
 const PARENT_TESTS: Record<string, { testedOn: string; items: [string, number, number][] }> = {
   "00000000-0000-4000-8000-000000000011": {
     testedOn: "2026-09-10",
-    // [항목, 값, 백분위] — 평균 62
+    // [항목, 값, 백분위]. 평균 62, 가장 높은 것은 유연성, 가장 낮은 것은 순발력
     items: [
-      ["012", 14, 70],
-      ["019", 32, 58],
-      ["041", 0.52, 55],
-      ["028", 58, 65],
+      ["012", 21, 78],
+      ["019", 28, 57],
+      ["041", 0.43, 52],
+      ["028", 50, 64],
+      ["020", 22, 63],
+      ["021", 12.8, 56],
     ],
   },
   "00000000-0000-4000-8000-000000000013": {
     testedOn: "2026-08-30",
-    // 평균 29 — 건강검진에서 경고를 받은 아빠(도현)
+    // 평균 29. 건강검진에서 경고를 받은 아빠(도현). 가장 낮은 것은 심폐지구력
     items: [
-      ["012", 2, 18],
-      ["019", 20, 30],
-      ["041", 0.44, 28],
-      ["028", 48, 40],
+      ["012", 1, 18],
+      ["019", 34, 30],
+      ["041", 0.51, 26],
+      ["028", 59, 40],
+      ["020", 23, 17],
+      ["021", 11.1, 44],
     ],
   },
 };

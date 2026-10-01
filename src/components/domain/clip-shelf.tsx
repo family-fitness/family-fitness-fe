@@ -8,7 +8,7 @@ import { VideoThumb } from "@/components/ui/video-thumb";
 import { useClips } from "@/lib/api/queries";
 import type { Factor } from "@/lib/fitness-factors";
 import { clock } from "@/lib/session-plan";
-import { clipHref, finderHref } from "@/lib/videos";
+import { clipHref, exerciseLine, finderHref } from "@/lib/videos";
 
 /**
  * 해 볼 운동이 가로로 흐르는 한 줄 — 삼성헬스 홈의 「새로운 컨텐츠」 처럼(9/25).
@@ -65,6 +65,9 @@ export function ClipShelf({
                     </span>
                     <span className="mt-1.5 line-clamp-2 block text-sm leading-snug font-bold">
                       {c.title}
+                    </span>
+                    <span className="text-caption text-ink-soft block truncate">
+                      {exerciseLine(c)}
                     </span>
                     {/* 길이는 썸네일 위 검은 딱지가 아니라 이름 아래 글자로 */}
                     <span className="text-caption text-ink-soft block tabular-nums">

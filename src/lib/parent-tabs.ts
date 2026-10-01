@@ -2,8 +2,8 @@
  * 부모 화면의 하단 탭 다섯 칸. 설정은 탭에 두지 않고 지금처럼 화면 오른쪽 위에 둔다.
  *
  *   홈    부모 홈
- *   운동  오늘 가족 운동(내 몫이 있으면 시작하기), 운동 짜기, 운동 찾기
  *   기록  캘린더, 나와 아이들의 체력(측정하기, 결과 보기)
+ *   운동  오늘 가족 운동(내 몫이 있으면 시작하기), 고른 아이의 체력 육각형, 운동 짜기, 운동 찾기
  *   리그  가족 리그
  *   가족  가족 대시보드. 가족 관리는 여기서 들어간다
  *
@@ -12,8 +12,8 @@
  */
 export const PARENT_TABS = [
   { id: "home", label: "홈", href: "/parent" },
-  { id: "workout", label: "운동", href: "/parent/workout" },
   { id: "records", label: "기록", href: "/parent/records" },
+  { id: "workout", label: "운동", href: "/parent/workout" },
   { id: "league", label: "리그", href: "/parent/league" },
   { id: "family", label: "가족", href: "/parent/dashboard" },
 ] as const;

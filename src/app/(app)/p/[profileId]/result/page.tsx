@@ -204,10 +204,9 @@ export default function ResultPage() {
 
         {/* 다음에 뭘 할지 */}
         <Link
-          // 잰 아이의 운동으로 — 아이가 둘이면 홈에서 고른 아이가 아닐 수 있다
-          href={
-            profile?.role === "CHILD" ? `/plan?profileId=${encodeURIComponent(profileId)}` : "/plan"
-          }
+          // 잰 사람의 운동으로. 아이가 둘이면 홈에서 고른 아이가 아닐 수 있다. 내 결과면 내 운동으로
+          // (추천 화면은 아이들과 나만 고른다. 다른 보호자면 홈에서 고른 아이로 연다)
+          href={`/plan?profileId=${encodeURIComponent(profileId)}`}
           className="press bg-signal-strong flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
         >
           <ArtIcon name="icon/menu-ai" className="size-5" />

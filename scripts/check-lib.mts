@@ -1032,17 +1032,17 @@ check("주소가 이상해도 멈추지 않는다", fileType("not a url") === un
   check("근거 링크는 videoLink 로 고른다", citations.includes("videoLink("));
 }
 
-/* ─── 심사용 계정 — 세 흐름 ─────────────────────────────── */
+/* ─── 심사용 계정 — 네 줄 ──────────────────────────────── */
 
 check(
-  "심사용 계정은 체험 가족 · 처음 가입 · 초대받은 보호자 셋 가운데 고른다",
+  "심사용 계정은 체험 가족 · 아이 입장 · 처음 가입 · 초대받은 보호자 넷 가운데 고른다. 아이 입장은 체험 가족으로 들어간다",
   same(
-    REVIEW_WAYS.map((w) => w.kind),
-    ["FAMILY", "FRESH", "INVITED"],
+    REVIEW_WAYS.map((w) => `${w.kind}${w.asKid ? ":kid" : ""}`),
+    ["FAMILY", "FAMILY:kid", "FRESH", "INVITED"],
   ),
 );
 check(
-  "세 줄 모두 제목과 한 줄 설명이 있다",
+  "네 줄 모두 제목과 한 줄 설명이 있다",
   REVIEW_WAYS.every((w) => w.title.trim() && w.description.trim()),
 );
 check("체험 가족은 홈으로", reviewDestination({ nextStep: "HOME" }) === "/");
@@ -1217,7 +1217,8 @@ check("리그가 열흘 남으면 10일 남았어요", daysLeftText(10) === "10�
   const plan = readFileSync("src/app/plan/page.tsx", "utf8");
   check(
     "운동 짜기 화면 육각형도 만 7~10세 까닭을 받는다",
-    /<FactorRadar[^>]*note=\{memberNoPeerNormsNote\(kid\)\}/.test(plan),
+    // 추천 대상(아이 또는 보호자 본인)을 `who` 로 부른다
+    /<FactorRadar[^>]*note=\{memberNoPeerNormsNote\(who\)\}/.test(plan),
   );
 }
 
@@ -2091,10 +2092,10 @@ check(
 /* ─── 부모 화면의 하단 탭 ─────────────────────────────── */
 
 check(
-  "하단 탭은 홈, 운동, 기록, 리그, 가족 다섯 칸이다",
+  "하단 탭은 홈, 기록, 운동, 리그, 가족 다섯 칸이다",
   same(
     PARENT_TABS.map((t) => t.label),
-    ["홈", "운동", "기록", "리그", "가족"],
+    ["홈", "기록", "운동", "리그", "가족"],
   ),
 );
 check(

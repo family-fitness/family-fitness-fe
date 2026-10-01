@@ -11,8 +11,8 @@ import { useTabStore } from "@/stores/tab-store";
 
 const ICONS: Record<ParentTab, LucideIcon> = {
   home: House,
-  workout: Dumbbell,
   records: CalendarDays,
+  workout: Dumbbell,
   league: Trophy,
   family: Users,
 };
@@ -21,7 +21,8 @@ const ICONS: Record<ParentTab, LucideIcon> = {
  * 부모 화면의 하단 탭. 아래에 붙어 있고, 탭의 첫 화면에서만 선다(`parentTabOf`).
  *
  * 켜진 탭은 아이콘과 글자를 진한 파랑으로 바꾼다. 아이콘을 둥근 면에 넣지 않는다(9/25 「둥근 배경 안에 뭘
- * 넣는 건 너무 AI 같다」). 화면이 넘어가도 탭은 제자리에 있다(`viewTransitionName`).
+ * 넣는 건 너무 AI 같다」). 가운데 「운동」 탭만 예외다(10/1 「운동은 파란 원으로 강조되게」). 앱 파랑 원 안에
+ * 흰 아이콘을 두고, 켜지면 원이 진한 파랑이 된다. 화면이 넘어가도 탭은 제자리에 있다(`viewTransitionName`).
  * 본문은 탭 높이만큼 아래를 더 비운다(`globals.css` 의 `html:has(.tab-bar)`).
  */
 export function ParentTabBar() {
@@ -55,7 +56,19 @@ export function ParentTabBar() {
                   on ? "text-signal-deep" : "text-faint",
                 )}
               >
-                <Icon aria-hidden className="size-6" strokeWidth={on ? 2.4 : 1.8} />
+                {t.id === "workout" ? (
+                  // 운동 탭만 파란 원. 위로 살짝 올려 바의 윗선에 걸치고, 글자 줄은 다른 탭과 맞춘다
+                  <span
+                    className={cn(
+                      "ring-paper shadow-lift -mt-6 grid size-12 place-items-center rounded-full text-white ring-4",
+                      on ? "bg-signal-deep" : "bg-signal",
+                    )}
+                  >
+                    <Icon aria-hidden className="size-6" strokeWidth={on ? 2.6 : 2.2} />
+                  </span>
+                ) : (
+                  <Icon aria-hidden className="size-6" strokeWidth={on ? 2.4 : 1.8} />
+                )}
                 <span
                   className={cn("text-[11px] leading-none", on ? "font-extrabold" : "font-bold")}
                 >
