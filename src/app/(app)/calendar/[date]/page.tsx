@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarDays, Check, ChevronLeft, ChevronRight } from "lucide-react";
+import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 
@@ -26,6 +27,7 @@ import { stickerOf } from "@/lib/stickers";
 import { daysBefore, longDate, monthOf, today, weekOf, weekdayOf } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useIsKidView } from "@/lib/view-role";
+import { sessionHref } from "@/lib/videos";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
@@ -524,14 +526,21 @@ function Leader({ label, value }: { label: string; value: string | string[] }) {
  * 둥근 바탕 안의 글자가 되고(9/25), 바로 아래 줄(「준비운동 · 1분」)과 같은 말을 한 번 더 한다.
  * 한 운동의 칸은 모두 영상이 있거나 모두 없어서 줄이 어긋나지 않는다.
  */
-function Thumb({ clip }: { clip?: VideoClip | null }) {
+function Thumb({ clip, href }: { clip?: VideoClip | null; href?: string }) {
   if (!clip?.videoId) return null;
-  return (
+  const thumb = (
     <VideoThumb
       videoId={clip.videoId}
       src={clip.thumbnailUrl}
       className="aspect-video w-20 shrink-0 rounded-xl"
     />
+  );
+  // 누르면 운동 상세(영상과 설명)로
+  if (!href) return thumb;
+  return (
+    <Link href={href} aria-label="운동 정보 보기" className="press shrink-0">
+      {thumb}
+    </Link>
   );
 }
 
@@ -574,7 +583,10 @@ function EntryRows({
           const clip = clips.find((c) => c.title === s.title)?.clip ?? clips[i]?.clip;
           return (
             <li key={`${s.title}-${i}`} className="flex items-center gap-3">
-              <Thumb clip={mission ? clip : null} />
+              <Thumb
+                clip={mission ? clip : null}
+                href={mission ? sessionHref({ ...s, clip }) : undefined}
+              />
               {/* 아직 안 한 동작은 흐리게 — 반투명으로 흐리면 대비가 3.4:1 로 떨어졌다(9/30 점검). 글자색으로 */}
               <span className="min-w-0 flex-1">
                 <span
@@ -631,7 +643,7 @@ function PlannedRows({
       <ul className="mt-2 space-y-2">
         {sessions.map((s) => (
           <li key={s.position} className="flex items-center gap-3">
-            <Thumb clip={s.clip} />
+            <Thumb clip={s.clip} href={sessionHref(s)} />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-bold">{s.title}</span>
               <span className="text-caption text-ink-soft block">
