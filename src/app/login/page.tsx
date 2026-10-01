@@ -137,7 +137,8 @@ function LoginContent() {
   /** 「초대 코드가 있어요」 시트 — 링크 없이 코드만 받은 사람이 코드를 넣고 로그인한다 */
   const [inviting, setInviting] = useState(false);
   const [entered, setEntered] = useState("");
-  // 넣은 코드가 어느 가족의 초대인지 로그인 전에 본다. ▲ 서버가 로그인 전 미리 보기를 막으면(401) 보이지 않고 그냥 넘어간다
+  // 넣은 코드가 어느 가족의 초대인지 로그인 전에 본다. ▲ 지금 BE 는 미리 보기를 로그인한 계정에만 열어 401 이 온다.
+  // 그러면 미리 보기 없이 코드를 들고 로그인하고, 합류 화면이 미리 보기와 오류를 보인다
   const enteredPeek = useInvitePeek(inviting ? entered : "");
   const linkPeek = useInvitePeek(claimCode ?? "");
   const enteredBlocked = blocksClaim(enteredPeek.error);

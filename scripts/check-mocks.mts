@@ -1001,8 +1001,7 @@ const pendingCodes = async () =>
     hasAccount?: boolean;
     consentGiven?: boolean;
   };
-  /** 로그인 화면은 토큰 없이 미리 본다 */
-  const peekAnon = (code: string) => fetch(`${BASE}/invites/${code}`);
+  const peek = (code: string) => get(`/invites/${code}`);
   const claim = (body: Record<string, unknown>) => post("/profiles/claim", body);
   const login = async (providerUserId: string, claimCode?: string) =>
     (await (await post("/auth/dev-login", { providerUserId, claimCode })).json()) as {
@@ -1023,32 +1022,37 @@ const pendingCodes = async () =>
   const parentCode = await make({ role: "PARENT" });
   const childCode = await make({ role: "CHILD", guardianConsent: CONSENT });
 
-  let res = await peekAnon(parentCode);
-  const anon = (await res.json().catch(() => ({}))) as Peek;
+  let res = await fetch(`${BASE}/invites/${parentCode}`);
+  check("미리 보기는 로그인한 계정만 부른다(토큰 없이 401)", res.status === 401, `${res.status}`);
+  // 가족이 없는 새 계정으로 미리 본다
+  await login("demo-fresh");
+  res = await peek(parentCode);
+  const familyPeek = (await res.json().catch(() => ({}))) as Peek & { ageGroup?: string | null };
   check(
-    "로그인하기 전에도 가족 초대를 미리 본다(▲ 요청)",
+    "가족 초대를 미리 보면 kind FAMILY 와 역할, 가족 이름, 보낸 사람이 오고 자리 이름과 연령대는 null",
     res.status === 200 &&
-      anon.kind === "FAMILY" &&
-      anon.role === "PARENT" &&
-      anon.familyName === "서준이네" &&
-      anon.profileName === null &&
-      anon.invitedByName === "은영",
-    `${res.status} ${JSON.stringify(anon)}`,
+      familyPeek.kind === "FAMILY" &&
+      familyPeek.role === "PARENT" &&
+      familyPeek.familyName === "서준이네" &&
+      familyPeek.profileName === null &&
+      familyPeek.ageGroup === null &&
+      familyPeek.invitedByName === "은영",
+    `${res.status} ${JSON.stringify(familyPeek)}`,
   );
-  res = await peekAnon("K7M2QT");
+  res = await peek("K7M2QT");
   const seatPeek = (await res.json().catch(() => ({}))) as Peek;
   check(
     "자리 초대를 미리 보면 kind PROFILE 과 자리 이름이 온다",
     seatPeek.kind === "PROFILE" && seatPeek.role === "PARENT" && seatPeek.profileName === "도현",
     JSON.stringify(seatPeek),
   );
-  res = await peekAnon("X4T7EM");
+  res = await peek("X4T7EM");
   check(
     "기한이 지난 코드를 미리 보면 410 CODE_EXPIRED",
     res.status === 410 && (await codeOf(res)) === "CODE_EXPIRED",
     `${res.status}`,
   );
-  res = await peekAnon("ZZZZZZ");
+  res = await peek("ZZZZZZ");
   check(
     "없는 코드를 미리 보면 404 CODE_NOT_FOUND",
     res.status === 404 && (await codeOf(res)) === "CODE_NOT_FOUND",
@@ -1056,9 +1060,12 @@ const pendingCodes = async () =>
   );
 
   // (나) 초대한 은영이 제 폰에서 코드를 넣는다
-  res = await get(`/invites/${parentCode}`);
+  await login("demo-parent");
+  res = await peek(parentCode);
+  check("미리 보기는 계정에 가족이 있는지 보지 않는다(200)", res.status === 200, `${res.status}`);
+  res = await claim({ claimCode: parentCode });
   check(
-    "이 가족 구성원이 미리 보면 409 ALREADY_MEMBER(▲ 요청)",
+    "가족이 있는 계정은 정보 없이 코드만 보내도 409 ALREADY_MEMBER 를 먼저 받는다",
     res.status === 409 && (await codeOf(res)) === "ALREADY_MEMBER",
     `${res.status}`,
   );
@@ -1096,6 +1103,14 @@ const pendingCodes = async () =>
   );
   res = await claim({ claimCode: parentCode, ...adult, heightCm: 400 });
   check("키가 범위를 벗어나면 400", res.status === 400, `${res.status}`);
+  res = await claim({ claimCode: "ZZZZZZ", ...adult, birthDate: "2999-01-01" });
+  check(
+    "미래 생년월일은 코드를 찾기 전에 400",
+    res.status === 400 && (await codeOf(res)) === "BAD_REQUEST",
+    `${res.status}`,
+  );
+  res = await claim({ claimCode: parentCode, ...adult, name: "가".repeat(21) });
+  check("이름이 20자를 넘으면 400", res.status === 400, `${res.status}`);
   res = await claim({ claimCode: "ZZZZZZ", ...adult });
   check(
     "없는 코드면 404 CODE_NOT_FOUND",
@@ -1146,7 +1161,7 @@ const pendingCodes = async () =>
     res.status === 409 && (await codeOf(res)) === "ALREADY_CLAIMED",
     `${res.status}`,
   );
-  res = await peekAnon(parentCode);
+  res = await peek(parentCode);
   check(
     "이미 쓴 코드를 미리 보면 409 ALREADY_CLAIMED",
     res.status === 409 && (await codeOf(res)) === "ALREADY_CLAIMED",
@@ -1193,9 +1208,15 @@ const pendingCodes = async () =>
   const another = await make({ role: "PARENT" });
   await login("demo-fresh");
   await post("/families", { familyName: "민호네", owner: { ...adult, name: "민호", sex: "M" } });
-  res = await get(`/invites/${another}`);
+  res = await peek(another);
   check(
-    "다른 가족에 이미 있는 계정이 미리 보면 409 ALREADY_IN_FAMILY(▲ 요청)",
+    "다른 가족에 이미 있는 계정도 미리 보기는 받는다(가족 이름은 낼 때의 이름)",
+    res.status === 200 && ((await res.json()) as Peek).familyName === "서준이네",
+    `${res.status}`,
+  );
+  res = await claim({ claimCode: another });
+  check(
+    "다른 가족에 이미 있는 계정은 정보 없이 코드만 보내도 409 ALREADY_IN_FAMILY",
     res.status === 409 && (await codeOf(res)) === "ALREADY_IN_FAMILY",
     `${res.status}`,
   );
@@ -1233,15 +1254,26 @@ const pendingCodes = async () =>
   // 없는 코드를 너무 많이 넣으면 막는다. 다시 로그인하면 처음부터 센다
   await login("demo-fresh");
   let last = res;
-  for (let i = 0; i < 11; i++) last = await claim({ claimCode: "ZZZZZZ" });
+  for (let i = 0; i < 12; i++) last = await claim({ claimCode: "ZZZZZZ" });
   check(
-    "없는 코드를 열 번 넘게 넣으면 429 TOO_MANY",
+    "없는 코드를 열 번 넘게 넣으면 다음 요청은 429 TOO_MANY",
     last.status === 429 && (await codeOf(last)) === "TOO_MANY",
     `${last.status}`,
   );
   await login("demo-fresh");
   res = await claim({ claimCode: "ZZZZZZ" });
   check("다시 로그인하면 처음부터 센다", res.status === 404, `${res.status}`);
+
+  // 기한이 지났지만 쓰지 않은 초대는 취소할 수 있다
+  await login("demo-parent");
+  res = await send("DELETE", `${invitesPath()}/X4T7EM`);
+  check("기한이 지났어도 쓰지 않은 초대는 취소한다(204)", res.status === 204, `${res.status}`);
+  res = await post(invitesPath("00000000-0000-4000-8000-0000000000ff"), { role: "OWNER" });
+  check(
+    "초대 만들기는 본문(역할)부터 본다 — 다른 가족이어도 모르는 역할이면 400",
+    res.status === 400,
+    `${res.status}`,
+  );
 }
 
 server.close();

@@ -53,6 +53,12 @@ function ClaimContent() {
   // 가족이 없는 계정은 새 가족 만들기와 초대 코드로 참여하기를 고르는 화면에서 왔다. 거기로 돌아갈 수 있다
   const { nextStep } = useSession();
   const noFamily = nextStep === "CREATE_FAMILY" || nextStep === "CLAIM";
+  /*
+    이미 가족이 있는 계정(초대한 보호자가 제 폰에서 링크를 열었거나, 다른 가족에 있는 계정)은 이 코드로 들어갈 수 없다.
+    정보를 다 적은 뒤에야 알면 안 되니 폼을 띄우지 않는다. 서버는 정보가 빠졌는지 보기 전에 409 ALREADY_MEMBER 나
+    409 ALREADY_IN_FAMILY 를 주므로, 「가족 참여하기」 는 코드만 보내 까닭을 바로 받는다
+  */
+  const hasFamily = nextStep === "HOME" || nextStep === "SUPPORT_MODE";
 
   const [code, setCode] = useState(() => normalizeCode(params.get("code") ?? ""));
   const [form, setForm] = useState<JoinForm>(EMPTY_FORM);
@@ -67,10 +73,10 @@ function ClaimContent() {
   // 로그인 전에는 묻지 않는다 — 이 화면은 곧 로그인으로 넘어간다
   const peek = useInvitePeek(token ? code : "");
   const seat = peek.data;
-  const family = isFamilyInvite(seat);
+  // 들어오는 사람이 자기 정보를 넣는 가족 초대인가. 이미 가족이 있는 계정이면 폼을 띄우지 않는다
+  const family = isFamilyInvite(seat) && !hasFamily;
   /*
-    미리 보기가 「이 코드로는 못 들어간다」 고 할 때만 막는다(없음, 기한, 이미 씀, 이미 이 가족, 이미 다른 가족,
-    너무 많이 틀림). 미리 보기가 없는 서버이거나 망이 흔들렸으면 넣어 보게 둔다 — 진짜 답은 `/profiles/claim` 이 준다.
+    미리 보기가 「이 코드로는 못 들어간다」 고 할 때만 막는다(없음, 기한, 이미 씀, 너무 많이 틀림). 미리 보기가 없는 서버이거나 망이 흔들렸으면 넣어 보게 둔다 — 진짜 답은 `/profiles/claim` 이 준다.
     전에는 미리 보기가 안 되면 단추가 영영 잠겼다
   */
   const badCode = blocksClaim(peek.error) ? peek.error : null;
@@ -101,7 +107,7 @@ function ClaimContent() {
     if (!canSubmit) return;
     setFailure(null);
     try {
-      const res = await claim.mutateAsync(claimBody(code, seat, form));
+      const res = await claim.mutateAsync(claimBody(code, family ? seat : null, form));
       // 가입 도중이라는 걸 다음 화면이 알아야 한다. 고르고 나서 멈추면 안 된다
       router.replace(
         res.nextStep === "SUPPORT_MODE" ? "/settings/support-mode?from=claim" : "/start",
@@ -150,6 +156,12 @@ function ClaimContent() {
 
         {/* 어디로 들어가는 초대인지. 코드가 맞아야 뜬다 — 둥근 면에 담지 않고 한 줄로 */}
         {seat && <SeatLine seat={seat} />}
+
+        {seat && hasFamily && shownError == null && (
+          <p role="status" className="text-ink-soft text-center text-sm font-semibold">
+            이미 가족이 있는 계정으로 로그인했어요
+          </p>
+        )}
 
         {/* 가족 초대 — 들어오는 사람이 자기 정보를 넣는다 */}
         {seat && family && <JoinFields role={role} form={form} onChange={edit} problem={problem} />}

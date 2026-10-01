@@ -150,7 +150,12 @@ export function InviteSheet({
       setError(
         errorMessage(
           e,
-          { CONSENT_REQUIRED: "아이로 초대하려면 보호자 동의가 필요해요." },
+          {
+            CONSENT_REQUIRED: "아이로 초대하려면 보호자 동의가 필요해요.",
+            // 동의하는 보호자 자신이 만 14세 미만이다
+            UNDER_14_NOT_ALLOWED: "만 14세 미만 보호자는 아이 초대에 동의할 수 없어요.",
+            CONFLICT: "다른 요청과 겹쳤어요. 다시 눌러 주세요.",
+          },
           "초대 코드를 만들지 못했어요.",
         ),
       );

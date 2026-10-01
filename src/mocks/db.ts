@@ -539,6 +539,8 @@ export type InviteRow = {
   code: string;
   kind: "FAMILY" | "PROFILE";
   familyId: string;
+  /** 낼 때의 가족 이름. 미리 보기가 싣는다 */
+  familyName: string;
   role: "PARENT" | "CHILD";
   /** 자리 초대만. 그 자리의 프로필 */
   profileId: string | null;
@@ -563,6 +565,7 @@ export function seedInvites(now: number = Date.now()): InviteRow[] {
   const at = (ms: number) => new Date(ms).toISOString();
   const base = {
     familyId: DEMO.familyId,
+    familyName: "서준이네",
     issuedBy: DEMO.mom,
     issuedByName: "은영",
     claimedAt: null,

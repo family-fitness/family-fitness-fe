@@ -60,8 +60,6 @@ const authGate = [
   http.all(`${BASE}/*`, ({ request }) => {
     const url = new URL(request.url);
     if (url.pathname.includes("/auth/")) return;
-    // ▲ 요청: 초대 코드 미리 보기는 로그인 전에도 연다. 로그인 화면의 「초대 코드가 있어요」 가 가족 이름을 먼저 보여 준다
-    if (request.method === "GET" && /\/invites\/[^/]+$/.test(url.pathname)) return;
     if (request.headers.get("authorization")) return;
     return fail(401, "UNAUTHORIZED", "로그인이 필요합니다");
   }),

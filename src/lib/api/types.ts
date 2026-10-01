@@ -199,12 +199,12 @@ export type InviteKind = "FAMILY" | "PROFILE";
  * 무슨 초대인지(보호자로, 아이로, 아니면 이미 등록된 누구의 자리로) 보여 준다.
  * 자리 초대면 그 자리 이름이 오고, 가족 초대면 `profileName` 이 null 이다.
  *
- * 없는 코드 404, 이미 쓴 코드 409 ALREADY_CLAIMED, 기한이 지났으면 410, 너무 많이 틀리면 429.
- * ▲ 요청: 로그인 전에도 부를 수 있게(로그인 화면의 「초대 코드가 있어요」). 로그인한 계정에 이미 가족이 있으면
- * 409 ALREADY_MEMBER(이 가족) 또는 409 ALREADY_IN_FAMILY(다른 가족)
+ * 로그인한 계정만 부른다. 판정 차례: 너무 많이 틀림 429, 없는 코드 404, 이미 쓴 코드 409 ALREADY_CLAIMED, 기한이 지났으면 410.
+ * 계정에 이미 가족이 있는지는 보지 않는다(코드로 참여하기가 409 ALREADY_MEMBER, ALREADY_IN_FAMILY 를 준다).
+ * ▲ 요청: 로그인 화면의 「초대 코드가 있어요」 가 로그인 전에 가족 이름을 보여 주려면 토큰 없이도 부를 수 있어야 한다
  */
 export interface InvitePeek {
-  /** ▲ 아직 안 주는 서버가 있으면 자리 초대(PROFILE)로 본다 */
+  /** 없으면(예전 서버) 자리 초대(PROFILE)로 본다 */
   kind?: InviteKind | null;
   familyName: string;
   /** 자리 초대의 자리 이름. 가족 초대면 null */
