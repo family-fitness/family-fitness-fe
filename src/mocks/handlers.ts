@@ -4,6 +4,7 @@ import { HttpResponse, http, type PathParams } from "msw";
 import type { AgeGroup, FitnessTestResult, LatestFitnessTest } from "@/lib/api/types";
 
 import { ageOf, toDateString } from "@/lib/today";
+import { minCreditSeconds } from "@/lib/session-plan";
 
 import {
   BASE,
@@ -794,7 +795,8 @@ const missions = [
       const me = participantOf(mission, body.profileId);
       if (!me) return fail(403, "NOT_A_PARTICIPANT", "이 운동을 하는 사람이 아닙니다");
       // 잡힌 시간의 절반도 안 했으면 끝낸 것으로 치지 않는다
-      const planned = (session.minutes ?? 1) * 60;
+      // 서버와 같다: 칸 시간과 영상 구간 길이 중 짧은 쪽이 기준 시간
+      const planned = minCreditSeconds(session) * 2;
       // 동의를 거두면 측정뿐 아니라 활동 저장도 막힌다(규칙 4)
       const person = db.profiles.profiles.find((p) => p.profileId === body.profileId);
       if (person && !person.consentGiven) {
