@@ -66,11 +66,13 @@ import {
 } from "@/lib/videos";
 import {
   callName,
+  canRemoveMember,
   familySetupPath,
   guardiansName,
   mustAddChild,
   mustSetUpFamily,
   openWithoutChild,
+  removeMemberCopy,
 } from "@/lib/family";
 import {
   CREATE_AT,
@@ -1216,6 +1218,63 @@ check(
     cameAfterWithdrawal(new URLSearchParams(WITHDRAWN_PATH.split("?")[1])) &&
       !cameAfterWithdrawal(new URLSearchParams("")) &&
       !cameAfterWithdrawal(new URLSearchParams("claimCode=K7M2QT")),
+  );
+}
+
+/* ─── 구성원 내보내기: 가족을 만든 사람만 다른 구성원을 내보낸다 ─────────────────── */
+
+{
+  const owner = { profileId: "mom", isOwner: true };
+  const guardian = { profileId: "dad", isOwner: false };
+  const kid = { profileId: "kid", name: "서준", hasAccount: false };
+  const dad = { profileId: "dad", name: "도현", hasAccount: true };
+
+  check(
+    "오너는 다른 구성원을 내보낼 수 있다",
+    canRemoveMember(owner, kid) && canRemoveMember(owner, dad),
+  );
+  check("오너도 자기 자신은 내보낼 수 없다", !canRemoveMember(owner, { profileId: "mom" }));
+  check("오너가 아니면 아무도 내보낼 수 없다", !canRemoveMember(guardian, kid));
+  check("내 프로필을 모르면 내보낼 수 없다", !canRemoveMember(undefined, kid));
+  check(
+    "프로필 번호가 없는 줄은 내보낼 수 없다",
+    !canRemoveMember(owner, { profileId: undefined }),
+  );
+
+  const kidCopy = removeMemberCopy(kid);
+  check(
+    "확인 제목은 이름에 맞는 조사로 묻는다",
+    kidCopy.title === "서준을 내보낼까요",
+    kidCopy.title,
+  );
+  check(
+    "내보내면 그 사람의 기록이 모두 지워지고 되돌릴 수 없다고 말한다",
+    kidCopy.lines.some((l) => l.includes("서준의 기록이 모두 지워져요")) &&
+      kidCopy.lines.some((l) => l.includes("되돌릴 수 없어요")),
+    kidCopy.lines.join(" / "),
+  );
+  check(
+    "계정이 없는 사람에게는 계정 이야기를 하지 않는다",
+    kidCopy.lines.every((l) => !l.includes("계정")),
+  );
+  const dadCopy = removeMemberCopy(dad);
+  check(
+    "받침 없는 이름도 조사를 맞춘다",
+    removeMemberCopy({ name: "지호" }).title === "지호를 내보낼까요",
+  );
+  check(
+    "계정이 있는 사람이면 계정은 남고 가족에서만 빠진다고 말한다",
+    dadCopy.lines.some((l) => l.includes("도현의 계정은 지워지지 않고 우리 가족에서만 빠져요")),
+    dadCopy.lines.join(" / "),
+  );
+  check(
+    "이름이 없으면 「이 구성원」 으로 부른다",
+    removeMemberCopy({}).title === "이 구성원을 내보낼까요",
+  );
+  const all = [kidCopy, dadCopy].flatMap((c) => [c.title, ...c.lines]);
+  check(
+    "내보내기 안내 글에 가운데 점과 긴 대시를 쓰지 않는다",
+    all.every((l) => !/[·—–]/.test(l)),
   );
 }
 

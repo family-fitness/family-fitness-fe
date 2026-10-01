@@ -18,10 +18,12 @@ import { DateField } from "@/components/ui/date-field";
 import { Field } from "@/components/ui/field";
 import { errorMessage } from "@/lib/errors";
 import type { ProfileSummary } from "@/lib/api/types";
-import { useCreateProfile, useFamilyProfiles } from "@/lib/api/queries";
+import { useCreateProfile, useFamilyProfiles, useRemoveMember } from "@/lib/api/queries";
+import { canRemoveMember, removeMemberCopy } from "@/lib/family";
 import { useSession } from "@/lib/session";
 import { guardianBirthRule } from "@/lib/date-pick";
 import { cn } from "@/lib/utils";
+import { usePhotoStore } from "@/stores/photo-store";
 import { useRoleStore } from "@/stores/role-store";
 import { PhotoSheet } from "@/components/domain/photo-sheet";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
@@ -44,6 +46,9 @@ export default function MembersPage() {
   const [adding, setAdding] = useState(false);
   // 초대 시트 — 닫힘(undefined) · 이 자리로(id). 가족 대시보드와 같은 시트다
   const [inviting, setInviting] = useState<string | null | undefined>(undefined);
+  // 내보내기 확인 시트. 시트가 닫히며 내려가는 동안에도 글이 남도록, 누구를 내보낼지는 state 에 따로 들고 있는다
+  const [removing, setRemoving] = useState<ProfileSummary | null>(null);
+  const [removeOpen, setRemoveOpen] = useState(false);
 
   if (sessionPending || isLoading) return <MembersSkeleton />;
 
@@ -65,6 +70,8 @@ export default function MembersPage() {
     profiles.find((p) => p.profileId === childProfileId) ??
     profiles.find((p) => p.role === "CHILD");
   const mySupportMode = profile?.supportMode ?? undefined;
+  // 내가 오너인지는 가족 목록의 내 줄로 본다. 아직 없으면 `/me` 의 내 프로필로
+  const me = profiles.find((p) => p.profileId === profile?.profileId) ?? profile;
 
   return (
     <>
@@ -78,6 +85,14 @@ export default function MembersPage() {
                 key={p.profileId}
                 profile={p}
                 onInvite={() => setInviting(p.profileId ?? null)}
+                onRemove={
+                  canRemoveMember(me, p)
+                    ? () => {
+                        setRemoving(p);
+                        setRemoveOpen(true);
+                      }
+                    : undefined
+                }
               />
             ))}
           </ul>
@@ -128,12 +143,27 @@ export default function MembersPage() {
           members={profiles}
           initialId={inviting}
         />
+        <RemoveMemberSheet
+          open={removeOpen}
+          onClose={() => setRemoveOpen(false)}
+          member={removing}
+          familyId={familyId ?? ""}
+        />
       </Stage>
     </>
   );
 }
 
-function MemberRow({ profile, onInvite }: { profile: ProfileSummary; onInvite: () => void }) {
+function MemberRow({
+  profile,
+  onInvite,
+  onRemove,
+}: {
+  profile: ProfileSummary;
+  onInvite: () => void;
+  /** 오너가 다른 구성원 줄에서만 받는다. 없으면 내보내기를 내지 않는다 */
+  onRemove?: () => void;
+}) {
   const [photoOpen, setPhotoOpen] = useState(false);
   // 동의를 거둔 아이는 사진도 올리지 않는다
   const canPhoto = !(profile.role === "CHILD" && profile.consentRequired && !profile.consentGiven);
@@ -176,16 +206,116 @@ function MemberRow({ profile, onInvite }: { profile: ProfileSummary; onInvite: (
           </p>
         </div>
 
-        {profile.hasAccount ? (
-          <span className="text-done text-xs font-bold">연결됨</span>
-        ) : (
-          // 코드는 이 자리 하나에 맞는다 — 시트에서 만들고 복사 · 공유한다
-          <Button size="md" variant="outline" onClick={onInvite}>
-            초대하기
-          </Button>
-        )}
+        <div className="flex shrink-0 items-center gap-1">
+          {profile.hasAccount ? (
+            <span className="text-done text-xs font-bold">연결됨</span>
+          ) : (
+            // 코드는 이 자리 하나에 맞는다 — 시트에서 만들고 복사 · 공유한다
+            <Button size="md" variant="outline" onClick={onInvite}>
+              초대하기
+            </Button>
+          )}
+          {onRemove && (
+            <button
+              type="button"
+              onClick={onRemove}
+              aria-label={`${profile.name ?? ""} 내보내기`}
+              className="press text-signal-deep text-caption min-h-11 px-2 font-bold"
+            >
+              내보내기
+            </button>
+          )}
+        </div>
       </div>
     </li>
+  );
+}
+
+/**
+ * 구성원 내보내기 확인. 내보내면 그 사람의 프로필과 기록이 지워지고 되돌릴 수 없다.
+ * 계정이 있는 사람이면 계정은 남고 우리 가족에서만 빠진다
+ */
+function RemoveMemberSheet({
+  open,
+  onClose,
+  member,
+  familyId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  member: ProfileSummary | null;
+  familyId: string;
+}) {
+  const remove = useRemoveMember(familyId);
+  const removePhoto = usePhotoStore((s) => s.remove);
+  const [error, setError] = useState<string | null>(null);
+  const copy = removeMemberCopy(member ?? {});
+
+  const close = () => {
+    setError(null);
+    onClose();
+  };
+
+  const confirm = async () => {
+    const profileId = member?.profileId;
+    if (!profileId) return;
+    setError(null);
+    try {
+      await remove.mutateAsync(profileId);
+      // 이 기기에 둔 그 사람 사진을 지우고, 보고 있던 아이였으면 고른 아이를 비운다(첫째로 돌아간다)
+      removePhoto(profileId);
+      if (useRoleStore.getState().childProfileId === profileId) {
+        useRoleStore.getState().setChild(null);
+      }
+      close();
+    } catch (e) {
+      setError(
+        errorMessage(
+          e,
+          {
+            FORBIDDEN: "가족을 만든 사람만 내보낼 수 있어요.",
+            CANNOT_REMOVE_SELF: "나는 내보낼 수 없어요. 설정에서 탈퇴할 수 있어요.",
+            PROFILE_NOT_FOUND: "이미 우리 가족에 없는 사람이에요.",
+          },
+          "내보내지 못했어요. 잠시 뒤에 다시 해 주세요.",
+        ),
+      );
+    }
+  };
+
+  return (
+    <Sheet open={open} onClose={close} title={copy.title}>
+      <div className="space-y-5">
+        <div className="space-y-1.5">
+          {copy.lines.map((line) => (
+            <p key={line} className="text-body text-ink-soft">
+              {line}
+            </p>
+          ))}
+        </div>
+
+        {error && (
+          <p role="alert" className="text-signal-deep text-sm font-semibold">
+            {error}
+          </p>
+        )}
+
+        <div className="flex gap-2">
+          <Button variant="outline" size="md" className="flex-1" onClick={close}>
+            그대로 두기
+          </Button>
+          <Button
+            variant="danger"
+            size="md"
+            className="flex-1"
+            loading={remove.isPending}
+            onClick={() => void confirm()}
+          >
+            내보내기
+          </Button>
+        </div>
+      </div>
+    </Sheet>
   );
 }
 

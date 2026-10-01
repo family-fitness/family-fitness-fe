@@ -236,6 +236,28 @@ export function useCreateProfile(familyId: Uuid) {
   });
 }
 
+/**
+ * 오너가 구성원을 내보낸다(204). 내보낸 사람의 프로필과 기록이 지워지고, 계정이 있는 사람이면 계정은 남고 가족에서만 빠진다.
+ * 오너가 아니면 403, 자기 자신이면 409 CANNOT_REMOVE_SELF, 다른 가족이면 404
+ */
+export function useRemoveMember(familyId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (profileId: Uuid) =>
+      api.delete<void>(path`/families/${familyId}/profiles/${profileId}`),
+    onSuccess: (_, profileId) => {
+      // 가족 목록, 가족 지도, 운동, 칭찬, 달력, 리그를 다시 받는다. 지금 안 떠 있는 화면의 것도
+      void qc.invalidateQueries({ queryKey: ["family", familyId], refetchType: "all" });
+      // `/me` 는 이 계정이 관리하는 프로필이다. 계정 없는 아이가 빠졌을 수 있다
+      void qc.invalidateQueries({ queryKey: qk.me() });
+      void qc.invalidateQueries({ queryKey: qk.coach.latest(familyId) });
+      void qc.invalidateQueries({ queryKey: ["notifications"] });
+      // 내보낸 사람의 측정, 레벨, 운동 시간은 이제 없다
+      qc.removeQueries({ queryKey: ["profile", profileId] });
+    },
+  });
+}
+
 /** 가족 단위가 아니라 프로필 단위 코드. 계정이 안 붙은 프로필에만 발급된다 */
 export function useOpenInvite() {
   return useMutation({
