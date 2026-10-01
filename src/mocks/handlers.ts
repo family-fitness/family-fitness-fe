@@ -223,7 +223,7 @@ const identity = [
    *   FAMILY(본문이 없거나 kind 가 없을 때도)  체험 가족의 보호자로 홈에. 진짜 서버는 부를 때마다 새 계정과
    *                                          「체험 가족」 을 만든다. 목은 식구와 측정 기록이 다 차 있는 서준이네로 들어간다
    *   FRESH    가족이 없는 새 계정 — 개발용 「새 계정 · 가족 없음」 과 같다(nextStep CREATE_FAMILY)
-   *   INVITED  가족이 없는 새 계정과, 체험 가족의 초대코드(`inviteCode`). 개발용 「초대받은 계정」 과 같게
+   *   INVITED  가족이 없는 새 계정과, 체험 가족의 초대 코드(`inviteCode`). 개발용 「초대받은 계정」 과 같게
    *            서준이네 아빠 자리 코드(K7M2QT)를 준다
    *
    * 모르는 kind 는 400.
@@ -506,7 +506,7 @@ const fitness = [
     return HttpResponse.json(table[ageGroup ?? "유소년"] ?? table["유소년"]);
   }),
 
-  /** ▲ 서버에 아직 없다. 운동할 수 있는 시간 */
+  /** ▲ 서버에 아직 없다. 운동 루틴 */
   http.get<PathParams>(`${BASE}/profiles/:profileId/availability`, ({ params }) =>
     HttpResponse.json({
       profileId: String(params.profileId),
@@ -653,7 +653,7 @@ const fitness = [
           coachDirection: sorted[0].percentile > 75 ? "STRENGTHEN" : "GROWTH",
         };
       }
-      // 다시 재기는 덮어쓰기가 아니라 추가다(규칙 11). 최근 회차가 먼저
+      // 다시 측정하기는 덮어쓰기가 아니라 추가다(규칙 11). 최근 회차가 먼저
       db.tests[profileId] = [
         {
           fitnessTestId: result.fitnessTestId,

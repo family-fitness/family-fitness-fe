@@ -77,7 +77,7 @@ export default function ResultPage() {
                   href={`/p/${profileId}/measure`}
                   className="press bg-signal-strong text-body mt-1 rounded-xl px-5 py-3 font-bold text-white"
                 >
-                  첫 측정 하기
+                  체력 측정하기
                 </Link>
               ) : (
                 unknownWho && (
@@ -211,11 +211,15 @@ export default function ResultPage() {
           className="press bg-signal-strong flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
         >
           <ArtIcon name="icon/menu-ai" className="size-5" />
-          AI에게 운동 받기
+          AI 운동 추천 받기
         </Link>
         {measurable && (
           <ul className="card divide-rows py-1">
-            <ListRow href={`/p/${profileId}/measure`} art="icon/menu-measure" title="새로 재기" />
+            <ListRow
+              href={`/p/${profileId}/measure`}
+              art="icon/menu-measure"
+              title="다시 측정하기"
+            />
           </ul>
         )}
       </Stage>

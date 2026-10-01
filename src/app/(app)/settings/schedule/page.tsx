@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
- * 운동할 수 있는 시간 — 사람마다 한 주.
+ * 운동 루틴 — 사람마다 한 주.
  *
  * AI 편성이 「몇 분」 의 기본값으로 쓴다. **막는 데 쓰지 않는다** — 적어 둔 시간이
  * 아니라고 운동을 못 하게 하지 않는다. 언제 하겠다는 가족의 약속이다(9/23 회의).
@@ -105,8 +105,8 @@ function Schedule() {
 
   return (
     <>
-      {/* 들어온 곳(짜기 · 직접 짜기 · 가족)으로 돌아간다 — 설정으로 박아 두면 설정의 뒤로와 서로 오갔다 */}
-      <AppBar back title="운동할 수 있는 시간" />
+      {/* 들어온 곳(짜기 · 직접 만들기 · 가족)으로 돌아간다 — 설정으로 박아 두면 설정의 뒤로와 서로 오갔다 */}
+      <AppBar back title="운동 루틴" />
       <Stage wide className="space-y-3 pb-28">
         {(sessionError ?? (family ? null : familyError)) ? (
           // 누구의 시간인지 못 받으면 빈 화면이었다 — 나(/me)를 못 받아도 같다
@@ -264,7 +264,7 @@ function WeekEditor({
           <>
             <p className="text-lead mt-1 font-extrabold">아직 설정한 시간이 없어요</p>
             <p className="text-ink-soft mt-1 text-sm font-semibold">
-              요일과 시간을 설정하면 AI가 그 시간에 맞춰 운동을 짜 줘요
+              요일과 시간을 설정하면 AI가 그 시간에 맞춰 운동을 만들어 줘요
             </p>
           </>
         ) : (

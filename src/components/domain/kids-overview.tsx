@@ -124,7 +124,7 @@ function KidLine({
   // 운동 목록을 못 받았으면 오늘을 말하지 않는다 — 「오늘 운동 없어요」 로 그리면 부모가 같은 운동을 또 받는다
   const status = missions ? todayLine(dayWork(missions, kid.profileId, now), rest) : null;
   const score = kid.latest?.overallPercentile ?? null;
-  // 잰 적은 있는데 점수가 없는 아이 — 만 7~10세는 규준이 비어 있다(규칙 8). 「아직 재지 않았어요」 가 아니다
+  // 잰 적은 있는데 점수가 없는 아이 — 만 7~10세는 규준이 비어 있다(규칙 8). 「아직 측정하지 않았어요」 가 아니다
   const measured = Boolean(kid.latest?.testedOn);
   // 그 까닭이 만 7~10세라면 「점수가 없어요」 대신 까닭을 말한다
   const normsNote = memberNoPeerNormsNote(kid);
@@ -207,7 +207,7 @@ function KidLine({
               </span>
             </>
           ) : (
-            <span className="text-caption text-ink-soft text-right">아직 재지 않았어요</span>
+            <span className="text-caption text-ink-soft text-right">아직 측정하지 않았어요</span>
           )}
         </span>
       </button>

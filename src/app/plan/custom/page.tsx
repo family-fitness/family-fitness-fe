@@ -41,7 +41,7 @@ import { useRoleStore } from "@/stores/role-store";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
 /**
- * 직접 짜기 — 담은 동작을 세우고, 누가 · 언제 할지 정해 등록한다.
+ * 직접 만들기 — 담은 동작을 세우고, 누가 · 언제 할지 정해 등록한다.
  *
  * AI 편성의 다른 길이다(9/23 "선택해서 미션을 생성"). 부모가 고른 것이라 제안을 거치지 않고
  * 바로 그날의 운동이 된다. 여러 날 · 몇 주에 한 번에 넣을 수 있다(삼성헬스 프로그램처럼) —
@@ -111,7 +111,7 @@ function CustomPlan() {
   const upcoming = upcomingDays(now);
   /*
     쉬는 날 카드를 쓴 날에는 운동을 넣지 않는다. 쉬는 날이 이어서 한 날 · 리그에서 빠지는 날인데
-    직접 짜기로 운동을 넣으면 아이 홈은 「오늘은 쉬는 날이에요」 이고 운동은 걸려 있는 날이 된다.
+    직접 만들기로 운동을 넣으면 아이 홈은 「오늘은 쉬는 날이에요」 이고 운동은 걸려 있는 날이 된다.
     고를 날 · 되풀이한 날이 든 달의 쉬는 날을 모두 받는다(4주 되풀이면 달을 넘는다)
   */
   const span = repeatDates(upcoming, Number(weeks));
@@ -177,7 +177,7 @@ function CustomPlan() {
   if (sent) {
     return (
       <>
-        <AppBar back title="직접 짜기" />
+        <AppBar back title="직접 만들기" />
         <Stage wide>
           <p className="card-hero text-center text-sm font-extrabold" role="status">
             등록했어요
@@ -191,7 +191,7 @@ function CustomPlan() {
   if (!ready) {
     return (
       <>
-        <AppBar back title="직접 짜기" />
+        <AppBar back title="직접 만들기" />
         <Stage wide className="space-y-3">
           <Skeleton className="h-72 w-full rounded-3xl" />
           <Skeleton className="h-28 w-full rounded-3xl" />
@@ -204,7 +204,7 @@ function CustomPlan() {
   if (moves.length === 0) {
     return (
       <>
-        <AppBar back title="직접 짜기" />
+        <AppBar back title="직접 만들기" />
         <Stage wide>
           <EmptyState
             scene="no-mission"
@@ -234,7 +234,7 @@ function CustomPlan() {
 
   return (
     <>
-      <AppBar back title="직접 짜기" />
+      <AppBar back title="직접 만들기" />
       <Stage wide className="space-y-3 pb-36">
         {/* 1. 동작 — 하는 차례대로. 위아래로 옮기고 시간을 정한다 */}
         <Card hero>

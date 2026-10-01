@@ -23,7 +23,7 @@ import { childFinderHref } from "@/lib/videos";
 /**
  * 부모 홈의 첫 묶음 — 「우리 아이」. 아이가 어디쯤인지와 오늘 무엇을 하는지를 한 덩어리로.
  *
- * 카드 하나에 기능 하나씩 쌓던 것(체력 · 다시 재기 · AI 제안 · 오늘 운동)을 합쳤다(9/25 「큰 묶음 둘」).
+ * 카드 하나에 기능 하나씩 쌓던 것(체력 · 다시 측정하기 · AI 제안 · 오늘 운동)을 합쳤다(9/25 「큰 묶음 둘」).
  * 육각형 바로 아래에 통합 신체 점수(9/25). 이름을 누르면 아이 기록(요인 표 · 점수 흐름 · 키)으로 간다.
  */
 export function ChildPanel({
@@ -261,13 +261,13 @@ function TodaySection({
               className="press bg-signal-strong flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
             >
               <ArtIcon name="icon/menu-ai" className="size-5" />
-              AI에게 운동 받기
+              AI 운동 추천 받기
             </Link>
             <Link
               href={childFinderHref(childProfileId)}
               className="press bg-sub flex min-h-12 items-center justify-center rounded-2xl px-4 text-sm font-extrabold"
             >
-              직접 짜기
+              직접 만들기
             </Link>
           </div>
         )}
@@ -383,7 +383,7 @@ function TodaySection({
 
       {proposal}
 
-      {/* 운동 더하기 — 오늘 운동이 있어도 AI에게 더 받거나 직접 짜서 더한다(9/25 「운동 미션을 추가하는」).
+      {/* 운동 더하기 — 오늘 운동이 있어도 AI에게 더 받거나 직접 만들어 더한다(9/25 「운동 미션을 추가하는」).
           코치가 짠 것은 등록해야 운동이 된다(규칙 1) */}
       {!waiting && !restToday && (
         <div className="border-line mt-3 grid grid-cols-2 gap-2 border-t pt-3">
@@ -399,7 +399,7 @@ function TodaySection({
             href={childFinderHref(childProfileId)}
             className="press bg-sub flex min-h-11 items-center justify-center rounded-2xl px-1.5 text-sm font-extrabold whitespace-nowrap"
           >
-            직접 짜서 더하기
+            직접 만들어 더하기
           </Link>
         </div>
       )}

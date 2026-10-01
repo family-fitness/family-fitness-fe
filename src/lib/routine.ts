@@ -2,7 +2,7 @@ import type { ClipView, MissionSession, SessionPhase } from "./api/types";
 import { daysBefore } from "./today";
 
 /**
- * 직접 짜기 — 부모가 고른 동작으로 운동을 만든다. 순수 셈만 여기에.
+ * 직접 만들기 — 부모가 고른 동작으로 운동을 만든다. 순수 셈만 여기에.
  *
  * AI 편성과 다른 길이다(9/23 "선택해서 미션을 생성"). 부모가 고른 것이라 제안을 거치지 않고
  * 바로 그날의 운동이 된다. 여러 날 · 여러 주에 한 번에 넣을 수 있다(삼성헬스 프로그램처럼).

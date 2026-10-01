@@ -337,7 +337,7 @@ export function InviteSheet({
                         <span className="min-w-0 flex-1">
                           <span className="block font-extrabold">{m.name}</span>
                           <span className="text-caption text-ink-soft block">
-                            {m.role === "PARENT" ? "부모" : "자녀"}
+                            {m.role === "PARENT" ? "보호자" : "아이"}
                             {m.ageGroup && <span className="ml-2">{m.ageGroup}</span>}
                           </span>
                         </span>

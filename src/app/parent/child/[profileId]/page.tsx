@@ -233,7 +233,7 @@ export default function ChildDetailPage() {
  * 키 · 몸무게. 마지막 값, 키 자(잰 날마다 눈금 · 키 · 몸무게 · 날짜), 잰 기록 줄.
  *
  * 서버가 이력을 주면 이력으로, 아직이면 최근 회차나 기기에 둔 값으로.
- * 다시 재기는 덮어쓰기가 아니라 추가다 — 지난 값이 남아야 자란 걸 보여 준다(규칙 11).
+ * 다시 측정하기는 덮어쓰기가 아니라 추가다 — 지난 값이 남아야 자란 걸 보여 준다(규칙 11).
  * 키 자 옆의 키움이만 뺐다(9/29 「캐릭터 세워 두진 말고」 · 9/30 「통으로 없애냐」) — 입체 자는 둔다.
  */
 function BodyGrowth({
@@ -265,7 +265,7 @@ function BodyGrowth({
   const measuredOn = now?.testedOn ?? fallback?.measuredOn ?? null;
   const grew = first && now && first !== now ? round1(now.heightCm - first.heightCm) : null;
   const due = (daysSince(lastTestedOn) ?? 0) >= REMEASURE_DAYS;
-  // 측정한 적이 없고 이 기기에도 적어 둔 값이 없다. 빈 칸 안에 첫 측정 길을 두고 아래 「새로 재기」 는 세우지 않는다
+  // 측정한 적이 없고 이 기기에도 적어 둔 값이 없다. 빈 칸 안에 첫 측정 길을 두고 아래 「다시 측정하기」 는 세우지 않는다
   const firstMeasure = (height == null || weight == null) && measurable && !lastTestedOn;
   // 잰 기록 줄은 최근 것부터
   const newestFirst = [...withBody].reverse();
@@ -307,7 +307,7 @@ function BodyGrowth({
           description="측정하면 키가 자라는 모습을 여기에서 볼 수 있어요"
           action={
             firstMeasure && (
-              <EmptyStateAction href={`/p/${profileId}/measure`}>첫 측정 하기</EmptyStateAction>
+              <EmptyStateAction href={`/p/${profileId}/measure`}>체력 측정하기</EmptyStateAction>
             )
           }
         />
@@ -370,7 +370,7 @@ function BodyGrowth({
           }
         >
           <ArtIcon name="icon/menu-measure" className="size-5" />
-          {withJosa(name, "을를")} 새로 재기
+          {withJosa(name, "을를")} 다시 측정하기
         </NavLink>
       )}
     </Card>

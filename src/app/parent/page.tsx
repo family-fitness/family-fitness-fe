@@ -65,7 +65,7 @@ export default function ParentHomePage() {
 
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
-  // 초대하기 — 가족 대시보드와 같은 시트. 홈에서 바로 연다(9/25 「초대코드 생성하는 건 어디 갔어?」)
+  // 초대하기 — 가족 대시보드와 같은 시트. 홈에서 바로 연다(9/25 「초대 코드 생성하는 건 어디 갔어?」)
   const { data: family } = useFamilyProfiles(familyId);
   const [inviting, setInviting] = useState(false);
 
@@ -186,7 +186,7 @@ export default function ParentHomePage() {
               label="캘린더"
               art={<ArtIcon name="icon/menu-calendar" className="size-9" />}
             />
-            {/* 다른 가족들과 겨루는 자리. 운동 찾기는 아래 영상 줄 머리와 「직접 짜서 더하기」 에 있다.
+            {/* 다른 가족들과 겨루는 자리. 운동 찾기는 아래 영상 줄 머리와 「직접 만들어 더하기」 에 있다.
                 리그를 못 받으면(서버에 아직 없으면) 칸을 두지 않는다 — 누르면 오류 화면이다 */}
             {!leagueError && (
               <PanelCell

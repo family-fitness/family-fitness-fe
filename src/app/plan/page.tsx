@@ -101,7 +101,7 @@ function PlanForm() {
   const [place, setPlace] = useState<"HOME" | "OUTDOOR">("HOME");
   const [quiet, setQuiet] = useState(true);
   const [focus, setFocus] = useState<Factor | null>(null);
-  // 운동 찾기에서 담아 둔 동작 — 있으면 직접 짜기로 바로
+  // 운동 찾기에서 담아 둔 동작 — 있으면 직접 만들기로 바로
   const gathered = useRoutineStore((s) => s.moves.length);
   useRoutineReady();
   // 참여 방식이 「매번 같이」 면 부모도 같이가 기본이다 — 「주말에는 같이」 면 토 · 일에. 고르기 전에는 기본값을 따른다 —
@@ -137,7 +137,7 @@ function PlanForm() {
   if (failure) {
     return (
       <>
-        <AppBar backHref={back} title="오늘 운동 짜기" />
+        <AppBar backHref={back} title="AI 운동 추천" />
         <Stage wide>
           <ErrorState
             error={failure}
@@ -151,7 +151,7 @@ function PlanForm() {
   if (sessionPending || mapLoading) {
     return (
       <>
-        <AppBar backHref={back} title="오늘 운동 짜기" />
+        <AppBar backHref={back} title="AI 운동 추천" />
         <Stage wide className="space-y-3">
           <Skeleton className="h-80 w-full rounded-3xl" />
           <Skeleton className="h-40 w-full rounded-3xl" />
@@ -164,11 +164,11 @@ function PlanForm() {
   if (!kid) {
     return (
       <>
-        <AppBar backHref={back} title="오늘 운동 짜기" />
+        <AppBar backHref={back} title="AI 운동 추천" />
         <Stage wide>
           <EmptyState
             scene="hello"
-            title="아이를 등록하면 운동을 짜 줘요"
+            title="아이를 등록하면 운동을 만들어 줘요"
             action={
               <NavLink
                 href="/start/child"
@@ -188,7 +188,7 @@ function PlanForm() {
   const given = latest?.weakest?.factor;
   const weakest = isFactor(given) ? given : undefined;
   const shownFocus = focus ?? weakest ?? null;
-  // 이 아이를 잰 적이 있나. 없으면 빈 육각형 대신 연령대 · 키 · 몸무게와 「아직 재지 않았어요」(규칙 4)
+  // 이 아이를 잰 적이 있나. 없으면 빈 육각형 대신 연령대 · 키 · 몸무게와 「아직 측정하지 않았어요」(규칙 4)
   // 안 잰 아이도 AI 단추는 둔다(9/30 시연). 지금 서버가 422 NO_MEASURED_MEMBER 로 막으면
   // 아래 알림 카드가 첫 측정으로 가는 길을 주고, 화면이 그 카드까지 내려간다
   const measured = Boolean(kid.latest?.testedOn);
@@ -230,7 +230,7 @@ function PlanForm() {
             CONSENT_REQUIRED: "보호자 동의가 필요해요.",
             TEMPORARILY_UNAVAILABLE: "코치가 잠깐 쉬고 있어요.",
             // 지금 서버는 가족 중 잰 사람이 없으면 짜지 않는다(422) — 신체 정보로 짜 달라고 요청해 두었다
-            NO_MEASURED_MEMBER: "아직 재지 않았어요.",
+            NO_MEASURED_MEMBER: "아직 측정하지 않았어요.",
             // 심사용 계정만 하루(한국 시간)에 20번까지 짠다. 자정이 지나면 다시 센다
             TOO_MANY: "심사용 계정은 하루에 20번까지 짤 수 있어요. 내일 다시 짜 주세요.",
           },
@@ -242,7 +242,7 @@ function PlanForm() {
 
   return (
     <>
-      <AppBar backHref={back} title="오늘 운동 짜기" />
+      <AppBar backHref={back} title="AI 운동 추천" />
       <Stage wide className="space-y-3 pb-28">
         <section className="card-hero">
           <p className="text-lead font-extrabold">{name}의 체력</p>
@@ -266,7 +266,7 @@ function PlanForm() {
                     href={measureHref}
                     className="press text-signal-strong inline-flex min-h-11 items-center text-sm font-extrabold"
                   >
-                    첫 측정 하기
+                    체력 측정하기
                   </NavLink>
                 )}
               </div>
@@ -307,7 +307,7 @@ function PlanForm() {
           className="card press flex min-h-16 items-center gap-3"
         >
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-extrabold">직접 짜기</span>
+            <span className="block text-sm font-extrabold">직접 만들기</span>
             {gathered > 0 && (
               <span className="text-caption text-ink-soft mt-0.5 block">
                 담아 둔 동작 {gathered}개
@@ -329,7 +329,7 @@ function PlanForm() {
                 >
                   {todaySlot
                     ? `오늘은 ${todaySlot.minutes}분으로 적어 뒀어요. 바꾸기`
-                    : "운동할 수 있는 시간 적기"}
+                    : "운동 루틴 적기"}
                 </NavLink>
               }
             />
@@ -419,7 +419,7 @@ function PlanForm() {
                   href="/settings/schedule"
                   className="press text-signal-deep inline-flex min-h-11 items-center text-sm font-bold"
                 >
-                  운동할 수 있는 시간 바꾸기
+                  운동 루틴 바꾸기
                 </NavLink>
               </div>
             )}
@@ -446,7 +446,7 @@ function PlanForm() {
                 href={measureHref}
                 className="press text-signal-strong min-h-11 shrink-0 content-center text-sm font-extrabold"
               >
-                첫 측정 하기
+                체력 측정하기
               </NavLink>
             )}
           </div>

@@ -219,7 +219,7 @@ const KID_EXTRA = [
 
 /**
  * 시연 가족 부모의 측정. 체력 지도는 엄마 62 · 아빠 29 로 잰 사람인데 픽스처의 `latest` 는 빈 회차라,
- * 대시보드는 점수를 말하고 측정 결과 화면은 「아직 재지 않았어요」 를 말했다. 지도와 같은 날 · 같은 점수로 채운다
+ * 대시보드는 점수를 말하고 측정 결과 화면은 「아직 측정하지 않았어요」 를 말했다. 지도와 같은 날 · 같은 점수로 채운다
  */
 const PARENT_TESTS: Record<string, { testedOn: string; items: [string, number, number][] }> = {
   "00000000-0000-4000-8000-000000000011": {
@@ -481,7 +481,7 @@ const PAST_RUN_ID = "00000000-0000-4000-8000-0000000000a0";
 /**
  * 탭이 살아 있는 동안 남는다(sessionStorage) — 새 탭을 열면 서준이네부터다.
  *
- * 가족만 남기고 측정을 잊으면, 새 계정으로 첫 측정을 하고 새로고침한 순간 「아직 재지 않았어요」 로
+ * 가족만 남기고 측정을 잊으면, 새 계정으로 첫 측정을 하고 새로고침한 순간 「아직 측정하지 않았어요」 로
  * 돌아가고 리그가 브론즈에서 골드로 바뀌었다(9/25 한 바퀴). 바뀌는 것은 전부 남긴다.
  */
 export const db = {
@@ -490,7 +490,7 @@ export const db = {
   latest: loadExtra("latest", demoLatest()),
   /** 측정 이력. 점수 흐름과 키 · 몸무게가 자란 모습을 그린다 */
   tests: loadExtra("tests", seedTests()),
-  /** 운동할 수 있는 시간. 사람마다 한 주 */
+  /** 운동 루틴. 사람마다 한 주 */
   availability: loadExtra("availability", seedAvailability()),
   coachRun: loadCoachRun(),
   /** 이번 주 제안은 아직 0건이다. 심어 둔 것은 지난 회차에서 승인한 미션들이다 */
@@ -689,7 +689,7 @@ export function resetToDemo() {
  * | 단계    | `/me` 가 주는 nextStep | 무엇                          |
  * | ------- | ---------------------- | ----------------------------- |
  * | `fresh` | `CREATE_FAMILY`        | 가족이 없다. 만드는 것부터     |
- * | `claim` | `CLAIM`                | 초대코드를 넣어야 가족에 붙는다 |
+ * | `claim` | `CLAIM`                | 초대 코드를 넣어야 가족에 붙는다 |
  * | `home`  | `HOME`                 | 가족이 있다                    |
  */
 type Stage = "fresh" | "claim" | "home";
@@ -1089,7 +1089,7 @@ export function acting(): Profile | undefined {
 }
 
 /**
- * 한 사람을 가족에서 지운다. 프로필과 그 사람의 기록(측정, 측정 이력, 키와 몸무게, 운동할 수 있는 시간,
+ * 한 사람을 가족에서 지운다. 프로필과 그 사람의 기록(측정, 측정 이력, 키와 몸무게, 운동 루틴,
  * 참여한 운동, 주고받은 칭찬)을 지우고 가족과 다른 사람의 기록은 남긴다. 탈퇴와 구성원 내보내기가 같이 쓴다
  */
 export function forgetProfile(profileId: string) {

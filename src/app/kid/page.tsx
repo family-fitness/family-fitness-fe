@@ -136,7 +136,7 @@ export default function KidHomePage() {
   // 운동한 날만큼 섬에 나무가 선다. 줄지 않는다
   const trees = progress?.activeDays ?? 0;
   const score = me.latest?.overallPercentile ?? null;
-  // 잰 적은 있는데 점수가 없는 아이 — 만 7~10세는 비교할 기준이 없다(규칙 8). 「아직 재지 않았어요」 가 아니다
+  // 잰 적은 있는데 점수가 없는 아이 — 만 7~10세는 비교할 기준이 없다(규칙 8). 「아직 측정하지 않았어요」 가 아니다
   const measured = Boolean(me.latest?.testedOn);
   // 쉬는 날 카드(부모가 쓴다) — 이번 주 기록에 같이 온다. 쓴 날이면 오늘 운동 대신 「쉬는 날」
   const restToday = Boolean(calendar?.days.find((d) => d.date === now)?.rest);

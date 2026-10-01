@@ -32,7 +32,7 @@ import { useRoleStore } from "@/stores/role-store";
  * 하루 기록 — 삼성헬스 「일일 활동」 처럼. 캘린더에서 날을 누르면 온다.
  *
  * 맨 위 날짜를 하루씩 넘기고, 그 아래 요일 줄의 작은 링으로 이번 주가 한눈에 보인다.
- * 가운데 큰 링 둘(움직인 시간 · 끝낸 운동)과 가운데 받은 스티커, 그 아래 칸과 점선 요약 줄.
+ * 가운데 큰 링 둘(운동 시간 · 완료한 운동)과 가운데 받은 스티커, 그 아래 칸과 점선 요약 줄.
  * 한 운동은 영상 그림과 함께, 받은 스티커는 크게. 부모 · 아이가 같은 화면을 본다.
  *
  * 어느 아이의 날인지는 `?profileId=` 가 먼저다 — 아이가 둘이면 스티커를 붙인 아이의 날로 와야 한다.
@@ -333,7 +333,7 @@ function Day() {
                     <EmptyStateAction
                       href={`/plan?profileId=${encodeURIComponent(who.profileId ?? "")}`}
                     >
-                      AI에게 운동 받기
+                      AI 운동 추천 받기
                     </EmptyStateAction>
                   )
                 }
@@ -366,14 +366,14 @@ function Day() {
             <div className="divide-line mt-5 grid auto-cols-fr grid-flow-col divide-x">
               <Tile
                 dot="bg-signal"
-                label="움직인 시간"
+                label="운동 시간"
                 value={summary.moved}
                 unit="분"
                 goal={summary.planned && !resting ? `/ ${summary.planned}분` : null}
               />
               <Tile
                 dot="bg-mark"
-                label="끝낸 운동"
+                label="완료한 운동"
                 value={summary.done}
                 unit="개"
                 goal={summary.total && !resting ? `/ ${summary.total}개` : null}

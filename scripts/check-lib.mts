@@ -275,7 +275,7 @@ check("점수가 같으면 같은 등수", placeAt(table, 2) === 2);
 check("점수가 없는 집은 등수가 없다", placeAt(table, 3) === null);
 check("옛 서버처럼 점수가 없으면 달성률로 센다", placeAt([{ rate: 70 }, { rate: 90 }], 0) === 2);
 
-/* ─── 직접 짜기 ──────────────────────────────────────── */
+/* ─── 직접 만들기 ──────────────────────────────────────── */
 
 const clip = (id: string, phase: ClipView["phase"]): ClipView => ({
   clipId: id,
@@ -406,7 +406,7 @@ const dayLog: DayLog = {
 };
 const day = daySummary(dayLog);
 check(
-  "직접 적은 걸음수는 끝낸 운동으로 세지 않는다(홈 링과 같게)",
+  "직접 적은 걸음수는 완료한 운동으로 세지 않는다(홈 링과 같게)",
   day.total === 4 && day.done === 3,
 );
 check("끝낸 칸의 분만 단계마다", same(day.phases, { WARMUP: 1, MAIN: 8, COOLDOWN: 0 }));
@@ -621,7 +621,7 @@ check(
     finderHref({ factor: null, profileId: undefined }) === "/videos?phase=MAIN",
   );
   check(
-    "아이 칸과 AI 편성 화면의 직접 짜기는 그 아이를 주소에 싣는다",
+    "아이 칸과 AI 편성 화면의 직접 만들기는 그 아이를 주소에 싣는다",
     childFinderHref(kid) === `/videos?profileId=${kid}`,
   );
   check(
@@ -791,7 +791,7 @@ check(
     NEW_ACCOUNT_CHOICES.every((c) => c.description.trim() !== "" && !/[·—–]/.test(c.description)),
 );
 check("시작을 고르는 화면이 있다", existsSync("src/app/start/welcome/page.tsx"));
-check("초대코드로 합류하기 전이면 합류 화면으로 보낸다", familySetupPath("CLAIM") === "/claim");
+check("초대 코드로 합류하기 전이면 합류 화면으로 보낸다", familySetupPath("CLAIM") === "/claim");
 check(
   "가족이 있거나 아직 모르면 보내지 않는다",
   familySetupPath("HOME") === null &&
@@ -1051,7 +1051,7 @@ check(
   reviewDestination({ nextStep: "CREATE_FAMILY" }) === "/",
 );
 check(
-  "초대받은 보호자는 받은 초대코드를 채운 합류 화면으로",
+  "초대받은 보호자는 받은 초대 코드를 채운 합류 화면으로",
   reviewDestination({ nextStep: "CREATE_FAMILY", inviteCode: "K7M2QT" }) === "/claim?code=K7M2QT",
 );
 check(
@@ -1059,7 +1059,7 @@ check(
   reviewDestination({ nextStep: "CLAIM", inviteCode: "K7M2QT" }) === "/claim?code=K7M2QT",
 );
 check(
-  "초대코드는 주소에 맞게 싸서 붙인다",
+  "초대 코드는 주소에 맞게 싸서 붙인다",
   reviewDestination({ nextStep: "CLAIM", inviteCode: "A B&" }) === "/claim?code=A%20B%26",
 );
 check(

@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
  */
 
 /**
- * 이번 달 숫자 — 운동한 날 · 움직인 시간 · 이어서 · 받은 칭찬. 한 카드 안에 선으로 나눈다.
+ * 이번 달 숫자 — 운동한 날 · 운동 시간 · 이어서 · 받은 칭찬. 한 카드 안에 선으로 나눈다.
  * 칭찬은 받은 달에만, 이어서는 이틀부터 칸을 둔다 — 「0장」 · 「0일째」 를 적어 두면 못 한 달이 된다
  * (규칙 12 · 캘린더 달 칸 · 아이 홈과 같게). 못 받았거나 받는 중이면 자리는 둔다.
  */
@@ -65,7 +65,7 @@ export function MonthStats({
             unit: "일",
             state: calendar,
           },
-          { key: "minutes", label: "움직인 시간", value: minutes, unit: "분", state: calendar },
+          { key: "minutes", label: "운동 시간", value: minutes, unit: "분", state: calendar },
         ];
   if ((streak ?? 0) >= 2 || streakState !== "ready") {
     cells.push({
@@ -202,7 +202,7 @@ export function RecentDays({
           description="운동한 날마다 여기에 한 줄씩 쌓여요"
           action={
             <EmptyStateAction href={`/plan?profileId=${encodeURIComponent(profileId)}`}>
-              AI에게 운동 받기
+              AI 운동 추천 받기
             </EmptyStateAction>
           }
         />

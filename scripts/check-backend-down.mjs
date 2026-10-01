@@ -38,7 +38,7 @@ const LIES = new RegExp(
     "찾을 수 없는",
     "동의가 필요한 가족이 없어요",
     "조건에 맞는 동작이 없어요",
-    "아직 재지 않았어요",
+    "아직 측정하지 않았어요",
     "오늘 운동 없어요",
     "측정하지 않았어요",
     "측정 전이에요",
@@ -103,7 +103,7 @@ await ctx.addInitScript(
       "ff-auth",
       JSON.stringify({ state: { accessToken: "t", refreshToken: "r" }, version: 0 }),
     );
-    // 직접 짜기에 동작 하나를 담아 둔다 — 비어 있으면 이 기기의 쟁반만 그려 서버를 부를 일이 없다.
+    // 직접 만들기에 동작 하나를 담아 둔다 — 비어 있으면 이 기기의 쟁반만 그려 서버를 부를 일이 없다.
     // 담은 뒤에야 「누가 할까요」 가 가족을 부른다
     sessionStorage.setItem(
       "ff-routine",

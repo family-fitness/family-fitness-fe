@@ -130,7 +130,7 @@ export type Mission = S["MissionView"];
 
 /**
  * ▲ 요청: `POST /auth/review-login` 응답의 `inviteCode` — kind 가 INVITED 일 때 서버가 꾸며 둔
- * 체험 가족의 초대코드. 합류 화면에 미리 채운다
+ * 체험 가족의 초대 코드. 합류 화면에 미리 채운다
  */
 export type ReviewLoginResponse = AuthResponse & { inviteCode?: string | null };
 
@@ -440,7 +440,7 @@ export interface XpEvent {
 export type Weekday = "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN";
 
 /**
- * 운동할 수 있는 시간 — 한 사람의 한 주.
+ * 운동 루틴 — 한 사람의 한 주.
  *
  * ▲ 요청: `GET · PUT /profiles/{profileId}/availability`
  * AI 편성이 「몇 분」 의 기본값으로 쓴다. 이 시간이 아니라고 운동을 막지는 않는다 —

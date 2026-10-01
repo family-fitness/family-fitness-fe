@@ -60,7 +60,7 @@ export function FirstMeasure({
       description={`한 번 측정하면 ${name}의 여섯 가지 체력을 한눈에 볼 수 있어요`}
       action={
         measurable && (
-          <EmptyStateAction href={`/p/${profileId}/measure`}>첫 측정 하기</EmptyStateAction>
+          <EmptyStateAction href={`/p/${profileId}/measure`}>체력 측정하기</EmptyStateAction>
         )
       }
       className={className}

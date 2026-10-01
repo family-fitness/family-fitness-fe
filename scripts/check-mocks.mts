@@ -126,12 +126,12 @@ check(
   check("FRESH 로 들어오면 /me 도 가족 만들기", meFresh.nextStep === "CREATE_FAMILY");
   const invited = await reviewAs({ kind: "INVITED" });
   check(
-    "심사용 INVITED 는 가족 없는 계정과 체험 가족의 초대코드를 준다",
+    "심사용 INVITED 는 가족 없는 계정과 체험 가족의 초대 코드를 준다",
     invited.status === 200 && !!invited.accessToken && invited.inviteCode === "K7M2QT",
     `${invited.status} ${invited.nextStep} ${invited.inviteCode}`,
   );
   const seat = await get(`/invites/${invited.inviteCode}`);
-  check("INVITED 의 초대코드로 자리를 미리 볼 수 있다", seat.ok, `${seat.status}`);
+  check("INVITED 의 초대 코드로 자리를 미리 볼 수 있다", seat.ok, `${seat.status}`);
   const odd = await reviewAs({ kind: "GUEST" });
   check("심사용 kind 를 모르면 400", odd.status === 400, `${odd.status}`);
   // 뒤 검사는 서준이네 보호자로 본다
@@ -285,7 +285,7 @@ const sibling = (await (
   })
 ).json()) as { profileId: string };
 
-// 형제 둘이 같은 운동을 받는다(직접 짜기에서 여럿을 고를 수 있다)
+// 형제 둘이 같은 운동을 받는다(직접 만들기에서 여럿을 고를 수 있다)
 const shared = (await (
   await post(`/families/${DEMO.familyId}/missions`, {
     title: "둘이 같이",
@@ -526,7 +526,7 @@ check(
 );
 res = await post(`/missions/없는-미션/participants/${DEMO.kid}/confirm`);
 check("없는 운동은 확인할 수 없다", res.status === 404);
-// 타이머로 확인된 칸을 끝낸 운동 — 보호자가 확인을 눌러도 「직접 입력함」 으로 바뀌지 않는다
+// 타이머로 확인된 칸을 완료한 운동 — 보호자가 확인을 눌러도 「직접 입력함」 으로 바뀌지 않는다
 res = await post(`/missions/${shared.missionId}/participants/${DEMO.kid}/confirm`);
 parts = await partsOf(shared.missionId);
 check(

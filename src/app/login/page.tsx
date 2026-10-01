@@ -36,7 +36,7 @@ import { useRoleStore } from "@/stores/role-store";
 const DEV_ACCOUNTS: { id: string; label: string; claimCode?: string }[] = [
   { id: "demo-fresh", label: "가족이 없는 새 계정" },
   { id: "demo-parent", label: "은영, 가족 3명" },
-  // 백엔드 시드의 두 번째 부모와 그 자리의 초대코드 — 들어간 뒤 그 코드의 자리 미리 보기로 간다
+  // 백엔드 시드의 두 번째 부모와 그 자리의 초대 코드 — 들어간 뒤 그 코드의 자리 미리 보기로 간다
   { id: "demo-parent-2", label: "초대받은 계정", claimCode: "K7M2QT" },
 ];
 
@@ -75,7 +75,7 @@ const GOOGLE_STAND_IN = "demo-fresh";
 const STAND_IN_MIN_MS = 900;
 
 /**
- * 구글에 가기 전 이 탭에 남기는 것 — 돌아올 때 맞춰 볼 표(state)와 들고 가는 초대코드.
+ * 구글에 가기 전 이 탭에 남기는 것 — 돌아올 때 맞춰 볼 표(state)와 들고 가는 초대 코드.
  * 표가 맞지 않으면 코드를 바꾸지 않는다: 남이 만든 로그인 링크로 남의 계정에 들어가지 않게.
  */
 const OAUTH_KEY = "ff-oauth";
@@ -219,7 +219,7 @@ function LoginContent() {
 
   /**
    * 구글 키가 없는 개발 빌드에서는 구글에 다녀온 셈 치고 새 계정으로 들어간다. 들어가는 화면은 구글과 같다.
-   * 초대코드는 로그인에 싣지 않는다(구글 로그인과 같다). 들어간 뒤 코드 화면에서 자리를 보고 누른다
+   * 초대 코드는 로그인에 싣지 않는다(구글 로그인과 같다). 들어간 뒤 코드 화면에서 자리를 보고 누른다
    */
   const standIn = async (withCode: string | undefined) => {
     setError(null);
@@ -245,7 +245,7 @@ function LoginContent() {
    *            「누가 쓰고 있나요」 를 한 번 더 거쳤다. 정하는 건 `signIn` 뒤에 — 새 계정이 들어오면
    *            `signIn` 이 기기에 남은 역할을 비운다
    *   FRESH    평소 가입과 같이 스플래시가 시작 고르기(새 가족 만들기, 초대 코드로 참여하기)로 보낸다
-   *   INVITED  서버가 준 초대코드를 채운 합류 화면으로
+   *   INVITED  서버가 준 초대 코드를 채운 합류 화면으로
    */
   const review = async (kind: ReviewKind) => {
     setPicking(false);
