@@ -9,6 +9,7 @@ import { Illustration } from "@/components/ui/illustration";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorView, FirstMeasure } from "@/components/domain/factor-view";
+import { SessionList } from "@/components/domain/session-list";
 import { memberNoPeerNormsNote } from "@/lib/fitness-factors";
 import { REMEASURE_DAYS } from "@/lib/remeasure";
 import type { FitnessMapMember, Mission } from "@/lib/api/types";
@@ -317,6 +318,9 @@ export function ChildTodayCard({
           {pose && <ArtIcon name={pose} className="-my-2 size-20 shrink-0" />}
         </div>
       </NavLink>
+
+      {/* 오늘 할 동작. 누르면 운동 상세(영상과 설명)로 */}
+      <SessionList sessions={sessions} onSignal className="mt-4 border-t border-white/25 pt-4" />
 
       {/* 다 했으면 칭찬. 보냈으면 보냈다고만 — 두 번 보내라고 조르지 않는다 */}
       {main &&

@@ -15,6 +15,7 @@ import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ClipShelf } from "@/components/domain/clip-shelf";
 import { FactorRadar } from "@/components/domain/factor-radar";
+import { SessionList } from "@/components/domain/session-list";
 import { StickerArt } from "@/components/domain/sticker-art";
 import { StreakChip } from "@/components/domain/streak-chip";
 import { PanelCell, PanelCells, WeekPanel } from "@/components/domain/week-panel";
@@ -463,10 +464,11 @@ function TodayHero({ mission, profileId }: { mission: Mission; profileId: string
   const factor = sessions.find((s) => s.phase === "MAIN")?.factor;
   const pose = factor && FACTOR_POSE[factor] ? poseArt(FACTOR_POSE[factor]) : null;
 
+  // 카드 안에 동작 목록이 있어서 카드 전체를 링크로 두지 않는다. 운동하기로는 「시작하기」 버튼으로 간다
   return (
-    <NavLink
-      href={`/kid/m/${mission.missionId}`}
-      className="press bg-signal-strong shadow-lift block rounded-3xl p-5 text-white"
+    <section
+      aria-label="오늘 운동"
+      className="bg-signal-strong shadow-lift block rounded-3xl p-5 text-white"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -481,11 +483,16 @@ function TodayHero({ mission, profileId }: { mission: Mission; profileId: string
         </div>
         {pose && <ArtIcon name={pose} className="-my-2 size-20" />}
       </div>
-      <span className="text-signal-strong mt-4 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-white text-lg font-extrabold">
+      {/* 오늘 할 동작. 누르면 운동 상세(영상과 설명)로 */}
+      <SessionList sessions={sessions} onSignal className="mt-4 border-t border-white/25 pt-4" />
+      <NavLink
+        href={`/kid/m/${mission.missionId}`}
+        className="press text-signal-strong mt-4 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-white text-lg font-extrabold"
+      >
         <Play aria-hidden className="size-5 fill-current" />
         {done > 0 ? "이어서 하기" : "시작하기"}
-      </span>
-    </NavLink>
+      </NavLink>
+    </section>
   );
 }
 

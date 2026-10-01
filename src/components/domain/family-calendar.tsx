@@ -4,9 +4,11 @@ import { Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
-import type { DayLog, FitnessMapMember } from "@/lib/api/types";
-import { useFamilyCalendars } from "@/lib/api/queries";
+import { SessionList } from "@/components/domain/session-list";
+import type { DayEntry, DayLog, FitnessMapMember, Mission, MissionSession } from "@/lib/api/types";
+import { useFamilyCalendars, useMissions } from "@/lib/api/queries";
 import { didSomething } from "@/lib/day";
+import { sessionsOf } from "@/lib/session-plan";
 import { longDate, monthGrid, monthLabel, monthOf, shiftMonth, today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +49,8 @@ export function FamilyCalendar({
 
   const ids = people.map((p) => p.profileId ?? "").filter(Boolean);
   const calendars = useFamilyCalendars(familyId, ids, { from: grid.from, to: grid.to });
+  // 펼친 날의 동작 썸네일과 운동 상세 주소. 그날 기록에는 칸 이름만 있고 영상이 없다(하루 기록 화면과 같은 목록)
+  const { data: all } = useMissions(familyId, { scope: "ALL" });
   // 받은 차례가 아니라 아이디로 잇는다. 아이디 없는 사람이 끼면 기록이 옆 사람에게 붙는다
   const logsOf = (profileId: string | null | undefined) => {
     const q = profileId ? calendars[ids.indexOf(profileId)] : undefined;
@@ -216,6 +220,7 @@ export function FamilyCalendar({
             .map((b) => ({ ...b, log: b.logs.get(pickedDay) }))
             .filter((b) => moved(b.log))}
           loading={pending}
+          missionOf={(id) => all?.missions?.find((m) => m.missionId === id)}
         />
       )}
     </section>
@@ -228,11 +233,13 @@ function DayDetail({
   rest,
   rows,
   loading,
+  missionOf,
 }: {
   date: string;
   rest: boolean;
   rows: { person: FitnessMapMember; color: string; log: DayLog | undefined }[];
   loading: boolean;
+  missionOf: (missionId: string) => Mission | undefined;
 }) {
   return (
     <div className="border-line mt-4 border-t pt-4" aria-live="polite">
@@ -275,17 +282,23 @@ function DayDetail({
                   {entries.length > 0 && (
                     <ul className="mt-1 space-y-0.5">
                       {entries.map((e) => (
-                        <li
-                          key={e.missionId}
-                          className="text-caption text-ink-soft flex items-center gap-1 font-semibold"
-                        >
-                          {e.completed && (
-                            <Check aria-hidden className="text-done size-3.5 shrink-0" />
-                          )}
-                          <span className="truncate">{e.title}</span>
-                          {e.minutes > 0 && (
-                            <span className="text-faint shrink-0 tabular-nums">{e.minutes}분</span>
-                          )}
+                        <li key={e.missionId}>
+                          <span className="text-caption text-ink-soft flex items-center gap-1 font-semibold">
+                            {e.completed && (
+                              <Check aria-hidden className="text-done size-3.5 shrink-0" />
+                            )}
+                            <span className="truncate">{e.title}</span>
+                            {e.minutes > 0 && (
+                              <span className="text-faint shrink-0 tabular-nums">
+                                {e.minutes}분
+                              </span>
+                            )}
+                          </span>
+                          {/* 그 운동의 동작. 누르면 운동 상세(영상과 설명)로 */}
+                          <SessionList
+                            sessions={entrySessions(e, missionOf(e.missionId))}
+                            className="mt-1.5 mb-2"
+                          />
                         </li>
                       ))}
                     </ul>
@@ -298,6 +311,26 @@ function DayDetail({
       )}
     </div>
   );
+}
+
+/**
+ * 그날 한 운동의 칸. 끝냈는지는 그날 기록이, 영상과 기르는 힘은 운동(미션)이 말한다.
+ * 하루 기록 화면처럼 이름이 같은 칸, 없으면 같은 차례의 칸에서 영상을 찾는다
+ */
+function entrySessions(entry: DayEntry, mission: Mission | undefined): MissionSession[] {
+  const planned = sessionsOf(mission, null);
+  return (entry.sessions ?? []).map((s, i) => {
+    const p = planned.find((c) => c.title === s.title) ?? planned[i];
+    return {
+      position: i + 1,
+      phase: s.phase,
+      title: s.title,
+      minutes: s.minutes,
+      factor: p?.factor,
+      clip: p?.clip,
+      completed: s.done,
+    };
+  });
 }
 
 /** 이 달 한 칸. 못 받은 것은 0 이 아니라 「?」. 0 을 그리면 안 한 달처럼 보인다 */

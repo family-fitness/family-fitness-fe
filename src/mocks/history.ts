@@ -58,10 +58,27 @@ const MOVES: Record<SessionPhase, string[]> = {
   COOLDOWN: ["나비자세", "다리 뻗어 상체 숙이기", "고양이 자세", "숨 고르기"],
 };
 
-/** 시연 가족의 지난 기록이 있는 사람. 새로 만든 가족은 빈 달력에서 시작한다 */
+/** 보호자의 지난 기록에 쓰는 동작 이름. 국민체력100 성인 처방에 나오는 것들 */
+const ADULT_MOVES: Record<SessionPhase, string[]> = {
+  WARMUP: ["어깨 돌리기", "제자리 걷기", "고관절 돌리기", "팔 벌려 뛰기"],
+  MAIN: ["스쿼트", "런지", "플랭크", "브리지", "제자리 달리기", "팔굽혀펴기"],
+  COOLDOWN: ["다리 뻗어 상체 숙이기", "가슴 늘이기", "고양이 자세", "숨 고르기"],
+};
+
+/** 시연 가족의 지난 기록이 있는 사람. 아이와 보호자 둘 다. 새로 만든 가족은 빈 달력에서 시작한다 */
 export function hasHistory(profileId: string) {
   if (db.profiles.familyId !== DEMO.familyId) return false;
-  return profileId === DEMO.kid || profileId === DEMO.mom;
+  return profileId === DEMO.kid || profileId === DEMO.mom || profileId === DEMO.dad;
+}
+
+/** 심어 둔 칭찬이 오간 날. 아이가 알리거나 스티커를 받은 날이라 그날은 운동한 날이어야 한다 */
+function cheeredOn(profileId: string, date: string) {
+  return db.cheers.some(
+    (c) =>
+      c.cheerId.startsWith("seed-cheer-") &&
+      (c.fromProfileId === profileId || c.toProfileId === profileId) &&
+      dayOf(c.createdAt) === date,
+  );
 }
 
 /** 지난 하루. 쉰 날이면 null — 빈 날은 목록에 넣지 않는다 */
@@ -71,28 +88,39 @@ function pastDay(profileId: string, date: string): DayLog | null {
   // 엄마는 아이보다 덜 한다. 응원만 하는 날이 많다. 요일은 처음 심은 시간표로 — 지금 시간표를
   // 고쳤다고 지난 기록이 바뀌지 않게
   const planned = (DEMO_SCHEDULE[profileId] ?? []).some((s) => s.day === weekdayCode(date));
-  const rate = profileId === DEMO.kid ? (planned ? 0.84 : 0.4) : 0.38;
+  const kid = profileId === DEMO.kid;
+  // 보호자는 시간표에 적은 요일에 주로 하고, 다른 날은 가끔 한다. 아빠가 엄마보다 조금 덜 한다
+  const plannedRate = kid ? 0.84 : profileId === DEMO.mom ? 0.8 : 0.7;
+  const rate = planned ? plannedRate : kid ? 0.25 : 0.12;
   // 아이는 어제 · 그제는 늘 했다. 시연을 여는 날 이번 주가 텅 비어 있으면
   // 이어서 하는 모습을 보여 줄 수 없다
-  const recent = profileId === DEMO.kid && (date === daysBefore(1) || date === daysBefore(2));
-  if (!recent && r > rate) return null;
+  const recent = kid && (date === daysBefore(1) || date === daysBefore(2));
+  if (!recent && !(kid && cheeredOn(profileId, date)) && r > rate) return null;
 
+  // 아이 기록은 날짜만으로 고른다(전부터 그랬다). 보호자는 사람마다 달라야 엄마와 아빠가 같은 운동을 한 날이 되지 않는다
+  const seed = kid ? date : `${profileId}:${date}`;
+  const moves = kid ? MOVES : ADULT_MOVES;
   const pick = (phase: SessionPhase, k: number) => {
-    const list = MOVES[phase];
-    return list[Math.floor(roll(`${date}:${phase}:${k}`) * list.length)];
+    const list = moves[phase];
+    return list[Math.floor(roll(`${seed}:${phase}:${k}`) * list.length)];
   };
-  const mains = 1 + Math.floor(roll(`${date}:mains`) * 3);
+  // 보호자는 본운동을 둘에서 셋, 한 동작에 4분에서 8분. 아이보다 길게 한다
+  const mains = kid
+    ? 1 + Math.floor(roll(`${seed}:mains`) * 3)
+    : 2 + Math.floor(roll(`${seed}:mains`) * 2);
   const plan: { title: string; phase: SessionPhase; minutes: number }[] = [
-    { title: pick("WARMUP", 0), phase: "WARMUP", minutes: 1 },
+    { title: pick("WARMUP", 0), phase: "WARMUP", minutes: kid ? 1 : 2 },
     ...Array.from({ length: mains }, (_, k) => ({
       title: pick("MAIN", k),
       phase: "MAIN" as const,
-      minutes: 2 + Math.floor(roll(`${date}:m${k}`) * 4),
+      minutes: kid
+        ? 2 + Math.floor(roll(`${seed}:m${k}`) * 4)
+        : 4 + Math.floor(roll(`${seed}:m${k}`) * 5),
     })),
-    { title: pick("COOLDOWN", 0), phase: "COOLDOWN", minutes: 1 },
+    { title: pick("COOLDOWN", 0), phase: "COOLDOWN", minutes: kid ? 1 : 2 },
   ];
   const minutes = plan.reduce((sum, s) => sum + s.minutes, 0);
-  const verifiedBy: VerifiedBy = roll(`${date}:vb`) < 0.15 ? "VIDEO_PROGRESS" : "TIMER";
+  const verifiedBy: VerifiedBy = roll(`${seed}:vb`) < 0.15 ? "VIDEO_PROGRESS" : "TIMER";
 
   return {
     date,
