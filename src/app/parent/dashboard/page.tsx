@@ -130,9 +130,10 @@ export default function FamilyDashboardPage() {
         {/* 첫 묶음 — 이번 달 우리 가족. 누가 했는지 가르지 않고 한 곳에 모은다 */}
         <section className="card-hero" aria-label="이번 달 우리 가족">
           <CardHead title="이번 달 우리 가족" meta={monthLabel(month)} />
-          {/* 다른 가족들과 겨루는 자리 — 가족 단위로만. 누르면 리그 화면 */}
-          <LeagueRow familyId={familyId ?? undefined} className="mt-1" />
-          <div className="mt-2 grid grid-cols-2">
+          {/* 다른 가족들과 겨루는 자리. 가족 단위로만 겨루고, 누르면 리그 화면이다.
+              뱃지를 가운데 크게 두고 아래 숫자 칸들과 선으로 가른다 */}
+          <LeagueRow familyId={familyId ?? undefined} className="border-line mt-1 border-b" />
+          <div className="mt-1 grid grid-cols-2">
             <FamilyStat
               label="가족이 운동한 날"
               value={activeDays}
