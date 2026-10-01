@@ -257,6 +257,8 @@ const identity = [
       measurable: age >= 4,
       consentRequired: false,
       consentGiven: true,
+      // 가족을 만든 첫 보호자가 오너다
+      isOwner: true,
     } as Profile;
 
     startFamily(familyName, owner);
@@ -303,6 +305,8 @@ const identity = [
       consentRequired,
       // 14세 미만은 위에서 동의를 받아야 여기까지 온다
       consentGiven: true,
+      // 오너는 가족을 만든 사람 하나뿐이다. 나중에 더한 사람은 보호자여도 오너가 아니다
+      isOwner: false,
     };
     db.profiles.profiles.push(profile);
     const mapMember: MapMember = {

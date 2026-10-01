@@ -63,7 +63,10 @@ export const FOCUS_COPY = "보호자가 키워 주고 싶은 역량";
 /* ─── 생성된 스키마에 이름 붙이기 ──────────────────────────── */
 /* 오른쪽 이름은 서버가 정한 것이다. 바뀌면 여기서 타입 에러로 드러난다 */
 
-/** identity 가 내보내는 유일한 공개 언어. Profile 엔티티는 나오지 않는다 */
+/**
+ * identity 가 내보내는 유일한 공개 언어. Profile 엔티티는 나오지 않는다.
+ * `isOwner` 는 가족을 만든 첫 보호자다. 오너만 구성원을 내보낼 수 있고, 오너는 가족에 혼자 남아야 탈퇴할 수 있다
+ */
 export type ProfileSummary = S["ProfileSummary"];
 export type MeResponse = S["MeResponse"];
 export type AuthResponse = S["AuthResponse"];

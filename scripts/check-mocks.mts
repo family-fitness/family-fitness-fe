@@ -173,6 +173,25 @@ check(
     .join(", ")}`,
 );
 
+// 가족을 만든 첫 보호자가 오너다. /me 와 가족 구성원 응답 모두 isOwner 를 싣는다
+{
+  const me = (await (await get("/me")).json()) as { profiles?: { isOwner?: boolean }[] };
+  const family = (await (await get(`/families/${DEMO.familyId}/profiles`)).json()) as {
+    profiles?: { profileId?: string; isOwner?: boolean }[];
+  };
+  check("가족을 만든 첫 보호자는 /me 에서 오너다", me.profiles?.[0]?.isOwner === true);
+  const owners = (family.profiles ?? []).filter((p) => p.isOwner).map((p) => p.profileId);
+  check(
+    "가족 구성원 응답에서 오너는 가족을 만든 보호자 한 사람이다",
+    owners.length === 1 && owners[0] === DEMO.mom,
+    owners.join(", "),
+  );
+  check(
+    "오너가 아닌 구성원도 isOwner 를 false 로 싣는다",
+    (family.profiles ?? []).every((p) => typeof p.isOwner === "boolean"),
+  );
+}
+
 /* ─── 1. 코치 제안은 미션이 아니다 ─────────────────────────── */
 
 check("승인 전 미션 0건", (await missionCount()) === 0, `${await missionCount()}건`);
@@ -660,7 +679,8 @@ const freshFamily = (await (
     familyName: "검사네",
     owner: { name: "검사", birthDate: "1988-01-01", sex: "F" },
   })
-).json()) as { familyId?: string };
+).json()) as { familyId?: string; ownerProfile?: { isOwner?: boolean } };
+check("새로 만든 가족은 만든 보호자가 오너다", freshFamily.ownerProfile?.isOwner === true);
 const fresh = (await (await get(`/families/${freshFamily.familyId}/league`)).json()) as League;
 check("새 가족은 브론즈에서 시작한다", fresh.tier === "BRONZE", fresh.tier);
 check(
