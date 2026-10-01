@@ -26,7 +26,7 @@ import type {
   ProfileSummary,
 } from "@/lib/api/types";
 
-import { dayOf } from "@/lib/today";
+import { dayOf, daysBefore } from "@/lib/today";
 
 import clipsJson from "./clips.json";
 import fixturesJson from "./fixtures.json";
@@ -194,6 +194,18 @@ export function mockCertification(
  * 만 7~10세는 또래 기준이 없어 백분위가 나오지 않으니, 서준은 만 11세로 본다
  */
 const KID_ID = "00000000-0000-4000-8000-000000000012";
+
+/**
+ * 측정한 날(며칠 전). 오늘 기준이라 언제 열어도 최근 측정이 몇 주 전이다. 앞이 최근 회차다.
+ * 아이는 두 달 간격으로 네 번, 엄마는 세 번, 아빠는 두 번 쟀다. 아이의 가장 오래된 회차도 반년 남짓 전이라
+ * 만 11세 안이다(만 10세 이하는 백분위가 나오지 않는다)
+ */
+const TESTED_AGO: Record<string, number[]> = {
+  [KID_ID]: [24, 84, 144, 204],
+  "00000000-0000-4000-8000-000000000011": [21, 98, 164],
+  "00000000-0000-4000-8000-000000000013": [32, 190],
+};
+const testedOn = (profileId: string, round = 0) => daysBefore(TESTED_AGO[profileId][round]);
 const KID_EXTRA = [
   {
     itemCode: "009",
@@ -228,7 +240,7 @@ const KID_EXTRA = [
  */
 const PARENT_TESTS: Record<string, { testedOn: string; items: [string, number, number][] }> = {
   "00000000-0000-4000-8000-000000000011": {
-    testedOn: "2026-09-10",
+    testedOn: testedOn("00000000-0000-4000-8000-000000000011"),
     // [항목, 값, 백분위]. 평균 62, 가장 높은 것은 유연성, 가장 낮은 것은 순발력
     items: [
       ["012", 21, 78],
@@ -240,7 +252,7 @@ const PARENT_TESTS: Record<string, { testedOn: string; items: [string, number, n
     ],
   },
   "00000000-0000-4000-8000-000000000013": {
-    testedOn: "2026-08-30",
+    testedOn: testedOn("00000000-0000-4000-8000-000000000013"),
     // 평균 29. 건강검진에서 경고를 받은 아빠(도현). 가장 낮은 것은 심폐지구력
     items: [
       ["012", 1, 18],
@@ -308,6 +320,7 @@ function demoLatest() {
   for (const [id, test] of Object.entries(PARENT_TESTS)) all[id] = parentLatest(id, test);
   const kid = all[KID_ID];
   if (!kid) return all;
+  kid.testedOn = testedOn(KID_ID);
   kid.items = [...kid.items, ...(KID_EXTRA as typeof kid.items)];
   kid.certification = mockCertification(
     "유소년",
@@ -331,32 +344,38 @@ function demoLatest() {
 }
 
 /**
- * 지난 측정 회차들. 봄 · 여름 · 가을 석 달 간격.
+ * 지난 측정 회차들. 아이는 두 달 간격이라 키와 몸무게가 자란 선이 네 점으로 그려진다.
  *
  * 마지막 회차는 `latest` 와 같은 날 · 같은 점수여야 한다 — 두 화면이 다른 숫자를
  * 말하면 어느 쪽도 믿을 수 없다.
  */
 function seedTests(): Record<string, FitnessTestSummary[]> {
-  const row = (id: string, testedOn: string, p: number, h: number, w: number) => ({
-    fitnessTestId: id,
-    testedOn,
-    overallPercentile: p,
-    heightCm: h,
-    weightKg: w,
-  });
+  // [회차 아이디, 몇 번째 회차(0 이 최근), 종합 백분위, 키, 몸무게]
+  const rows = (profileId: string, list: [string, number, number, number, number][]) =>
+    list.map(([id, round, p, h, w]) => ({
+      fitnessTestId: `00000000-0000-4000-8000-0000000000${id}`,
+      testedOn: testedOn(profileId, round),
+      overallPercentile: p,
+      heightCm: h,
+      weightKg: w,
+    }));
   return {
-    [KID_ID]: [
-      row("00000000-0000-4000-8000-0000000000t3", "2026-09-07", 55, 139, 34),
-      row("00000000-0000-4000-8000-0000000000t2", "2026-06-08", 49, 136.4, 32.6),
-      row("00000000-0000-4000-8000-0000000000t1", "2026-03-11", 44, 133.1, 30.9),
-    ],
-    "00000000-0000-4000-8000-000000000011": [
-      row("00000000-0000-4000-8000-0000000000u2", "2026-09-10", 62, 163, 56),
-      row("00000000-0000-4000-8000-0000000000u1", "2026-04-20", 57, 163, 57.4),
-    ],
-    "00000000-0000-4000-8000-000000000013": [
-      row("00000000-0000-4000-8000-0000000000v1", "2026-08-30", 29, 176, 81),
-    ],
+    [KID_ID]: rows(KID_ID, [
+      ["t4", 0, 55, 139, 34],
+      ["t3", 1, 51, 137.3, 33.1],
+      ["t2", 2, 48, 135.2, 32],
+      ["t1", 3, 44, 133.1, 30.9],
+    ]),
+    "00000000-0000-4000-8000-000000000011": rows("00000000-0000-4000-8000-000000000011", [
+      ["u3", 0, 62, 163, 56],
+      ["u2", 1, 60, 163, 56.6],
+      ["u1", 2, 57, 163, 57.4],
+    ]),
+    // 아빠는 건강검진 뒤에 처음 쟀고, 반년 만에 다시 쟀다
+    "00000000-0000-4000-8000-000000000013": rows("00000000-0000-4000-8000-000000000013", [
+      ["v2", 0, 29, 176, 81],
+      ["v1", 1, 25, 176, 83.2],
+    ]),
   };
 }
 
@@ -366,8 +385,8 @@ export const DEMO_SCHEDULE: Readonly<
 > = seedAvailability();
 
 /**
- * 아이는 월 · 수 · 금 저녁과 토요일 오전, 엄마는 토요일 오전에 같이.
- * 아빠는 일요일 오전만이라 아이와 겹치는 요일이 없다 — 「같이」 는 겹치는 날에만 켜진다
+ * 아이는 월, 수, 금 저녁과 토요일 오전. 엄마는 화, 목 아침에 혼자 하고 토요일 오전에 아이와 같이.
+ * 아빠는 화요일 밤과 일요일 오전이라 아이와 겹치는 요일이 없다. 「같이」 는 겹치는 날에만 켜진다
  */
 function seedAvailability(): Record<string, { day: string; start: string; minutes: number }[]> {
   return {
@@ -377,8 +396,15 @@ function seedAvailability(): Record<string, { day: string; start: string; minute
       { day: "FRI", start: "19:00", minutes: 20 },
       { day: "SAT", start: "10:00", minutes: 30 },
     ],
-    "00000000-0000-4000-8000-000000000011": [{ day: "SAT", start: "10:00", minutes: 30 }],
-    "00000000-0000-4000-8000-000000000013": [{ day: "SUN", start: "10:00", minutes: 30 }],
+    "00000000-0000-4000-8000-000000000011": [
+      { day: "TUE", start: "07:00", minutes: 30 },
+      { day: "THU", start: "07:00", minutes: 30 },
+      { day: "SAT", start: "10:00", minutes: 30 },
+    ],
+    "00000000-0000-4000-8000-000000000013": [
+      { day: "TUE", start: "21:30", minutes: 20 },
+      { day: "SUN", start: "10:00", minutes: 40 },
+    ],
   };
 }
 
@@ -387,6 +413,7 @@ function demoMap() {
   const map = structuredClone(fixtures.fitnessMap);
   for (const m of map.members) {
     if (m.profileId === KID_ID && m.latest) {
+      m.latest.testedOn = testedOn(KID_ID);
       m.latest.overallPercentile = 55;
       m.headline = "유소년 상위 45%";
     }
@@ -394,6 +421,7 @@ function demoMap() {
     const test = PARENT_TESTS[m.profileId ?? ""];
     if (test && m.latest) {
       const latest = parentLatest(m.profileId ?? "", test);
+      m.latest.testedOn = test.testedOn;
       m.latest.weakest = latest.weakest;
       m.latest.strongest = latest.strongest;
     }
@@ -761,7 +789,7 @@ function daysAgo(days: number, hour: number): string {
 }
 
 /**
- * 이번 주에 오간 말들. 날짜는 늘 오늘 기준이라 언제 열어도 이번 주다.
+ * 지난 6주 동안 오간 말들. 날짜는 늘 오늘 기준이라 언제 열어도 가장 최근 것은 어제다.
  *
  * 오는 순서가 중요하다 — 아이가 알리면(`missionId` 있음) 부모가 답한다.
  * 그 짝이 맞아야 부모 홈의 "오늘" 이 기다리는 줄과 답한 줄을 가른다.
@@ -779,7 +807,7 @@ function seedCheers(): CheerLog[] {
     sticker?: string;
   };
   const rows: Row[] = [
-    // 어제 — 아이가 다 했다고 알렸고 엄마 · 아빠가 스티커로 답했다
+    // 어제. 아이가 다 했다고 알렸고 엄마와 아빠가 스티커로 답했다
     { from: DEMO.kid, to: DEMO.mom, msg: "운동 다 했어요!", mission: null, days: 1 },
     {
       from: DEMO.mom,
@@ -790,8 +818,87 @@ function seedCheers(): CheerLog[] {
       sticker: "flag",
     },
     { from: DEMO.dad, to: DEMO.kid, msg: "슝 빨라졌어", mission: null, days: 1, sticker: "rocket" },
-    // 사흘 전
+    // 그제. 아이가 알리고 엄마가 답했다
+    { from: DEMO.kid, to: DEMO.mom, msg: "오늘 운동 끝!", mission: null, days: 2 },
+    {
+      from: DEMO.mom,
+      to: DEMO.kid,
+      msg: "땀 흘리며 끝까지 했네",
+      mission: null,
+      days: 2,
+      sticker: "thumb",
+    },
+    // 사흘 전. 아이가 엄마에게 고맙다고 스티커를 돌려보냈다
     { from: DEMO.mom, to: DEMO.kid, msg: "최고야", mission: null, days: 3, sticker: "star" },
+    { from: DEMO.kid, to: DEMO.mom, msg: "고마워요", mission: null, days: 3, sticker: "heart" },
+    // 지난 6주. 칭찬이 오간 날은 아이가 운동한 날이다(history.ts 가 그날을 운동한 날로 만든다)
+    {
+      from: DEMO.kid,
+      to: DEMO.dad,
+      msg: "운동 다 했어요! 아빠도 같이 해요",
+      mission: null,
+      days: 5,
+    },
+    {
+      from: DEMO.dad,
+      to: DEMO.kid,
+      msg: "다음엔 아빠도 같이 할게",
+      mission: null,
+      days: 5,
+      sticker: "clap",
+    },
+    {
+      from: DEMO.mom,
+      to: DEMO.kid,
+      msg: "쑥쑥 크는 게 보여",
+      mission: null,
+      days: 8,
+      sticker: "sprout",
+    },
+    { from: DEMO.kid, to: DEMO.mom, msg: "오늘도 끝까지 했어요", mission: null, days: 9 },
+    {
+      from: DEMO.mom,
+      to: DEMO.kid,
+      msg: "자세가 반듯했어",
+      mission: null,
+      days: 9,
+      sticker: "sparkle",
+    },
+    { from: DEMO.dad, to: DEMO.kid, msg: "멋져", mission: null, days: 11, sticker: "medal" },
+    { from: DEMO.kid, to: DEMO.dad, msg: "고마워요", mission: null, days: 11, sticker: "star" },
+    { from: DEMO.kid, to: DEMO.mom, msg: "준비운동부터 다 했어요", mission: null, days: 15 },
+    {
+      from: DEMO.mom,
+      to: DEMO.kid,
+      msg: "준비운동부터 꼼꼼히 했네",
+      mission: null,
+      days: 15,
+      sticker: "crown",
+    },
+    {
+      from: DEMO.kid,
+      to: DEMO.mom,
+      msg: "꼭 안아 줘요",
+      mission: null,
+      days: 16,
+      sticker: "kiumi",
+    },
+    { from: DEMO.dad, to: DEMO.kid, msg: "오늘도 맑음", mission: null, days: 19, sticker: "sun" },
+    // 측정한 날. 키가 자란 것을 보고 붙였다
+    {
+      from: DEMO.mom,
+      to: DEMO.kid,
+      msg: "키가 쑥 컸네",
+      mission: null,
+      days: 24,
+      sticker: "sprout",
+    },
+    { from: DEMO.mom, to: DEMO.kid, msg: "사랑해", mission: null, days: 26, sticker: "heart" },
+    { from: DEMO.kid, to: DEMO.mom, msg: "운동 다 했어요!", mission: null, days: 30 },
+    { from: DEMO.mom, to: DEMO.kid, msg: "짝짝짝", mission: null, days: 30, sticker: "clap" },
+    { from: DEMO.dad, to: DEMO.kid, msg: "엄지척", mission: null, days: 33, sticker: "thumb" },
+    { from: DEMO.mom, to: DEMO.kid, msg: "끝까지 했네", mission: null, days: 37, sticker: "flag" },
+    { from: DEMO.mom, to: DEMO.kid, msg: "최고야", mission: null, days: 40, sticker: "star" },
   ];
   const nameOf = (id: string) =>
     fixtures.profiles.profiles.find((p) => p.profileId === id)?.name ?? "가족";
@@ -804,7 +911,8 @@ function seedCheers(): CheerLog[] {
     message: row.msg,
     missionId: row.mission,
     stickerId: row.sticker ?? null,
-    createdAt: daysAgo(row.days, row.from === DEMO.kid ? 17 : 21),
+    // 아이는 저녁 운동을 마치고 알리고, 보호자는 그 뒤에 답한다
+    createdAt: daysAgo(row.days, row.from === DEMO.kid ? 20 : 21),
   }));
 }
 
