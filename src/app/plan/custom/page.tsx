@@ -15,7 +15,7 @@ import { NavLink } from "@/components/ui/nav-link";
 import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  useAvailability,
+  useAvailabilities,
   useCreateMission,
   useFamilyProfiles,
   useRestDaysIn,
@@ -31,6 +31,7 @@ import {
   toSessions,
   upcomingDays,
 } from "@/lib/routine";
+import { sharedDays } from "@/lib/schedule";
 import { PHASE_LABEL } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { WEEKDAY, monthOf, today, weekdayCode } from "@/lib/today";
@@ -85,8 +86,9 @@ function CustomPlan() {
   const kidIds = new Set(kids.map((k) => k.profileId ?? ""));
   // 아이가 적어도 하나 — 부모만 하는 운동은 아이 화면 · 캘린더 · 리그 어디에도 안 보인다
   const chosenKid = chosen.find((id) => kidIds.has(id));
-  // 「운동할 수 있는 날」 점은 지금 짜는 첫 아이의 시간표로 — 기기에 고른 아이가 아니라
-  const { data: availability } = useAvailability(chosenKid);
+  // 「운동할 수 있는 날」 점은 고른 사람 모두의 시간표가 겹치는 요일에. 첫 아이 것만 보면
+  // 아이는 평일, 보호자는 주말인데도 평일에 점이 찍혔다
+  const schedules = useAvailabilities(chosen);
   const now = today();
   const [days, setDays] = useState<string[]>([now]);
   const [weeks, setWeeks] = useState<(typeof WEEKS)[number]["value"]>("1");
@@ -121,7 +123,8 @@ function CustomPlan() {
   const dates = repeated.filter((d) => !rest.has(d));
   const skippedRest = repeated.length - dates.length;
   const pending = dates.filter((d) => !created.includes(d));
-  const free = new Set((availability?.slots ?? []).map((s) => s.day));
+  const free = new Set(schedules ? sharedDays(schedules.map((w) => w.slots)) : []);
+  const freeLabel = chosen.length > 1 ? "다 같이 운동할 수 있는 날" : "운동할 수 있는 날";
 
   const toggleWho = (id: Uuid) => {
     const next = chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id];
@@ -384,7 +387,7 @@ function CustomPlan() {
                     type="button"
                     aria-pressed={on}
                     disabled={resting}
-                    aria-label={`${Number(d.slice(8))}일 ${WEEKDAY[new Date(`${d}T00:00:00`).getDay()]}요일${resting ? ", 쉬는 날" : free.has(weekdayCode(d)) ? ", 운동할 수 있는 날" : ""}`}
+                    aria-label={`${Number(d.slice(8))}일 ${WEEKDAY[new Date(`${d}T00:00:00`).getDay()]}요일${resting ? ", 쉬는 날" : free.has(weekdayCode(d)) ? `, ${freeLabel}` : ""}`}
                     onClick={() => toggleDay(d)}
                     className={cn(
                       "press flex min-h-16 w-full flex-col items-center justify-center gap-0.5 rounded-2xl text-xs font-extrabold",
@@ -424,7 +427,7 @@ function CustomPlan() {
             </p>
           )}
           <p className="text-caption text-ink-soft mt-2">
-            점이 찍힌 날은 운동할 수 있는 날이에요.{" "}
+            점이 찍힌 날은 {freeLabel}이에요.{" "}
             <NavLink href="/settings/schedule" className="text-signal-deep font-bold">
               바꾸기
             </NavLink>

@@ -771,6 +771,27 @@ export function useAvailability(profileId: Uuid | undefined) {
   });
 }
 
+/**
+ * 여러 사람의 운동할 수 있는 시간을 한꺼번에. 겹치는 요일을 셀 때 쓴다.
+ * 키가 `useAvailability` 와 같아 캐시를 나눠 쓴다. 한 사람이라도 아직 못 받았으면 undefined.
+ * 몇 사람만 받은 채로 겹침을 세면 받는 사이 요일이 바뀌어 보인다
+ */
+export function useAvailabilities(profileIds: readonly Uuid[]) {
+  return useQueries({
+    queries: profileIds.map((profileId) => ({
+      queryKey: qk.profile.availability(profileId),
+      queryFn: () => api.get<Availability>(path`/profiles/${profileId}/availability`),
+    })),
+    combine: allAvailability,
+  });
+}
+
+/** 컴포넌트 밖에 둔다. 렌더마다 새 함수면 합친 결과도 매번 새것이 된다 */
+function allAvailability(results: { data?: Availability }[]): Availability[] | undefined {
+  if (results.some((r) => !r.data)) return undefined;
+  return results.map((r) => r.data as Availability);
+}
+
 export function useSaveAvailability(profileId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
