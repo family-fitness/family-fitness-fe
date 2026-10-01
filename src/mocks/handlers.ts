@@ -15,6 +15,7 @@ import {
   db,
   fail,
   fixtures,
+  forgetProfile,
   resetToDemo,
   saveCheers,
   saveExtra,
@@ -88,8 +89,14 @@ const FRESH_ME = {
 function signIn(providerUserId: string | undefined) {
   const token = { accessToken: "mock-access-token", refreshToken: "mock-refresh-token" };
 
-  // 새 계정으로 만든 가족이 탭에 남아 있으면 서준이네로 되돌린다 — 시연 계정이 남의 집을 보지 않게
-  if (providerUserId !== FRESH_ID && db.profiles.familyId !== DEMO.familyId) resetToDemo();
+  // 새 계정으로 만든 가족이 탭에 남아 있으면 서준이네로 되돌린다 — 시연 계정이 남의 집을 보지 않게.
+  // 탈퇴하거나 내보내서 서준이네 식구가 빠졌어도 되돌린다. 다시 들어온 시연 계정은 식구 셋을 본다
+  const demoIntact =
+    db.profiles.familyId === DEMO.familyId &&
+    [DEMO.mom, DEMO.kid, DEMO.dad].every((id) =>
+      db.profiles.profiles.some((p) => p.profileId === id),
+    );
+  if (providerUserId !== FRESH_ID && !demoIntact) resetToDemo();
   if (providerUserId === CLAIM_ID) {
     setStage("claim");
     return { ...token, ...CLAIM_ME };
@@ -326,6 +333,52 @@ const identity = [
     db.fitnessMap.members.push(mapMember);
     saveFamily();
     return HttpResponse.json(profile, { status: 201 });
+  }),
+
+  /**
+   * 계정 탈퇴. BE 와 맞춘 규칙대로 답한다.
+   *
+   *   가족이 없는 계정       계정만 지운다
+   *   아이 본인 계정         계정과 아이 프로필, 아이 기록을 지운다
+   *   오너가 아닌 보호자     내 계정과 내 기록만 지운다. 가족과 아이 기록은 남는다
+   *   오너                  다른 구성원이 있으면 409 FAMILY_NOT_EMPTY. 혼자면 가족까지 지운다
+   *
+   * 지운 뒤에는 가족이 없는 계정으로 둔다. 화면은 탈퇴하자마자 로그아웃하므로 이 상태를 다시 보지 않는다
+   */
+  http.delete(`${BASE}/me`, () => {
+    const me = db.stage === "home" ? acting() : undefined;
+    if (me?.isOwner) {
+      const others = db.profiles.profiles.filter((p) => p.profileId !== me.profileId);
+      if (others.length > 0) {
+        return fail(409, "FAMILY_NOT_EMPTY", "다른 구성원을 모두 내보낸 뒤에 탈퇴할 수 있습니다");
+      }
+      // 가족이 통째로 없어진다. 목은 서준이네로 되돌려 둔다(다음에 들어오는 시연 계정이 볼 가족)
+      resetToDemo();
+    } else if (me?.profileId) {
+      forgetProfile(me.profileId);
+    }
+    setStage("fresh");
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  /**
+   * 오너가 구성원을 내보낸다. 내보낸 사람의 프로필과 기록을 지운다.
+   * 그 사람에게 계정이 있으면 계정은 남고 가족에서만 빠진다(목은 계정을 따로 들지 않는다)
+   */
+  http.delete<PathParams>(`${BASE}/families/:familyId/profiles/:profileId`, ({ params }) => {
+    const me = acting();
+    if (!me || params.familyId !== db.profiles.familyId) {
+      return fail(404, "PROFILE_NOT_FOUND", "가족을 찾을 수 없습니다");
+    }
+    if (!me.isOwner)
+      return fail(403, "FORBIDDEN", "가족을 만든 사람만 구성원을 내보낼 수 있습니다");
+    if (params.profileId === me.profileId) {
+      return fail(409, "CANNOT_REMOVE_SELF", "자기 자신은 내보낼 수 없습니다");
+    }
+    const target = db.profiles.profiles.find((p) => p.profileId === params.profileId);
+    if (!target) return fail(404, "PROFILE_NOT_FOUND", "가족에 없는 프로필입니다");
+    forgetProfile(String(params.profileId));
+    return new HttpResponse(null, { status: 204 });
   }),
 
   http.post<PathParams>(`${BASE}/profiles/:profileId/invite`, () =>
