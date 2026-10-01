@@ -1,7 +1,16 @@
 "use client";
 
-import { Check, Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from "lucide-react";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import {
+  Check,
+  ChevronRight,
+  Pause,
+  Play,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
+import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -38,6 +47,7 @@ import { PHASE_LABEL, clock, doneAtSeconds, sessionsOf, stepSeconds } from "@/li
 import { useSession } from "@/lib/session";
 import { longDate, today } from "@/lib/today";
 import { cn, withJosa } from "@/lib/utils";
+import { exerciseLine, sessionHref } from "@/lib/videos";
 import { useVoice } from "@/lib/voice";
 import { usePrefsStore } from "@/stores/prefs-store";
 
@@ -671,10 +681,29 @@ export function MissionPlay({
                   className="card-hero"
                   aria-label={`${i + 1}번째 운동 ${activeSession.title}`}
                 >
-                  <p className="text-caption text-signal-deep font-extrabold">
-                    {status === "rest" ? "쉬는 시간, 다음 운동" : PHASE_LABEL[activeSession.phase]}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-caption text-signal-deep font-extrabold">
+                        {status === "rest"
+                          ? "쉬는 시간, 다음 운동"
+                          : PHASE_LABEL[activeSession.phase]}
+                      </p>
+                      <h2 className="text-lead mt-0.5 font-extrabold">{activeSession.title}</h2>
+                    </div>
+                    {/* 운동 상세로. 하던 시간은 sessionStorage 에 남아 뒤로 오면 그 자리에서 이어 간다 */}
+                    {sessionHref(activeSession) && (
+                      <NavLink
+                        href={sessionHref(activeSession) ?? ""}
+                        className="press bg-sub text-ink-soft inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-full pr-2.5 pl-3.5 text-xs font-extrabold"
+                      >
+                        운동 설명
+                        <ChevronRight aria-hidden className="size-3.5" />
+                      </NavLink>
+                    )}
+                  </div>
+                  <p className="text-caption text-ink-soft mt-0.5 font-semibold">
+                    {exerciseLine(activeSession)}
                   </p>
-                  <h2 className="text-lead mt-0.5 font-extrabold">{activeSession.title}</h2>
 
                   {activeSession.clip?.videoId && (
                     <div className="mt-3">
@@ -792,26 +821,36 @@ export function MissionPlay({
                   </p>
                 </section>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (s.completed || status === "running" || lockedBy) return;
-                    goTo(s.position);
-                  }}
-                  disabled={s.completed}
-                  className="card press flex w-full items-center gap-3 text-left"
-                >
-                  <StepThumb session={s} />
-                  <span className="min-w-0 flex-1">
-                    <span className="line-clamp-2 text-sm font-extrabold">{s.title}</span>
-                    <span className="text-caption text-ink-soft mt-0.5 block">
-                      {PHASE_LABEL[s.phase]} {clock(secondsOf(s))}
-                      {s.completed
-                        ? ", 다 했어요"
-                        : (elapsedBy[s.position] ?? 0) > 0 && ", 이어서 할 수 있어요"}
+                <div className="card flex items-center gap-3">
+                  {/* 썸네일과 이름을 누르면 운동 상세로. 지난 동작도 다시 볼 수 있다 */}
+                  <StepLink href={sessionHref(s)}>
+                    <StepThumb session={s} />
+                    <span className="min-w-0 flex-1">
+                      <span className="line-clamp-2 text-sm font-extrabold">{s.title}</span>
+                      <span className="text-caption text-ink-soft mt-0.5 block truncate">
+                        {exerciseLine(s)}
+                      </span>
+                      <span className="text-caption text-ink-soft block">
+                        {PHASE_LABEL[s.phase]} {clock(secondsOf(s))}
+                        {s.completed
+                          ? ", 다 했어요"
+                          : (elapsedBy[s.position] ?? 0) > 0 && ", 이어서 할 수 있어요"}
+                      </span>
                     </span>
-                  </span>
-                </button>
+                  </StepLink>
+                  {/* 이 동작으로 건너가기. 예전처럼 타이머가 도는 동안에는 누를 수 없다 */}
+                  {!s.completed && !lockedBy && (
+                    <button
+                      type="button"
+                      onClick={() => goTo(s.position)}
+                      disabled={status === "running"}
+                      aria-label={`${s.title} 하기`}
+                      className="press bg-sub grid size-11 shrink-0 place-items-center rounded-full disabled:opacity-40"
+                    >
+                      <Play aria-hidden className="size-4 translate-x-px fill-current" />
+                    </button>
+                  )}
+                </div>
               )}
             </li>
           ))}
@@ -887,6 +926,18 @@ export function MissionPlay({
 function ownerNames(participants: { name?: string | null }[] | undefined): string {
   const names = (participants ?? []).map((p) => p.name).filter(Boolean);
   return names.length > 0 ? `${names.join(", ")}의` : "다른 사람";
+}
+
+/** 지난 동작, 다음 동작 칸의 썸네일과 이름. 영상이 있으면 누르면 운동 상세로 */
+function StepLink({ href, children }: { href: string | undefined; children: ReactNode }) {
+  const row = "flex min-w-0 flex-1 items-center gap-3 text-left";
+  return href ? (
+    <NavLink href={href} className={cn("press", row)}>
+      {children}
+    </NavLink>
+  ) : (
+    <span className={row}>{children}</span>
+  );
 }
 
 /** 동작 썸네일. 영상이 없으면 같은 크기의 빈 칸 */

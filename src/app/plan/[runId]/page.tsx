@@ -3,7 +3,7 @@
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { ParentOnly } from "@/components/app-shell/parent-only";
@@ -29,6 +29,7 @@ import { fromSessions } from "@/lib/routine";
 import { PHASE_LABEL, proposalSessions, stepMinutes, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { cn, withJosa } from "@/lib/utils";
+import { exerciseLine, sessionHref } from "@/lib/videos";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
 /**
@@ -357,7 +358,7 @@ function MoveList({ sessions }: { sessions: MissionSession[] }) {
           >
             {i + 1}
           </span>
-          <div className="card flex items-center gap-3">
+          <MoveRow href={sessionHref(s)}>
             {s.clip?.videoId ? (
               <VideoThumb
                 videoId={s.clip.videoId}
@@ -369,13 +370,28 @@ function MoveList({ sessions }: { sessions: MissionSession[] }) {
             )}
             <span className="min-w-0 flex-1">
               <span className="line-clamp-2 text-sm font-extrabold">{s.title}</span>
-              <span className="text-caption text-ink-soft mt-0.5 block">
+              <span className="text-caption text-ink-soft mt-0.5 block truncate">
+                {exerciseLine(s)}
+              </span>
+              <span className="text-caption text-ink-soft block">
                 {PHASE_LABEL[s.phase]} {stepMinutes(s)}분
               </span>
             </span>
-          </div>
+          </MoveRow>
         </li>
       ))}
     </ol>
+  );
+}
+
+/** 동작 카드 하나. 영상이 있으면 누르면 운동 상세(영상과 설명)로 */
+function MoveRow({ href, children }: { href: string | undefined; children: ReactNode }) {
+  const card = "card flex items-center gap-3";
+  return href ? (
+    <Link href={href} className={cn("press", card)}>
+      {children}
+    </Link>
+  ) : (
+    <div className={card}>{children}</div>
   );
 }

@@ -36,7 +36,7 @@ import { PHASE_LABEL } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { monthOf, today, weekOf, weekdayCode } from "@/lib/today";
 import { cn } from "@/lib/utils";
-import { childFinderHref, clipHref } from "@/lib/videos";
+import { childFinderHref, clipHref, exerciseLine } from "@/lib/videos";
 import { useRoleStore } from "@/stores/role-store";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
@@ -302,6 +302,9 @@ function CustomPlan() {
                     <span className="min-w-0 flex-1">
                       <span className="line-clamp-2 text-sm leading-snug font-extrabold">
                         {m.clip.title}
+                      </span>
+                      <span className="text-caption text-ink-soft block truncate">
+                        {exerciseLine(m.clip)}
                       </span>
                       <span className="text-caption text-ink-soft block">
                         {PHASE_LABEL[m.clip.phase]} {m.minutes}분

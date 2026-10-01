@@ -22,7 +22,14 @@ import { PHASE_LABEL, clock } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
 import { useIsKidView } from "@/lib/view-role";
-import { clipHref, finderCount, finderOwner, finderScope, joinClipPages } from "@/lib/videos";
+import {
+  clipHref,
+  exerciseLine,
+  finderCount,
+  finderOwner,
+  finderScope,
+  joinClipPages,
+} from "@/lib/videos";
 import { useRoleStore } from "@/stores/role-store";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
@@ -383,6 +390,9 @@ function ClipRow({
         </span>
         <span className="block min-w-0 flex-1">
           <span className="line-clamp-2 text-sm leading-snug font-bold">{c.title}</span>
+          <span className="text-caption text-ink-soft mt-0.5 block truncate">
+            {exerciseLine(c)}
+          </span>
           {/* 꼬리표는 통째로 줄을 넘긴다 — 「도구 / 필요」 로 쪼개지지 않게. 쉼표는 앞 꼬리표에 붙는다 */}
           <span className="text-caption text-ink-soft mt-0.5 block">
             {[

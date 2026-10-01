@@ -3,7 +3,7 @@
 import { CalendarDays, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, type ReactNode } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -27,7 +27,7 @@ import { stickerOf } from "@/lib/stickers";
 import { daysBefore, longDate, monthOf, today, weekOf, weekdayOf } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useIsKidView } from "@/lib/view-role";
-import { sessionHref } from "@/lib/videos";
+import { exerciseLine, sessionHref } from "@/lib/videos";
 import { useRoleStore } from "@/stores/role-store";
 
 /**
@@ -526,21 +526,26 @@ function Leader({ label, value }: { label: string; value: string | string[] }) {
  * 둥근 바탕 안의 글자가 되고(9/25), 바로 아래 줄(「준비운동 · 1분」)과 같은 말을 한 번 더 한다.
  * 한 운동의 칸은 모두 영상이 있거나 모두 없어서 줄이 어긋나지 않는다.
  */
-function Thumb({ clip, href }: { clip?: VideoClip | null; href?: string }) {
+function Thumb({ clip }: { clip?: VideoClip | null }) {
   if (!clip?.videoId) return null;
-  const thumb = (
+  return (
     <VideoThumb
       videoId={clip.videoId}
       src={clip.thumbnailUrl}
       className="aspect-video w-20 shrink-0 rounded-xl"
     />
   );
-  // 누르면 운동 상세(영상과 설명)로
-  if (!href) return thumb;
-  return (
-    <Link href={href} aria-label="운동 정보 보기" className="press shrink-0">
-      {thumb}
+}
+
+/** 칸 하나의 썸네일과 이름. 영상이 있으면 누르면 운동 상세(영상과 설명)로 */
+function MoveLink({ href, children }: { href?: string; children: ReactNode }) {
+  const row = "flex min-w-0 flex-1 items-center gap-3";
+  return href ? (
+    <Link href={href} className={cn("press", row)}>
+      {children}
     </Link>
+  ) : (
+    <span className={row}>{children}</span>
   );
 }
 
@@ -580,24 +585,35 @@ function EntryRows({
       <p className="text-sm font-extrabold">{entry.title}</p>
       <ul className="mt-2 space-y-2">
         {entry.sessions.map((s, i) => {
-          const clip = clips.find((c) => c.title === s.title)?.clip ?? clips[i]?.clip;
+          const planned = clips.find((c) => c.title === s.title) ?? clips[i];
+          const clip = planned?.clip;
+          const factor = planned?.factor;
           return (
             <li key={`${s.title}-${i}`} className="flex items-center gap-3">
-              <Thumb
-                clip={mission ? clip : null}
-                href={mission ? sessionHref({ ...s, clip }) : undefined}
-              />
-              {/* 아직 안 한 동작은 흐리게 — 반투명으로 흐리면 대비가 3.4:1 로 떨어졌다(9/30 점검). 글자색으로 */}
-              <span className="min-w-0 flex-1">
-                <span
-                  className={cn("block truncate text-sm font-bold", !s.done && "text-ink-soft")}
-                >
-                  {s.title}
+              <MoveLink href={mission ? sessionHref({ ...s, factor, clip }) : undefined}>
+                <Thumb clip={mission ? clip : null} />
+                {/* 아직 안 한 동작은 흐리게 — 반투명으로 흐리면 대비가 3.4:1 로 떨어졌다(9/30 점검). 글자색으로 */}
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={cn("block truncate text-sm font-bold", !s.done && "text-ink-soft")}
+                  >
+                    {s.title}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-caption block truncate",
+                      s.done ? "text-ink-soft" : "text-faint",
+                    )}
+                  >
+                    {exerciseLine({ phase: s.phase, factor })}
+                  </span>
+                  <span
+                    className={cn("text-caption block", s.done ? "text-ink-soft" : "text-faint")}
+                  >
+                    {PHASE_LABEL[s.phase]} {stepMinutes(s)}분
+                  </span>
                 </span>
-                <span className={cn("text-caption block", s.done ? "text-ink-soft" : "text-faint")}>
-                  {PHASE_LABEL[s.phase]} {stepMinutes(s)}분
-                </span>
-              </span>
+              </MoveLink>
               {s.done && <Done />}
             </li>
           );
@@ -643,13 +659,16 @@ function PlannedRows({
       <ul className="mt-2 space-y-2">
         {sessions.map((s) => (
           <li key={s.position} className="flex items-center gap-3">
-            <Thumb clip={s.clip} href={sessionHref(s)} />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-bold">{s.title}</span>
-              <span className="text-caption text-ink-soft block">
-                {PHASE_LABEL[s.phase]} {stepMinutes(s)}분
+            <MoveLink href={sessionHref(s)}>
+              <Thumb clip={s.clip} />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-bold">{s.title}</span>
+                <span className="text-caption text-ink-soft block truncate">{exerciseLine(s)}</span>
+                <span className="text-caption text-ink-soft block">
+                  {PHASE_LABEL[s.phase]} {stepMinutes(s)}분
+                </span>
               </span>
-            </span>
+            </MoveLink>
           </li>
         ))}
       </ul>
