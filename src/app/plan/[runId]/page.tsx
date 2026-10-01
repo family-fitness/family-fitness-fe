@@ -105,6 +105,13 @@ function Proposal() {
   const nameOf = (id: string | undefined) =>
     family?.profiles?.find((p) => p.profileId === id)?.name ?? "가족";
   const people = (proposal?.participants ?? []).map((p) => nameOf(p.profileId));
+  // 첫 참여자가 추천 대상이다(서버가 대상을 맨 앞에 둔다). 다시 만들기도 그 사람으로 연다
+  const subjectId = proposal?.participants?.[0]?.profileId;
+  const replanHref = subjectId ? `/plan?profileId=${encodeURIComponent(subjectId)}` : "/plan";
+  // 보호자 본인의 운동이면 보호자 홈(고른 아이의 운동만 보인다) 대신 「시작하기」 가 있는 운동 탭으로
+  const forParent =
+    (proposal?.participants ?? []).length > 0 &&
+    !(proposal?.participants ?? []).some((p) => p.role === "CHILD");
   const phases = (["WARMUP", "MAIN", "COOLDOWN"] as const)
     .map((p) => [p, sessions.filter((s) => s.phase === p).length] as const)
     .filter(([, n]) => n > 0)
@@ -132,7 +139,7 @@ function Proposal() {
     setProblem(null);
     try {
       await approve.mutateAsync();
-      router.push("/parent");
+      router.push(forParent ? "/parent/workout" : "/parent");
     } catch (e) {
       setProblem(
         errorMessage(
@@ -235,7 +242,7 @@ function Proposal() {
 
             {open && (
               <Link
-                href="/plan"
+                href={replanHref}
                 className="press text-ink-soft flex min-h-11 items-center justify-center text-sm font-bold"
               >
                 조건 바꿔 다시 만들기
@@ -247,7 +254,7 @@ function Proposal() {
         {settled && (
           <div className="grid grid-cols-2 gap-2">
             <Link
-              href={approved ? "/parent" : "/plan"}
+              href={approved ? "/parent" : replanHref}
               className="press bg-sub flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold"
             >
               {approved ? "홈으로" : "다시 만들기"}

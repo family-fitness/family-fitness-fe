@@ -1217,7 +1217,8 @@ check("리그가 열흘 남으면 10일 남았어요", daysLeftText(10) === "10�
   const plan = readFileSync("src/app/plan/page.tsx", "utf8");
   check(
     "운동 짜기 화면 육각형도 만 7~10세 까닭을 받는다",
-    /<FactorRadar[^>]*note=\{memberNoPeerNormsNote\(kid\)\}/.test(plan),
+    // 추천 대상(아이 또는 보호자 본인)을 `who` 로 부른다
+    /<FactorRadar[^>]*note=\{memberNoPeerNormsNote\(who\)\}/.test(plan),
   );
 }
 
