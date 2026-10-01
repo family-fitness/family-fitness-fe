@@ -14,6 +14,7 @@ import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { NavLink } from "@/components/ui/nav-link";
 import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
+import { VideoThumb } from "@/components/ui/video-thumb";
 import {
   useAvailabilities,
   useCreateMission,
@@ -253,20 +254,29 @@ function CustomPlan() {
           <ol className="divide-rows mt-1">
             {moves.map((m, i) => (
               <li key={m.clip.clipId} className="py-3">
-                {/* 첫 줄 — 차례 · 이름 · 빼기. 이름이 잘리지 않게 한 줄을 다 준다 */}
-                <div className="flex items-start gap-2">
+                {/* 첫 줄 — 차례, 썸네일, 이름, 빼기 */}
+                <div className="flex items-center gap-2">
                   <span className="text-signal-deep w-6 shrink-0 text-center text-sm leading-snug font-extrabold tabular-nums">
                     {i + 1}
                   </span>
+                  <VideoThumb
+                    videoId={m.clip.videoId}
+                    src={m.clip.thumbnailUrl}
+                    className="aspect-video w-24 shrink-0 rounded-xl"
+                  />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm leading-snug font-extrabold">{m.clip.title}</p>
-                    <p className="text-caption text-ink-soft">{PHASE_LABEL[m.clip.phase]}</p>
+                    <p className="line-clamp-2 text-sm leading-snug font-extrabold">
+                      {m.clip.title}
+                    </p>
+                    <p className="text-caption text-ink-soft">
+                      {PHASE_LABEL[m.clip.phase]} {m.minutes}분
+                    </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => remove(i)}
                     aria-label={`${m.clip.title} 빼기`}
-                    className="press text-ink-soft -mt-2 -mr-2 grid size-11 shrink-0 place-items-center"
+                    className="press text-ink-soft -mr-2 grid size-11 shrink-0 place-items-center"
                   >
                     <X aria-hidden className="size-4" />
                   </button>
