@@ -209,7 +209,7 @@ export function RecentDays({
                   <span className="min-w-0 flex-1">
                     <span className="line-clamp-2 text-sm font-bold">{titles}</span>
                     <span className="text-caption text-ink-soft block whitespace-nowrap tabular-nums">
-                      {s.total > 0 && `${s.done} / ${s.total}개 · `}
+                      {s.total > 0 && `${s.done} / ${s.total}개, `}
                       <b className="text-ink font-extrabold">{d.minutes}</b>분
                     </span>
                   </span>

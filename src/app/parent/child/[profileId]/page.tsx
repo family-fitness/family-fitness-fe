@@ -310,7 +310,7 @@ function BodyGrowth({
                     {formatDate(t.testedOn)}
                   </span>
                   <span className="min-w-0 flex-1 text-sm font-bold">
-                    {t.heightCm}cm · {t.weightKg}kg
+                    {t.heightCm}cm, {t.weightKg}kg
                   </span>
                   {/* 지난번보다 — 줄었다고 경고색을 칠하지 않는다(규칙 8) */}
                   {diff != null && diff !== 0 && (

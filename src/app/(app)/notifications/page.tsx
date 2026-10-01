@@ -236,7 +236,7 @@ function Thanks({ item, to, until }: { item: NotificationView; to: string; until
           type="button"
           onClick={() => setOpen(true)}
           // 알림마다 같은 이름이면 화면 읽기로는 누구에게 보내는지 모른다
-          aria-label={`${item.title} · 고마워요 보내기`}
+          aria-label={`${item.title}, 고마워요 보내기`}
           className="press text-signal-deep inline-flex min-h-11 items-center text-sm font-extrabold"
         >
           고마워요 보내기

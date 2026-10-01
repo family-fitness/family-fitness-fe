@@ -42,7 +42,7 @@ const GUIDE: Record<Who, { title: string; rows: { art: string; name: string; tex
     title: "환영해요",
     rows: [
       { art: "icon/mode-full", name: "오늘 운동", text: "큰 단추를 누르고 영상을 따라 해요" },
-      { art: "icon/menu-cheer", name: "알리기", text: "다 하면 엄마 · 아빠한테 알려요" },
+      { art: "icon/menu-cheer", name: "알리기", text: "다 하면 보호자에게 알려요" },
       {
         art: "icon/menu-trophy",
         name: "레벨",

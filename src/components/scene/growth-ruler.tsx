@@ -165,7 +165,7 @@ export function GrowthRuler({
     <div
       ref={host}
       role="img"
-      aria-label={`키 · 몸무게 기록 — ${records
+      aria-label={`키와 몸무게 기록: ${records
         .map(
           (r) =>
             `${formatDate(r.date)} ${r.heightCm}cm${r.weightKg != null ? ` ${r.weightKg}kg` : ""}`,
@@ -235,7 +235,7 @@ export function GrowthRuler({
               {r.heightCm}cm
               {r.weightKg != null && (
                 <span className="font-bold">
-                  {" · "}
+                  {", "}
                   {r.weightKg}kg
                 </span>
               )}
