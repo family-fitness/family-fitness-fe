@@ -12,7 +12,7 @@ import type { SessionPhase } from "@/lib/api/types";
 import type { Factor } from "@/lib/fitness-factors";
 import { PHASE_LABEL } from "@/lib/session-plan";
 import { cn } from "@/lib/utils";
-import { readExercise, type Exercise } from "@/lib/videos";
+import { exerciseLine, readExercise, type Exercise } from "@/lib/videos";
 
 /**
  * 운동 상세. 위에 시범 영상, 아래에 이름, 시간, 단계, 기르는 체력, 하는 법, 출처.
@@ -101,6 +101,7 @@ function Detail() {
             <p className="text-signal-deep text-sm font-extrabold">{PHASE_LABEL[ex.phase]}</p>
           )}
           <h1 className="mt-0.5 text-2xl leading-tight font-extrabold">{ex.title}</h1>
+          <p className="mt-1 text-sm font-semibold">{exerciseLine(ex)}</p>
           <p className="text-caption text-ink-soft mt-1 font-semibold">국민체력100 운동영상</p>
         </header>
 
