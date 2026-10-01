@@ -147,6 +147,10 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
         title={`${child.name}의 동의를 철회할까요`}
       >
         <div className="space-y-4">
+          <p className="text-body text-ink-soft">
+            동의를 철회하면 {child.name}의 체력 측정 기록과 운동 기록이 모두 삭제되며, 삭제한 기록은
+            되돌릴 수 없어요. 프로필과 동의 이력은 남고, 다시 동의하면 새로 기록할 수 있어요.
+          </p>
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -154,7 +158,7 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
               className="flex-1"
               onClick={() => setConfirming(false)}
             >
-              그대로 두기
+              취소
             </Button>
             <Button
               variant="danger"
@@ -163,7 +167,7 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
               loading={update.isPending}
               onClick={() => apply(false, false)}
             >
-              철회하기
+              철회하고 삭제
             </Button>
           </div>
         </div>

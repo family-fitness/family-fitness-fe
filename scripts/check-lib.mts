@@ -85,7 +85,9 @@ import {
 
 import {
   CONSENT_TERMS,
+  OFFICER_PENDING,
   PRIVACY_HREF,
+  PRIVACY_OFFICER,
   PRIVACY_POLICY,
   TERMS_HREF,
   TERMS_OF_SERVICE,
@@ -1361,15 +1363,28 @@ check(
 /* ─── 약관과 방침의 탈퇴 문구가 탈퇴 규칙과 같다 ─────────────────── */
 
 // 약관과 방침은 조문 틀이다(담당자 c2440b9). 조 이름으로 찾아 그 조의 글(항과 호)을 한 줄씩 본다
+const legalLines = (doc: typeof TERMS_OF_SERVICE, title: string) =>
+  (doc.articles.find((a) => a.title === title)?.body ?? []).flatMap((b) =>
+    typeof b === "string"
+      ? [b]
+      : "items" in b
+        ? b.items
+        : b.rows.map((r) => `${r.label} ${r.text}`),
+  );
+/** 한 편의 글 전부(조 이름과 머리글, 부칙 포함) */
+const legalText = (doc: typeof TERMS_OF_SERVICE) => [
+  doc.preamble ?? "",
+  ...doc.articles.flatMap((a) => [a.title, ...legalLines(doc, a.title)]),
+  ...(doc.addendum ?? []),
+];
+const consentText = Object.values(CONSENT_TERMS).flatMap((c) => [
+  c.title,
+  c.lead,
+  c.refusal,
+  ...c.rows.map((r) => `${r.label} ${r.text}`),
+]);
 {
-  const lines = (doc: typeof TERMS_OF_SERVICE, title: string) =>
-    (doc.articles.find((a) => a.title === title)?.body ?? []).flatMap((b) =>
-      typeof b === "string"
-        ? [b]
-        : "items" in b
-          ? b.items
-          : b.rows.map((r) => `${r.label} ${r.text}`),
-    );
+  const lines = legalLines;
   const terms = lines(TERMS_OF_SERVICE, "이용계약의 해지");
   const keep = lines(PRIVACY_POLICY, "개인정보의 파기 절차 및 방법");
   check(
@@ -1389,14 +1404,27 @@ check(
     terms.every((l) => !l.includes("다른 보호자가 없으면")),
   );
   check(
-    "방침의 파기와 약관의 해지는 내보낸 구성원의 정보도 지체 없이 파기한다고 말한다",
-    keep.some((l) => l.includes("내보낸 구성원의 개인정보도 지체 없이 파기")) &&
-      terms.some((l) => l.includes("내보낸 구성원의 정보도 지체 없이 파기")),
+    "방침의 파기와 약관의 해지는 구성원을 내보내면 그 구성원의 프로필과 기록을 지체 없이 파기한다고 말한다",
+    [keep, terms].every((doc) =>
+      doc.some(
+        (l) =>
+          l.includes("구성원을 내보내면") &&
+          l.includes("그 구성원의 프로필과 기록을 지체 없이 파기"),
+      ),
+    ),
     keep.join(" / "),
   );
   check(
-    "방침의 파기는 탈퇴하면 그 회원의 개인정보를 지체 없이 파기한다고 말한다",
-    keep.some((l) => l.includes("탈퇴하면 운영자는 그 회원의 개인정보를 지체 없이 파기")),
+    "방침의 파기와 약관의 해지는 내보낸 구성원의 계정이 남는다고 말한다(BE 는 내보내도 계정을 지우지 않는다)",
+    [keep, terms].every((doc) =>
+      doc.some((l) => l.includes("자기 계정이 있는 회원이면") && l.includes("남으며")),
+    ),
+  );
+  check(
+    "방침의 파기는 탈퇴하면 그 회원의 계정과 프로필, 기록을 지체 없이 파기한다고 말한다",
+    keep.some((l) =>
+      l.includes("탈퇴하면 운영자는 그 회원의 계정과 프로필, 기록을 지체 없이 파기"),
+    ),
   );
   check(
     "약관과 방침은 로그인 화면에서도 볼 수 있다고 적는다(/privacy, /terms)",
@@ -1409,48 +1437,150 @@ check(
 /* ─── 약관, 방침, 동의서는 화면 글이다. 가운데 점과 긴 대시를 쓰지 않는다 ─────────────────── */
 
 {
-  const blockText = (
-    b: string | { items: string[] } | { rows: { label: string; text: string }[] },
-  ) =>
-    typeof b === "string" ? [b] : "items" in b ? b.items : b.rows.flatMap((r) => [r.label, r.text]);
-  const docText = (doc: typeof TERMS_OF_SERVICE) => [
-    doc.title,
-    doc.preamble ?? "",
-    ...doc.articles.flatMap((a) => [a.title, ...a.body.flatMap(blockText)]),
-    ...(doc.addendum ?? []),
+  const all = [
+    PRIVACY_POLICY.title,
+    TERMS_OF_SERVICE.title,
+    ...legalText(PRIVACY_POLICY),
+    ...legalText(TERMS_OF_SERVICE),
+    ...consentText,
   ];
-  const consentText = Object.values(CONSENT_TERMS).flatMap((c) => [
-    c.title,
-    c.lead,
-    c.refusal,
-    ...c.rows.flatMap((r) => [r.label, r.text]),
-  ]);
-  const all = [...docText(PRIVACY_POLICY), ...docText(TERMS_OF_SERVICE), ...consentText];
   const bad = all.filter((l) => /[·—–]/.test(l));
   check("약관, 방침, 동의서 글에 가운데 점과 긴 대시가 없다", bad.length === 0, bad[0]);
 }
 
-/* ─── 약관 · 방침 — 글 안에서 조 번호로 서로 가리키는 곳. 조를 넣거나 빼면 번호가 밀린다 ─── */
+/* ─── 약관과 방침 — 글 안에서 조 번호로 서로 가리키는 곳. 조를 넣거나 빼면 번호가 밀린다 ─── */
 {
   const article = (doc: { articles: { title: string }[] }, n: number) =>
     doc.articles[n - 1]?.title ?? "";
+  const says = (doc: typeof TERMS_OF_SERVICE, n: number, ref: string) =>
+    legalLines(doc, article(doc, n)).some((l) => l.includes(ref));
   check(
-    "건강정보 동의가 가리키는 방침 제7조는 국외 이전",
-    article(PRIVACY_POLICY, 7).includes("국외 이전") &&
-      CONSENT_TERMS.health.rows.some((r) => r.text.includes("개인정보처리방침 제7조")),
+    "건강정보 동의와 방침 제7조(위탁)가 가리키는 방침 제8조는 국외 이전",
+    article(PRIVACY_POLICY, 8) === "개인정보의 국외 이전" &&
+      article(PRIVACY_POLICY, 7) === "개인정보 처리업무의 위탁" &&
+      says(PRIVACY_POLICY, 7, "제8조") &&
+      CONSENT_TERMS.health.rows.some((r) => r.text.includes("개인정보 처리방침 제8조")),
   );
   check(
-    "방침 제9조가 가리키는 방침 제12조는 개인정보 보호책임자",
-    article(PRIVACY_POLICY, 12) === "개인정보 보호책임자",
+    "방침 제10조(권리)가 가리키는 방침 제13조는 개인정보 보호책임자",
+    article(PRIVACY_POLICY, 10) === "정보주체와 법정대리인의 권리, 의무 및 행사 방법" &&
+      article(PRIVACY_POLICY, 13) === "개인정보 보호책임자" &&
+      says(PRIVACY_POLICY, 10, "제13조의 개인정보 보호책임자"),
   );
   check(
     "방침 제5조가 가리키는 제1조는 처리 목적",
-    article(PRIVACY_POLICY, 1) === "개인정보의 처리 목적",
+    article(PRIVACY_POLICY, 1) === "개인정보의 처리 목적" && says(PRIVACY_POLICY, 5, "제1조"),
   );
   check(
-    "약관 제11조 · 제12조가 가리키는 제8조는 회원의 의무 · 제9조는 측정 결과와 운동",
+    "약관 제11조와 제12조가 가리키는 제8조는 회원의 의무, 제9조는 측정 결과와 운동",
     article(TERMS_OF_SERVICE, 8) === "회원의 의무" &&
-      article(TERMS_OF_SERVICE, 9) === "측정 결과와 운동의 성격",
+      article(TERMS_OF_SERVICE, 9) === "측정 결과와 운동의 성격" &&
+      says(TERMS_OF_SERVICE, 11, "제8조") &&
+      says(TERMS_OF_SERVICE, 12, "제9조"),
+  );
+}
+
+/* ─── 약관, 방침, 동의서가 실제 동작과 같다 ─────────────────── */
+{
+  const policy = legalText(PRIVACY_POLICY);
+  const terms = legalText(TERMS_OF_SERVICE);
+  const transfer = legalLines(PRIVACY_POLICY, "개인정보의 국외 이전");
+  const transferItems = transfer.find((l) => l.startsWith("이전 항목")) ?? "";
+
+  // 보호자가 아이의 동의를 철회하면 BE 가 그 아이의 측정 기록과 운동 기록을 지운다(사용자 결정)
+  check(
+    "동의를 철회하면 그 아동의 건강정보를 지체 없이 파기한다고 방침, 약관, 건강정보 동의서가 함께 말한다",
+    policy.some((l) => l.includes("동의를 철회하면") && l.includes("지체 없이 파기")) &&
+      terms.some((l) => l.includes("동의를 철회하면") && l.includes("지체 없이 파기")) &&
+      CONSENT_TERMS.health.rows.some(
+        (r) => r.text.includes("동의를 철회하면") && r.text.includes("지체 없이 파기"),
+      ),
+  );
+  check(
+    "동의를 철회해도 프로필과 동의 이력은 남는다고 적는다",
+    policy.some((l) => l.includes("프로필") && l.includes("동의 이력") && l.includes("남기")),
+  );
+  // 운영 로그는 30일 뒤 지운다(BE README). 「통신비밀보호법」 3개월은 이 서비스에 맞지 않는다
+  check(
+    "서버 로그 보관은 30일이고 3개월이라고 적지 않는다",
+    policy.some((l) => l.includes("서버 로그") && l.includes("30일")) &&
+      [...policy, ...terms].every((l) => !l.includes("3개월")),
+  );
+  check(
+    "접속 IP 를 데이터베이스에 저장하지 않는다고 적고, 모든 통신이 HTTPS 라고 쓰지 않는다",
+    policy.some((l) => l.includes("접속 IP 주소를 데이터베이스에 저장하지 않습니다")) &&
+      policy.every((l) => !l.includes("모든 통신")),
+  );
+  check(
+    "서버 호스팅(AWS Lightsail, CloudFront)을 처리 위탁으로 적는다",
+    legalLines(PRIVACY_POLICY, "개인정보 처리업무의 위탁").some(
+      (l) => l.includes("Lightsail") && l.includes("CloudFront"),
+    ),
+  );
+  // 운영 AI 서버에는 Anthropic 키만 있다. 한쪽이 실패해도 Google 로 넘기지 않는다
+  check(
+    "국외 이전은 Anthropic 한 곳이고 Google 로 보내지 않는다",
+    transfer.some((l) => l.startsWith("이전받는 자") && l.includes("Anthropic, PBC")) &&
+      transfer.every((l) => !l.includes("Google")) &&
+      CONSENT_TERMS.health.rows.every((r) => !r.text.includes("Google")),
+  );
+  check(
+    "국외로 보내는 항목에 키와 몸무게가 없고, 보내지 않는다고 따로 적는다",
+    transferItems !== "" &&
+      !transferItems.includes("몸무게") &&
+      transfer.some((l) => l.includes("키, 몸무게와 체력 측정값은 전송하지 않으며")),
+    transferItems,
+  );
+  check(
+    "이전받는 자의 보유 기간은 Anthropic API 보관 기준(30일)으로 적는다",
+    transfer.some((l) => l.startsWith("보유 및 이용 기간") && l.includes("30일")),
+  );
+  // 화면 이름(사용자 결정). 「AI 편성」 「직접 짜기」 는 화면에 없는 말이다
+  check(
+    "법적 문서는 「AI 운동 추천」 「직접 만들기」 로 부르고 「AI 편성」 「직접 짜기」 를 쓰지 않는다",
+    [...policy, ...terms, ...consentText].every(
+      (l) => !l.includes("AI 편성") && !l.includes("직접 짜기"),
+    ) &&
+      policy.some((l) => l.includes("「AI 운동 추천 받기」")) &&
+      policy.some((l) => l.includes("「직접 만들기」")),
+  );
+  // 로그인 화면 한 줄로 약관 동의를 받는다(사용자 결정). 약관 제4조가 그 글을 그대로 옮긴다
+  const signInNotice = "로그인하면 이용약관과 개인정보 처리방침에 동의하는 것으로 봅니다";
+  check(
+    "약관 제4조는 로그인 화면의 안내 한 줄로 약관 동의를 받는다고 적는다",
+    legalLines(TERMS_OF_SERVICE, "이용계약의 성립").some((l) =>
+      l.includes(`「${signInNotice}」`),
+    ) && terms.every((l) => !l.includes("이 약관에 동의하고 구글 계정으로 가입")),
+  );
+  check(
+    "법정대리인 동의를 확인하는 방법(동의한 보호자 계정과 일시를 기록)을 적는다",
+    legalLines(PRIVACY_POLICY, "만 14세 미만 아동의 개인정보 처리").some((l) =>
+      l.includes("동의한 보호자의 계정과 동의 일시를 기록"),
+    ),
+  );
+  check(
+    "처리 근거를 동의 없이 처리하는 것과 동의를 받아 처리하는 것으로 나눠 적는다",
+    policy.some((l) => l.startsWith("정보주체의 동의 없이 처리하는 개인정보")) &&
+      policy.some((l) => l.startsWith("정보주체의 동의를 받아 처리하는 개인정보")),
+  );
+}
+
+/* ─── 개인정보 보호책임자 — 값을 지어내지 않는다. 비어 있으면 안내를 띄운다 ─────────────────── */
+{
+  const rows = (
+    PRIVACY_POLICY.articles.find((a) => a.title === "개인정보 보호책임자")?.body ?? []
+  ).flatMap((b) => (typeof b !== "string" && "rows" in b ? b.rows : []));
+  const name = PRIVACY_OFFICER.name.trim();
+  const contact = PRIVACY_OFFICER.contact.trim();
+  check(
+    "보호책임자 표는 정한 값만 보이고, 비어 있으면 「지정 후 이 방침에 공개합니다」 를 보인다",
+    !name && !contact
+      ? rows.length === 1 && rows[0].text.endsWith(OFFICER_PENDING)
+      : rows.length === 2 &&
+          rows[0].text === (name || OFFICER_PENDING) &&
+          rows[1].label === "연락처" &&
+          rows[1].text === (contact || OFFICER_PENDING),
+    rows.map((r) => `${r.label}: ${r.text}`).join(" / "),
   );
 }
 
