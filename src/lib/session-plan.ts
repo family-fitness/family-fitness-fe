@@ -146,11 +146,16 @@ export function clipSeconds(
 }
 
 /**
- * 서버가 인정하는 가장 짧은 운동 시간(초). 서버는 그 동작에 잡힌 운동 시간(분) × 60 의 절반보다 짧으면
- * 422 TOO_SHORT 를 준다(BE `SessionCompletionService.creditedSeconds`). 영상이 이보다 짧아도 이만큼은 해야 기록이 남는다
+ * 서버가 인정하는 가장 짧은 운동 시간(초). 서버의 기준 시간은 그 동작에 잡힌 운동 시간(분) × 60 이고,
+ * 영상 구간(끝 초)이 있으면 그 시간과 구간 길이 중 짧은 쪽이다. 기준 시간의 절반보다 짧으면
+ * 422 TOO_SHORT 를 준다(BE `SessionCompletionService.creditedSeconds`)
  */
-export function minCreditSeconds(s: { minutes?: number | null }): number {
-  return Math.ceil(stepMinutes(s) * 30);
+export function minCreditSeconds(s: {
+  minutes?: number | null;
+  clip?: VideoClipRange | null;
+}): number {
+  const planned = stepMinutes(s) * 60;
+  return Math.ceil(Math.min(planned, clipSeconds(s.clip) ?? planned) / 2);
 }
 
 /**
