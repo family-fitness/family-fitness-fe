@@ -14,9 +14,8 @@ import { cn } from "@/lib/utils";
 /**
  * 가족 리그. 가족 대시보드 「이번 달 우리 가족」 의 맨 위에 서고, 누르면 리그 화면이다.
  *
- * 티어 뱃지를 가운데 크게 두고 그 아래에 「골드 리그」, 「10가족 중 4등」, 달성률을 차례로 둔다.
- * 위아래를 넉넉히 비워 이 묶음의 주인공으로 세운다. 전에는 작은 뱃지 하나와 두 줄 글이라
- * 아래 숫자 칸들 사이에 묻혔다.
+ * 티어 뱃지를 가운데 두고 그 아래에 「골드 리그」, 「10가족 중 4등」, 달성률을 차례로 둔다.
+ * 뱃지는 아래 숫자 칸보다 커 보이지 않게 48px 로 둔다(10/1 「리그 뱃지가 너무 크다」). 큰 뱃지는 리그 화면에만.
  * 가족 단위로만 겨룬다. 집 안에서 누가 더 했는지는 나오지 않는다(규칙 10).
  */
 export function LeagueRow({
@@ -32,9 +31,9 @@ export function LeagueRow({
   if (error) return null;
   if (isLoading) {
     return (
-      <div className={cn("flex flex-col items-center py-6", className)}>
-        <Skeleton className="size-24 rounded-full" />
-        <Skeleton className="mt-3 h-6 w-28" />
+      <div className={cn("flex flex-col items-center py-4", className)}>
+        <Skeleton className="size-12 rounded-full" />
+        <Skeleton className="mt-2 h-6 w-28" />
         <Skeleton className="mt-2 h-4 w-40" />
       </div>
     );
@@ -51,18 +50,18 @@ export function LeagueRow({
   return (
     <NavLink
       href="/parent/league"
-      className={cn("press flex flex-col items-center py-6 text-center", className)}
+      className={cn("press flex flex-col items-center py-4 text-center", className)}
       aria-label={`${tierName(league.tier)} 리그${place ? `, ${place}` : ""}. ${note}`}
     >
       {artFor(art) ? (
-        <ArtIcon name={art} className="size-24" />
+        <ArtIcon name={art} className="size-12" />
       ) : (
-        // 메달 그림이 오기 전에는 티어 이름을 그 자리에 크게
-        <span className="text-signal-deep grid size-24 place-items-center text-2xl font-extrabold">
+        // 메달 그림이 오기 전에는 티어 이름을 그 자리에
+        <span className="text-signal-deep grid size-12 place-items-center text-base font-extrabold">
           {tierName(league.tier)}
         </span>
       )}
-      <span className="mt-3 inline-flex items-center gap-0.5 text-xl font-extrabold">
+      <span className="mt-2 inline-flex items-center gap-0.5 text-xl font-extrabold">
         {tierName(league.tier)} 리그
         <ChevronRight aria-hidden className="text-faint size-5" strokeWidth={2.4} />
       </span>

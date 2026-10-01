@@ -132,7 +132,7 @@ export default function FamilyDashboardPage() {
         <section className="card-hero" aria-label="이번 달 우리 가족">
           <CardHead title="이번 달 우리 가족" meta={monthLabel(month)} />
           {/* 다른 가족들과 겨루는 자리. 가족 단위로만 겨루고, 누르면 리그 화면이다.
-              뱃지를 가운데 크게 두고 아래 숫자 칸들과 선으로 가른다 */}
+              뱃지를 숫자 칸보다 작게 가운데 두고 아래 숫자 칸들과 선으로 가른다 */}
           <LeagueRow familyId={familyId ?? undefined} className="border-line mt-1 border-b" />
           {/* 이번 달 가족 누구도 운동하지 않았다. 「0일」 「0분」 「0개」 칸 대신 키움이(아래 「AI 운동 추천 받기」 줄이 길이다) */}
           {calendarState === "ready" && activeDays === 0 && done === 0 && stickers === 0 ? (
