@@ -39,6 +39,12 @@ const STEP_TITLE: Record<string, string> = {
 /** 이만큼 단계가 하나도 안 움직이면 묻기를 쉰다 — 서버가 RUNNING 에 멈추면 0.7초마다 끝없이 물었다 */
 const STALL_MS = 120_000;
 
+/**
+ * 한 단계를 보여 주는 최소 시간. 응답이 한 번에 와도 네 단계가 차례로 하나씩 넘어간다(10/1).
+ * 네 단계에 마지막 쉼(0.9초)까지 합쳐 5초쯤
+ */
+const STEP_MS = 1000;
+
 /** 서버가 아직 안 밟은 단계도 자리는 미리 보여 준다 — 몇 단계 남았는지 알게 */
 const PLANNED = ["assess", "retrieve", "compose", "verify"];
 
@@ -77,12 +83,39 @@ function PlanRun() {
     setWake((n) => n + 1);
     void refetch();
   };
-  // 다 짰으면 한 박자 쉬고 제안으로. 마지막 줄이 찍히는 걸 보고 넘어가게
+
+  const steps = run?.steps ?? [];
+  const byName = new Map(steps.map((s) => [s.name ?? "", s]));
+  const names = [...new Set([...PLANNED, ...steps.map((s) => s.name ?? "")])].filter(Boolean);
+  // 지나간 단계 — ok · partial 만. failed 는 「마쳤어요」 로 세지 않는다
+  const passedAt = (n: string) => {
+    const step = byName.get(n);
+    return step != null && stateOf(step.status) === "passed";
+  };
+  const finished = status != null && status !== "RUNNING";
+  const failedRun = status === "FAILED";
+  const nowAt = names.findIndex((n) => !passedAt(n));
+
+  /*
+    화면에 보여 준 단계 수. 서버가 마친 단계까지만, 한 단계에 STEP_MS 씩 하나씩 늘린다.
+    다 짰으면 남은 단계를 마저 하나씩 넘긴다. 못 짰으면 기다리지 않고 다 보여 준다
+  */
+  const [shown, setShown] = useState(0);
+  const target = failedRun ? names.length : finished || nowAt < 0 ? names.length : nowAt;
   useEffect(() => {
+    if (shown >= target) return;
+    const id = setTimeout(() => setShown((n) => n + 1), failedRun ? 0 : STEP_MS);
+    return () => clearTimeout(id);
+  }, [shown, target, failedRun]);
+  const allShown = shown >= names.length;
+
+  // 다 짰고 네 단계를 다 보여 줬으면 한 박자 쉬고 제안으로. 마지막 줄이 찍히는 걸 보고 넘어가게
+  useEffect(() => {
+    if (!allShown) return;
     if (status !== "AWAITING_APPROVAL" && status !== "APPROVED" && status !== "REJECTED") return;
     const id = setTimeout(() => router.replace(`/plan/${runId}`), 900);
     return () => clearTimeout(id);
-  }, [status, runId, router]);
+  }, [allShown, status, runId, router]);
 
   // 한 번 못 받았다고 짜던 과정을 걷어 내지 않는다 — 다음 번에 다시 묻는다
   if (error && !run) {
@@ -96,21 +129,14 @@ function PlanRun() {
     );
   }
 
-  const steps = run?.steps ?? [];
-  const byName = new Map(steps.map((s) => [s.name ?? "", s]));
-  const names = [...new Set([...PLANNED, ...steps.map((s) => s.name ?? "")])].filter(Boolean);
-  // 지나간 단계 — ok · partial 만. failed 는 「마쳤어요」 로 세지 않는다
-  const passedAt = (n: string) => {
-    const step = byName.get(n);
-    return step != null && stateOf(step.status) === "passed";
-  };
-  const done = names.filter(passedAt).length;
-  const finished = status != null && status !== "RUNNING";
-  const failedRun = status === "FAILED";
   // 멈춘 채로 둔다 — 돌기만 하면 기다리면 되는 줄 안다
   const stuck = stalled && !finished;
-  const doneAt = names.flatMap((n, i) => (passedAt(n) ? [i] : []));
-  const nowAt = names.findIndex((n) => !passedAt(n));
+  // 보여 준 단계만 센다 — 응답이 한 번에 와도 하나씩 넘어간다
+  const doneAt = names.flatMap((n, i) => (i < shown && passedAt(n) ? [i] : []));
+  const done = doneAt.length;
+  // 「다 짰어요」 는 네 단계를 다 보여 준 뒤에
+  const over = finished && allShown;
+  const nowShown = shown < names.length ? shown : -1;
 
   return (
     <>
@@ -121,7 +147,7 @@ function PlanRun() {
             layout="zigzag"
             count={names.length}
             done={doneAt}
-            current={finished || stuck || nowAt < 0 ? null : nowAt}
+            current={failedRun || stuck || nowShown < 0 ? null : nowShown}
             stage={3}
             height={150}
             label={`${names.length}단계 중 ${done}단계를 마쳤어요`}
@@ -129,12 +155,12 @@ function PlanRun() {
           />
           {/* 짜는 동안은 막대 제목(「만드는 중」)이 말한다 — 끝났을 때만 한마디 */}
           <p
-            className={cn("text-lead font-extrabold", (failedRun || finished || stuck) && "mt-2")}
+            className={cn("text-lead font-extrabold", (failedRun || over || stuck) && "mt-2")}
             aria-live="polite"
           >
             {failedRun
               ? "짜지 못했어요"
-              : finished
+              : over
                 ? "다 짰어요"
                 : stuck
                   ? "아직 만드는 중이에요"
@@ -147,7 +173,7 @@ function PlanRun() {
             </p>
           )}
           <p className="text-caption text-ink-soft mt-1">
-            {finished ? " " : `${Math.min(done + 1, names.length)} / ${names.length}`}
+            {over || failedRun ? " " : `${Math.min(done + 1, names.length)} / ${names.length}`}
           </p>
           {/* 한참 그대로다 — 묻기를 쉬고, 다시 기다리거나 다시 짜는 길을 둔다 */}
           {stuck && (
@@ -187,11 +213,13 @@ function PlanRun() {
         <ol className="card divide-rows py-1" aria-label="짜는 단계">
           {names.map((name, i) => {
             const step = byName.get(name);
-            const state = step ? stateOf(step.status) : null;
+            // 아직 보여 주지 않은 단계는 서버가 마쳤어도 빈 점이다 — 하나씩 넘어가게
+            const revealed = i < shown;
+            const state = revealed && step ? stateOf(step.status) : null;
             const ok = state === "passed";
-            // 다 짠 뒤에 남은 단계는 돌지 않는다 — 서버가 단계를 끝에 한꺼번에 줄 때도 있다.
-            // 못 받은 동안도 돌지 않는다 — 「불러오지 못했어요」 곁에서 「하는 중」 이 돌았다
-            const running = state === "running" && !finished && !error && !stuck;
+            // 지금 보여 주는 단계만 돈다. 못 받은 동안, 멈춘 동안은 돌지 않는다
+            const running = i === nowShown && !failedRun && !error && !stuck;
+            const blank = !running && state == null;
             return (
               <li key={name} className="flex items-start gap-3 py-3.5">
                 {/* 마친 단계는 체크만, 못 한 단계는 「–」 만 — 둥근 면 안에 넣지 않는다. 아직인 단계는 빈 점 */}
@@ -200,7 +228,7 @@ function PlanRun() {
                   className={cn(
                     "mt-0.5 grid size-7 shrink-0 place-items-center rounded-full",
                     running && "border-signal-soft border-t-signal animate-spin border-[3px]",
-                    !step && "bg-sub",
+                    blank && "bg-sub",
                   )}
                 >
                   {ok && <Check className="text-signal size-5" strokeWidth={3.2} />}
@@ -209,7 +237,7 @@ function PlanRun() {
                   )}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className={cn("text-sm font-extrabold", !step && "text-faint")}>
+                  <p className={cn("text-sm font-extrabold", blank && "text-faint")}>
                     {i + 1}. {STEP_TITLE[name] ?? name}
                   </p>
                   {running && <p className="text-caption text-ink-soft mt-0.5">하는 중이에요</p>}

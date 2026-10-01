@@ -31,6 +31,8 @@ interface RoutineState {
   remove: (index: number) => void;
   tidy: () => void;
   clear: () => void;
+  /** 담은 동작을 통째로 바꾼다. AI 운동 추천의 「루틴으로 저장」 이 쓴다 */
+  fill: (moves: RoutineMove[]) => void;
 }
 
 export const useRoutineStore = create<RoutineState>()(
@@ -43,6 +45,7 @@ export const useRoutineStore = create<RoutineState>()(
       remove: (index) => set((s) => ({ moves: s.moves.filter((_, i) => i !== index) })),
       tidy: () => set((s) => ({ moves: tidied(s.moves) })),
       clear: () => set({ moves: [] }),
+      fill: (moves) => set({ moves }),
     }),
     {
       name: "ff-routine",

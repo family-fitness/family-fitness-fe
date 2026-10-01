@@ -1,3 +1,5 @@
+import type { ClipView, SessionPhase, VideoClip } from "@/lib/api/types";
+import { isFactor, type Factor } from "@/lib/fitness-factors";
 import { safeUrl } from "@/lib/safe-url";
 
 /**
@@ -134,6 +136,49 @@ export function videoLink(
   return outside ? { href: outside, inApp: false } : undefined;
 }
 
+/** 유튜브가 주는 영상 대표 썸네일. 한 영상에서 자른 클립은 모두 이 한 장이라 줄마다 같은 그림이 떴다 */
+export function youtubeThumb(videoId: string): string {
+  return `https://i.ytimg.com/vi/${encodeURIComponent(videoId)}/mqdefault.jpg`;
+}
+
+const YOUTUBE_ID = /^[A-Za-z0-9_-]{11}$/;
+
+/**
+ * 유튜브 클립의 썸네일. 그 동작이 시작하는 순간의 화면이다(`public/thumbs/<영상 id>/<시작 초>.webp`).
+ * AI 저장소 data/frames 의 2초 간격 화면에서 클립(data/release/video_clips.csv)이 시작하는 장만 골라 줄였다.
+ * 화면 왼쪽 위에 동작 이름이 떠 있어서 같은 영상의 클립끼리도 그림이 다르다.
+ * 시작 초를 모르면(영상 한 편) undefined 를 돌려주고 화면은 유튜브 썸네일을 쓴다. 파일이 없으면 VideoThumb 가 유튜브 썸네일로 바꾼다
+ */
+export function clipThumb(
+  videoId: string,
+  startSec: number | null | undefined,
+): string | undefined {
+  if (!YOUTUBE_ID.test(videoId)) return undefined;
+  if (typeof startSec !== "number" || !Number.isInteger(startSec) || startSec < 0) return undefined;
+  return `/thumbs/${videoId}/${startSec}.webp`;
+}
+
+/**
+ * 서버 응답을 읽을 때(`JSON.parse` 의 reviver) 유튜브 클립에 썸네일을 채운다.
+ * 클립은 영상 id 와 시작 초가 있고 mp4 주소도 썸네일도 비어 있는 것이다(공단 영상은 서버가 썸네일을 준다).
+ * 화면은 지금처럼 `thumbnailUrl` 만 넘기면 클립마다 다른 그림이 뜬다
+ */
+export function withClipThumbs(_key: string, value: unknown): unknown {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const v = value as {
+      videoId?: unknown;
+      startSec?: unknown;
+      mediaUrl?: unknown;
+      thumbnailUrl?: unknown;
+    };
+    if (typeof v.videoId === "string" && !v.mediaUrl && !v.thumbnailUrl) {
+      const thumb = clipThumb(v.videoId, v.startSec as number | null | undefined);
+      if (thumb) v.thumbnailUrl = thumb;
+    }
+  }
+  return value;
+}
+
 /** 영상 화면 제목. 주소로 들어오는 값이라 앞뒤 빈칸을 빼고 길이를 자른다 */
 export const WATCH_TITLE_MAX = 60;
 export function watchTitle(raw: string | null | undefined): string {
@@ -179,4 +224,135 @@ export function finderScope({
   allAges: boolean;
 }): string {
   return `${factor ?? "모든 힘"}, ${allAges ? "모든 나이" : "나이에 맞는 것만"}`;
+}
+
+/**
+ * 운동 상세 화면(`/exercise/{videoId}`)이 그리는 동작 하나.
+ *
+ * 클립 하나를 받는 API 가 없어서, 클립을 누른 화면(운동 찾기, 영상 줄, 운동 칸)이 이미 받아 둔 값을 주소에 담아 보낸다.
+ * 모르는 칸은 비워 두고, 화면은 빈 칸을 그리지 않는다
+ */
+export interface Exercise {
+  videoId: string;
+  title: string;
+  startSec: number | null;
+  endSec: number | null;
+  factor: Factor | null;
+  phase: SessionPhase | null;
+  /** 운동 칸에 잡힌 시간(분). 클립에서 왔으면 없다 */
+  minutes: number | null;
+  mediaUrl: string | null;
+  thumbnailUrl: string | null;
+  quiet: boolean | null;
+  props: boolean | null;
+  homeOk: boolean | null;
+}
+
+const PHASES: readonly SessionPhase[] = ["WARMUP", "MAIN", "COOLDOWN"];
+
+function flag(v: boolean | null | undefined): string | undefined {
+  return v == null ? undefined : v ? "1" : "0";
+}
+
+/** 운동 상세 화면 주소. 값이 없는 칸은 싣지 않는다 */
+export function exerciseHref(e: Partial<Exercise> & { videoId: string; title: string }): string {
+  const q = new URLSearchParams({ t: e.title });
+  const put = (key: string, v: string | number | null | undefined) => {
+    if (v != null && v !== "") q.set(key, String(v));
+  };
+  put("s", e.startSec);
+  put("e", e.endSec);
+  put("f", e.factor);
+  put("p", e.phase);
+  put("min", e.minutes);
+  put("m", e.mediaUrl);
+  put("th", e.thumbnailUrl);
+  put("qt", flag(e.quiet));
+  put("pr", flag(e.props));
+  put("h", flag(e.homeOk));
+  return `/exercise/${encodeURIComponent(e.videoId)}?${q.toString()}`;
+}
+
+/** 운동 찾기, 영상 줄, 담은 동작의 클립 하나를 상세 화면으로 */
+export function clipHref(c: ClipView): string {
+  return exerciseHref({
+    videoId: c.videoId,
+    title: c.title,
+    startSec: c.startSec,
+    endSec: c.endSec,
+    factor: isFactor(c.factor) ? c.factor : null,
+    phase: c.phase,
+    mediaUrl: c.mediaUrl,
+    thumbnailUrl: c.thumbnailUrl,
+    quiet: c.quiet,
+    props: c.props,
+    homeOk: c.homeOk,
+  });
+}
+
+/** 운동 칸 하나를 상세 화면으로. 칸에 영상이 없으면 undefined */
+export function sessionHref(s: {
+  title: string;
+  phase: SessionPhase;
+  minutes?: number | null;
+  factor?: string | null;
+  clip?: VideoClip | null;
+}): string | undefined {
+  if (!s.clip?.videoId) return undefined;
+  return exerciseHref({
+    videoId: s.clip.videoId,
+    title: s.title,
+    startSec: s.clip.startSec ?? null,
+    endSec: s.clip.endSec ?? null,
+    factor: isFactor(s.factor) ? s.factor : null,
+    phase: s.phase,
+    minutes: s.minutes ?? null,
+    mediaUrl: s.clip.mediaUrl ?? null,
+    thumbnailUrl: s.clip.thumbnailUrl ?? null,
+  });
+}
+
+/** 공단 장면 이미지 주소만 받는다. 다른 주소는 CSP 가 막아 어차피 빈 칸이 된다 */
+function kspoImage(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" && u.hostname === KSPO_HOST && !u.port ? u.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function seconds(raw: string | null): number | null {
+  if (raw == null || raw === "") return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+function readFlag(raw: string | null): boolean | null {
+  return raw === "1" ? true : raw === "0" ? false : null;
+}
+
+/** 상세 화면 주소를 다시 읽는다. 주소로 들어오는 값이라 하나하나 걸러 받는다 */
+export function readExercise(videoId: string, q: { get(key: string): string | null }): Exercise {
+  const start = seconds(q.get("s"));
+  const end = seconds(q.get("e"));
+  const minutes = seconds(q.get("min"));
+  const factor = q.get("f");
+  const phase = q.get("p");
+  const title = q.get("t")?.trim();
+  return {
+    videoId,
+    title: title ? title.slice(0, WATCH_TITLE_MAX) : "운동",
+    startSec: start,
+    endSec: end != null && (start == null || end > start) ? end : null,
+    factor: isFactor(factor) ? factor : null,
+    phase: PHASES.find((p) => p === phase) ?? null,
+    minutes: minutes != null && minutes > 0 ? Math.round(minutes) : null,
+    mediaUrl: kspoVideo(q.get("m")) ?? null,
+    thumbnailUrl: kspoImage(q.get("th")),
+    quiet: readFlag(q.get("qt")),
+    props: readFlag(q.get("pr")),
+    homeOk: readFlag(q.get("h")),
+  };
 }
