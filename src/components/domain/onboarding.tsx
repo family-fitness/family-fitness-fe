@@ -655,7 +655,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
                     multi
                     selected={consent.personalData}
                     onClick={() => setConsent((c) => ({ ...c, personalData: !c.personalData }))}
-                    title="개인정보 수집 및 이용에 동의해요(필수)"
+                    title="개인정보 수집 및 이용 동의(필수)"
                   />
                   <div className="flex">
                     <TermsLink
@@ -669,7 +669,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
                     multi
                     selected={consent.healthData}
                     onClick={() => setConsent((c) => ({ ...c, healthData: !c.healthData }))}
-                    title="민감정보(건강정보) 처리에 동의해요(필수)"
+                    title="민감정보(건강정보) 처리 동의(필수)"
                   />
                   <div className="flex">
                     <TermsLink label="건강정보 처리" onClick={() => terms.show("health")} />

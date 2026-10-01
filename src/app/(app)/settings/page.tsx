@@ -144,7 +144,7 @@ export default function SettingsPage() {
         </ul>
 
         <ul className="card divide-rows py-1">
-          <ListRow href={PRIVACY_HREF} title="개인정보처리방침" />
+          <ListRow href={PRIVACY_HREF} title="개인정보 처리방침" />
           <ListRow href={TERMS_HREF} title="이용약관" />
         </ul>
 

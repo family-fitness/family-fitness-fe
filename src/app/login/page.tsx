@@ -341,7 +341,7 @@ function LoginContent() {
           onClick={() => start(claimCode)}
         >
           <GoogleMark />
-          구글로 시작하기
+          Google 계정으로 로그인
         </Button>
         {!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID && DEV_LOGIN && (
           <p className="text-ink-soft text-caption text-center">
@@ -461,23 +461,23 @@ function LoginContent() {
 }
 
 /**
- * 개인정보처리방침 · 이용약관. 구글 로그인(OAuth) 앱 심사가 로그인 전에도 볼 수 있는 곳에 두 링크를 요구한다 —
- * 전에는 로그인한 뒤 설정에서만 열렸다. 두 문서는 로그인하지 않아도 열린다
+ * 약관 동의 안내. 가입하는 사람 본인의 동의는 로그인 화면의 이 한 줄로 받는다(이용약관 제4조 ②).
+ * 구글 로그인(OAuth) 앱 심사도 로그인 전에 두 문서를 볼 수 있는 링크를 요구한다. 두 문서는 로그인하지 않아도 열린다
  */
 function LegalLinks() {
-  const link = "inline-flex min-h-11 items-center px-2 underline-offset-4 hover:underline";
+  const link = "text-ink font-bold underline underline-offset-4";
   return (
-    <nav
-      aria-label="약관"
-      className="text-ink-soft text-caption flex items-center justify-center gap-3"
-    >
-      <Link href={PRIVACY_HREF} className={link}>
-        개인정보처리방침
-      </Link>
+    <p className="text-ink-soft text-caption px-4 py-2 text-center leading-relaxed">
+      로그인하면{" "}
       <Link href={TERMS_HREF} className={link}>
         이용약관
       </Link>
-    </nav>
+      과{" "}
+      <Link href={PRIVACY_HREF} className={link}>
+        개인정보 처리방침
+      </Link>
+      에 동의하는 것으로 봅니다
+    </p>
   );
 }
 
