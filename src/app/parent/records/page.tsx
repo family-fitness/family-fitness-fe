@@ -18,9 +18,9 @@ import { longDate } from "@/lib/today";
  * 기록 탭. 캘린더와 체력.
  *
  *   「캘린더」  아이마다 한 달 기록(`/calendar?profileId=`)
- *   「체력」    나와 아이들. 사람마다 측정하기, 잰 적이 있으면 결과 보기
+ *   「체력」    나와 아이들. 사람마다 측정하기, 측정한 적이 있으면 결과 보기
  *
- * 보호자도 자기 체력을 잰다. 측정은 재는 사람의 연령대 항목으로 받고(성인 항목이 있다), 결과도 같은 화면이다.
+ * 보호자도 자기 체력을 측정한다. 측정 항목은 측정하는 사람의 연령대로 받고(성인 항목이 있다), 결과도 같은 화면이다.
  * 사람 줄은 나 먼저, 그다음 아이를 등록한 차례로 둔다. 점수로 줄 세우지 않는다(규칙 10)
  */
 export default function RecordsTabPage() {
@@ -116,10 +116,10 @@ function PersonLine({ person, me }: { person: FitnessMapMember; me: boolean }) {
           </span>
           <span className="text-caption text-ink-soft block truncate">
             {!measurable
-              ? "만 4세부터 잴 수 있어요"
+              ? "만 4세부터 측정할 수 있어요"
               : testedOn
-                ? `${longDate(testedOn)}에 쟀어요`
-                : "아직 재지 않았어요"}
+                ? `${longDate(testedOn)}에 측정했어요`
+                : "아직 측정하지 않았어요"}
           </span>
         </span>
         {testedOn && score != null && (
