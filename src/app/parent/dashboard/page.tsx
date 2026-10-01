@@ -10,6 +10,7 @@ import { ParentHeadActions } from "@/components/app-shell/parent-head-actions";
 import { Stage } from "@/components/app-shell/stage";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { NavLink } from "@/components/ui/nav-link";
@@ -133,41 +134,51 @@ export default function FamilyDashboardPage() {
           {/* 다른 가족들과 겨루는 자리. 가족 단위로만 겨루고, 누르면 리그 화면이다.
               뱃지를 가운데 크게 두고 아래 숫자 칸들과 선으로 가른다 */}
           <LeagueRow familyId={familyId ?? undefined} className="border-line mt-1 border-b" />
-          <div className="mt-1 grid grid-cols-2">
-            <FamilyStat
-              label="가족이 운동한 날"
-              value={activeDays}
-              unit="일"
-              state={calendarState}
+          {/* 이번 달 가족 누구도 운동하지 않았다. 「0일」 「0분」 「0개」 칸 대신 키움이(아래 「AI에게 운동 받기」 줄이 길이다) */}
+          {calendarState === "ready" && activeDays === 0 && done === 0 && stickers === 0 ? (
+            <EmptyState
+              size="card"
+              scene="no-mission"
+              title="이번 달 운동 기록이 아직 없어요"
+              description="가족 누구든 운동하면 여기에 기록이 모여요"
             />
-            <FamilyStat
-              label="모두 움직인 시간"
-              value={minutes}
-              unit="분"
-              state={calendarState}
-              left
-            />
-            <FamilyStat
-              label="끝낸 운동"
-              value={done}
-              unit="개"
-              state={calendarState}
-              top
-              // 칭찬 칸이 없으면 아랫줄 하나가 폭을 다 쓴다 — 반쪽이 비어 보이지 않게
-              wide={stickers === 0 && calendarState === "ready"}
-            />
-            {/* 칭찬은 받은 달에만 — 0장을 적어 두면 못 받은 달이 된다(규칙 12) */}
-            {(stickers > 0 || calendarState !== "ready") && (
+          ) : (
+            <div className="mt-1 grid grid-cols-2">
               <FamilyStat
-                label="받은 칭찬"
-                value={stickers}
-                unit="장"
+                label="가족이 운동한 날"
+                value={activeDays}
+                unit="일"
+                state={calendarState}
+              />
+              <FamilyStat
+                label="모두 움직인 시간"
+                value={minutes}
+                unit="분"
                 state={calendarState}
                 left
-                top
               />
-            )}
-          </div>
+              <FamilyStat
+                label="끝낸 운동"
+                value={done}
+                unit="개"
+                state={calendarState}
+                top
+                // 칭찬 칸이 없으면 아랫줄 하나가 폭을 다 쓴다 — 반쪽이 비어 보이지 않게
+                wide={stickers === 0 && calendarState === "ready"}
+              />
+              {/* 칭찬은 받은 달에만 — 0장을 적어 두면 못 받은 달이 된다(규칙 12) */}
+              {(stickers > 0 || calendarState !== "ready") && (
+                <FamilyStat
+                  label="받은 칭찬"
+                  value={stickers}
+                  unit="장"
+                  state={calendarState}
+                  left
+                  top
+                />
+              )}
+            </div>
+          )}
           {/* 쉬는 날 카드 — 오늘 이미 움직인 아이가 있으면 오늘은 못 고른다 */}
           <RestCardRow
             familyId={familyId ?? undefined}
@@ -210,6 +221,16 @@ export default function FamilyDashboardPage() {
               />
             ))}
           </ul>
+          {/* 보호자가 나 하나다. 아래 두 버튼으로 무엇을 할 수 있는지 키움이가 먼저 말한다 */}
+          {members.filter((m) => m.role === "PARENT").length === 1 && (
+            <EmptyState
+              size="card"
+              // scene/kiumi-invite 그림이 오면 이 줄을 invite 로 바꾼다
+              scene="hello"
+              title="함께 볼 보호자를 초대해 보세요"
+              description="가족 관리에서 보호자를 더하고 초대코드를 보내면 같이 응원할 수 있어요"
+            />
+          )}
           <div className="border-line mt-1 grid grid-cols-2 gap-2 border-t pt-3">
             <button
               type="button"

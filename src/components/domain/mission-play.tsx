@@ -5,7 +5,7 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, EmptyStateAction } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { NavLink } from "@/components/ui/nav-link";
@@ -411,7 +411,11 @@ export function MissionPlay({
       <>
         <AppBar backHref={home} title="오늘 운동" />
         <Stage wide>
-          <EmptyState scene="no-mission" title="운동을 찾지 못했어요" />
+          <EmptyState
+            scene="no-mission"
+            title="운동을 찾지 못했어요"
+            action={<EmptyStateAction href={home}>홈으로</EmptyStateAction>}
+          />
         </Stage>
       </>
     );

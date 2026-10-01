@@ -7,7 +7,7 @@ import { ParentHeadActions } from "@/components/app-shell/parent-head-actions";
 import { Stage } from "@/components/app-shell/stage";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, EmptyStateAction } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FamilyProfile } from "@/components/domain/family-profile";
@@ -97,7 +97,11 @@ export default function LeaguePage() {
       <>
         <LeagueHeader />
         <Stage wide>
-          <EmptyState scene="waiting" title="아직 리그가 없어요" />
+          <EmptyState
+            // scene/kiumi-no-league 그림이 오면 이 줄을 no-league 로 바꾼다
+            scene="hello"
+            title="아직 리그가 없어요"
+          />
         </Stage>
       </>
     );
@@ -153,6 +157,18 @@ export default function LeaguePage() {
                 {outlook}
               </p>
             </div>
+          )}
+          {/* 셀 날이 아직 없으면 달성률 칸이 통째로 빠진다. 그 자리에 무엇이 쌓이면 채워지는지 말한다 */}
+          {rate == null && (
+            <EmptyState
+              size="card"
+              // scene/kiumi-no-league 그림이 오면 이 줄을 no-league 로 바꾼다
+              scene="hello"
+              title="이번 달 기록이 아직 없어요"
+              description="아이가 운동한 날이 쌓이면 달성률과 순위가 생겨요"
+              action={<EmptyStateAction href="/plan">AI에게 운동 받기</EmptyStateAction>}
+              className="pt-1"
+            />
           )}
 
           {/* 티어 메달 다섯 — 지금 자리만 진하게. 둥근 칸에 글자를 넣지 않고 메달 그림과 이름으로(9/25) */}

@@ -66,7 +66,7 @@ export default function WhoPage() {
 
         {kids.length === 0 && (
           <EmptyState
-            scene="no-record"
+            scene="hello"
             title="아직 등록된 아이가 없어요"
             action={
               <Link href="/start/child" className="chip press chip-on">

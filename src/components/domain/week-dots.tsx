@@ -23,6 +23,8 @@ export function WeekDots({ days, logs }: { days: string[]; logs: DayLog[] | null
   const now = today();
   const byDate = new Map(logs.map((l) => [l.date, l]));
   const moved = days.filter((d) => (byDate.get(d)?.minutes ?? 0) > 0).length;
+  // 이번 주에 움직인 날도 쉬기로 한 날도 없으면 회색 점 일곱을 세우지 않는다. 바로 위 오늘 한마디가 말한다
+  if (moved === 0 && !days.some((d) => byDate.get(d)?.rest)) return null;
   return (
     <span className="mt-1.5 flex gap-1" role="img" aria-label={`이번 주 ${moved}일 움직였어요`}>
       {days.map((d) => {

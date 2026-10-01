@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { ArtIcon } from "@/components/ui/art-icon";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { IconLink } from "@/components/ui/icon-link";
 import { Illustration } from "@/components/ui/illustration";
@@ -235,8 +236,15 @@ export default function KidHomePage() {
         ) : todo ? (
           <TodayHero mission={todo} profileId={childProfileId} />
         ) : (
-          <div className="card-hero text-center">
-            <p className="text-lead font-extrabold">오늘 운동이 아직 없어요</p>
+          // 아이는 운동을 만들 수 없다. 버튼 없이 무엇을 기다리는지만 말한다
+          <div className="card-hero">
+            <EmptyState
+              size="card"
+              scene="no-mission"
+              title="오늘 운동이 아직 없어요"
+              description="운동이 생기면 여기서 바로 시작할 수 있어요"
+              className="py-1"
+            />
           </div>
         )}
 
@@ -283,12 +291,19 @@ export default function KidHomePage() {
                 badge?.title ??
                 (progress ? "아직 없어요" : progressError ? "못 불러왔어요" : undefined)
               }
-              art={badge ? <ArtIcon name={badgeArt(badge.code)} className="size-10" /> : null}
+              art={
+                badge ? (
+                  <ArtIcon name={badgeArt(badge.code)} className="size-10" />
+                ) : progress ? (
+                  // 아직 받은 업적이 없으면 첫 업적 메달을 흐리게 둔다. 그림 자리를 비워 두지 않는다
+                  <ArtIcon name="badge/badge-first-step" className="size-10 opacity-30 grayscale" />
+                ) : null
+              }
             />
             {/* 점수 하나는 아이도 본다. 등수로 바꾸지 않고 또래 평균 50 눈금과 같이(규칙 10) */}
             <PanelCell
               label="신체 점수"
-              note={score != null ? "또래 평균 50" : measured ? "쟀어요" : "아직 재지 않았어요"}
+              note={score != null ? "또래 평균 50" : measured ? "쟀어요" : "아직 측정 전이에요"}
               art={
                 score == null && measured ? (
                   // 쟀는데 비교할 점수가 없는 나이 — 0 이 아니라 비어 있음이다
@@ -314,7 +329,10 @@ export default function KidHomePage() {
                       <span className="record-avg" />
                     </span>
                   </span>
-                ) : null
+                ) : (
+                  // 아직 측정 전이다. 0점으로 그리지 않고 측정 그림을 둔다(규칙 10)
+                  <ArtIcon name="icon/menu-measure" className="size-10" />
+                )
               }
             />
           </PanelCells>
@@ -351,6 +369,12 @@ function DoneToday({
   return (
     <div className="card-hero flex flex-col items-center text-center">
       {praise && <StickerArt id={praise.stickerId} className="mb-2 size-20" />}
+      {/* 알리고 아직 답이 없으면 글만 두지 않고 칭찬을 기다리는 키움이를 세운다 */}
+      {!praise && told && (
+        <div className="mb-1">
+          <Illustration name="scene/kiumi-waiting" size={96} />
+        </div>
+      )}
       <p className="text-lead font-extrabold">오늘 거 다 했어요!</p>
       {praise ? (
         <p className="text-caption text-ink-soft mt-1 font-bold">

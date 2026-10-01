@@ -6,7 +6,7 @@ import { Suspense } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, EmptyStateAction } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -119,7 +119,8 @@ function Calendar() {
         <AppBar backHref={back} title="캘린더" />
         <Stage wide>
           <EmptyState
-            scene="no-record"
+            // 「측정 전」 키움이가 아니다. 아이 화면은 다른 화면처럼 기다리는 키움이, 부모는 인사하는 키움이
+            scene={kidView ? "waiting" : "hello"}
             title={kidView ? "누구인지 골라 주세요" : "아이를 등록해 주세요"}
             action={
               <NavLink
@@ -143,6 +144,9 @@ function Calendar() {
   // 받아 둔 기록이 있으면 다시 받다 실패해도 그대로 — 칸은 그려져 있는데 합만 「—」 가 됐다
   const failedCalendar = Boolean(calendarError) && !calendar;
   const tileState = failedCalendar ? "error" : calendarPending ? "pending" : "ready";
+  // 이 달에 운동한 날도 받은 칭찬도 없다. 「0일」 「0분」 칸 대신 키움이를 세운다(달력은 두어 날을 눌러 들어가게).
+  // 다음 달은 아직 올 기록이 없는 달이라 칸도 키움이도 두지 않는다
+  const emptyMonth = tileState === "ready" && days.length === 0 && stickers === 0;
 
   return (
     <>
@@ -221,14 +225,19 @@ function Calendar() {
             className="text-caption text-ink-soft mt-3 flex justify-center gap-4 font-semibold"
             aria-hidden
           >
-            <li className="flex items-center gap-1.5">
-              <span className="bg-signal size-2 rounded-full" />
-              움직인 시간
-            </li>
-            <li className="flex items-center gap-1.5">
-              <span className="bg-mark size-2 rounded-full" />
-              끝낸 운동
-            </li>
+            {/* 링이 하나도 없는 달에는 링 범례를 두지 않는다. 없는 것을 범례에 두면 찾게 된다 */}
+            {days.length > 0 && (
+              <>
+                <li className="flex items-center gap-1.5">
+                  <span className="bg-signal size-2 rounded-full" />
+                  움직인 시간
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span className="bg-mark size-2 rounded-full" />
+                  끝낸 운동
+                </li>
+              </>
+            )}
             {/* 쉬는 날을 쓴 달에만 — 없는 것을 범례에 두면 찾게 된다 */}
             {[...logs.values()].some((d) => d.rest && monthOf(d.date) === month) && (
               <li className="flex items-center gap-1.5">
@@ -238,15 +247,45 @@ function Calendar() {
             )}
           </ul>
 
-          {/* 이 달 — 칸 셋(칭찬을 받은 달) · 둘. 둥근 회색 면 없이 선으로 나눈다(이번 주 칸과 같다) */}
-          <div className="divide-line border-line mt-4 grid auto-cols-fr grid-flow-col divide-x border-t pt-4">
-            <MonthTile label="운동한 날" value={days.length} unit="일" state={tileState} />
-            <MonthTile label="움직인 시간" value={total} unit="분" state={tileState} />
-            {/* 칭찬은 받은 달에만 칸으로 — 0장을 적어 두면 못 받은 달이 된다(규칙 12) */}
-            {(stickers > 0 || tileState !== "ready") && (
-              <MonthTile label="받은 칭찬" value={stickers} unit="장" state={tileState} />
-            )}
-          </div>
+          {emptyMonth ? (
+            month < monthOf(now) ? (
+              // 지난달은 「빠진 달」 이 아니다. 기록이 없다고만 말한다
+              <EmptyState
+                size="card"
+                scene="no-mission"
+                title="이 달에는 운동 기록이 없어요"
+                className="border-line mt-4 border-t"
+              />
+            ) : month === monthOf(now) ? (
+              <EmptyState
+                size="card"
+                scene="no-mission"
+                title="이번 달 운동 기록이 아직 없어요"
+                description="운동한 날에는 달력에 기록이 채워져요"
+                // 아이는 운동을 만들 수 없다. 운동을 받는 길은 부모 화면에만
+                action={
+                  !kidView && (
+                    <EmptyStateAction
+                      href={`/plan?profileId=${encodeURIComponent(who.profileId ?? "")}`}
+                    >
+                      AI에게 운동 받기
+                    </EmptyStateAction>
+                  )
+                }
+                className="border-line mt-4 border-t"
+              />
+            ) : null
+          ) : (
+            /* 이 달 — 칸 셋(칭찬을 받은 달) · 둘. 둥근 회색 면 없이 선으로 나눈다(이번 주 칸과 같다) */
+            <div className="divide-line border-line mt-4 grid auto-cols-fr grid-flow-col divide-x border-t pt-4">
+              <MonthTile label="운동한 날" value={days.length} unit="일" state={tileState} />
+              <MonthTile label="움직인 시간" value={total} unit="분" state={tileState} />
+              {/* 칭찬은 받은 달에만 칸으로 — 0장을 적어 두면 못 받은 달이 된다(규칙 12) */}
+              {(stickers > 0 || tileState !== "ready") && (
+                <MonthTile label="받은 칭찬" value={stickers} unit="장" state={tileState} />
+              )}
+            </div>
+          )}
           {failedCalendar && (
             <button
               type="button"

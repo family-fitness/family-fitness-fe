@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
-
+import { EmptyState, EmptyStateAction } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorRadar } from "@/components/domain/factor-radar";
-import type { FitnessMapMember } from "@/lib/api/types";
 
 /**
  * 신체 점수 한 줄. 숫자 · 또래 평균 · 그 사이를 잇는 막대.
@@ -38,21 +36,35 @@ export function ScoreLine({ score }: { score: number }) {
   );
 }
 
-/** 아직 한 번도 안 쟀다. 0점으로 그리지 않는다(규칙 10) */
-export function FirstMeasure({ child }: { child: FitnessMapMember }) {
+/**
+ * 아직 한 번도 측정하지 않았다. 빈 육각형과 0점을 그리지 않고 키움이와 첫 측정 길을 둔다(규칙 10).
+ * 부모 홈의 아이 묶음과 아이 기록이 같이 쓴다
+ */
+export function FirstMeasure({
+  profileId,
+  name,
+  measurable,
+  className,
+}: {
+  profileId: string;
+  name: string;
+  /** 만 4세 미만은 측정할 수 없다. 버튼을 끄지 않고 없앤다(규칙 4) */
+  measurable: boolean;
+  className?: string;
+}) {
   return (
-    <div className="mt-3">
-      <p className="text-lead font-extrabold">아직 재지 않았어요</p>
-      {/* 만 4세 미만은 잴 수 없다. 버튼을 끄지 않고 없앤다(규칙 4) */}
-      {child.measurable !== false && (
-        <Link
-          href={`/p/${child.profileId}/measure`}
-          className="press bg-signal-strong mt-3 inline-flex min-h-11 items-center rounded-full px-5 text-sm font-extrabold text-white"
-        >
-          첫 측정 하기
-        </Link>
-      )}
-    </div>
+    <EmptyState
+      size="card"
+      scene="no-record"
+      title="아직 체력을 측정하지 않았어요"
+      description={`한 번 측정하면 ${name}의 여섯 가지 체력을 한눈에 볼 수 있어요`}
+      action={
+        measurable && (
+          <EmptyStateAction href={`/p/${profileId}/measure`}>첫 측정 하기</EmptyStateAction>
+        )
+      }
+      className={className}
+    />
   );
 }
 

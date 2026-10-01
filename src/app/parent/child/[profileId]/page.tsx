@@ -5,11 +5,11 @@ import { useParams } from "next/navigation";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { Card, CardHead } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, EmptyStateAction } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FactorView } from "@/components/domain/factor-view";
+import { FactorView, FirstMeasure } from "@/components/domain/factor-view";
 import { MonthStats, RecentDays } from "@/components/domain/child-stats";
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { AchievementGrid } from "@/components/domain/achievement-grid";
@@ -109,7 +109,7 @@ export default function ChildDetailPage() {
       <>
         <AppBar back title="아이 기록" />
         <Stage>
-          <EmptyState scene="no-record" title="찾을 수 없는 프로필이에요" />
+          <EmptyState scene="waiting" title="찾을 수 없는 프로필이에요" />
         </Stage>
       </>
     );
@@ -141,17 +141,26 @@ export default function ChildDetailPage() {
               )}
             </div>
           </div>
-          <div className="border-line mt-4 border-t pt-3">
-            <p className="text-caption text-ink-soft font-bold">
-              {testedOn ? `${formatDate(testedOn)}에 잰 체력` : "체력"}
-            </p>
-            {/* 잰 적이 있는지로 가른다 — 만 7~10세는 쟀어도 점수가 없을 수 있다(규칙 8) */}
-            {testedOn == null && (
-              <p className="text-lead mt-2 font-extrabold">아직 재지 않았어요</p>
-            )}
-          </div>
-          {/* 육각형 · 그 아래 통합 신체 점수(9/25) · 출처 */}
-          <FactorView points={latest?.radar} name={name} pending={false} score={score} />
+          {/* 측정한 적이 있는지로 가른다. 만 7~10세는 측정했어도 점수가 없을 수 있다(규칙 8).
+              측정한 적이 없으면 꼭지점이 빈 육각형 대신 키움이와 첫 측정 길(부모 홈과 같은 부품) */}
+          {testedOn == null ? (
+            <FirstMeasure
+              profileId={profileId}
+              name={name}
+              measurable={profile.measurable !== false}
+              className="border-line mt-4 border-t"
+            />
+          ) : (
+            <>
+              <div className="border-line mt-4 border-t pt-3">
+                <p className="text-caption text-ink-soft font-bold">
+                  {formatDate(testedOn)}에 잰 체력
+                </p>
+              </div>
+              {/* 육각형 · 그 아래 통합 신체 점수(9/25) · 출처 */}
+              <FactorView points={latest?.radar} name={name} pending={false} score={score} />
+            </>
+          )}
         </Card>
 
         <MonthStats
@@ -162,16 +171,19 @@ export default function ChildDetailPage() {
         />
         <RecentDays familyId={familyId ?? undefined} profileId={profileId} />
 
-        <Card>
-          {/* 견준 값이 하나도 없으면(만 7~10세) 또래 평균 눈금도 없다 */}
-          <CardHead
-            title="요인별"
-            meta={
-              (latest?.radar ?? []).some((p) => p.percentile != null) ? "또래 평균 50" : undefined
-            }
-          />
-          <FactorTable radar={latest?.radar} results={latest?.items} catalog={catalog?.items} />
-        </Card>
+        {/* 측정한 적이 없으면 여섯 줄이 모두 「안 쟀어요」 인 표를 세우지 않는다. 위 첫 측정 길이 말한다 */}
+        {testedOn != null && (
+          <Card>
+            {/* 견준 값이 하나도 없으면(만 7~10세) 또래 평균 눈금도 없다 */}
+            <CardHead
+              title="요인별"
+              meta={
+                (latest?.radar ?? []).some((p) => p.percentile != null) ? "또래 평균 50" : undefined
+              }
+            />
+            <FactorTable radar={latest?.radar} results={latest?.items} catalog={catalog?.items} />
+          </Card>
+        )}
 
         {tests.length > 0 && (
           <Card>
@@ -253,6 +265,8 @@ function BodyGrowth({
   const measuredOn = now?.testedOn ?? fallback?.measuredOn ?? null;
   const grew = first && now && first !== now ? round1(now.heightCm - first.heightCm) : null;
   const due = (daysSince(lastTestedOn) ?? 0) >= REMEASURE_DAYS;
+  // 측정한 적이 없고 이 기기에도 적어 둔 값이 없다. 빈 칸 안에 첫 측정 길을 두고 아래 「새로 재기」 는 세우지 않는다
+  const firstMeasure = (height == null || weight == null) && measurable && !lastTestedOn;
   // 잰 기록 줄은 최근 것부터
   const newestFirst = [...withBody].reverse();
   // 키 자의 눈금 — 이력이 아직 없으면 최근 회차나 기기에 적어 둔 한 번이라도
@@ -286,7 +300,17 @@ function BodyGrowth({
           </div>
         </div>
       ) : (
-        <p className="text-ink-soft mt-1 text-sm">아직 안 적었어요</p>
+        <EmptyState
+          size="card"
+          scene="no-record"
+          title="아직 키와 몸무게 기록이 없어요"
+          description="측정하면 키가 자라는 모습을 여기에서 볼 수 있어요"
+          action={
+            firstMeasure && (
+              <EmptyStateAction href={`/p/${profileId}/measure`}>첫 측정 하기</EmptyStateAction>
+            )
+          }
+        />
       )}
 
       {/* 키 자 — 잰 날마다 눈금 하나, 옆에 키 · 몸무게 · 날짜(9/30 다시). 한 번만 쟀어도 선다 */}
@@ -294,6 +318,12 @@ function BodyGrowth({
       {grew != null && grew > 0 && first && (
         <p className="text-caption text-ink-soft mt-1 font-semibold">
           {formatDate(first.testedOn)}보다 <b className="text-ink">{grew}cm</b> 자랐어요
+        </p>
+      )}
+      {/* 눈금이 하나뿐이면 견줄 것이 없다. 무엇을 하면 자란 만큼이 보이는지 한 줄 */}
+      {rulerRecords.length === 1 && (
+        <p className="text-caption text-ink-soft mt-1 font-semibold">
+          다음에 측정하면 얼마나 자랐는지 보여 드려요
         </p>
       )}
 
@@ -330,7 +360,7 @@ function BodyGrowth({
         </>
       )}
 
-      {measurable && (
+      {measurable && !firstMeasure && (
         <NavLink
           href={`/p/${profileId}/measure`}
           className={

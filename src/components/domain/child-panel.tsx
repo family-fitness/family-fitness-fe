@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
+import { Illustration } from "@/components/ui/illustration";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorView, FirstMeasure } from "@/components/domain/factor-view";
@@ -57,7 +58,11 @@ export function ChildPanel({
 
       {/* 잰 적이 있는지로 가른다 — 만 7~10세는 규준이 비어 점수가 없을 수 있다(규칙 8). 그래도 육각형은 선다 */}
       {testedOn == null ? (
-        <FirstMeasure child={child} />
+        <FirstMeasure
+          profileId={child.profileId ?? ""}
+          name={name}
+          measurable={child.measurable !== false}
+        />
       ) : (
         <>
           {/* 육각형 · 그 아래 통합 신체 점수. 아이 기록 · 측정 결과와 같은 한 부품이다 */}
@@ -227,11 +232,26 @@ function TodaySection({
     return (
       <>
         {head}
-        <p className="text-ink-soft mt-1 text-sm">
-          {restToday
-            ? "오늘은 쉬는 날이에요"
-            : `${withJosa(childName, "은는")} 아직 오늘 운동이 없어요`}
-        </p>
+        {/* 글만 두지 않고 왼쪽에 키움이를 세운다. 쉬는 날은 쉬는 키움이 */}
+        <div className="mt-1 flex items-center gap-3">
+          <Illustration
+            name={restToday ? "scene/kiumi-rest" : "scene/kiumi-no-mission"}
+            size={72}
+          />
+          <div className="min-w-0">
+            <p className="text-sm font-extrabold">
+              {restToday
+                ? "오늘은 쉬는 날이에요"
+                : `${withJosa(childName, "은는")} 아직 오늘 운동이 없어요`}
+            </p>
+            {/* 바로 아래 두 버튼이 무엇인지. 기다리는 제안이 있으면 버튼이 없어 말하지 않는다 */}
+            {!waiting && !restToday && (
+              <p className="text-caption text-ink-soft mt-0.5 font-semibold">
+                AI에게 받거나 동작을 골라 직접 짤 수 있어요
+              </p>
+            )}
+          </div>
+        </div>
         {proposal}
         {/* 두 길 — AI에게 받거나, 직접 골라 짜거나. 쉬는 날에는 운동을 권하지 않는다(규칙 15) */}
         {!waiting && !restToday && (

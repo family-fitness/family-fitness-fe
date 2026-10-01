@@ -69,7 +69,8 @@ export default function ResultPage() {
         <Screen>
           <EmptyState
             scene="no-record"
-            title="아직 재지 않았어요"
+            title="아직 체력을 측정하지 않았어요"
+            description="한 번 측정하면 여섯 가지 체력을 한눈에 볼 수 있어요"
             action={
               measurable ? (
                 <Link

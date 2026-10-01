@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { ArtIcon } from "@/components/ui/art-icon";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Sheet } from "@/components/ui/sheet";
 import { KiumMedal } from "@/components/scene/kium-medal";
 import type { AchievementView } from "@/lib/api/types";
@@ -23,6 +24,16 @@ export function AchievementGrid({ achievements }: { achievements: AchievementVie
 
   return (
     <>
+      {/* 하나도 못 받았으면 회색 칸만 늘어서 있다. 첫 업적을 어떻게 받는지 위에 한 번 말한다(격자는 그대로) */}
+      {!achievements.some((a) => a.earnedAt) && (
+        <EmptyState
+          size="card"
+          scene="no-mission"
+          title="아직 받은 업적이 없어요"
+          description="운동 한 칸을 끝내면 첫걸음 업적을 받아요"
+          className="pt-1"
+        />
+      )}
       <ul className="grid grid-cols-3 gap-2">
         {achievements.map((a) => {
           const got = Boolean(a.earnedAt);
