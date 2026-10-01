@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronRight, Play } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Play } from "lucide-react";
 import Link from "next/link";
 
 import { HomeHeader } from "@/components/app-shell/home-header";
@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ChildFitnessCard } from "@/components/domain/child-panel";
 import { ChildSwitch } from "@/components/domain/child-switch";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
+import { SessionList } from "@/components/domain/session-list";
 import type { Mission } from "@/lib/api/types";
 import { useCurrentMissions, useFitnessMap, useRestDays } from "@/lib/api/queries";
 import { familyToday, partAction, partLine, partOf } from "@/lib/mission";
@@ -155,7 +156,8 @@ export default function WorkoutTabPage() {
 function MissionLine({ mission, myId }: { mission: Mission; myId: string | undefined }) {
   const mine = partOf(mission, myId);
   const first = mission.participants?.[0]?.profileId;
-  const minutes = totalMinutes(sessionsOf(mission, myId ?? first));
+  const sessions = sessionsOf(mission, myId ?? first);
+  const minutes = totalMinutes(sessions);
 
   return (
     <li className="py-3">
@@ -186,6 +188,20 @@ function MissionLine({ mission, myId }: { mission: Mission; myId: string | undef
           );
         })}
       </ul>
+      {/* 동작 목록은 접어 둔다. 펼치면 칸마다 누르면 운동 상세(영상과 설명)로 */}
+      {sessions.length > 0 && (
+        <details className="group mt-2">
+          <summary className="text-ink-soft flex min-h-11 cursor-pointer list-none items-center gap-1 text-sm font-bold [&::-webkit-details-marker]:hidden">
+            동작 보기
+            <span className="text-faint font-semibold">{sessions.length}개</span>
+            <ChevronDown
+              aria-hidden
+              className="size-4 transition-transform group-open:rotate-180"
+            />
+          </summary>
+          <SessionList sessions={sessions} className="mt-1" />
+        </details>
+      )}
       {mine &&
         (mine.total > 0 && mine.done >= mine.total ? (
           <NavLink
