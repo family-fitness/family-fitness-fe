@@ -88,7 +88,7 @@ function PlanRun() {
   if (error && !run) {
     return (
       <>
-        <AppBar backHref="/plan" title="짜는 중" />
+        <AppBar backHref="/plan" title="만드는 중" />
         <Stage wide>
           <ErrorState error={error} onRetry={() => void refetch()} />
         </Stage>
@@ -114,7 +114,7 @@ function PlanRun() {
 
   return (
     <>
-      <AppBar backHref="/plan" title="짜는 중" />
+      <AppBar backHref="/plan" title="만드는 중" />
       <Stage wide className="space-y-3">
         <section className="card-hero flex flex-col items-center text-center">
           <StoneTrail
@@ -127,7 +127,7 @@ function PlanRun() {
             label={`${names.length}단계 중 ${done}단계를 마쳤어요`}
             className="-mt-2"
           />
-          {/* 짜는 동안은 막대 제목(「짜는 중」)이 말한다 — 끝났을 때만 한마디 */}
+          {/* 짜는 동안은 막대 제목(「만드는 중」)이 말한다 — 끝났을 때만 한마디 */}
           <p
             className={cn("text-lead font-extrabold", (failedRun || finished || stuck) && "mt-2")}
             aria-live="polite"
@@ -137,7 +137,7 @@ function PlanRun() {
               : finished
                 ? "다 짰어요"
                 : stuck
-                  ? "아직 짜는 중이에요"
+                  ? "아직 만드는 중이에요"
                   : null}
           </p>
           {/* 왜 못 짰는지 — 서버가 준 까닭 코드를 말로. 전에는 「짜지 못했어요」 만 떠서 다시 눌러도 되는지 몰랐다 */}
@@ -164,7 +164,7 @@ function PlanRun() {
                 href="/plan"
                 className="press text-signal-strong inline-flex min-h-11 items-center px-1 font-extrabold"
               >
-                다시 짜기
+                다시 만들기
               </NavLink>
             </p>
           )}
@@ -225,7 +225,7 @@ function PlanRun() {
             href="/plan"
             className="press bg-signal-strong flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold text-white"
           >
-            다시 짜기
+            다시 만들기
           </NavLink>
         )}
       </Stage>

@@ -138,7 +138,7 @@ await walk("새 가족 만들기", async (h) => {
     await next();
     await h.settle(900);
   });
-  await h.step("운동할 수 있는 시간과 참여 방식이 한 화면", async () => {
+  await h.step("운동 루틴과 참여 방식이 한 화면", async () => {
     await page.getByRole("heading", { name: /언제 운동할 수 있어요/ }).waitFor({ timeout: 8000 });
     // 가족과 아이를 만든 뒤에는 뒤로 가지 않는다 — 두 번 만들지 않게
     if (await page.getByRole("button", { name: "뒤로" }).count()) {
@@ -416,13 +416,13 @@ await walk(
   { width: 360, height: 780 },
 );
 
-// 초대받아 들어오는 흐름 — 서버가 준 초대코드가 미리 채워진 합류 화면으로
+// 초대받아 들어오는 흐름 — 서버가 준 초대 코드가 미리 채워진 합류 화면으로
 await walk(
   "심사용 계정 — 초대받은 보호자",
   async (h) => {
     const { page } = h;
     await reviewAs(h, "초대받은 보호자로 들어가 보기");
-    await h.step("초대코드가 채워진 합류 화면", async () => {
+    await h.step("초대 코드가 채워진 합류 화면", async () => {
       await h.until(/\/claim\?code=/);
       const code = await page.getByLabel("초대 코드 여섯 자리").inputValue();
       if (code !== "K7M2QT") problems.push(`심사용 계정 — 초대\n    코드 칸이 「${code}」`);

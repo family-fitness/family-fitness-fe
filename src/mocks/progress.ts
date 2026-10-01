@@ -10,7 +10,7 @@
  * | 운동 한 칸 끝내기        | +5     |
  * | 운동 하나를 끝까지 하기  | +20    |
  * | 칭찬 스티커 받기         | +10    |
- * | 키 · 몸무게 새로 재기    | +20    |
+ * | 키 · 몸무게 다시 측정하기    | +20    |
  *
  * 경험치는 **줄지 않는다.** 쉰 날에 깎는 규칙은 없다. 끝까지 한 몫은 운동마다 붙는다 — 「그날 잡힌 것 다 하기」 로
  * 세면, 아이가 다 한 뒤에 부모가 운동을 하나 더 등록하는 순간 그 몫이 빠져 레벨이 내려갔다.
@@ -132,7 +132,7 @@ export function progressOf(profileId: string): ProgressView {
   // 목의 기록은 지난 3주뿐이라 그 전에 한 운동이 경험치에서 빠진다. 시연 가족의 아이는 그 몫을 한 줄로
   // 더해, 오늘 것을 빼고 셌을 때 Lv.6(풍차) 이상 다음 레벨에 딱 30 모자라게 선다
   if (profileId === DEMO.kid && db.profiles.familyId === DEMO.familyId) {
-    // 어제까지 받은 것만 센다 — 오늘 받은 것(운동 · 스티커 · 다시 재기)은 시연 몫에 먹히지 않고 그대로 는다
+    // 어제까지 받은 것만 센다 — 오늘 받은 것(운동 · 스티커 · 다시 측정하기)은 시연 몫에 먹히지 않고 그대로 는다
     const base = events.filter((e) => dayOf(e.at) < today()).reduce((sum, e) => sum + e.amount, 0);
     const next = LEVEL_FLOOR.find((floor) => floor >= LEVEL_FLOOR[5] && floor - DEMO_SHORT >= base);
     if (next !== undefined && next - DEMO_SHORT > base) {

@@ -38,7 +38,7 @@ import { cn } from "@/lib/utils";
  * 가족 대시보드 — 부모가 가족 전체를 한 화면에서(9/25 「부모에겐 전체적인 가족 대시보드가 보이는 화면이 필요해」).
  *
  * 큰 묶음 둘이다.
- *   「이번 달 우리 가족」  운동한 날 · 움직인 시간 · 끝낸 운동 · 받은 칭찬 — 누가 하든 한 곳에 모인다
+ *   「이번 달 우리 가족」  운동한 날 · 운동 시간 · 완료한 운동 · 받은 칭찬 — 누가 하든 한 곳에 모인다
  *   「구성원」           사람마다 오늘 · 이번 주 · 며칠 이어서. 아직 안 들어온 자리는 초대
  *
  * 하단 탭의 「가족」 이 여는 화면이다. 탭의 첫 화면이라 뒤로가 없고, 가족 관리는 구성원 묶음 아래에서 들어간다.
@@ -134,7 +134,7 @@ export default function FamilyDashboardPage() {
           {/* 다른 가족들과 겨루는 자리. 가족 단위로만 겨루고, 누르면 리그 화면이다.
               뱃지를 가운데 크게 두고 아래 숫자 칸들과 선으로 가른다 */}
           <LeagueRow familyId={familyId ?? undefined} className="border-line mt-1 border-b" />
-          {/* 이번 달 가족 누구도 운동하지 않았다. 「0일」 「0분」 「0개」 칸 대신 키움이(아래 「AI에게 운동 받기」 줄이 길이다) */}
+          {/* 이번 달 가족 누구도 운동하지 않았다. 「0일」 「0분」 「0개」 칸 대신 키움이(아래 「AI 운동 추천 받기」 줄이 길이다) */}
           {calendarState === "ready" && activeDays === 0 && done === 0 && stickers === 0 ? (
             <EmptyState
               size="card"
@@ -151,14 +151,14 @@ export default function FamilyDashboardPage() {
                 state={calendarState}
               />
               <FamilyStat
-                label="모두 움직인 시간"
+                label="가족 운동 시간"
                 value={minutes}
                 unit="분"
                 state={calendarState}
                 left
               />
               <FamilyStat
-                label="끝낸 운동"
+                label="완료한 운동"
                 value={done}
                 unit="개"
                 state={calendarState}
@@ -195,7 +195,7 @@ export default function FamilyDashboardPage() {
               className="press border-line mt-2 flex min-h-12 items-center gap-3 border-t pt-3"
             >
               <ArtIcon name="icon/menu-ai" className="size-8" />
-              <span className="min-w-0 flex-1 text-sm font-extrabold">AI에게 운동 받기</span>
+              <span className="min-w-0 flex-1 text-sm font-extrabold">AI 운동 추천 받기</span>
               <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
             </NavLink>
           )}
@@ -228,7 +228,7 @@ export default function FamilyDashboardPage() {
               // scene/kiumi-invite 그림이 오면 이 줄을 invite 로 바꾼다
               scene="hello"
               title="함께 볼 보호자를 초대해 보세요"
-              description="가족 관리에서 보호자를 더하고 초대코드를 보내면 같이 응원할 수 있어요"
+              description="가족 관리에서 보호자를 더하고 초대 코드를 보내면 같이 응원할 수 있어요"
             />
           )}
           <div className="border-line mt-1 grid grid-cols-2 gap-2 border-t pt-3">
@@ -361,7 +361,7 @@ function MemberLine({
         </span>
         {/* 자르지 않고 두 줄로 — 320 폭에서 「아직 안 들어옴」 · 오늘 몇 개가 잘려 지금 상태가 안 보였다 */}
         <span className="text-caption text-ink-soft block">
-          {child ? "자녀" : "부모"}, {member.ageGroup}
+          {child ? "아이" : "보호자"}, {member.ageGroup}
           {/* 아이는 부모 폰을 빌려 쓰는 게 기본이라 계정이 없어도 오늘을 적는다. 부모 자리만 「아직 안 들어옴」 */}
           {!child && hasAccount === false ? (
             ", 아직 안 들어왔어요"

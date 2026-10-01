@@ -164,7 +164,7 @@ export default function MembersPage() {
             title="얼마나 같이 할지"
             description={SUPPORT_COPY[mySupportMode ?? "none"]}
           />
-          <ListRow href="/settings/schedule" art="icon/menu-schedule" title="운동할 수 있는 시간" />
+          <ListRow href="/settings/schedule" art="icon/menu-schedule" title="운동 루틴" />
           {kid?.profileId && (
             <ListRow
               href={`/parent/sticker/${kid.profileId}${cheerFor?.missionId ? `?missionId=${encodeURIComponent(cheerFor.missionId)}` : ""}`}
@@ -241,7 +241,7 @@ function MemberRow({
         <div className="min-w-0 flex-1">
           <p className="text-body font-bold">{profile.name}</p>
           <p className="text-faint mt-0.5 text-xs">
-            {profile.ageGroup}, {profile.role === "PARENT" ? "부모" : "자녀"}
+            {profile.ageGroup}, {profile.role === "PARENT" ? "보호자" : "아이"}
           </p>
         </div>
 

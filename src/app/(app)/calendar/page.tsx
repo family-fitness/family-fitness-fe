@@ -27,14 +27,14 @@ import { useTabStore } from "@/stores/tab-store";
 /**
  * 캘린더 — 부모와 아이가 같이 본다.
  *
- * 한 달이 작은 링으로 찬다(애플 피트니스의 달력처럼). 링은 하루 기록과 같은 둘 — 움직인 시간 · 끝낸 운동.
+ * 한 달이 작은 링으로 찬다(애플 피트니스의 달력처럼). 링은 하루 기록과 같은 둘 — 운동 시간 · 완료한 운동.
  * 받은 스티커는 그날 칸 모서리에 붙는다. **날을 누르면 그날의 하루 기록**(`/calendar/[날짜]`)으로 간다.
- * 달 아래에는 그 달을 칸 셋으로 — 운동한 날 · 움직인 시간 · 받은 칭찬(아이 기록과 같은 이름).
+ * 달 아래에는 그 달을 칸 셋으로 — 운동한 날 · 운동 시간 · 받은 칭찬(아이 기록과 같은 이름).
  *
  * **아무것도 안 한 날은 빈 칸이다.** 「빠진 날」 이라고 쓰지 않는다 — 쉰 날은 쉰 날이다.
  * 부모는 아이를 골라 보고, 아이는 자기 것만 본다. 달은 주소에 둔다(`?month=`).
  *
- * **앞으로의 날에는 잡아 둔 운동이 점선 고리로 보인다** — 직접 짜기에서 여러 날에 넣은 것.
+ * **앞으로의 날에는 잡아 둔 운동이 점선 고리로 보인다** — 직접 만들기에서 여러 날에 넣은 것.
  * 다음 달까지만 넘겨 본다.
  */
 export default function CalendarPage() {
@@ -230,11 +230,11 @@ function Calendar() {
               <>
                 <li className="flex items-center gap-1.5">
                   <span className="bg-signal size-2 rounded-full" />
-                  움직인 시간
+                  운동 시간
                 </li>
                 <li className="flex items-center gap-1.5">
                   <span className="bg-mark size-2 rounded-full" />
-                  끝낸 운동
+                  완료한 운동
                 </li>
               </>
             )}
@@ -268,7 +268,7 @@ function Calendar() {
                     <EmptyStateAction
                       href={`/plan?profileId=${encodeURIComponent(who.profileId ?? "")}`}
                     >
-                      AI에게 운동 받기
+                      AI 운동 추천 받기
                     </EmptyStateAction>
                   )
                 }
@@ -279,7 +279,7 @@ function Calendar() {
             /* 이 달 — 칸 셋(칭찬을 받은 달) · 둘. 둥근 회색 면 없이 선으로 나눈다(이번 주 칸과 같다) */
             <div className="divide-line border-line mt-4 grid auto-cols-fr grid-flow-col divide-x border-t pt-4">
               <MonthTile label="운동한 날" value={days.length} unit="일" state={tileState} />
-              <MonthTile label="움직인 시간" value={total} unit="분" state={tileState} />
+              <MonthTile label="운동 시간" value={total} unit="분" state={tileState} />
               {/* 칭찬은 받은 달에만 칸으로 — 0장을 적어 두면 못 받은 달이 된다(규칙 12) */}
               {(stickers > 0 || tileState !== "ready") && (
                 <MonthTile label="받은 칭찬" value={stickers} unit="장" state={tileState} />
@@ -337,7 +337,7 @@ function DayCell({
       disabled={future && !planned}
       aria-current={isToday ? "date" : undefined}
       // 링 둘이 말하는 것을 다 읽어 준다 — 범례는 화면 읽기에서 숨어 있다
-      aria-label={`${longDate(date)}${rest ? ", 쉬는 날" : ""}${moved ? `, 움직인 시간 ${moved.minutes}분, 끝낸 운동 ${summary.done}개` : ""}${sticker ? `, ${sticker.label} 스티커` : ""}${planned && !moved ? ", 운동이 잡혀 있어요" : ""}`}
+      aria-label={`${longDate(date)}${rest ? ", 쉬는 날" : ""}${moved ? `, 운동 시간 ${moved.minutes}분, 완료한 운동 ${summary.done}개` : ""}${sticker ? `, ${sticker.label} 스티커` : ""}${planned && !moved ? ", 운동이 잡혀 있어요" : ""}`}
       className={cn(
         "press relative grid size-11 place-items-center rounded-full",
         isToday && "bg-signal-soft",

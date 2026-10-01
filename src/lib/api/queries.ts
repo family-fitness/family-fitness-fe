@@ -109,7 +109,7 @@ function refreshProgress(qc: ReturnType<typeof useQueryClient>) {
 
 /**
  * 앱 진입 시 한 번. `nextStep` 으로 어디로 보낼지 정한다.
- * CREATE_FAMILY(프로필 0개) · CLAIM(초대코드 있음) · SUPPORT_MODE(초대받은 부모가 참여 방식 전) · HOME.
+ * CREATE_FAMILY(프로필 0개) · CLAIM(초대 코드 있음) · SUPPORT_MODE(초대받은 부모가 참여 방식 전) · HOME.
  */
 export function useMe() {
   return useQuery({
@@ -135,7 +135,7 @@ function seedAccount(qc: ReturnType<typeof useQueryClient>, auth: AuthResponse) 
 }
 
 /**
- * 로컬 전용. 구글 없이 시드 계정으로 들어간다. 초대코드를 들고 가면 서버가 가족이 없는 계정에
+ * 로컬 전용. 구글 없이 시드 계정으로 들어간다. 초대 코드를 들고 가면 서버가 가족이 없는 계정에
  * `CLAIM` 을 준다(구글 로그인과 같다)
  */
 export function useDevLogin() {
@@ -162,7 +162,7 @@ export function useGoogleLogin() {
  *   FAMILY   서버가 부를 때마다 새 계정과 「체험 가족」(보호자 둘 · 아이 둘, 측정 기록까지)을 만든다 —
  *            심사위원끼리 서로의 기록을 건드리지 않게. 가족이 이미 있어서 바로 홈으로 간다
  *   FRESH    가족이 없는 새 계정. 가족 만들기부터 시작한다
- *   INVITED  가족이 없는 새 계정과, 서버가 꾸며 둔 체험 가족의 초대코드(`inviteCode`)
+ *   INVITED  가족이 없는 새 계정과, 서버가 꾸며 둔 체험 가족의 초대 코드(`inviteCode`)
  *
  * 같은 곳에서 너무 자주 부르면 서버가 429(TOO_MANY)를 돌려준다.
  */
@@ -606,7 +606,7 @@ export function useCurrentMissions(familyId: Uuid | undefined) {
  * 컴포넌트 밖에 둔다 — 렌더마다 새 함수면 합친 결과도 매번 새것이 된다.
  * 기다리는 중 · 못 받음을 같이 돌려준다 — 못 받은 것을 「오늘 운동이 없어요」 로 그리면
  * 부모가 같은 운동을 한 번 더 받는다. **둘 다 받아야 오늘을 말한다** — 다 한 것만 못 받으면
- * 다 한 날이 「오늘 운동이 아직 없어요」 가 되어 「AI에게 운동 받기」 가 떴다.
+ * 다 한 날이 「오늘 운동이 아직 없어요」 가 되어 「AI 운동 추천 받기」 가 떴다.
  */
 function mergeMissions(
   results: { data?: MissionList; isPending: boolean; error: unknown; refetch: () => unknown }[],
@@ -800,7 +800,7 @@ export function useCompleteSession(missionId: Uuid, familyId: Uuid) {
 }
 
 /**
- * 운동할 수 있는 시간. AI 편성의 「몇 분」 기본값이 여기서 나온다.
+ * 운동 루틴. AI 편성의 「몇 분」 기본값이 여기서 나온다.
  * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
  */
 export function useAvailability(profileId: Uuid | undefined) {
@@ -812,7 +812,7 @@ export function useAvailability(profileId: Uuid | undefined) {
 }
 
 /**
- * 여러 사람의 운동할 수 있는 시간을 한꺼번에. 겹치는 요일을 셀 때 쓴다.
+ * 여러 사람의 운동 루틴을 한꺼번에. 겹치는 요일을 셀 때 쓴다.
  * 키가 `useAvailability` 와 같아 캐시를 나눠 쓴다. 한 사람이라도 아직 못 받았으면 undefined.
  * 몇 사람만 받은 채로 겹침을 세면 받는 사이 요일이 바뀌어 보인다
  */
@@ -982,7 +982,7 @@ export function useRestDays(familyId: Uuid | undefined, month: string) {
 }
 
 /**
- * 여러 달의 쉬는 날을 한꺼번에 — 직접 짜기가 몇 주 되풀이할 때 달을 넘는다. 키가 `useRestDays` 와 같아 캐시를 나눠 쓴다.
+ * 여러 달의 쉬는 날을 한꺼번에 — 직접 만들기가 몇 주 되풀이할 때 달을 넘는다. 키가 `useRestDays` 와 같아 캐시를 나눠 쓴다.
  * 쓴 날(YYYY-MM-DD)을 한 묶음으로 돌려준다. 못 받은 달은 비어 있다
  */
 export function useRestDaysIn(familyId: Uuid | undefined, months: string[]) {

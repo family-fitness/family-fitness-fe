@@ -17,8 +17,8 @@ function over(value: number, max: number, unit: string) {
 /**
  * 오늘 한 만큼 — 세 겹 링(애플 피트니스처럼).
  *
- *   바깥 파랑   움직인 시간 / 오늘 목표
- *   가운데 노랑 끝낸 운동 / 오늘 칸
+ *   바깥 파랑   운동 시간 / 오늘 목표
+ *   가운데 노랑 완료한 운동 / 오늘 칸
  *   안 남색     이번 주 운동한 날 / 운동하기로 적어 둔 날
  *
  * 비어 있어도 탓하는 말을 붙이지 않는다. 링은 채워질 자리를 보여 줄 뿐이다.
@@ -67,7 +67,7 @@ export function TodayRings({
       rings={[
         {
           // 「이번 주」 묶음 안에 서도 오늘 것임을 이름이 말한다
-          label: "오늘 움직인 시간",
+          label: "오늘 운동 시간",
           value: a.moved,
           max: a.goal,
           text: resting ? "쉬는 날" : over(a.moved, a.goal, "분"),
@@ -75,7 +75,7 @@ export function TodayRings({
           track: "var(--color-signal-soft)",
         },
         {
-          label: "오늘 끝낸 운동",
+          label: "오늘 완료한 운동",
           value: a.done,
           max: a.total,
           text:

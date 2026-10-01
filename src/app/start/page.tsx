@@ -45,7 +45,7 @@ export default function StartPage() {
     router.push(hasFamily ? "/parent" : "/start/family");
   };
 
-  // 아이 모드는 아이 홈에 들어갈 때 정해진다(아이 구역이 정한다). 아이 등록 · 초대코드로 가는 길에서 미리 정하면
+  // 아이 모드는 아이 홈에 들어갈 때 정해진다(아이 구역이 정한다). 아이 등록 · 초대 코드로 가는 길에서 미리 정하면
   // 그 길을 그만둔 뒤 다음에 열 때 아이 없는 아이 홈이 떴다
   const goKid = () => {
     // 자녀 계정은 자기 프로필로 고정된다. 형제를 고르게 하지 않는다
@@ -98,7 +98,7 @@ export default function StartPage() {
       {/* 자녀 계정에는 부모 칸을 내지 않는다 */}
       {!childAccount && (
         <RoleCard
-          title="부모"
+          title="보호자"
           onClick={goParent}
           art={<ArtIcon name="icon/role-parent" className="size-20" />}
         />

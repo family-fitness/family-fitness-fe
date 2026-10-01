@@ -24,10 +24,10 @@ import { cn } from "@/lib/utils";
  * 운동 탭. 오늘 가족 운동과 운동을 짜는 길.
  *
  *   「오늘 가족 운동」  오늘 하는 운동마다 누가 얼마나 했는지. 내 몫이 있으면 시작하기
- *   「운동 짜기」      AI 코치에게 받기, 직접 짜기, 운동 찾기
+ *   「운동 짜기」      AI 코치에게 받기, 직접 만들기, 운동 찾기
  *
  * 「매번 같이」 를 고른 보호자도 운동을 받는다. 내 몫은 이 화면에서 시작한다(`/parent/m/[missionId]`).
- * 쉬는 날에는 AI 코치에게 오늘 운동을 받는 단추를 두지 않는다(규칙 15). 직접 짜기는 다른 날에 넣을 수 있어 둔다.
+ * 쉬는 날에는 AI 코치에게 오늘 운동을 받는 단추를 두지 않는다(규칙 15). 직접 만들기는 다른 날에 넣을 수 있어 둔다.
  */
 export default function WorkoutTabPage() {
   const { familyId, profile, isPending, error: sessionError, refetch: refetchMe } = useSession();
@@ -102,7 +102,7 @@ export default function WorkoutTabPage() {
               href="/plan/custom"
               className="press bg-sub flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold"
             >
-              직접 짜기
+              직접 만들기
             </NavLink>
             <NavLink
               href="/videos"

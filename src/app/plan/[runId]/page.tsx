@@ -62,7 +62,7 @@ function Proposal() {
   const [asking, setAsking] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
-  // 아직 짜는 중이면 과정 화면으로
+  // 아직 만드는 중이면 과정 화면으로
   const running = run?.status === "RUNNING";
   useEffect(() => {
     if (running) router.replace(`/plan/run/${runId}`);
@@ -147,7 +147,7 @@ function Proposal() {
                 href="/plan"
                 className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"
               >
-                다시 짜기
+                다시 만들기
               </Link>
             }
           />
@@ -228,7 +228,7 @@ function Proposal() {
               href={approved ? "/parent" : "/plan"}
               className="press bg-sub flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold"
             >
-              {approved ? "홈으로" : "다시 짜기"}
+              {approved ? "홈으로" : "다시 만들기"}
             </Link>
           </div>
         )}
@@ -254,7 +254,7 @@ function Proposal() {
               href="/plan"
               className="press bg-paper shadow-card flex min-h-12 items-center justify-center rounded-2xl text-sm font-bold"
             >
-              조건 바꿔 다시 짜기
+              조건 바꿔 다시 만들기
             </Link>
             <button
               type="button"

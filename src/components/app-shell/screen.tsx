@@ -15,7 +15,7 @@ export function Screen({ children, className }: { children: ReactNode; className
   );
 }
 
-/** 막대 없이 한가운데 서는 화면(로그인 · 초대코드 · 끊김 · 없는 주소)에서 쓴다 */
+/** 막대 없이 한가운데 서는 화면(로그인 · 초대 코드 · 끊김 · 없는 주소)에서 쓴다 */
 export function PlainScreen({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <PageTransition>

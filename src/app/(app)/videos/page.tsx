@@ -31,7 +31,7 @@ import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
  * 운동 찾기 — 키우고 싶은 힘으로.
  *
  * AI 편성과 다른 길이다. 부모가 「우리 애 유연성 좀」 하고 직접 고른다(회의: 검색이 안
- * 되면 카테고리를 눌렀을 때 해당 영상이 쫙 나오게). 고른 동작을 담아 **직접 짜기**로
+ * 되면 카테고리를 눌렀을 때 해당 영상이 쫙 나오게). 고른 동작을 담아 **직접 만들기**로
  * 가져가면 차례 · 시간 · 누가 · 언제를 정해 그날의 운동이 된다 — 직접 짠 루틴이다.
  *
  * 한 줄이 영상 한 편이 아니라 **영상 속 한 동작**이다. 국민체력100 영상 한 편에 동작이
@@ -88,7 +88,7 @@ function Finder() {
   const [allAges, setAllAges] = useState(false);
   const [q, setQ] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(params.get("list") === "favorites");
-  // 담은 동작은 직접 짜기와 같이 본다 — 두 화면을 오가도 남는다
+  // 담은 동작은 직접 만들기와 같이 본다 — 두 화면을 오가도 남는다
   const moves = useRoutineStore((s) => s.moves);
   // 탭 저장소를 읽은 뒤에야 담은 것이 보인다. 그 전에는 쟁반을 내지 않는다(첫 화면과 어긋나지 않게)
   useRoutineReady();
@@ -520,9 +520,9 @@ function Preview({ clip, alternates }: { clip: ClipView; alternates: ClipView[] 
 }
 
 /**
- * 담은 동작 — 아래에 붙는 쟁반. 누르면 직접 짜기로 간다.
+ * 담은 동작 — 아래에 붙는 쟁반. 누르면 직접 만들기로 간다.
  *
- * 차례 · 시간 · 누가 · 언제는 직접 짜기에서 정한다(오늘 · 지금 보는 아이가 기본이라
+ * 차례 · 시간 · 누가 · 언제는 직접 만들기에서 정한다(오늘 · 지금 보는 아이가 기본이라
  * 오늘 운동 하나면 두 번 누르면 된다). 열 개까지만 담는다(회의: 열 개가 넘으면 짜증난다).
  */
 function Tray({ onClear }: { onClear: () => void }) {

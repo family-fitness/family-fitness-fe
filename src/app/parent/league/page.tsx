@@ -166,7 +166,7 @@ export default function LeaguePage() {
               scene="hello"
               title="이번 달 기록이 아직 없어요"
               description="아이가 운동한 날이 쌓이면 달성률과 순위가 생겨요"
-              action={<EmptyStateAction href="/plan">AI에게 운동 받기</EmptyStateAction>}
+              action={<EmptyStateAction href="/plan">AI 운동 추천 받기</EmptyStateAction>}
               className="pt-1"
             />
           )}
