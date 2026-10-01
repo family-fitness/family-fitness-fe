@@ -11,19 +11,23 @@ import { CardHead } from "@/components/ui/card";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ChildFitnessCard } from "@/components/domain/child-panel";
+import { ChildSwitch } from "@/components/domain/child-switch";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import type { Mission } from "@/lib/api/types";
-import { useCurrentMissions, useRestDays } from "@/lib/api/queries";
+import { useCurrentMissions, useFitnessMap, useRestDays } from "@/lib/api/queries";
 import { familyToday, partAction, partLine, partOf } from "@/lib/mission";
 import { sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { longDate, monthOf, today } from "@/lib/today";
 import { cn } from "@/lib/utils";
+import { useRoleStore } from "@/stores/role-store";
 
 /**
- * 운동 탭. 오늘 가족 운동과 운동을 짜는 길.
+ * 운동 탭. 오늘 가족 운동, 고른 아이의 체력, 운동을 짜는 길.
  *
  *   「오늘 가족 운동」  오늘 하는 운동마다 누가 얼마나 했는지. 내 몫이 있으면 시작하기
+ *   「{이름}의 체력」   고른 아이의 체력 육각형과 통합 신체 점수. 형제가 여럿이면 위에서 아이를 고른다
  *   「운동 짜기」      AI 코치에게 받기, 직접 만들기, 운동 찾기
  *
  * 「매번 같이」 를 고른 보호자도 운동을 받는다. 내 몫은 이 화면에서 시작한다(`/parent/m/[missionId]`).
@@ -41,6 +45,19 @@ export default function WorkoutTabPage() {
   const { data: restDays } = useRestDays(familyId, monthOf(now));
   const restToday = restDays?.days.includes(now) ?? false;
   const myId = profile?.profileId;
+
+  // 체력 육각형은 홈에서 고른 아이와 같은 아이로. 고른 적이 없으면 첫째
+  const {
+    data: map,
+    isLoading: mapLoading,
+    error: mapError,
+    refetch: refetchMap,
+    isRefetching: mapRefetching,
+  } = useFitnessMap(familyId);
+  const childProfileId = useRoleStore((s) => s.childProfileId);
+  const setChild = useRoleStore((s) => s.setChild);
+  const kids = (map?.members ?? []).filter((m) => m.role === "CHILD");
+  const child = kids.find((c) => c.profileId === childProfileId) ?? kids[0];
 
   const header = <HomeHeader eyebrow={longDate()} title="운동" actions={<ParentHeadActions />} />;
 
@@ -85,6 +102,19 @@ export default function WorkoutTabPage() {
             </ul>
           )}
         </section>
+
+        {isPending || mapLoading ? (
+          <Skeleton className="h-96 w-full rounded-3xl" />
+        ) : !map ? (
+          <ErrorState error={mapError} onRetry={() => void refetchMap()} retrying={mapRefetching} />
+        ) : (
+          child && (
+            <>
+              <ChildSwitch kids={kids} selectedId={child.profileId} onSelect={setChild} />
+              <ChildFitnessCard child={child} />
+            </>
+          )
+        )}
 
         <section className="card" aria-label="운동 짜기">
           <CardHead title="운동 짜기" />

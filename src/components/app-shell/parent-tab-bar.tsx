@@ -11,8 +11,8 @@ import { useTabStore } from "@/stores/tab-store";
 
 const ICONS: Record<ParentTab, LucideIcon> = {
   home: House,
-  workout: Dumbbell,
   records: CalendarDays,
+  workout: Dumbbell,
   league: Trophy,
   family: Users,
 };
