@@ -17,7 +17,6 @@ import { ChildPanel } from "@/components/domain/child-panel";
 import { InviteSheet } from "@/components/domain/invite-sheet";
 import { WelcomeSheet } from "@/components/domain/welcome-sheet";
 import { KidsOverview } from "@/components/domain/kids-overview";
-import { ChildPill } from "@/components/domain/child-pill";
 import { StreakChip } from "@/components/domain/streak-chip";
 import { ClipShelf } from "@/components/domain/clip-shelf";
 import { NotificationBell } from "@/components/domain/notification-bell";
@@ -104,8 +103,7 @@ export default function ParentHomePage() {
       titleHref="/parent/dashboard"
       actions={
         <>
-          {/* 보고 있는 아이 — 오른쪽 위 이름 알약(닥터아이처럼). 여럿이면 여기서 바로 바꾼다 */}
-          <ChildPill kids={children} selectedId={child?.profileId} onSelect={setChild} />
+          {/* 아이 바꾸기 알약은 뺐다. 화면을 내리면 따라오지 않았고, 바로 아래 「우리 아이」 에서 아이를 고른다 */}
           <NotificationBell profileId={profile?.profileId ?? undefined} />
           <IconLink href="/settings" label="설정">
             <Settings className="size-6" strokeWidth={1.8} />
