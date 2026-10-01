@@ -110,6 +110,16 @@ import {
   withdrawalCase,
 } from "@/lib/withdrawal";
 
+import {
+  INVITE_ROLE_NAME,
+  familyInviteBody,
+  inviteCodeTitle,
+  inviteLink,
+  inviteShareText,
+  pendingInviteDetail,
+  pendingInviteTitle,
+} from "@/lib/invite";
+
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { BAND_COPY, FOCUS_COPY } from "@/lib/api/types";
@@ -1517,6 +1527,90 @@ check("한마디는 서버가 받는 길이(100자) 안이다", MEMO_MAX > 0 && 
   check(
     "시간표 안내 글에 가운데 점과 긴 대시를 쓰지 않는다",
     lines.every((l) => l !== null && !/[·—–]/.test(l)),
+  );
+}
+
+/* ─── 가족 초대 코드 만들기 ─────────────────────────────── */
+
+check(
+  "초대할 역할은 보호자와 아이 둘이다",
+  INVITE_ROLE_NAME.PARENT === "보호자" && INVITE_ROLE_NAME.CHILD === "아이",
+);
+check(
+  "보호자 초대는 역할만 보낸다(동의 칸을 싣지 않는다)",
+  same(familyInviteBody("PARENT", { personalData: false, healthData: false }), {
+    role: "PARENT",
+  }),
+);
+check(
+  "아이 초대는 동의를 하나라도 안 했으면 만들지 않는다",
+  familyInviteBody("CHILD", { personalData: true, healthData: false }) === null &&
+    familyInviteBody("CHILD", { personalData: false, healthData: true }) === null,
+);
+check(
+  "아이 초대는 아이 등록과 같은 보호자 동의를 함께 보낸다",
+  same(familyInviteBody("CHILD", { personalData: true, healthData: true }), {
+    role: "CHILD",
+    guardianConsent: { personalData: true, healthData: true },
+  }),
+);
+check(
+  "초대 링크는 이 앱의 합류 화면에 코드를 붙인다",
+  inviteLink("https://kium.app", "H3N8WD") === "https://kium.app/claim?code=H3N8WD" &&
+    inviteLink("https://kium.app", "A B") === "https://kium.app/claim?code=A%20B",
+);
+check(
+  "가족 초대 코드의 제목은 역할로, 자리 초대는 그 사람 이름으로",
+  inviteCodeTitle({ role: "PARENT" }) === "보호자 초대 코드" &&
+    inviteCodeTitle({ role: "CHILD" }) === "아이 초대 코드" &&
+    inviteCodeTitle({ role: "PARENT", seatName: "도현" }) === "도현 자리 초대 코드",
+);
+check(
+  "공유 글은 가족 이름, 역할, 코드를 말한다",
+  inviteShareText({ familyName: "서준이네", code: "H3N8WD", role: "PARENT" }) ===
+    "서준이네에 보호자로 초대해요. 초대 코드 H3N8WD" &&
+    inviteShareText({ familyName: "서준이네", code: "Q2W3E4", role: "CHILD" }) ===
+      "서준이네에 아이로 초대해요. 초대 코드 Q2W3E4",
+  inviteShareText({ familyName: "서준이네", code: "Q2W3E4", role: "CHILD" }),
+);
+check(
+  "자리 초대의 공유 글은 그 사람 자리로 부른다",
+  inviteShareText({ familyName: "서준이네", code: "K7M2QT", role: "PARENT", seatName: "도현" }) ===
+    "서준이네에 도현 자리로 초대해요. 초대 코드 K7M2QT",
+);
+check(
+  "보낸 초대 한 줄은 역할과 기한, 보낸 사람",
+  pendingInviteTitle({ role: "CHILD" }) === "아이 초대" &&
+    pendingInviteDetail({ expiresAt: "2026-10-08", issuedByName: "은영" }) ===
+      "10월 8일까지, 은영님이 보냈어요" &&
+    pendingInviteDetail({ expiresAt: "2026-10-08", issuedByName: null }) === "10월 8일까지",
+);
+check(
+  "초대 문구에 가운데 점과 긴 대시를 쓰지 않는다",
+  [
+    inviteCodeTitle({ role: "CHILD" }),
+    inviteShareText({ familyName: "서준이네", code: "Q2W3E4", role: "CHILD" }),
+    pendingInviteDetail({ expiresAt: "2026-10-08", issuedByName: "은영" }),
+  ].every((l) => !/[·—–]/.test(l)),
+);
+{
+  const page = readFileSync("src/app/parent/family/page.tsx", "utf8");
+  const sheet = readFileSync("src/components/domain/invite-sheet.tsx", "utf8");
+  check(
+    "가족 관리의 「보호자 더하기」(정보 먼저 입력)는 초대로 바뀐다",
+    !page.includes("보호자 더하기") && !page.includes("useCreateProfile"),
+  );
+  check(
+    "폰 없는 아이는 지금처럼 「아이 등록하기」 로 넣는다",
+    page.includes("아이 등록하기") && page.includes('href="/start/child"'),
+  );
+  check(
+    "초대 시트는 가족 초대 코드를 만들고 자리 초대도 남긴다",
+    sheet.includes("useCreateFamilyInvite") && sheet.includes("useOpenInvite"),
+  );
+  check(
+    "가족 관리는 아직 쓰지 않은 초대를 보이고 취소할 수 있다",
+    page.includes("useFamilyInvites") && page.includes("useCancelFamilyInvite"),
   );
 }
 

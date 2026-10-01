@@ -2,24 +2,54 @@
 
 import { Check, Copy, Link2, Share2 } from "lucide-react";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 
-import { Button } from "@/components/ui/button";
+import { ChoiceButton } from "@/components/app-shell/wizard";
+import { ConsentTermsSheet, TermsLink } from "@/components/domain/consent-terms-sheet";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
-import { NavLink } from "@/components/ui/nav-link";
+import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { ProfileSummary } from "@/lib/api/types";
-import { useOpenInvite } from "@/lib/api/queries";
+import { useBackSheet } from "@/components/ui/use-back-sheet";
+import type { GuardianConsent, PendingInvite, ProfileSummary, Role } from "@/lib/api/types";
+import { useCreateFamilyInvite, useOpenInvite } from "@/lib/api/queries";
 import { errorMessage } from "@/lib/errors";
+import { familyInviteBody, inviteCodeTitle, inviteLink, inviteShareText } from "@/lib/invite";
+import type { ConsentKind } from "@/lib/legal";
+import { useSession } from "@/lib/session";
 import { cn, formatDate } from "@/lib/utils";
 import { radioKeys } from "@/components/ui/radio-keys";
 
+/** 고른 것 — 새로 부를 보호자나 아이, 아니면 이미 등록한 구성원의 자리 */
+type Choice = { kind: "role"; role: Role } | { kind: "seat"; profileId: string };
+
+/** 만든 코드와 보낼 것 */
+type Made = { code: string; link: string; title: string; share: string; until: string | null };
+
+const NO_CONSENT: GuardianConsent = { personalData: false, healthData: false };
+
+/** 이미 만든 가족 초대를 다시 보여 줄 때 — 가족 관리의 「보낸 초대」 줄 */
+function madeFrom(invite: Pick<PendingInvite, "code" | "role" | "expiresAt">, familyName: string) {
+  const code = invite.code ?? "";
+  const role = invite.role ?? "PARENT";
+  return {
+    code,
+    link: inviteLink(window.location.origin, code),
+    title: inviteCodeTitle({ role }),
+    share: inviteShareText({ familyName, code, role }),
+    until: invite.expiresAt ? formatDate(invite.expiresAt) : null,
+  };
+}
+
 /**
- * 부모가 초대코드를 만드는 곳(9/25 「부모가 초대코드 만드는 거」).
+ * 보호자가 초대 코드를 만드는 곳.
  *
- * 코드는 가족 전체가 아니라 **자리 하나**에 맞는다 — 받은 사람은 그 자리로만 들어오고 역할을
- * 고를 수 없다(부모 권한이 곧 코치 승인 권한이다). 그래서 먼저 누구를 부를지 고른다.
- * 만든 코드는 크게 보이고, 코드 · 링크를 복사하거나 폰의 공유(카카오톡 · 문자)로 보낸다.
+ * 보호자와 아이 모두 초대를 먼저 한다(10번). 누구를 부를지(보호자, 아이)만 고르면 가족 초대 코드가 생기고,
+ * 받은 사람이 자기 이름, 생년월일, 성별을 넣고 들어온다. 아이로 부르면 아이 등록과 같은 보호자 동의를 먼저 받는다.
+ *
+ * 폰 없이 등록해 둔 구성원(보호자가 정보를 넣은 아이)에게 폰이 생기면 그 자리 초대를 쓴다. 등록한 구성원이
+ * 아래에 따로 서고, 구성원 줄의 「초대하기」 로 열면 그 자리를 골라 둔 채 열린다.
+ * 만든 코드는 크게 보이고, 코드나 링크를 복사하거나 폰의 공유(카카오톡, 문자)로 보낸다.
  */
 export function InviteSheet({
   open,
@@ -28,32 +58,37 @@ export function InviteSheet({
   members,
   loading = false,
   initialId,
+  shown,
 }: {
   open: boolean;
   onClose: () => void;
   familyName: string;
   members: ProfileSummary[];
-  /** 가족 목록을 받는 중 — 「모두 들어와 있어요」 로 그리지 않는다 */
+  /** 가족 목록을 받는 중 — 등록한 구성원이 없는 것처럼 그리지 않는다 */
   loading?: boolean;
   /** 이 사람 자리로 바로 — 구성원 줄의 「초대하기」 에서 열 때 */
   initialId?: string | null;
+  /** 이미 만든 가족 초대를 다시 보여 준다 — 가족 관리의 「보낸 초대」 줄에서 열 때 */
+  shown?: Pick<PendingInvite, "code" | "role" | "expiresAt"> | null;
 }) {
+  const { familyId } = useSession();
   // 아직 계정이 없는 자리만 부를 수 있다. 부모 자리가 먼저다
   const seats = members
     .filter((m) => !m.hasAccount)
     .sort((a, b) => (a.role === b.role ? 0 : a.role === "PARENT" ? -1 : 1));
-  const [picked, setPicked] = useState<string | null>(initialId ?? null);
-  const seat = seats.find((m) => m.profileId === picked) ?? seats[0];
+  const choiceOf = (id: string | null | undefined): Choice | null =>
+    id && seats.some((s) => s.profileId === id) ? { kind: "seat", profileId: id } : null;
 
-  const invite = useOpenInvite();
-  const [code, setCode] = useState<{
-    code: string;
-    link: string;
-    for: string;
-    until: string | null;
-  } | null>(null);
+  const [choice, setChoice] = useState<Choice | null>(() => choiceOf(initialId));
+  const [consent, setConsent] = useState<GuardianConsent>(NO_CONSENT);
+  const [made, setMade] = useState<Made | null>(null);
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // 동의 상세내용 — 뒤로 가기를 누르면 이 시트에 남는다
+  const terms = useBackSheet<ConsentKind>();
+
+  const seatInvite = useOpenInvite();
+  const familyInvite = useCreateFamilyInvite(familyId);
 
   // 열릴 때마다 처음부터 — 부를 자리는 연 줄의 사람으로. 닫을 때 비우면 내려가는 동안 내용이 바뀌고,
   // 부르는 쪽이 key 로 새로 그리면 내려가지도 못하고 사라졌다
@@ -61,33 +96,62 @@ export function InviteSheet({
   if (open !== wasOpen) {
     setWasOpen(open);
     if (open) {
-      setPicked(initialId ?? null);
-      setCode(null);
+      setChoice(choiceOf(initialId));
+      setConsent(NO_CONSENT);
+      setMade(shown?.code ? madeFrom(shown, familyName) : null);
       setError(null);
       setCopied(null);
     }
   }
 
+  const seat =
+    choice?.kind === "seat" ? seats.find((s) => s.profileId === choice.profileId) : undefined;
+  const body = choice?.kind === "role" ? familyInviteBody(choice.role, consent) : null;
+  const ready = Boolean(seat?.profileId) || (body != null && Boolean(familyId));
+  const pending = seatInvite.isPending || familyInvite.isPending;
+
   const make = async () => {
-    if (!seat?.profileId) return;
     setError(null);
+    if (seat?.profileId) {
+      try {
+        const res = await seatInvite.mutateAsync(seat.profileId);
+        const code = res.claimCode ?? "";
+        const name = seat.name ?? "";
+        setMade({
+          code,
+          // 서버가 준 주소가 먼저다. 없으면 이 앱의 합류 화면으로
+          link: res.shareUrl ?? inviteLink(window.location.origin, code),
+          title: inviteCodeTitle({ role: seat.role ?? "PARENT", seatName: name }),
+          share: inviteShareText({ familyName, code, role: seat.role ?? "PARENT", seatName: name }),
+          // 언제까지 쓰는지는 서버가 정한다
+          until: res.expiresAt ? formatDate(res.expiresAt) : null,
+        });
+      } catch (e) {
+        setError(
+          errorMessage(
+            e,
+            { ALREADY_CLAIMED: "이미 계정이 연결된 자리예요." },
+            "초대 코드를 만들지 못했어요.",
+          ),
+        );
+      }
+      return;
+    }
+    if (!body) return;
     try {
-      const res = await invite.mutateAsync(seat.profileId);
-      const c = res.claimCode ?? "";
-      setCode({
-        code: c,
-        // 서버가 준 주소가 먼저다. 없으면 이 앱의 초대코드 화면으로
-        link: res.shareUrl ?? `${window.location.origin}/claim?code=${encodeURIComponent(c)}`,
-        for: seat.name ?? "",
-        // 언제까지 쓰는지는 서버가 정한다
-        until: res.expiresAt ? formatDate(res.expiresAt) : null,
-      });
+      const res = await familyInvite.mutateAsync(body);
+      setMade(
+        madeFrom(
+          { code: res.code, role: res.role ?? body.role, expiresAt: res.expiresAt },
+          familyName,
+        ),
+      );
     } catch (e) {
       setError(
         errorMessage(
           e,
-          { ALREADY_CLAIMED: "이미 계정이 연결된 자리예요." },
-          "초대코드를 만들지 못했어요.",
+          { CONSENT_REQUIRED: "아이로 초대하려면 보호자 동의가 필요해요." },
+          "초대 코드를 만들지 못했어요.",
         ),
       );
     }
@@ -108,59 +172,42 @@ export function InviteSheet({
       .catch(() => setError("복사하지 못했어요."));
   };
 
-  // 폰의 공유 — 카카오톡 · 문자 · 메일. 안 되는 브라우저(데스크톱 일부)에서는 링크 복사로
+  // 폰의 공유 — 카카오톡, 문자, 메일. 안 되는 브라우저(데스크톱 일부)에서는 링크 복사로
   const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
   const share = async () => {
-    if (!code) return;
+    if (!made) return;
     try {
-      await navigator.share({
-        title: "우리가족 체력키움 초대",
-        text: `${familyName}에 ${code.for} 자리로 들어와요. 초대코드 ${code.code}`,
-        url: code.link,
-      });
+      await navigator.share({ title: "우리가족 체력키움 초대", text: made.share, url: made.link });
     } catch (e) {
-      // 사람이 공유 창을 닫았다 — 실패가 아니다. 그 밖에는 링크 복사로 돌린다
+      // 사람이 공유 창을 닫았다 — 실패가 아니다
       if (e instanceof DOMException && e.name === "AbortError") return;
       setError("보내지 못했어요.");
     }
   };
 
+  const pickRole = (role: Role) => {
+    setChoice({ kind: "role", role });
+    setError(null);
+  };
+
   return (
     <Sheet open={open} onClose={onClose} title="초대하기">
-      {loading ? (
-        <div className="space-y-3 pb-2" aria-hidden>
-          <Skeleton className="h-14 w-full" />
-          <Skeleton className="h-14 w-full" />
-        </div>
-      ) : seats.length === 0 ? (
-        <div className="pb-2 text-center">
-          <p className="text-body font-bold">모두 들어와 있어요</p>
-          <NavLink
-            href="/parent/family"
-            onClick={onClose}
-            className="press bg-sub mt-3 flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold"
-          >
-            가족 더하기
-          </NavLink>
-        </div>
-      ) : code ? (
+      {made ? (
         <div className="pb-2">
-          <p className="text-caption text-ink-soft text-center font-bold">
-            {code.for} 자리 초대코드
-          </p>
+          <p className="text-caption text-ink-soft text-center font-bold">{made.title}</p>
           <p
             className="board-num mt-2 text-center text-4xl tracking-[0.25em]"
-            aria-label={`초대코드 ${code.code.split("").join(" ")}`}
+            aria-label={`초대 코드 ${made.code.split("").join(" ")}`}
           >
-            {code.code}
+            {made.code}
           </p>
           <p className="text-caption text-ink-soft mt-2 text-center">
-            {code.until ? `${code.until}까지` : ""}
+            {made.until ? `${made.until}까지` : ""}
           </p>
           <div className="mt-5 grid grid-cols-2 gap-2">
             <button
               type="button"
-              onClick={() => copy("code", code.code)}
+              onClick={() => copy("code", made.code)}
               className="press bg-sub flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold"
             >
               {copied === "code" ? (
@@ -172,7 +219,7 @@ export function InviteSheet({
             </button>
             <button
               type="button"
-              onClick={() => copy("link", code.link)}
+              onClick={() => copy("link", made.link)}
               className="press bg-sub flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold"
             >
               {copied === "link" ? (
@@ -192,56 +239,128 @@ export function InviteSheet({
         </div>
       ) : (
         <div className="pb-2">
-          <p className="text-body font-bold">누구를 부를까요</p>
+          <p className="text-body font-bold">누구를 초대할까요</p>
+          <p className="text-caption text-ink-soft mt-0.5">
+            이름과 생년월일은 초대받은 분이 직접 입력해요
+          </p>
           <div
-            className="divide-rows mt-1"
+            className="mt-3 space-y-2"
             role="radiogroup"
-            aria-label="부를 사람"
+            aria-label="초대할 사람"
             onKeyDown={radioKeys}
           >
-            {seats.map((m) => {
-              const on = m.profileId === seat?.profileId;
-              return (
-                <button
-                  key={m.profileId}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  onClick={() => setPicked(m.profileId ?? null)}
-                  className="press flex min-h-14 w-full items-center gap-3 text-left"
-                >
-                  <ProfileAvatar
-                    profileId={m.profileId}
-                    name={m.name}
-                    tone={m.role === "CHILD" ? "signal" : "mark"}
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-extrabold">{m.name}</span>
-                    <span className="text-caption text-ink-soft block">
-                      {m.role === "PARENT" ? "부모" : "자녀"}
-                      {m.ageGroup && <span className="ml-2">{m.ageGroup}</span>}
-                    </span>
-                  </span>
-                  <span
-                    aria-hidden
-                    className={cn(
-                      "grid size-6 place-items-center rounded-full border-2",
-                      on ? "border-signal bg-signal text-white" : "border-line",
-                    )}
-                  >
-                    {on && <Check className="size-3.5" strokeWidth={3.5} />}
-                  </span>
-                </button>
-              );
-            })}
+            <ChoiceButton
+              selected={choice?.kind === "role" && choice.role === "PARENT"}
+              onClick={() => pickRole("PARENT")}
+              title="보호자"
+            />
+            <ChoiceButton
+              selected={choice?.kind === "role" && choice.role === "CHILD"}
+              onClick={() => pickRole("CHILD")}
+              title="아이"
+            />
           </div>
+
+          {/* 아이로 부르면 아이 등록과 같은 보호자 동의를 먼저 받는다 */}
+          {choice?.kind === "role" && choice.role === "CHILD" && (
+            <fieldset className="mt-5">
+              <legend className="text-ink-soft text-sm font-bold">보호자 동의가 필요해요</legend>
+              <div className="mt-2 space-y-2">
+                <div>
+                  <ChoiceButton
+                    multi
+                    selected={consent.personalData}
+                    onClick={() => setConsent((c) => ({ ...c, personalData: !c.personalData }))}
+                    title="개인정보 수집 및 이용에 동의해요(필수)"
+                  />
+                  <div className="flex">
+                    <TermsLink
+                      label="개인정보 수집 및 이용"
+                      onClick={() => terms.show("personal")}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <ChoiceButton
+                    multi
+                    selected={consent.healthData}
+                    onClick={() => setConsent((c) => ({ ...c, healthData: !c.healthData }))}
+                    title="민감정보(건강정보) 처리에 동의해요(필수)"
+                  />
+                  <div className="flex">
+                    <TermsLink label="건강정보 처리" onClick={() => terms.show("health")} />
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+          )}
+
+          {/* 폰 없이 등록해 둔 구성원 — 폰이 생기면 그 자리에 계정을 붙인다 */}
+          {loading ? (
+            <div className="mt-5 space-y-3" aria-hidden>
+              <Skeleton className="h-14 w-full" />
+            </div>
+          ) : (
+            seats.length > 0 && (
+              <div className="mt-5">
+                <p className="text-ink-soft text-sm font-bold">등록한 구성원</p>
+                <div
+                  className="divide-rows mt-1"
+                  role="radiogroup"
+                  aria-label="등록한 구성원"
+                  onKeyDown={radioKeys}
+                >
+                  {seats.map((m) => {
+                    const on = choice?.kind === "seat" && choice.profileId === m.profileId;
+                    return (
+                      <button
+                        key={m.profileId}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => {
+                          if (m.profileId) setChoice({ kind: "seat", profileId: m.profileId });
+                          setError(null);
+                        }}
+                        className="press flex min-h-14 w-full items-center gap-3 text-left"
+                      >
+                        <ProfileAvatar
+                          profileId={m.profileId}
+                          name={m.name}
+                          tone={m.role === "CHILD" ? "signal" : "mark"}
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-extrabold">{m.name}</span>
+                          <span className="text-caption text-ink-soft block">
+                            {m.role === "PARENT" ? "부모" : "자녀"}
+                            {m.ageGroup && <span className="ml-2">{m.ageGroup}</span>}
+                          </span>
+                        </span>
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "grid size-6 place-items-center rounded-full border-2",
+                            on ? "border-signal bg-signal text-white" : "border-line",
+                          )}
+                        >
+                          {on && <Check className="size-3.5" strokeWidth={3.5} />}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )
+          )}
+
           <Button
             size="block"
-            className="mt-3"
-            loading={invite.isPending}
+            className="mt-4"
+            disabled={!ready}
+            loading={pending}
             onClick={() => void make()}
           >
-            초대코드 만들기
+            초대 코드 만들기
           </Button>
         </div>
       )}
@@ -250,6 +369,12 @@ export function InviteSheet({
           {error}
         </p>
       )}
+      {/* 이 시트의 transform 안에 갇히지 않게 body 에 붙인다. 처음 연 뒤에만 그린다(서버에는 document 가 없다) */}
+      {terms.value != null &&
+        createPortal(
+          <ConsentTermsSheet kind={terms.value} open={terms.open} onClose={terms.hide} />,
+          document.body,
+        )}
     </Sheet>
   );
 }
