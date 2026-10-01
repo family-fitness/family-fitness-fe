@@ -1,3 +1,5 @@
+import type { ClipView, SessionPhase, VideoClip } from "@/lib/api/types";
+import { isFactor, type Factor } from "@/lib/fitness-factors";
 import { safeUrl } from "@/lib/safe-url";
 
 /**
@@ -179,4 +181,135 @@ export function finderScope({
   allAges: boolean;
 }): string {
   return `${factor ?? "모든 힘"}, ${allAges ? "모든 나이" : "나이에 맞는 것만"}`;
+}
+
+/**
+ * 운동 상세 화면(`/exercise/{videoId}`)이 그리는 동작 하나.
+ *
+ * 클립 하나를 받는 API 가 없어서, 클립을 누른 화면(운동 찾기, 영상 줄, 운동 칸)이 이미 받아 둔 값을 주소에 담아 보낸다.
+ * 모르는 칸은 비워 두고, 화면은 빈 칸을 그리지 않는다
+ */
+export interface Exercise {
+  videoId: string;
+  title: string;
+  startSec: number | null;
+  endSec: number | null;
+  factor: Factor | null;
+  phase: SessionPhase | null;
+  /** 운동 칸에 잡힌 시간(분). 클립에서 왔으면 없다 */
+  minutes: number | null;
+  mediaUrl: string | null;
+  thumbnailUrl: string | null;
+  quiet: boolean | null;
+  props: boolean | null;
+  homeOk: boolean | null;
+}
+
+const PHASES: readonly SessionPhase[] = ["WARMUP", "MAIN", "COOLDOWN"];
+
+function flag(v: boolean | null | undefined): string | undefined {
+  return v == null ? undefined : v ? "1" : "0";
+}
+
+/** 운동 상세 화면 주소. 값이 없는 칸은 싣지 않는다 */
+export function exerciseHref(e: Partial<Exercise> & { videoId: string; title: string }): string {
+  const q = new URLSearchParams({ t: e.title });
+  const put = (key: string, v: string | number | null | undefined) => {
+    if (v != null && v !== "") q.set(key, String(v));
+  };
+  put("s", e.startSec);
+  put("e", e.endSec);
+  put("f", e.factor);
+  put("p", e.phase);
+  put("min", e.minutes);
+  put("m", e.mediaUrl);
+  put("th", e.thumbnailUrl);
+  put("qt", flag(e.quiet));
+  put("pr", flag(e.props));
+  put("h", flag(e.homeOk));
+  return `/exercise/${encodeURIComponent(e.videoId)}?${q.toString()}`;
+}
+
+/** 운동 찾기, 영상 줄, 담은 동작의 클립 하나를 상세 화면으로 */
+export function clipHref(c: ClipView): string {
+  return exerciseHref({
+    videoId: c.videoId,
+    title: c.title,
+    startSec: c.startSec,
+    endSec: c.endSec,
+    factor: isFactor(c.factor) ? c.factor : null,
+    phase: c.phase,
+    mediaUrl: c.mediaUrl,
+    thumbnailUrl: c.thumbnailUrl,
+    quiet: c.quiet,
+    props: c.props,
+    homeOk: c.homeOk,
+  });
+}
+
+/** 운동 칸 하나를 상세 화면으로. 칸에 영상이 없으면 undefined */
+export function sessionHref(s: {
+  title: string;
+  phase: SessionPhase;
+  minutes?: number | null;
+  factor?: string | null;
+  clip?: VideoClip | null;
+}): string | undefined {
+  if (!s.clip?.videoId) return undefined;
+  return exerciseHref({
+    videoId: s.clip.videoId,
+    title: s.title,
+    startSec: s.clip.startSec ?? null,
+    endSec: s.clip.endSec ?? null,
+    factor: isFactor(s.factor) ? s.factor : null,
+    phase: s.phase,
+    minutes: s.minutes ?? null,
+    mediaUrl: s.clip.mediaUrl ?? null,
+    thumbnailUrl: s.clip.thumbnailUrl ?? null,
+  });
+}
+
+/** 공단 장면 이미지 주소만 받는다. 다른 주소는 CSP 가 막아 어차피 빈 칸이 된다 */
+function kspoImage(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" && u.hostname === KSPO_HOST && !u.port ? u.href : null;
+  } catch {
+    return null;
+  }
+}
+
+function seconds(raw: string | null): number | null {
+  if (raw == null || raw === "") return null;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+function readFlag(raw: string | null): boolean | null {
+  return raw === "1" ? true : raw === "0" ? false : null;
+}
+
+/** 상세 화면 주소를 다시 읽는다. 주소로 들어오는 값이라 하나하나 걸러 받는다 */
+export function readExercise(videoId: string, q: { get(key: string): string | null }): Exercise {
+  const start = seconds(q.get("s"));
+  const end = seconds(q.get("e"));
+  const minutes = seconds(q.get("min"));
+  const factor = q.get("f");
+  const phase = q.get("p");
+  const title = q.get("t")?.trim();
+  return {
+    videoId,
+    title: title ? title.slice(0, WATCH_TITLE_MAX) : "운동",
+    startSec: start,
+    endSec: end != null && (start == null || end > start) ? end : null,
+    factor: isFactor(factor) ? factor : null,
+    phase: PHASES.find((p) => p === phase) ?? null,
+    minutes: minutes != null && minutes > 0 ? Math.round(minutes) : null,
+    mediaUrl: kspoVideo(q.get("m")) ?? null,
+    thumbnailUrl: kspoImage(q.get("th")),
+    quiet: readFlag(q.get("qt")),
+    props: readFlag(q.get("pr")),
+    homeOk: readFlag(q.get("h")),
+  };
 }
