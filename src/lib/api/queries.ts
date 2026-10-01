@@ -169,6 +169,16 @@ export function useReviewLogin() {
   });
 }
 
+/**
+ * 계정 탈퇴. 성공(204)하면 화면이 이 기기에서만 로그아웃한다(`useSignOut`). 계정이 이미 없어 서버 로그아웃은 부르지 않는다.
+ * 다른 구성원이 남은 오너는 409 FAMILY_NOT_EMPTY 를 받는다
+ */
+export function useWithdraw() {
+  return useMutation({
+    mutationFn: () => api.delete<void>("/me"),
+  });
+}
+
 /* ─── 가족 · 프로필 ────────────────────────────────────────── */
 
 /*
