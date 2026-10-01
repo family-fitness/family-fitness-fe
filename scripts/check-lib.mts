@@ -18,7 +18,7 @@ import {
   zoneOf,
 } from "@/lib/league";
 import { NO_PEER_NORMS_NOTE, memberNoPeerNormsNote, noPeerNormsNote } from "@/lib/fitness-factors";
-import { VERIFIED_COPY } from "@/lib/mission";
+import { VERIFIED_COPY, familyToday, partAction, partOf, playLock } from "@/lib/mission";
 import { projectOrtho } from "@/lib/ortho";
 import { withJosa } from "@/lib/utils";
 import {
@@ -1867,6 +1867,70 @@ check(
     "로그인 화면은 버려질 뻔한 코드를 한 번 알린다",
     page.includes("unusedInvite(") && page.includes("UNUSED_INVITE_COPY"),
   );
+}
+
+/* ─── 부모가 자기 몫의 운동을 한다 ─────────────────────── */
+
+{
+  const now = "2026-10-01";
+  const run = (over: Record<string, unknown> = {}) =>
+    ({
+      missionId: "m",
+      startDate: now,
+      endDate: now,
+      targetMetric: "TIMER_MINUTES",
+      sessions: [
+        { position: 1, phase: "WARMUP", title: "a", minutes: 1 },
+        { position: 2, phase: "MAIN", title: "b", minutes: 4 },
+        { position: 3, phase: "COOLDOWN", title: "c", minutes: 1 },
+      ],
+      participants: [
+        { profileId: "KID", completed: false, doneSessions: [1, 2] },
+        { profileId: "MOM", completed: false, doneSessions: [] },
+      ],
+      ...over,
+    }) as unknown as Parameters<typeof plannedDay>[0];
+
+  check("함께 하는 보호자는 오늘 운동을 할 수 있다", playLock(run(), "MOM", now) === null);
+  check("참여자가 아니면 볼 수만 있다", playLock(run(), "DAD", now) === "other");
+  check(
+    "앞날 운동은 그날 하고 지난 운동은 볼 수만 있다",
+    playLock(run({ startDate: "2026-10-02", endDate: "2026-10-02" }), "MOM", now) === "later" &&
+      playLock(run({ startDate: "2026-09-29", endDate: "2026-09-30" }), "MOM", now) === "over",
+  );
+  check("운동을 아직 못 받았으면 막지 않는다", playLock(undefined, "MOM", now) === null);
+
+  check(
+    "내 몫은 내가 끝낸 칸으로 센다. 아이가 끝낸 칸이 내 것이 되지 않는다",
+    same(partOf(run(), "MOM"), { done: 0, total: 3 }) &&
+      same(partOf(run(), "KID"), { done: 2, total: 3 }),
+  );
+  check("참여자가 아니면 내 몫이 없다", partOf(run(), "DAD") === null);
+  check(
+    "내 몫의 단추는 시작하기, 이어서 하기, 다 했어요",
+    partAction({ done: 0, total: 3 }) === "시작하기" &&
+      partAction({ done: 2, total: 3 }) === "이어서 하기" &&
+      partAction({ done: 3, total: 3 }) === "다 했어요",
+  );
+
+  const list = familyToday(
+    [
+      run({ missionId: "today" }),
+      run({ missionId: "long", startDate: "2026-09-28", endDate: "2026-10-04" }),
+      run({ missionId: "steps", targetMetric: "STEPS" }),
+      run({ missionId: "later", startDate: "2026-10-02", endDate: "2026-10-02" }),
+      run({ missionId: "over", startDate: "2026-09-30", endDate: "2026-09-30" }),
+    ],
+    now,
+  );
+  check(
+    "오늘 가족 운동은 오늘이 기간 안에 드는 것만, 걸음수는 빼고",
+    same(
+      list.map((m) => m.missionId),
+      ["today", "long"],
+    ),
+  );
+  check("운동을 못 받았으면 빈 목록", familyToday(undefined, now).length === 0);
 }
 
 /* ─── 이 기기를 누가 쓰는지는 계정의 역할로 정한다 ─────────────── */
