@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { ArtIcon } from "@/components/ui/art-icon";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, EmptyStateAction } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Sheet } from "@/components/ui/sheet";
@@ -31,7 +31,7 @@ import { useRoleStore } from "@/stores/role-store";
  * 알림 — 부모와 아이가 각자 자기 것을 본다.
  *
  * 문구는 서버가 짓고 그대로 내보낸다(규칙 9). 누르면 그 일을 하는 화면으로 간다 —
- * 부모는 스티커 붙이기 · 다시 재기로, 아이는 캘린더 그날 · 운동하기 · 업적으로.
+ * 부모는 스티커 붙이기 · 다시 측정하기로, 아이는 캘린더 그날 · 운동하기 · 업적으로.
  *
  * 들어오면 다 읽은 것으로 친다. 이번에 새로 온 것은 이 화면에 있는 동안 점을 그대로 둔다 —
  * 들어오자마자 점이 사라지면 무엇이 새로 왔는지 못 본다.
@@ -88,7 +88,11 @@ export default function NotificationsPage() {
       <>
         <AppBar backHref={back} title="알림" />
         <Stage wide>
-          <EmptyState scene="waiting" title="누구인지 골라 주세요" />
+          <EmptyState
+            scene="waiting"
+            title="누구인지 골라 주세요"
+            action={<EmptyStateAction href="/start">고르러 가기</EmptyStateAction>}
+          />
         </Stage>
       </>
     );
@@ -105,7 +109,18 @@ export default function NotificationsPage() {
     <>
       <AppBar backHref={back} title="알림" />
       <Stage wide className="space-y-4">
-        {items.length === 0 && <EmptyState scene="no-alarm" title="아직 알림이 없어요" />}
+        {items.length === 0 && (
+          <EmptyState
+            scene="no-alarm"
+            title="아직 알림이 없어요"
+            // 무엇이 오면 여기에 쌓이는지. 아이와 부모가 받는 알림이 다르다
+            description={
+              kidView
+                ? "스티커를 받거나 새 운동이 생기면 여기에서 알려 줘요"
+                : "아이가 운동을 마치거나 스티커를 보내면 여기에서 알려 드려요"
+            }
+          />
+        )}
         {fresh.length > 0 && (
           <Group title="새로 온 것" items={fresh} kidView={kidView} until={until} fresh />
         )}
@@ -208,11 +223,25 @@ function Thanks({ item, to, until }: { item: NotificationView; to: string; until
     }
   };
 
-  if (!kidId || isPending) return null;
+  if (!kidId) return null;
+  // 보냈는지 받는 동안은 자리만 — 다 받고 줄이 생기면 알림 목록이 한 칸씩 아래로 밀렸다
+  if (isPending) {
+    return (
+      <div aria-hidden className="-mt-1 pb-3 pl-15">
+        <div className="flex min-h-11 items-center">
+          <Skeleton className="h-4 w-24" />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="-mt-1 pb-3 pl-15">
+      {/* 보냈다는 말은 늘 있는 자리에서 읽어 준다 — 단추가 「보냈어요」 줄로 바뀌기만 하면 조용했다 */}
+      <span className="sr-only" role="status">
+        {justSent ? "고마워요를 보냈어요" : ""}
+      </span>
       {sent ? (
-        <p className="text-caption text-done flex min-h-10 items-center gap-1 font-bold">
+        <p className="text-caption text-done flex min-h-11 items-center gap-1 font-bold">
           <Check aria-hidden className="size-4" strokeWidth={3} />
           고마워요를 보냈어요
         </p>
@@ -221,7 +250,9 @@ function Thanks({ item, to, until }: { item: NotificationView; to: string; until
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="press text-signal-deep inline-flex min-h-10 items-center text-sm font-extrabold"
+          // 알림마다 같은 이름이면 화면 읽기로는 누구에게 보내는지 모른다
+          aria-label={`${item.title}, 고마워요 보내기`}
+          className="press text-signal-deep inline-flex min-h-11 items-center text-sm font-extrabold"
         >
           고마워요 보내기
         </button>
@@ -269,7 +300,11 @@ function Row({ item, fresh }: { item: NotificationView; fresh: boolean }) {
         <p className={cn("text-sm leading-snug", fresh ? "font-extrabold" : "font-bold")}>
           {item.title}
         </p>
-        {item.body && <p className="text-caption text-ink-soft mt-0.5 line-clamp-2">{item.body}</p>}
+        {item.body && (
+          <p className="text-caption text-ink-soft mt-0.5 line-clamp-2 wrap-anywhere">
+            {item.body}
+          </p>
+        )}
         <p className="text-micro text-faint mt-1 font-semibold">{whenOf(item.createdAt)}</p>
       </div>
       {href && <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />}

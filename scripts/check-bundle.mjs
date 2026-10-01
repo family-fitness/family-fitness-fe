@@ -4,8 +4,8 @@
  *   NEXT_PUBLIC_API_MOCKING= NEXT_PUBLIC_GOOGLE_CLIENT_ID=<아무 값> npm run build
  *   npm run check:bundle
  *
- * 목을 끄고 구글 키를 넣은 빌드에 대고 돌린다. 목을 켜거나 구글 키를 비운 빌드에는 개발용 계정이
- * 일부러 들어가므로 이 검사가 실패하는 게 맞다.
+ * 목을 끄고 구글 키를 넣은 빌드에 대고 돌린다. 목을 켜거나 NEXT_PUBLIC_DEV_LOGIN=enabled 로 만든 빌드에는
+ * 개발용 계정이 일부러 들어가므로 이 검사가 실패하는 게 맞다.
  *
  * 누구나 받아 갈 수 있는 곳은 `.next/static` 이라 거기만 본다.
  * public/mockServiceWorker.js 는 MSW 가 만든 빈 워커라 목 데이터가 없다. 그래서 여기서 보지 않는다.

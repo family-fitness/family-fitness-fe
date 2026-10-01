@@ -39,6 +39,8 @@ const ctx = await browser.newContext({
   deviceScaleFactor: SHOTS ? 2 : 1,
   locale: "ko-KR",
 });
+// 처음 한 번 뜨는 환영 안내는 본 것으로 — 화면을 덮으면 누를 것을 못 누른다
+await ctx.addInitScript(() => localStorage.setItem("ff-welcome", "parent,kid"));
 // 이 맥의 말하기 엔진은 말을 끊을 때 화면을 멈춘다 — check-play 와 같이 재운다
 await ctx.addInitScript(() => {
   if ("speechSynthesis" in window) {
@@ -47,7 +49,7 @@ await ctx.addInitScript(() => {
   }
 });
 // 유튜브는 막는다. 없어도 타이머로 끝까지 가야 한다
-await ctx.route(/youtube\.com|ytimg\.com|openapi\.kspo\.or\.kr/, (r) => r.abort());
+await ctx.route(/youtube(-nocookie)?\.com|ytimg\.com|openapi\.kspo\.or\.kr/, (r) => r.abort());
 const page = await ctx.newPage();
 const errs = [];
 page.on("pageerror", (e) => {
@@ -103,7 +105,7 @@ await step("새 계정으로 들어가면 첫 시작이 뜬다", async () => {
   await page.waitForTimeout(1200);
 });
 await step("첫 시작을 끝까지 하고 지금 잴래요", async () => {
-  // 첫 시작은 다섯 화면: 가족과 보호자, 아이, 키와 몸무게와 동의, 운동할 수 있는 시간, 준비됐어요
+  // 첫 시작은 다섯 화면: 가족과 보호자, 아이, 키와 몸무게와 동의, 운동 루틴, 준비됐어요
   await page.getByLabel("가족 이름").fill("민서네");
   await page.getByLabel("보호자 이름").fill("지영");
   await page.getByRole("radio", { name: /여성/ }).click();
@@ -146,13 +148,14 @@ await step("집에서 잴 수 있는 셋을 적고 결과를 본다", async () =
 await shot("result", true);
 
 // ── 3. AI 편성 → 등록 ──────────────────────────────────────
-await step("결과에서 AI에게 운동 받기로", async () => {
-  await page.getByRole("link", { name: /AI에게 운동 받기/ }).click();
-  await page.waitForURL(/\/plan$/, { timeout: 15000 });
+await step("결과에서 AI 운동 추천 받기로", async () => {
+  await page.getByRole("link", { name: /AI 운동 추천 받기/ }).click();
+  // 잰 아이로 짠다 — 결과에서는 그 아이를 주소(?profileId=)로 넘긴다
+  await page.waitForURL(/\/plan(\?profileId=[^&]+)?$/, { timeout: 15000 });
   await page.waitForTimeout(1200);
 });
 await shot("plan", true);
-await step("코치에게 보내면 짜는 과정이 보이고 제안으로 넘어간다", async () => {
+await step("AI에게 보내면 짜는 과정이 보이고 제안으로 넘어간다", async () => {
   await page.getByRole("button", { name: /AI에게 \d+분 운동 받기/ }).click();
   await page.waitForURL(/\/plan\/run\//, { timeout: 15000 });
   await page.waitForTimeout(1500);
@@ -333,21 +336,18 @@ await step("대시보드 → 초대 코드 만들기", async () => {
 await shot("invite-code");
 
 // ── 7. 둘째 아이 ───────────────────────────────────────────
-await step("부모 홈 알약 → 아이 등록하기 → 둘째 아이 첫 시작", async () => {
+await step("부모 홈 「우리 아이」 → 아이 등록하기 → 둘째 아이 첫 시작", async () => {
   await page.goto(B + "/parent", { waitUntil: "load" });
   await page.waitForTimeout(2000);
-  // 오른쪽 위 이름 알약 — 「우리 아이」 묶음에도 아이 줄 · 아이 등록하기가 있어 알약과 그 시트로 좁힌다
-  await page.getByRole("button", { name: /보고 있는 아이/ }).click({ timeout: 8000 });
-  await page.waitForTimeout(800);
-  await shot("child-pill-sheet");
+  // 오른쪽 위 아이 알약은 없앴다. 아이 등록하기는 「우리 아이」 묶음 아래에 있다
   await page
-    .getByRole("dialog")
+    .getByRole("region", { name: "우리 아이" })
     .getByRole("link", { name: /아이 등록하기/ })
     .click({ timeout: 8000 });
   await page.waitForURL(/\/start\/child/, { timeout: 10000 });
   await page.waitForTimeout(1200);
   await shot("child-wizard-first");
-  // 아이 더하기는 네 화면: 아이, 키와 몸무게와 동의, 운동할 수 있는 시간, 준비됐어요
+  // 아이 더하기는 네 화면: 아이, 키와 몸무게와 동의, 운동 루틴, 준비됐어요
   await page.getByLabel("아이 이름").fill("민준");
   await pickDate(page, "아이 생일", "2020-02-10");
   await page.getByRole("radio", { name: "남자아이" }).click();

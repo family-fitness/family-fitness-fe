@@ -3,14 +3,19 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-/** 지금 이 기기를 누가 쓰고 있는가. */
-type Mode = "parent" | "kid";
+import type { ViewMode } from "@/lib/role-mode";
 
+/**
+ * 지금 이 기기를 누가 쓰고 있는가.
+ *
+ * 비어 있으면 스플래시가 계정의 역할로 채운다(`modeFor`). 보호자가 설정의 「누가 쓰는지 바꾸기」 로
+ * 폰을 아이에게 빌려줄 때만 손으로 바꾼다.
+ */
 interface RoleState {
-  mode: Mode | null;
+  mode: ViewMode | null;
   /** 아이 모드에서 보고 있는 아이. 부모 모드에서는 "지금 보고 있는 아이" */
   childProfileId: string | null;
-  setMode: (mode: Mode) => void;
+  setMode: (mode: ViewMode) => void;
   setChild: (profileId: string | null) => void;
   reset: () => void;
 }

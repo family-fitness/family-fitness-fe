@@ -15,7 +15,7 @@ import { NavLink } from "@/components/ui/nav-link";
 import { Segmented } from "@/components/ui/segmented";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  useAvailability,
+  useAvailabilities,
   useCreateMission,
   useFamilyProfiles,
   useRestDaysIn,
@@ -31,6 +31,7 @@ import {
   toSessions,
   upcomingDays,
 } from "@/lib/routine";
+import { sharedDays } from "@/lib/schedule";
 import { PHASE_LABEL } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { WEEKDAY, monthOf, today, weekdayCode } from "@/lib/today";
@@ -40,7 +41,7 @@ import { useRoleStore } from "@/stores/role-store";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
 /**
- * 직접 짜기 — 담은 동작을 세우고, 누가 · 언제 할지 정해 등록한다.
+ * 직접 만들기 — 담은 동작을 세우고, 누가 · 언제 할지 정해 등록한다.
  *
  * AI 편성의 다른 길이다(9/23 "선택해서 미션을 생성"). 부모가 고른 것이라 제안을 거치지 않고
  * 바로 그날의 운동이 된다. 여러 날 · 몇 주에 한 번에 넣을 수 있다(삼성헬스 프로그램처럼) —
@@ -82,8 +83,12 @@ function CustomPlan() {
   const firstKid = kids.find((k) => k.profileId === childProfileId) ?? kids[0];
   const [who, setWho] = useState<Uuid[] | null>(null);
   const chosen = who ?? (firstKid?.profileId ? [firstKid.profileId] : []);
-  // 「운동할 수 있는 날」 점은 지금 짜는 첫 아이의 시간표로 — 기기에 고른 아이가 아니라
-  const { data: availability } = useAvailability(chosen[0]);
+  const kidIds = new Set(kids.map((k) => k.profileId ?? ""));
+  // 아이가 적어도 하나 — 부모만 하는 운동은 아이 화면 · 캘린더 · 리그 어디에도 안 보인다
+  const chosenKid = chosen.find((id) => kidIds.has(id));
+  // 「운동할 수 있는 날」 점은 고른 사람 모두의 시간표가 겹치는 요일에. 첫 아이 것만 보면
+  // 아이는 평일, 보호자는 주말인데도 평일에 점이 찍혔다
+  const schedules = useAvailabilities(chosen);
   const now = today();
   const [days, setDays] = useState<string[]>([now]);
   const [weeks, setWeeks] = useState<(typeof WEEKS)[number]["value"]>("1");
@@ -106,7 +111,7 @@ function CustomPlan() {
   const upcoming = upcomingDays(now);
   /*
     쉬는 날 카드를 쓴 날에는 운동을 넣지 않는다. 쉬는 날이 이어서 한 날 · 리그에서 빠지는 날인데
-    직접 짜기로 운동을 넣으면 아이 홈은 「오늘은 쉬는 날이에요」 이고 운동은 걸려 있는 날이 된다.
+    직접 만들기로 운동을 넣으면 아이 홈은 「오늘은 쉬는 날이에요」 이고 운동은 걸려 있는 날이 된다.
     고를 날 · 되풀이한 날이 든 달의 쉬는 날을 모두 받는다(4주 되풀이면 달을 넘는다)
   */
   const span = repeatDates(upcoming, Number(weeks));
@@ -118,15 +123,20 @@ function CustomPlan() {
   const dates = repeated.filter((d) => !rest.has(d));
   const skippedRest = repeated.length - dates.length;
   const pending = dates.filter((d) => !created.includes(d));
-  const free = new Set((availability?.slots ?? []).map((s) => s.day));
+  const free = new Set(schedules ? sharedDays(schedules.map((w) => w.slots)) : []);
+  const freeLabel = chosen.length > 1 ? "다 같이 운동할 수 있는 날" : "운동할 수 있는 날";
 
-  const toggleWho = (id: Uuid) =>
-    setWho(chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id]);
+  const toggleWho = (id: Uuid) => {
+    const next = chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id];
+    // 마지막 아이는 빼지 않는다 — 다른 아이를 먼저 고르면 바꿀 수 있다
+    if (!next.some((x) => kidIds.has(x))) return;
+    setWho(next);
+  };
   const toggleDay = (d: string) =>
     setDays((list) => (list.includes(d) ? list.filter((x) => x !== d) : [...list, d].sort()));
 
   const submit = async () => {
-    if (moves.length === 0 || chosen.length === 0 || pending.length === 0) return;
+    if (moves.length === 0 || !chosenKid || pending.length === 0) return;
     setProblem(null);
     setSaving(true);
     const sessions = toSessions(moves);
@@ -167,7 +177,7 @@ function CustomPlan() {
   if (sent) {
     return (
       <>
-        <AppBar back title="직접 짜기" />
+        <AppBar back title="직접 만들기" />
         <Stage wide>
           <p className="card-hero text-center text-sm font-extrabold" role="status">
             등록했어요
@@ -181,7 +191,7 @@ function CustomPlan() {
   if (!ready) {
     return (
       <>
-        <AppBar back title="직접 짜기" />
+        <AppBar back title="직접 만들기" />
         <Stage wide className="space-y-3">
           <Skeleton className="h-72 w-full rounded-3xl" />
           <Skeleton className="h-28 w-full rounded-3xl" />
@@ -194,7 +204,7 @@ function CustomPlan() {
   if (moves.length === 0) {
     return (
       <>
-        <AppBar back title="직접 짜기" />
+        <AppBar back title="직접 만들기" />
         <Stage wide>
           <EmptyState
             scene="no-mission"
@@ -224,7 +234,7 @@ function CustomPlan() {
 
   return (
     <>
-      <AppBar back title="직접 짜기" />
+      <AppBar back title="직접 만들기" />
       <Stage wide className="space-y-3 pb-36">
         {/* 1. 동작 — 하는 차례대로. 위아래로 옮기고 시간을 정한다 */}
         <Card hero>
@@ -234,7 +244,7 @@ function CustomPlan() {
               <button
                 type="button"
                 onClick={tidy}
-                className="press text-signal-deep min-h-10 px-1 text-xs font-extrabold"
+                className="press text-signal-deep min-h-11 px-1 text-xs font-extrabold"
               >
                 준비 → 본 → 정리로
               </button>
@@ -256,7 +266,7 @@ function CustomPlan() {
                     type="button"
                     onClick={() => remove(i)}
                     aria-label={`${m.clip.title} 빼기`}
-                    className="press text-ink-soft -mt-2 -mr-2 grid size-10 shrink-0 place-items-center"
+                    className="press text-ink-soft -mt-2 -mr-2 grid size-11 shrink-0 place-items-center"
                   >
                     <X aria-hidden className="size-4" />
                   </button>
@@ -269,7 +279,7 @@ function CustomPlan() {
                       onClick={() => setMinutes(i, m.minutes - 1)}
                       disabled={m.minutes <= MOVE_MINUTES.min}
                       aria-label={`${m.clip.title} 1분 줄이기`}
-                      className="press grid size-10 place-items-center disabled:opacity-30"
+                      className="press grid size-11 place-items-center disabled:opacity-30"
                     >
                       <Minus aria-hidden className="size-4" />
                     </button>
@@ -281,7 +291,7 @@ function CustomPlan() {
                       onClick={() => setMinutes(i, m.minutes + 1)}
                       disabled={m.minutes >= MOVE_MINUTES.max}
                       aria-label={`${m.clip.title} 1분 늘리기`}
-                      className="press grid size-10 place-items-center disabled:opacity-30"
+                      className="press grid size-11 place-items-center disabled:opacity-30"
                     >
                       <Plus aria-hidden className="size-4" />
                     </button>
@@ -292,7 +302,7 @@ function CustomPlan() {
                       onClick={() => shift(i, -1)}
                       disabled={i === 0}
                       aria-label={`${m.clip.title} 위로`}
-                      className="press bg-sub grid size-10 place-items-center rounded-full disabled:opacity-30"
+                      className="press bg-sub grid size-11 place-items-center rounded-full disabled:opacity-30"
                     >
                       <ArrowUp aria-hidden className="size-4" />
                     </button>
@@ -301,7 +311,7 @@ function CustomPlan() {
                       onClick={() => shift(i, 1)}
                       disabled={i === moves.length - 1}
                       aria-label={`${m.clip.title} 아래로`}
-                      className="press bg-sub grid size-10 place-items-center rounded-full disabled:opacity-30"
+                      className="press bg-sub grid size-11 place-items-center rounded-full disabled:opacity-30"
                     >
                       <ArrowDown aria-hidden className="size-4" />
                     </button>
@@ -377,7 +387,7 @@ function CustomPlan() {
                     type="button"
                     aria-pressed={on}
                     disabled={resting}
-                    aria-label={`${Number(d.slice(8))}일 ${WEEKDAY[new Date(`${d}T00:00:00`).getDay()]}요일${resting ? ", 쉬는 날" : free.has(weekdayCode(d)) ? ", 운동할 수 있는 날" : ""}`}
+                    aria-label={`${Number(d.slice(8))}일 ${WEEKDAY[new Date(`${d}T00:00:00`).getDay()]}요일${resting ? ", 쉬는 날" : free.has(weekdayCode(d)) ? `, ${freeLabel}` : ""}`}
                     onClick={() => toggleDay(d)}
                     className={cn(
                       "press flex min-h-16 w-full flex-col items-center justify-center gap-0.5 rounded-2xl text-xs font-extrabold",
@@ -417,7 +427,7 @@ function CustomPlan() {
             </p>
           )}
           <p className="text-caption text-ink-soft mt-2">
-            점이 찍힌 날은 운동할 수 있는 날이에요.{" "}
+            점이 찍힌 날은 {freeLabel}이에요.{" "}
             <NavLink href="/settings/schedule" className="text-signal-deep font-bold">
               바꾸기
             </NavLink>
@@ -449,8 +459,8 @@ function CustomPlan() {
           <button
             type="button"
             onClick={() => void submit()}
-            disabled={saving || chosen.length === 0 || pending.length === 0}
-            data-off={!saving && (chosen.length === 0 || pending.length === 0) ? "" : undefined}
+            disabled={saving || !chosenKid || pending.length === 0}
+            data-off={!saving && (!chosenKid || pending.length === 0) ? "" : undefined}
             className="press bg-signal-strong data-off:bg-line data-off:text-ink-soft mt-2 flex min-h-14 w-full items-center justify-center rounded-2xl text-lg font-extrabold text-white disabled:opacity-100 data-off:shadow-none"
           >
             {saving ? "등록하는 중" : label}

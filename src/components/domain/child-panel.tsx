@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
+import { Illustration } from "@/components/ui/illustration";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorView, FirstMeasure } from "@/components/domain/factor-view";
@@ -13,7 +14,7 @@ import { REMEASURE_DAYS } from "@/lib/remeasure";
 import type { FitnessMapMember, Mission } from "@/lib/api/types";
 import { useCheers, useLatestCoachRun, useLatestFitnessTest, useRestDays } from "@/lib/api/queries";
 import { missionsOn } from "@/lib/day";
-import { VERIFIED_COPY } from "@/lib/mission";
+import { verifiedLabel } from "@/lib/mission";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { daysSince, monthOf, today } from "@/lib/today";
 import { cn, formatDate, withJosa } from "@/lib/utils";
@@ -22,7 +23,7 @@ import { childFinderHref } from "@/lib/videos";
 /**
  * 부모 홈의 첫 묶음 — 「우리 아이」. 아이가 어디쯤인지와 오늘 무엇을 하는지를 한 덩어리로.
  *
- * 카드 하나에 기능 하나씩 쌓던 것(체력 · 다시 재기 · AI 제안 · 오늘 운동)을 합쳤다(9/25 「큰 묶음 둘」).
+ * 카드 하나에 기능 하나씩 쌓던 것(체력 · 다시 측정하기 · AI 제안 · 오늘 운동)을 합쳤다(9/25 「큰 묶음 둘」).
  * 육각형 바로 아래에 통합 신체 점수(9/25). 이름을 누르면 아이 기록(요인 표 · 점수 흐름 · 키)으로 간다.
  */
 export function ChildPanel({
@@ -57,7 +58,11 @@ export function ChildPanel({
 
       {/* 잰 적이 있는지로 가른다 — 만 7~10세는 규준이 비어 점수가 없을 수 있다(규칙 8). 그래도 육각형은 선다 */}
       {testedOn == null ? (
-        <FirstMeasure child={child} />
+        <FirstMeasure
+          profileId={child.profileId ?? ""}
+          name={name}
+          measurable={child.measurable !== false}
+        />
       ) : (
         <>
           {/* 육각형 · 그 아래 통합 신체 점수. 아이 기록 · 측정 결과와 같은 한 부품이다 */}
@@ -227,11 +232,26 @@ function TodaySection({
     return (
       <>
         {head}
-        <p className="text-ink-soft mt-1 text-sm">
-          {restToday
-            ? "오늘은 쉬는 날이에요"
-            : `${withJosa(childName, "은는")} 아직 오늘 운동이 없어요`}
-        </p>
+        {/* 글만 두지 않고 왼쪽에 키움이를 세운다. 쉬는 날은 쉬는 키움이 */}
+        <div className="mt-1 flex items-center gap-3">
+          <Illustration
+            name={restToday ? "scene/kiumi-rest" : "scene/kiumi-no-mission"}
+            size={72}
+          />
+          <div className="min-w-0">
+            <p className="text-sm font-extrabold">
+              {restToday
+                ? "오늘은 쉬는 날이에요"
+                : `${withJosa(childName, "은는")} 아직 오늘 운동이 없어요`}
+            </p>
+            {/* 바로 아래 두 버튼이 무엇인지. 기다리는 제안이 있으면 버튼이 없어 말하지 않는다 */}
+            {!waiting && !restToday && (
+              <p className="text-caption text-ink-soft mt-0.5 font-semibold">
+                AI에게 받거나 동작을 골라 직접 짤 수 있어요
+              </p>
+            )}
+          </div>
+        </div>
         {proposal}
         {/* 두 길 — AI에게 받거나, 직접 골라 짜거나. 쉬는 날에는 운동을 권하지 않는다(규칙 15) */}
         {!waiting && !restToday && (
@@ -241,13 +261,13 @@ function TodaySection({
               className="press bg-signal-strong flex min-h-12 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold text-white"
             >
               <ArtIcon name="icon/menu-ai" className="size-5" />
-              AI에게 운동 받기
+              AI 운동 추천 받기
             </Link>
             <Link
               href={childFinderHref(childProfileId)}
               className="press bg-sub flex min-h-12 items-center justify-center rounded-2xl px-4 text-sm font-extrabold"
             >
-              직접 짜기
+              직접 만들기
             </Link>
           </div>
         )}
@@ -344,7 +364,9 @@ function TodaySection({
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">{m.title}</p>
               <p className="text-caption text-ink-soft mt-0.5">
-                {p?.verifiedBy ? VERIFIED_COPY[p.verifiedBy] : "아직 안 적었어요"}
+                {p?.verifiedBy
+                  ? verifiedLabel(p.verifiedBy, p.needsGuardianCheck)
+                  : "아직 안 적었어요"}
               </p>
             </div>
             {p?.needsGuardianCheck && (
@@ -361,7 +383,7 @@ function TodaySection({
 
       {proposal}
 
-      {/* 운동 더하기 — 오늘 운동이 있어도 AI 코치에게 더 받거나 직접 짜서 더한다(9/25 「운동 미션을 추가하는」).
+      {/* 운동 더하기 — 오늘 운동이 있어도 AI에게 더 받거나 직접 만들어 더한다(9/25 「운동 미션을 추가하는」).
           코치가 짠 것은 등록해야 운동이 된다(규칙 1) */}
       {!waiting && !restToday && (
         <div className="border-line mt-3 grid grid-cols-2 gap-2 border-t pt-3">
@@ -371,13 +393,13 @@ function TodaySection({
           >
             {/* 360px 에서 반 칸이 140px 남짓이라 「AI 코치에게 더 받기」 는 두 줄로 꺾였다. 320px 폰에서는 그림을 빼야 한 줄에 들어간다 */}
             <ArtIcon name="icon/menu-ai" className="size-5 shrink-0 max-[339px]:hidden" />
-            AI 코치에게 받기
+            AI에게 더 받기
           </Link>
           <Link
             href={childFinderHref(childProfileId)}
             className="press bg-sub flex min-h-11 items-center justify-center rounded-2xl px-1.5 text-sm font-extrabold whitespace-nowrap"
           >
-            직접 짜서 더하기
+            직접 만들어 더하기
           </Link>
         </div>
       )}

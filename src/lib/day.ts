@@ -1,12 +1,13 @@
 import type { DayLog, Mission, MissionSession, SessionPhase, VerifiedBy } from "./api/types";
 import { sessionsOf, stepMinutes } from "./session-plan";
+import { monthOf, shiftMonth } from "./today";
 
 /**
  * 하루 기록 한 장의 셈 — 큰 링 · 칸 · 요약 줄 · 요일 줄의 작은 링이 같은 값을 쓴다.
  * 삼성헬스 「일일 활동」 처럼 링이 그날을 말한다.
  *
- *   움직인 시간   그날 움직인 분 / 잡혀 있던 분
- *   끝낸 운동     끝낸 칸 / 전체 칸 — 칸이 없는 운동은 한 칸으로 센다.
+ *   운동 시간   그날 움직인 분 / 잡혀 있던 분
+ *   완료한 운동     끝낸 칸 / 전체 칸 — 칸이 없는 운동은 한 칸으로 센다.
  *                 **직접 입력한 것(걸음수)은 세지 않는다** — 홈의 링과 같다(규칙 2)
  *
  * 칭찬은 링으로 그리지 않는다. 아이가 스스로 채울 수 없는 고리가 비어 있으면 못 채운 날이 된다(규칙 12).
@@ -55,7 +56,7 @@ export function daySummary(log: DayLog | null | undefined): DaySummary {
 }
 
 /**
- * 링 둘의 찬 정도(0~1) — 움직인 시간 · 끝낸 운동. 목표를 넘겨도 한 바퀴에서 멈춘다 —
+ * 링 둘의 찬 정도(0~1) — 운동 시간 · 완료한 운동. 목표를 넘겨도 한 바퀴에서 멈춘다 —
  * 두 바퀴째를 그리면 더 한 날이 덜 한 날보다 나은 날처럼 보인다. 잡힌 운동 없이 움직인 날은 한 바퀴다.
  */
 export function dayRings(s: DaySummary): [number, number] {
@@ -90,6 +91,15 @@ export function isRealDate(value: string | null | undefined): value is string {
   if (Number.isNaN(d.getTime())) return false;
   const back = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   return back === value;
+}
+
+/**
+ * 주소창의 달이 캘린더가 보여 줄 달인가 — 2020년 1월부터 다음 달까지(달력의 「다음 달」 도 거기서 멈춘다).
+ * 그 밖이면 이번 달로 본다. `0000-01` 은 Date 가 1900년으로 읽어 1900년치 기록을 달라고 했다
+ */
+export function isOpenMonth(value: string | null | undefined, now: string): value is string {
+  if (!value || !/^\d{4}-(0[1-9]|1[0-2])$/.test(value)) return false;
+  return value >= "2020-01" && value <= shiftMonth(monthOf(now), 1);
 }
 
 /**

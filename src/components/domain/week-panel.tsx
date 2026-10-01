@@ -3,11 +3,13 @@
 import type { ReactNode } from "react";
 
 import { CardHead } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TodayRings } from "@/components/domain/today-rings";
 import { WeekTower } from "@/components/scene/week-tower";
 import type { DayLog, Mission } from "@/lib/api/types";
+import { dayWork } from "@/lib/day";
 import { today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +51,14 @@ export function WeekPanel({
 }) {
   // 받아 둔 기록이 있으면 다시 받다 실패해도 그대로 그린다
   const broken = failed && !logs;
+  // 이번 주에 운동한 날이 없고 오늘 할 운동도 없다. 「0 / 20분」 링과 바닥에 붙은 막대 일곱 대신 키움이.
+  // 오늘 할 운동이 있으면 링이 오늘 목표를 말하므로 그대로 둔다. 못 받은 것은 비었다고 하지 않는다
+  const quiet =
+    !loading &&
+    logs !== undefined &&
+    missions !== undefined &&
+    weekTotals(days, logs).active === 0 &&
+    dayWork(missions, profileId, today()).total === 0;
   return (
     <section className="card" aria-label="이번 주">
       <CardHead title="이번 주" meta={broken ? undefined : meta} href={href} />
@@ -65,6 +75,13 @@ export function WeekPanel({
             </button>
           )}
         </p>
+      ) : quiet ? (
+        <EmptyState
+          size="card"
+          scene="no-mission"
+          title="이번 주 운동 기록이 아직 없어요"
+          description="운동을 하면 요일마다 운동 시간이 쌓여요"
+        />
       ) : (
         <>
           <TodayRings

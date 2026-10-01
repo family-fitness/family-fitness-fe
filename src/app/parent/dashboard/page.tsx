@@ -3,11 +3,14 @@
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
 
-import { AppBar } from "@/components/app-shell/app-bar";
+import { HomeHeader } from "@/components/app-shell/home-header";
+import { ParentHeadActions } from "@/components/app-shell/parent-head-actions";
 import { Stage } from "@/components/app-shell/stage";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { CardHead } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { NavLink } from "@/components/ui/nav-link";
@@ -28,16 +31,17 @@ import {
 } from "@/lib/api/queries";
 import { daySummary, dayWork, todayLine } from "@/lib/day";
 import { useSession } from "@/lib/session";
-import { monthGrid, monthLabel, monthOf, today, weekOf } from "@/lib/today";
+import { longDate, monthGrid, monthLabel, monthOf, today, weekOf } from "@/lib/today";
 import { cn } from "@/lib/utils";
 
 /**
  * 가족 대시보드 — 부모가 가족 전체를 한 화면에서(9/25 「부모에겐 전체적인 가족 대시보드가 보이는 화면이 필요해」).
  *
  * 큰 묶음 둘이다.
- *   「이번 달 우리 가족」  운동한 날 · 움직인 시간 · 끝낸 운동 · 받은 칭찬 — 누가 하든 한 곳에 모인다
+ *   「이번 달 우리 가족」  운동한 날 · 운동 시간 · 완료한 운동 · 받은 칭찬 — 누가 하든 한 곳에 모인다
  *   「구성원」           사람마다 오늘 · 이번 주 · 며칠 이어서. 아직 안 들어온 자리는 초대
  *
+ * 하단 탭의 「가족」 이 여는 화면이다. 탭의 첫 화면이라 뒤로가 없고, 가족 관리는 구성원 묶음 아래에서 들어간다.
  * 이 화면에서는 구성원끼리 점수를 나란히 세우지 않는다 — 한 사람이 한 줄, 오늘 · 이번 주 · 이어서만(규칙 10).
  * 아이들의 신체 점수를 한 번에 보는 자리는 부모 홈의 「우리 아이」 다(9/25 요청, 등록한 차례로).
  * 흐름 시연판(9/17)의 대시보드는 무엇을 보여 줄지만 참고했다. 모양은 이 앱의 결이다.
@@ -74,7 +78,7 @@ export default function FamilyDashboardPage() {
   if (failure) {
     return (
       <>
-        <AppBar backHref="/parent" title="우리 가족" />
+        <HomeHeader eyebrow={longDate()} title="우리 가족" actions={<ParentHeadActions />} />
         <Stage wide>
           <ErrorState
             error={failure}
@@ -118,48 +122,63 @@ export default function FamilyDashboardPage() {
 
   return (
     <>
-      <AppBar backHref="/parent" title={map?.familyName ?? "우리 가족"} />
+      <HomeHeader
+        eyebrow={longDate()}
+        title={map?.familyName ?? "우리 가족"}
+        actions={<ParentHeadActions />}
+      />
       <Stage wide className="space-y-3">
         {/* 첫 묶음 — 이번 달 우리 가족. 누가 했는지 가르지 않고 한 곳에 모은다 */}
         <section className="card-hero" aria-label="이번 달 우리 가족">
           <CardHead title="이번 달 우리 가족" meta={monthLabel(month)} />
-          {/* 다른 가족들과 겨루는 자리 — 가족 단위로만. 누르면 리그 화면 */}
-          <LeagueRow familyId={familyId ?? undefined} className="mt-1" />
-          <div className="mt-2 grid grid-cols-2">
-            <FamilyStat
-              label="가족이 운동한 날"
-              value={activeDays}
-              unit="일"
-              state={calendarState}
+          {/* 다른 가족들과 겨루는 자리. 가족 단위로만 겨루고, 누르면 리그 화면이다.
+              뱃지를 가운데 크게 두고 아래 숫자 칸들과 선으로 가른다 */}
+          <LeagueRow familyId={familyId ?? undefined} className="border-line mt-1 border-b" />
+          {/* 이번 달 가족 누구도 운동하지 않았다. 「0일」 「0분」 「0개」 칸 대신 키움이(아래 「AI 운동 추천 받기」 줄이 길이다) */}
+          {calendarState === "ready" && activeDays === 0 && done === 0 && stickers === 0 ? (
+            <EmptyState
+              size="card"
+              scene="no-mission"
+              title="이번 달 운동 기록이 아직 없어요"
+              description="가족 누구든 운동하면 여기에 기록이 모여요"
             />
-            <FamilyStat
-              label="모두 움직인 시간"
-              value={minutes}
-              unit="분"
-              state={calendarState}
-              left
-            />
-            <FamilyStat
-              label="끝낸 운동"
-              value={done}
-              unit="개"
-              state={calendarState}
-              top
-              // 칭찬 칸이 없으면 아랫줄 하나가 폭을 다 쓴다 — 반쪽이 비어 보이지 않게
-              wide={stickers === 0 && calendarState === "ready"}
-            />
-            {/* 칭찬은 받은 달에만 — 0장을 적어 두면 못 받은 달이 된다(규칙 12) */}
-            {(stickers > 0 || calendarState !== "ready") && (
+          ) : (
+            <div className="mt-1 grid grid-cols-2">
               <FamilyStat
-                label="받은 칭찬"
-                value={stickers}
-                unit="장"
+                label="가족이 운동한 날"
+                value={activeDays}
+                unit="일"
+                state={calendarState}
+              />
+              <FamilyStat
+                label="가족 운동 시간"
+                value={minutes}
+                unit="분"
                 state={calendarState}
                 left
-                top
               />
-            )}
-          </div>
+              <FamilyStat
+                label="완료한 운동"
+                value={done}
+                unit="개"
+                state={calendarState}
+                top
+                // 칭찬 칸이 없으면 아랫줄 하나가 폭을 다 쓴다 — 반쪽이 비어 보이지 않게
+                wide={stickers === 0 && calendarState === "ready"}
+              />
+              {/* 칭찬은 받은 달에만 — 0장을 적어 두면 못 받은 달이 된다(규칙 12) */}
+              {(stickers > 0 || calendarState !== "ready") && (
+                <FamilyStat
+                  label="받은 칭찬"
+                  value={stickers}
+                  unit="장"
+                  state={calendarState}
+                  left
+                  top
+                />
+              )}
+            </div>
+          )}
           {/* 쉬는 날 카드 — 오늘 이미 움직인 아이가 있으면 오늘은 못 고른다 */}
           <RestCardRow
             familyId={familyId ?? undefined}
@@ -176,7 +195,7 @@ export default function FamilyDashboardPage() {
               className="press border-line mt-2 flex min-h-12 items-center gap-3 border-t pt-3"
             >
               <ArtIcon name="icon/menu-ai" className="size-8" />
-              <span className="min-w-0 flex-1 text-sm font-extrabold">AI 코치에게 운동 받기</span>
+              <span className="min-w-0 flex-1 text-sm font-extrabold">AI 운동 추천 받기</span>
               <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
             </NavLink>
           )}
@@ -202,11 +221,21 @@ export default function FamilyDashboardPage() {
               />
             ))}
           </ul>
+          {/* 보호자가 나 하나다. 아래 두 버튼으로 무엇을 할 수 있는지 키움이가 먼저 말한다 */}
+          {members.filter((m) => m.role === "PARENT").length === 1 && (
+            <EmptyState
+              size="card"
+              // scene/kiumi-invite 그림이 오면 이 줄을 invite 로 바꾼다
+              scene="hello"
+              title="함께 볼 보호자를 초대해 보세요"
+              description="가족 관리에서 보호자를 더하고 초대 코드를 보내면 같이 응원할 수 있어요"
+            />
+          )}
           <div className="border-line mt-1 grid grid-cols-2 gap-2 border-t pt-3">
             <button
               type="button"
               onClick={() => setInviting(null)}
-              className="press bg-signal-soft text-signal-deep flex min-h-11 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold"
+              className="press bg-sub flex min-h-11 items-center justify-center gap-1.5 rounded-2xl text-sm font-extrabold"
             >
               <ArtIcon name="icon/menu-invite" className="size-5" />
               초대하기
@@ -330,8 +359,9 @@ function MemberLine({
             </span>
           )}
         </span>
-        <span className="text-caption text-ink-soft block truncate">
-          {child ? "자녀" : "부모"}, {member.ageGroup}
+        {/* 자르지 않고 두 줄로 — 320 폭에서 「아직 안 들어옴」 · 오늘 몇 개가 잘려 지금 상태가 안 보였다 */}
+        <span className="text-caption text-ink-soft block">
+          {child ? "아이" : "보호자"}, {member.ageGroup}
           {/* 아이는 부모 폰을 빌려 쓰는 게 기본이라 계정이 없어도 오늘을 적는다. 부모 자리만 「아직 안 들어옴」 */}
           {!child && hasAccount === false ? (
             ", 아직 안 들어왔어요"
@@ -360,13 +390,16 @@ function MemberLine({
         <div className="flex min-h-16 items-center gap-3 py-3">
           {body}
           {hasAccount === false && (
-            <button
-              type="button"
+            // 구성원 줄의 초대는 가족 관리와 같은 테두리 단추 — 네 가지 모양으로 그려져 있었다(9/30 점검)
+            <Button
+              size="md"
+              variant="outline"
               onClick={onInvite}
-              className="press bg-sub grid min-h-10 shrink-0 place-items-center rounded-xl px-3 text-xs font-extrabold"
+              aria-label={`${member.name ?? "이 자리"} 초대하기`}
+              className="shrink-0"
             >
               초대하기
-            </button>
+            </Button>
           )}
         </div>
       )}
@@ -377,7 +410,7 @@ function MemberLine({
 function DashboardSkeleton() {
   return (
     <>
-      <AppBar backHref="/parent" title="우리 가족" />
+      <HomeHeader eyebrow={longDate()} title="우리 가족" actions={<ParentHeadActions />} />
       <Stage wide className="space-y-3">
         <Skeleton className="h-64 w-full rounded-3xl" />
         <Skeleton className="h-80 w-full rounded-3xl" />

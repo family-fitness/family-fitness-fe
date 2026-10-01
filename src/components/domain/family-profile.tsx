@@ -59,8 +59,11 @@ export function FamilyProfile({
         {artFor(medal) && <ArtIcon name={medal} className="size-20" />}
         <div className="min-w-0 flex-1">
           <h2 className="text-metric truncate leading-tight font-extrabold">{familyName}</h2>
+          {/* 말 덩어리째 줄을 바꾼다 — 320 폭에서 「10가족 중 / 2등」 으로 쪼개졌다 */}
           <p className="text-signal-deep text-body mt-0.5 font-extrabold">
-            {tierName(tier)} 리그, {place}
+            <span className="whitespace-nowrap">{tierName(tier)} 리그,</span>{" "}
+            {/* 쉼표는 앞 말에 붙인다. 줄이 바뀌어도 순위가 다음 줄 맨 앞에서 쉼표 없이 시작한다 */}
+            <span className="whitespace-nowrap">{place}</span>
           </p>
         </div>
       </div>
@@ -100,10 +103,14 @@ export function FamilyProfile({
               </p>
             )}
           </div>
-          <ul className="mt-2 flex flex-wrap gap-2" aria-label={`얻은 업적 ${badges.length}개`}>
+          <ul
+            className="mt-2 flex flex-wrap justify-center gap-2"
+            aria-label={`얻은 업적 ${badges.length}개`}
+          >
             {badges.map((b) => (
               <li key={b.code} title={b.title}>
-                <ArtIcon name={badgeArt(b.code)} className="size-12" />
+                {/* 좁은 폰에서는 한 줄에 다섯 — 넷씩 서면 아홉째가 한 줄에 홀로 남았다 */}
+                <ArtIcon name={badgeArt(b.code)} className="size-12 max-[359px]:size-10" />
                 <span className="sr-only">{b.title}</span>
               </li>
             ))}

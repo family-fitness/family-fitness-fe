@@ -23,6 +23,7 @@ import type {
   CalendarView,
   Cheer,
   CheerLogList,
+  ClaimBody,
   CoachApproveResult,
   CoachRejectResult,
   TargetMetric,
@@ -31,8 +32,11 @@ import type {
   FitnessMap,
   FitnessTestHistory,
   FitnessTestResult,
+  FamilyInvite,
+  GuardianConsent,
   InviteCode,
   InvitePeek,
+  PendingInviteList,
   NotificationList,
   LatestWithBody,
   MeResponse,
@@ -66,6 +70,7 @@ const qk = {
     calendar: (familyId: Uuid, profileId?: Uuid, from?: string, to?: string) =>
       ["family", familyId, "calendar", profileId ?? "-", from ?? "-", to ?? "-"] as const,
     league: (familyId: Uuid, month: string) => ["family", familyId, "league", month] as const,
+    invites: (familyId: Uuid) => ["family", familyId, "invites"] as const,
     restDays: (familyId: Uuid, month: string) => ["family", familyId, "rest-days", month] as const,
   },
   profile: {
@@ -104,7 +109,7 @@ function refreshProgress(qc: ReturnType<typeof useQueryClient>) {
 
 /**
  * 앱 진입 시 한 번. `nextStep` 으로 어디로 보낼지 정한다.
- * CREATE_FAMILY(프로필 0개) · CLAIM(초대코드 있음) · SUPPORT_MODE(초대받은 부모가 참여 방식 전) · HOME.
+ * CREATE_FAMILY(프로필 0개) · CLAIM(초대 코드 있음) · SUPPORT_MODE(초대받은 부모가 참여 방식 전) · HOME.
  */
 export function useMe() {
   return useQuery({
@@ -130,7 +135,7 @@ function seedAccount(qc: ReturnType<typeof useQueryClient>, auth: AuthResponse) 
 }
 
 /**
- * 로컬 전용. 구글 없이 시드 계정으로 들어간다. 초대코드를 들고 가면 서버가 가족이 없는 계정에
+ * 로컬 전용. 구글 없이 시드 계정으로 들어간다. 초대 코드를 들고 가면 서버가 가족이 없는 계정에
  * `CLAIM` 을 준다(구글 로그인과 같다)
  */
 export function useDevLogin() {
@@ -157,7 +162,7 @@ export function useGoogleLogin() {
  *   FAMILY   서버가 부를 때마다 새 계정과 「체험 가족」(보호자 둘 · 아이 둘, 측정 기록까지)을 만든다 —
  *            심사위원끼리 서로의 기록을 건드리지 않게. 가족이 이미 있어서 바로 홈으로 간다
  *   FRESH    가족이 없는 새 계정. 가족 만들기부터 시작한다
- *   INVITED  가족이 없는 새 계정과, 서버가 꾸며 둔 체험 가족의 초대코드(`inviteCode`)
+ *   INVITED  가족이 없는 새 계정과, 서버가 꾸며 둔 체험 가족의 초대 코드(`inviteCode`)
  *
  * 같은 곳에서 너무 자주 부르면 서버가 429(TOO_MANY)를 돌려준다.
  */
@@ -258,10 +263,42 @@ export function useRemoveMember(familyId: Uuid) {
   });
 }
 
-/** 가족 단위가 아니라 프로필 단위 코드. 계정이 안 붙은 프로필에만 발급된다 */
+/** 자리 초대. 가족 단위가 아니라 프로필 단위 코드다. 계정이 안 붙은 프로필에만 발급된다 */
 export function useOpenInvite() {
   return useMutation({
     mutationFn: (profileId: Uuid) => api.post<InviteCode>(path`/profiles/${profileId}/invite`),
+  });
+}
+
+/**
+ * 가족 초대 코드를 만든다(보호자만). 보호자로 부를지 아이로 부를지만 정하고, 이름과 생년월일은 받은 사람이 넣는다.
+ * 아이로 부르면 보호자 동의가 있어야 한다(없으면 422 CONSENT_REQUIRED)
+ */
+export function useCreateFamilyInvite(familyId: Uuid | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { role: Role; guardianConsent?: GuardianConsent }) =>
+      api.post<FamilyInvite>(path`/families/${familyId}/invites`, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.family.invites(familyId ?? "") }),
+  });
+}
+
+/** 아직 쓰지 않았고 기한이 남은 가족 초대(보호자만) */
+export function useFamilyInvites(familyId: Uuid | undefined) {
+  return useQuery({
+    queryKey: qk.family.invites(familyId ?? ""),
+    queryFn: () => api.get<PendingInviteList>(path`/families/${familyId}/invites`),
+    enabled: Boolean(familyId),
+  });
+}
+
+/** 가족 초대를 취소한다(204). 이미 쓰였거나 없으면 404 INVITE_NOT_FOUND */
+export function useCancelFamilyInvite(familyId: Uuid | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (code: string) => api.delete<void>(path`/families/${familyId}/invites/${code}`),
+    // 없다는 답(404)도 목록에서 빠져야 맞다 — 성공과 실패 모두 다시 받는다
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.family.invites(familyId ?? "") }),
   });
 }
 
@@ -283,14 +320,17 @@ export function useInvitePeek(code: string) {
   });
 }
 
-/** 다음에 갈 곳은 서버가 정한다 — 부모면 SUPPORT_MODE, 자녀면 HOME */
+/**
+ * 초대 코드로 가족에 참여한다. 자리 초대는 코드만, 가족 초대는 이름, 생년월일, 성별을 함께 보낸다.
+ * 다음에 갈 곳은 서버가 정한다 — 부모면 SUPPORT_MODE, 자녀면 HOME
+ */
 export function useClaimProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (claimCode: string) =>
+    mutationFn: (body: ClaimBody) =>
       api.post<{ profileId: Uuid; familyId: Uuid; role: Role; nextStep: NextStep }>(
         "/profiles/claim",
-        { claimCode },
+        body,
       ),
     // 이 계정의 세상이 바뀐다(가족이 생긴다) — 받아 둔 옛 `/me` 로 다음 화면이 길을 정하지 않게 비운다.
     // 코드 미리 보기는 남긴다 — 지우면 떠나는 동안 코드 화면이 다시 물어 방금 쓴 코드를 「이미 쓴 코드」 라 했다
@@ -401,6 +441,12 @@ interface PlanRequest {
   focusFactor: string | null;
   /** 부모도 같이 하나. 참여 방식에서 기본값이 온다 */
   withParent: boolean;
+  /**
+   * 가입 때 적은 키 · 몸무게. 안 잰 아이는 이것과 나이 · 성별로 짠다(9/30 시연).
+   * ▲ 요청: 지금 서버는 받지 않는다(BACKEND_API) — 받게 되면 그대로 쓴다
+   */
+  heightCm?: number;
+  weightKg?: number;
 }
 
 export function useStartCoachRun(familyId: Uuid) {
@@ -419,8 +465,11 @@ export function useStartCoachRun(familyId: Uuid) {
   });
 }
 
-/** RUNNING 인 동안 0.7초마다 묻는다(서버가 시작할 때 준 pollAfterMs 와 같은 값) */
-export function useCoachRun(runId: Uuid | undefined) {
+/**
+ * RUNNING 인 동안 0.7초마다 묻는다(서버가 시작할 때 준 pollAfterMs 와 같은 값).
+ * `poll` 이 false 면 묻기를 쉰다 — 단계가 한참 안 움직이면 화면이 멈춘다(서버가 RUNNING 에 멈추면 끝없이 물었다)
+ */
+export function useCoachRun(runId: Uuid | undefined, poll = true) {
   return useQuery({
     queryKey: qk.coach.run(runId ?? ""),
     queryFn: () => api.get<CoachRun>(path`/coach/runs/${runId}`),
@@ -431,7 +480,9 @@ export function useCoachRun(runId: Uuid | undefined) {
       const e = q.state.error;
       const settled =
         e instanceof ApiError && e.status < 500 && e.status !== 408 && e.status !== 429;
-      return q.state.data?.status === "RUNNING" && !settled ? 700 : false;
+      if (!poll || q.state.data?.status !== "RUNNING" || settled) return false;
+      // 못 받으면(429 · 5xx · 망) 점점 늦게 — 0.7 · 1.4 · 2.8 … 15초까지. 힘든 서버를 0.7초마다 두드리지 않는다
+      return Math.min(700 * 2 ** q.state.fetchFailureCount, 15_000);
     },
   });
 }
@@ -555,7 +606,7 @@ export function useCurrentMissions(familyId: Uuid | undefined) {
  * 컴포넌트 밖에 둔다 — 렌더마다 새 함수면 합친 결과도 매번 새것이 된다.
  * 기다리는 중 · 못 받음을 같이 돌려준다 — 못 받은 것을 「오늘 운동이 없어요」 로 그리면
  * 부모가 같은 운동을 한 번 더 받는다. **둘 다 받아야 오늘을 말한다** — 다 한 것만 못 받으면
- * 다 한 날이 「오늘 운동이 아직 없어요」 가 되어 「AI에게 운동 받기」 가 떴다.
+ * 다 한 날이 「오늘 운동이 아직 없어요」 가 되어 「AI 운동 추천 받기」 가 떴다.
  */
 function mergeMissions(
   results: { data?: MissionList; isPending: boolean; error: unknown; refetch: () => unknown }[],
@@ -749,7 +800,7 @@ export function useCompleteSession(missionId: Uuid, familyId: Uuid) {
 }
 
 /**
- * 운동할 수 있는 시간. AI 편성의 「몇 분」 기본값이 여기서 나온다.
+ * 운동 루틴. AI 편성의 「몇 분」 기본값이 여기서 나온다.
  * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
  */
 export function useAvailability(profileId: Uuid | undefined) {
@@ -758,6 +809,27 @@ export function useAvailability(profileId: Uuid | undefined) {
     queryFn: () => api.get<Availability>(path`/profiles/${profileId}/availability`),
     enabled: Boolean(profileId),
   });
+}
+
+/**
+ * 여러 사람의 운동 루틴을 한꺼번에. 겹치는 요일을 셀 때 쓴다.
+ * 키가 `useAvailability` 와 같아 캐시를 나눠 쓴다. 한 사람이라도 아직 못 받았으면 undefined.
+ * 몇 사람만 받은 채로 겹침을 세면 받는 사이 요일이 바뀌어 보인다
+ */
+export function useAvailabilities(profileIds: readonly Uuid[]) {
+  return useQueries({
+    queries: profileIds.map((profileId) => ({
+      queryKey: qk.profile.availability(profileId),
+      queryFn: () => api.get<Availability>(path`/profiles/${profileId}/availability`),
+    })),
+    combine: allAvailability,
+  });
+}
+
+/** 컴포넌트 밖에 둔다. 렌더마다 새 함수면 합친 결과도 매번 새것이 된다 */
+function allAvailability(results: { data?: Availability }[]): Availability[] | undefined {
+  if (results.some((r) => !r.data)) return undefined;
+  return results.map((r) => r.data as Availability);
 }
 
 export function useSaveAvailability(profileId: Uuid) {
@@ -910,7 +982,7 @@ export function useRestDays(familyId: Uuid | undefined, month: string) {
 }
 
 /**
- * 여러 달의 쉬는 날을 한꺼번에 — 직접 짜기가 몇 주 되풀이할 때 달을 넘는다. 키가 `useRestDays` 와 같아 캐시를 나눠 쓴다.
+ * 여러 달의 쉬는 날을 한꺼번에 — 직접 만들기가 몇 주 되풀이할 때 달을 넘는다. 키가 `useRestDays` 와 같아 캐시를 나눠 쓴다.
  * 쓴 날(YYYY-MM-DD)을 한 묶음으로 돌려준다. 못 받은 달은 비어 있다
  */
 export function useRestDaysIn(familyId: Uuid | undefined, months: string[]) {

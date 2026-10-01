@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronLeft } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { Dock } from "@/components/ui/dock";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -42,6 +42,20 @@ export function WizardShell({
   onSubmit?: () => void;
 }) {
   const pct = total > 1 ? Math.round((step / (total - 1)) * 100) : 100;
+  /*
+    칸이 바뀌면 누른 「다음」 이 사라져 초점이 body 로 떨어졌다 — 자판 · 화면 읽기로는 새 질문을 모른다(9/30 점검).
+    스스로 초점을 잡는 입력 칸(이름)이 없으면 질문 제목으로. 처음 칸은 건드리지 않는다
+  */
+  const heading = useRef<HTMLHeadingElement>(null);
+  const firstStep = useRef(true);
+  useEffect(() => {
+    if (firstStep.current) {
+      firstStep.current = false;
+      return;
+    }
+    if (document.activeElement && document.activeElement !== document.body) return;
+    heading.current?.focus({ preventScroll: true });
+  }, [step]);
   return (
     <form
       className="flex min-h-dvh flex-col pb-36"
@@ -79,14 +93,17 @@ export function WizardShell({
         </div>
       </div>
 
-      <div key={step} className="flex flex-1 flex-col">
+      {/* 화면 읽기가 본문으로 바로 가는 자리 — 위는 뒤로 · 게이지뿐이다 */}
+      <main key={step} className="flex flex-1 flex-col">
         <div className="px-6 pt-6">
           {art && <div className="mb-4 flex justify-center">{art}</div>}
-          <h1 className="page-title leading-snug">{title}</h1>
+          <h1 ref={heading} tabIndex={-1} className="page-title leading-snug focus:outline-none">
+            {title}
+          </h1>
         </div>
 
         <div className="mt-7 flex-1 px-6">{children}</div>
-      </div>
+      </main>
 
       {action && <Dock>{action}</Dock>}
     </form>

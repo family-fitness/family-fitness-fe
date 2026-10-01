@@ -13,7 +13,12 @@ import { useSession } from "@/lib/session";
 import { useRoleStore } from "@/stores/role-store";
 import { ArtIcon } from "@/components/ui/art-icon";
 
-/** 부모인가 아이인가. */
+/**
+ * 부모인가 아이인가.
+ *
+ * 들어올 때마다 묻지 않는다. 스플래시가 계정의 역할로 정한다(`modeFor`). 이 화면은 보호자가 설정의
+ * 「누가 쓰는지 바꾸기」 로 자기 폰을 아이에게 빌려줄 때(그리고 돌려받을 때) 쓴다.
+ */
 export default function StartPage() {
   const router = useRouter();
   const { profile, familyId, nextStep, isPending, error, refetch } = useSession();
@@ -40,7 +45,7 @@ export default function StartPage() {
     router.push(hasFamily ? "/parent" : "/start/family");
   };
 
-  // 아이 모드는 아이 홈에 들어갈 때 정해진다(아이 구역이 정한다). 아이 등록 · 초대코드로 가는 길에서 미리 정하면
+  // 아이 모드는 아이 홈에 들어갈 때 정해진다(아이 구역이 정한다). 아이 등록 · 초대 코드로 가는 길에서 미리 정하면
   // 그 길을 그만둔 뒤 다음에 열 때 아이 없는 아이 홈이 떴다
   const goKid = () => {
     // 자녀 계정은 자기 프로필로 고정된다. 형제를 고르게 하지 않는다
@@ -76,8 +81,8 @@ export default function StartPage() {
     return (
       <Stage className="flex min-h-dvh flex-col justify-center gap-6">
         <Skeleton className="h-8 w-56" />
-        <Skeleton className="h-48 w-full rounded-3xl" />
-        <Skeleton className="h-48 w-full rounded-3xl" />
+        <Skeleton className="h-28 w-full rounded-3xl" />
+        <Skeleton className="h-28 w-full rounded-3xl" />
       </Stage>
     );
   }
@@ -85,52 +90,36 @@ export default function StartPage() {
   return (
     <Stage className="flex min-h-dvh flex-col justify-center gap-5 py-8">
       <div>
-        <h1 className="text-[1.6rem] leading-tight font-extrabold">누가 쓰고 있나요?</h1>
+        <h1 className="page-title">누가 쓰고 있나요?</h1>
       </div>
 
-      <RoleCard title="아이" tone="kid" onClick={goKid} art={<LevelBuddy stage={2} size={92} />} />
+      <RoleCard title="아이" onClick={goKid} art={<LevelBuddy stage={2} size={80} />} />
 
       {/* 자녀 계정에는 부모 칸을 내지 않는다 */}
       {!childAccount && (
         <RoleCard
-          title="부모"
-          tone="parent"
+          title="보호자"
           onClick={goParent}
-          art={<ArtIcon name="icon/role-parent" className="size-16 shrink-0" />}
+          art={<ArtIcon name="icon/role-parent" className="size-20" />}
         />
       )}
     </Stage>
   );
 }
 
-/** 고르는 칸. */
-function RoleCard({
-  art,
-  title,
-  tone,
-  onClick,
-}: {
-  art: ReactNode;
-  title: string;
-  tone: "kid" | "parent";
-  onClick: () => void;
-}) {
-  const kid = tone === "kid";
+/**
+ * 고르는 칸. 아이 · 부모 두 칸은 같은 크기다 — 아이 칸만 크게 두었더니 한쪽이 유독 커 보였다(9/30).
+ * 그림 자리도 같은 80px 상자. 파랑 테를 두르면 이미 고른 것처럼 보여 테는 없다
+ */
+function RoleCard({ art, title, onClick }: { art: ReactNode; title: string; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      /* 아이 칸이 더 크다(주인공). 파랑 테를 두르면 이미 고른 것처럼 보여 테는 없다 */
-      className={
-        kid
-          ? "press card-hero flex items-center gap-4 text-left"
-          : "press card flex items-center gap-4 text-left"
-      }
+      className="press card flex min-h-28 items-center gap-5 text-left"
     >
-      {art}
-      <span className={kid ? "min-w-0 text-2xl font-extrabold" : "min-w-0 text-xl font-extrabold"}>
-        {title}
-      </span>
+      <span className="grid size-20 shrink-0 place-items-center">{art}</span>
+      <span className="min-w-0 text-2xl font-extrabold">{title}</span>
     </button>
   );
 }

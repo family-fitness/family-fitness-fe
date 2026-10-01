@@ -1,3 +1,5 @@
+import { INVITE_ERROR_COPY } from "@/lib/invite-copy";
+
 import type { ApiErrorBody } from "./types";
 
 /** 백엔드 호출 규칙을 한 군데로 모은다. */
@@ -29,6 +31,10 @@ const COMMON_MESSAGE: Record<string, string> = {
   CONSENT_REQUIRED: "보호자 동의가 필요해요.",
   NOT_MEASURABLE: "만 4세부터 측정할 수 있어요.",
   TEMPORARILY_UNAVAILABLE: "지금은 연결이 어려워요.",
+  FAMILY_NOT_FOUND: "가족을 찾지 못했어요. 화면을 새로 불러 주세요.",
+  UNDER_14_NOT_ALLOWED: "보호자는 만 14세부터 될 수 있어요.",
+  // 초대 코드 — 없음, 기한 지남, 이미 씀, 이미 이 가족, 이미 다른 가족, 취소된 초대
+  ...INVITE_ERROR_COPY,
 };
 
 /** 토큰을 담아 두는 저장소 이름. auth-store 가 이 이름으로 persist 한다 */
@@ -37,7 +43,15 @@ export const AUTH_STORAGE_KEY = "ff-auth";
 let accessToken: string | null = null;
 
 /** 로그인 후 받은 토큰을 메모리에 둔다. 새로고침하면 저장소(ff-auth)에서 다시 읽는다(currentToken) */
+/**
+ * 로그인 한 판의 번호. 밖에서 토큰을 바꾸면(로그인 · 로그아웃) 판이 바뀐다 — 그 전에 나간 새로 받기가
+ * 늦게 돌아와도 토큰을 되살리지 않게. 로그아웃 직후 늦게 온 새 토큰이 저장소에 다시 적혀, 공용 태블릿의
+ * 다음 사람이 앞 가족으로 들어갈 수 있었다(9/30 보안 점검).
+ */
+let generation = 0;
+
 export function setAccessToken(token: string | null) {
+  generation += 1;
   accessToken = token;
 }
 
@@ -116,6 +130,7 @@ function refreshOnce(): Promise<boolean> {
   if (refreshing) return refreshing;
   const token = savedRefreshToken();
   if (!token) return Promise.resolve(false);
+  const started = generation;
   refreshing = fetch(`${BASE}/auth/refresh`, {
     method: "POST",
     credentials: "include",
@@ -129,6 +144,8 @@ function refreshOnce(): Promise<boolean> {
         refreshToken?: string;
       } | null;
       if (!body?.accessToken) return false;
+      // 그 사이 로그아웃했거나 다른 계정이 들어왔다 — 옛 판의 토큰을 적지 않는다
+      if (generation !== started) return false;
       accessToken = body.accessToken;
       persistTokens(body.accessToken, body.refreshToken ?? token);
       tokenSink?.({ accessToken: body.accessToken, refreshToken: body.refreshToken ?? token });

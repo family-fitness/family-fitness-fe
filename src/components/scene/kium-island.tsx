@@ -198,7 +198,18 @@ export function KiumIsland({
         if (grow) island.sprout(now);
         if (unveil) island.reveal(now);
       };
+      /** 마지막으로 그린 때 — 천천히 도는 것만 남았으면 반만 그린다 */
+      let drawnAt = 0;
       const frame = (now: number) => {
+        // 로그인 첫 화면처럼 천천히 도는 것만 남았으면 초당 30장이면 된다 — 60장을 계속 그리면 배터리만 먹었다(9/30 성능 점검).
+        // 도는 빠르기는 그대로다(지난 그림부터 흐른 시간만큼 돈다). 손으로 돌리거나 자라는 동안은 다 그린다
+        const onlySpin =
+          spin === "auto" && !dragging && !turn && Math.abs(velocity) < 0.002 && !island.busy();
+        if (onlySpin && now - drawnAt < 30) {
+          raf = requestAnimationFrame(frame);
+          return;
+        }
+        drawnAt = now;
         const dt = Math.min(0.05, (now - last) / 1000);
         last = now;
         if (turn && !dragging) {

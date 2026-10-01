@@ -27,7 +27,7 @@ interface TodayActivity {
 
 /** 아무것도 정해 두지 않은 날의 목표(분). 「주말 30분부터」 보다 가볍게 */
 const DEFAULT_GOAL = 20;
-/** 운동할 수 있는 시간을 적어 두지 않았을 때 한 주에 움직일 날 */
+/** 운동 루틴을 적어 두지 않았을 때 한 주에 움직일 날 */
 const DEFAULT_DAYS = 3;
 
 export function todayActivity({

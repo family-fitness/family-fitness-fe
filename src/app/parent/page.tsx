@@ -1,25 +1,23 @@
 "use client";
 
-import { Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { HomeHeader } from "@/components/app-shell/home-header";
+import { ParentHeadActions } from "@/components/app-shell/parent-head-actions";
 import { Stage } from "@/components/app-shell/stage";
 import { Button } from "@/components/ui/button";
 import { ErrorState } from "@/components/ui/error-state";
-import { IconLink } from "@/components/ui/icon-link";
 import { Illustration } from "@/components/ui/illustration";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { ChildPanel } from "@/components/domain/child-panel";
 import { InviteSheet } from "@/components/domain/invite-sheet";
+import { WelcomeSheet } from "@/components/domain/welcome-sheet";
 import { KidsOverview } from "@/components/domain/kids-overview";
-import { ChildPill } from "@/components/domain/child-pill";
 import { StreakChip } from "@/components/domain/streak-chip";
 import { ClipShelf } from "@/components/domain/clip-shelf";
-import { NotificationBell } from "@/components/domain/notification-bell";
 import { PanelCell, PanelCells, WeekPanel, weekTotals } from "@/components/domain/week-panel";
 import {
   useCalendar,
@@ -67,7 +65,7 @@ export default function ParentHomePage() {
 
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const setChild = useRoleStore((s) => s.setChild);
-  // 초대하기 — 가족 대시보드와 같은 시트. 홈에서 바로 연다(9/25 「초대코드 생성하는 건 어디 갔어?」)
+  // 초대하기 — 가족 대시보드와 같은 시트. 홈에서 바로 연다(9/25 「초대 코드 생성하는 건 어디 갔어?」)
   const { data: family } = useFamilyProfiles(familyId);
   const [inviting, setInviting] = useState(false);
 
@@ -101,16 +99,8 @@ export default function ParentHomePage() {
       title={map?.familyName ?? "우리집"}
       // 가족 이름을 누르면 가족 대시보드 — 가족 전체를 한 화면에서
       titleHref="/parent/dashboard"
-      actions={
-        <>
-          {/* 보고 있는 아이 — 오른쪽 위 이름 알약(닥터아이처럼). 여럿이면 여기서 바로 바꾼다 */}
-          <ChildPill kids={children} selectedId={child?.profileId} onSelect={setChild} />
-          <NotificationBell profileId={profile?.profileId ?? undefined} />
-          <IconLink href="/settings" label="설정">
-            <Settings className="size-6" strokeWidth={1.8} />
-          </IconLink>
-        </>
-      }
+      // 아이 바꾸기 알약은 뺐다. 화면을 내리면 따라오지 않았고, 바로 아래 「우리 아이」 에서 아이를 고른다
+      actions={<ParentHeadActions />}
     />
   );
 
@@ -140,7 +130,7 @@ export default function ParentHomePage() {
       <>
         {header}
         <Stage className="flex flex-col items-center pt-10 text-center">
-          <Illustration name="scene/kiumi-no-record" size={150} />
+          <Illustration name="scene/kiumi-hello" size={150} />
           <h2 className="mt-4 text-xl font-extrabold">아이를 등록해 주세요</h2>
           <Button size="md" className="mt-5" onClick={() => router.push("/start/child")}>
             아이 등록하기
@@ -196,11 +186,11 @@ export default function ParentHomePage() {
               label="캘린더"
               art={<ArtIcon name="icon/menu-calendar" className="size-9" />}
             />
-            {/* 다른 가족들과 겨루는 자리. 운동 찾기는 아래 영상 줄 머리와 「직접 짜서 더하기」 에 있다.
+            {/* 다른 가족들과 겨루는 자리. 운동 찾기는 아래 영상 줄 머리와 「직접 만들어 더하기」 에 있다.
                 리그를 못 받으면(서버에 아직 없으면) 칸을 두지 않는다 — 누르면 오류 화면이다 */}
             {!leagueError && (
               <PanelCell
-                href="/parent/league?from=home"
+                href="/parent/league"
                 label="가족 리그"
                 note={leagueNote(league)}
                 art={
@@ -238,6 +228,8 @@ export default function ParentHomePage() {
         members={family?.profiles ?? []}
         loading={!family}
       />
+      {/* 처음 들어올 때 한 번 — 사용법 세 줄 */}
+      <WelcomeSheet who="parent" />
     </>
   );
 }
@@ -261,6 +253,8 @@ function ParentHomeSkeleton() {
 /** 「이번 주」 머리 곁말 — 합친 분 · 운동한 날 */
 function weekMeta(days: string[], logs: Parameters<typeof weekTotals>[1]) {
   const t = weekTotals(days, logs);
+  // 아직 운동한 날이 없으면 비운다. 「0일, 0분 운동」 은 못 한 주처럼 읽힌다(묶음 안의 키움이가 말한다)
+  if (t.active === 0) return undefined;
   return `${t.active}일, ${t.minutes}분 운동`;
 }
 

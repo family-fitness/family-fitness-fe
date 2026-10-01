@@ -23,6 +23,8 @@ const ROUTES = {
     "/parent/family",
     "/parent/dashboard",
     "/parent/league",
+    "/parent/workout",
+    "/parent/records",
     `/parent/child/${KID}`,
     `/parent/sticker/${KID}`,
     "/calendar",
@@ -54,6 +56,8 @@ const found = [];
  */
 async function checkRoute(mode, route) {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  // 처음 한 번 뜨는 환영 안내는 본 것으로 — 화면을 덮으면 누를 것을 못 누른다
+  await ctx.addInitScript(() => localStorage.setItem("ff-welcome", "parent,kid"));
   await ctx.addInitScript(
     ([m, kid]) => {
       // 이 기기에 남는 고른 값(소리 안내 …)은 탭끼리 나눠 쓴다 — 앞 탭에서 누른 것이

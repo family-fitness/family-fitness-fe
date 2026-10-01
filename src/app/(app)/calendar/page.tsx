@@ -6,7 +6,7 @@ import { Suspense } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, EmptyStateAction } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,25 +15,26 @@ import { DayRings } from "@/components/domain/day-rings";
 import { StickerArt } from "@/components/domain/sticker-art";
 import type { DayLog } from "@/lib/api/types";
 import { useCalendar, useFitnessMap, useMissions } from "@/lib/api/queries";
-import { daySummary, plannedDay } from "@/lib/day";
+import { daySummary, isOpenMonth, plannedDay } from "@/lib/day";
 import { useSession } from "@/lib/session";
 import { stickerOf } from "@/lib/stickers";
 import { longDate, monthGrid, monthLabel, monthOf, shiftMonth, today } from "@/lib/today";
 import { cn } from "@/lib/utils";
 import { useIsKidView } from "@/lib/view-role";
 import { useRoleStore } from "@/stores/role-store";
+import { useTabStore } from "@/stores/tab-store";
 
 /**
  * 캘린더 — 부모와 아이가 같이 본다.
  *
- * 한 달이 작은 링으로 찬다(애플 피트니스의 달력처럼). 링은 하루 기록과 같은 둘 — 움직인 시간 · 끝낸 운동.
+ * 한 달이 작은 링으로 찬다(애플 피트니스의 달력처럼). 링은 하루 기록과 같은 둘 — 운동 시간 · 완료한 운동.
  * 받은 스티커는 그날 칸 모서리에 붙는다. **날을 누르면 그날의 하루 기록**(`/calendar/[날짜]`)으로 간다.
- * 달 아래에는 그 달을 칸 셋으로 — 운동한 날 · 움직인 시간 · 받은 칭찬(아이 기록과 같은 이름).
+ * 달 아래에는 그 달을 칸 셋으로 — 운동한 날 · 운동 시간 · 받은 칭찬(아이 기록과 같은 이름).
  *
  * **아무것도 안 한 날은 빈 칸이다.** 「빠진 날」 이라고 쓰지 않는다 — 쉰 날은 쉰 날이다.
  * 부모는 아이를 골라 보고, 아이는 자기 것만 본다. 달은 주소에 둔다(`?month=`).
  *
- * **앞으로의 날에는 잡아 둔 운동이 점선 고리로 보인다** — 직접 짜기에서 여러 날에 넣은 것.
+ * **앞으로의 날에는 잡아 둔 운동이 점선 고리로 보인다** — 직접 만들기에서 여러 날에 넣은 것.
  * 다음 달까지만 넘겨 본다.
  */
 export default function CalendarPage() {
@@ -66,10 +67,9 @@ function Calendar() {
   const suffix = asked && asked === who?.profileId ? `?profileId=${encodeURIComponent(asked)}` : "";
 
   const now = today();
-  // 주소창 값은 믿지 않는다 — 모양이 틀리면 이번 달로
+  // 주소창 값은 믿지 않는다 — 모양이 틀리거나 볼 수 없는 달(2020년 앞 · 다음 달 뒤)이면 이번 달로
   const askedMonth = params.get("month");
-  const month =
-    askedMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(askedMonth) ? askedMonth : monthOf(now);
+  const month = isOpenMonth(askedMonth, now) ? askedMonth : monthOf(now);
   const grid = monthGrid(month);
 
   const {
@@ -93,7 +93,9 @@ function Calendar() {
       scroll: false,
     });
 
-  const back = kidView ? "/kid" : "/parent";
+  // 부모는 들어온 탭으로 돌아간다. 기록 탭에서 왔으면 기록 탭, 홈에서 왔으면 홈
+  const parentBack = useTabStore((s) => s.last);
+  const back = kidView ? "/kid" : parentBack;
   const failure = sessionError ?? (map ? null : mapError);
   if (failure) {
     return (
@@ -117,7 +119,8 @@ function Calendar() {
         <AppBar backHref={back} title="캘린더" />
         <Stage wide>
           <EmptyState
-            scene="no-record"
+            // 「측정 전」 키움이가 아니다. 아이 화면은 다른 화면처럼 기다리는 키움이, 부모는 인사하는 키움이
+            scene={kidView ? "waiting" : "hello"}
             title={kidView ? "누구인지 골라 주세요" : "아이를 등록해 주세요"}
             action={
               <NavLink
@@ -141,6 +144,9 @@ function Calendar() {
   // 받아 둔 기록이 있으면 다시 받다 실패해도 그대로 — 칸은 그려져 있는데 합만 「—」 가 됐다
   const failedCalendar = Boolean(calendarError) && !calendar;
   const tileState = failedCalendar ? "error" : calendarPending ? "pending" : "ready";
+  // 이 달에 운동한 날도 받은 칭찬도 없다. 「0일」 「0분」 칸 대신 키움이를 세운다(달력은 두어 날을 눌러 들어가게).
+  // 다음 달은 아직 올 기록이 없는 달이라 칸도 키움이도 두지 않는다
+  const emptyMonth = tileState === "ready" && days.length === 0 && stickers === 0;
 
   return (
     <>
@@ -202,7 +208,13 @@ function Calendar() {
                     future={date > now}
                     isToday={date === now}
                     loading={calendarPending}
-                    onPick={() => router.push(`/calendar/${date}${suffix}`)}
+                    // 달력에서 왔다고 적어 둔다 — 하루 기록의 뒤로가 홈이 아니라 이 달력으로 돌아온다
+                    onPick={() =>
+                      router.push(
+                        `/calendar/${date}?from=calendar${suffix ? `&${suffix.slice(1)}` : ""}`,
+                        { transitionTypes: ["nav-forward"] },
+                      )
+                    }
                   />
                 )}
               </li>
@@ -213,14 +225,19 @@ function Calendar() {
             className="text-caption text-ink-soft mt-3 flex justify-center gap-4 font-semibold"
             aria-hidden
           >
-            <li className="flex items-center gap-1.5">
-              <span className="bg-signal size-2 rounded-full" />
-              움직인 시간
-            </li>
-            <li className="flex items-center gap-1.5">
-              <span className="bg-mark size-2 rounded-full" />
-              끝낸 운동
-            </li>
+            {/* 링이 하나도 없는 달에는 링 범례를 두지 않는다. 없는 것을 범례에 두면 찾게 된다 */}
+            {days.length > 0 && (
+              <>
+                <li className="flex items-center gap-1.5">
+                  <span className="bg-signal size-2 rounded-full" />
+                  운동 시간
+                </li>
+                <li className="flex items-center gap-1.5">
+                  <span className="bg-mark size-2 rounded-full" />
+                  완료한 운동
+                </li>
+              </>
+            )}
             {/* 쉬는 날을 쓴 달에만 — 없는 것을 범례에 두면 찾게 된다 */}
             {[...logs.values()].some((d) => d.rest && monthOf(d.date) === month) && (
               <li className="flex items-center gap-1.5">
@@ -230,20 +247,50 @@ function Calendar() {
             )}
           </ul>
 
-          {/* 이 달 — 칸 셋(칭찬을 받은 달) · 둘. 둥근 회색 면 없이 선으로 나눈다(이번 주 칸과 같다) */}
-          <div className="divide-line border-line mt-4 grid auto-cols-fr grid-flow-col divide-x border-t pt-4">
-            <MonthTile label="운동한 날" value={days.length} unit="일" state={tileState} />
-            <MonthTile label="움직인 시간" value={total} unit="분" state={tileState} />
-            {/* 칭찬은 받은 달에만 칸으로 — 0장을 적어 두면 못 받은 달이 된다(규칙 12) */}
-            {(stickers > 0 || tileState !== "ready") && (
-              <MonthTile label="받은 칭찬" value={stickers} unit="장" state={tileState} />
-            )}
-          </div>
+          {emptyMonth ? (
+            month < monthOf(now) ? (
+              // 지난달은 「빠진 달」 이 아니다. 기록이 없다고만 말한다
+              <EmptyState
+                size="card"
+                scene="no-mission"
+                title="이 달에는 운동 기록이 없어요"
+                className="border-line mt-4 border-t"
+              />
+            ) : month === monthOf(now) ? (
+              <EmptyState
+                size="card"
+                scene="no-mission"
+                title="이번 달 운동 기록이 아직 없어요"
+                description="운동한 날에는 달력에 기록이 채워져요"
+                // 아이는 운동을 만들 수 없다. 운동을 받는 길은 부모 화면에만
+                action={
+                  !kidView && (
+                    <EmptyStateAction
+                      href={`/plan?profileId=${encodeURIComponent(who.profileId ?? "")}`}
+                    >
+                      AI 운동 추천 받기
+                    </EmptyStateAction>
+                  )
+                }
+                className="border-line mt-4 border-t"
+              />
+            ) : null
+          ) : (
+            /* 이 달 — 칸 셋(칭찬을 받은 달) · 둘. 둥근 회색 면 없이 선으로 나눈다(이번 주 칸과 같다) */
+            <div className="divide-line border-line mt-4 grid auto-cols-fr grid-flow-col divide-x border-t pt-4">
+              <MonthTile label="운동한 날" value={days.length} unit="일" state={tileState} />
+              <MonthTile label="운동 시간" value={total} unit="분" state={tileState} />
+              {/* 칭찬은 받은 달에만 칸으로 — 0장을 적어 두면 못 받은 달이 된다(규칙 12) */}
+              {(stickers > 0 || tileState !== "ready") && (
+                <MonthTile label="받은 칭찬" value={stickers} unit="장" state={tileState} />
+              )}
+            </div>
+          )}
           {failedCalendar && (
             <button
               type="button"
               onClick={() => void refetchCalendar()}
-              className="press text-ink-soft mt-3 min-h-10 w-full text-sm font-bold"
+              className="press text-ink-soft mt-3 min-h-11 w-full text-sm font-bold"
             >
               기록을 불러오지 못했어요. 누르면 다시 불러와요
             </button>
@@ -288,8 +335,9 @@ function DayCell({
       onClick={onPick}
       // 앞날은 운동을 잡아 둔 날만 연다 — 하루 기록도 앞날은 잡아 둔 날만 간다. 쉬는 날은 흐리지 않고 칠만 한다
       disabled={future && !planned}
+      aria-current={isToday ? "date" : undefined}
       // 링 둘이 말하는 것을 다 읽어 준다 — 범례는 화면 읽기에서 숨어 있다
-      aria-label={`${longDate(date)}${rest ? ", 쉬는 날" : ""}${moved ? `, 움직인 시간 ${moved.minutes}분, 끝낸 운동 ${summary.done}개` : ""}${sticker ? `, ${sticker.label} 스티커` : ""}${planned && !moved ? ", 운동이 잡혀 있어요" : ""}`}
+      aria-label={`${longDate(date)}${rest ? ", 쉬는 날" : ""}${moved ? `, 운동 시간 ${moved.minutes}분, 완료한 운동 ${summary.done}개` : ""}${sticker ? `, ${sticker.label} 스티커` : ""}${planned && !moved ? ", 운동이 잡혀 있어요" : ""}`}
       className={cn(
         "press relative grid size-11 place-items-center rounded-full",
         isToday && "bg-signal-soft",

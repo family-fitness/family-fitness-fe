@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { SessionError } from "@/components/app-shell/session-error";
 import { ChoiceButton, WizardShell, WizardSkeleton } from "@/components/app-shell/wizard";
+import { radioKeys } from "@/components/ui/radio-keys";
 import { ArtIcon } from "@/components/ui/art-icon";
 import { useBackSheet } from "@/components/ui/use-back-sheet";
 import { Illustration } from "@/components/ui/illustration";
@@ -24,7 +25,7 @@ import {
 import { bodyError, bodyValue, rangeHint } from "@/lib/body";
 import { type DateRule, childBirthRule, guardianBirthRule } from "@/lib/date-pick";
 import { errorMessage } from "@/lib/errors";
-import { NEED_CHILD_COPY } from "@/lib/family";
+import { NEED_CHILD_COPY, NEW_ACCOUNT_PATH } from "@/lib/family";
 import type { ConsentKind } from "@/lib/legal";
 import {
   CREATE_AT,
@@ -40,12 +41,12 @@ import { useBodyStore } from "@/stores/body-store";
 import { useRoleStore } from "@/stores/role-store";
 
 /*
-  첫 시작 — 가입부터 아이 등록, 참여 방식, 운동할 수 있는 시간, 첫 측정까지 한 흐름.
+  첫 시작 — 가입부터 아이 등록, 참여 방식, 운동 루틴, 첫 측정까지 한 흐름.
 
   묻는 것은 앱이 실제로 쓰는 것만이다.
     가족 이름, 보호자 이름, 성별(국민체력100 기준), 생년월일(또래)
     아이 이름, 생일(연령대 항목), 성별, 키, 몸무게, 보호자 동의(만 14세 미만)
-    참여 방식(코치 편성), 운동할 수 있는 시간(코치 기본 시간), 첫 측정(육각형, 코치)
+    참여 방식(코치 편성), 운동 루틴(코치 기본 시간), 첫 측정(육각형, 코치)
   「운동 수준」 처럼 앱이 쓰지 않는 것은 묻지 않는다. 사진은 설정과 가족 관리에서 올린다.
 
   화면 차례는 `lib/onboarding` 에 있다. 가족 화면이 먼저고 아이는 그 뒤다. 같은 사람에게 묻는 것은 한 화면에 묶었다
@@ -88,6 +89,12 @@ const SUPPORT: { value: SupportMode; title: string; art: string }[] = [
   },
   { value: "FULL", title: "매번 같이", art: "icon/mode-full" },
 ];
+
+/**
+ * 첫 시작의 칸 번호를 브라우저 기록에 얹는다 — Next 의 기록(__NA · 트리)은 그대로 둔 채.
+ * `__wiz` 는 이번에 뜬 첫 시작의 표, `__depth` 는 그 안에서 몇째 칸인지
+ */
+type StepMark = { __step?: number; __wiz?: string; __depth?: number } | null;
 
 export function Onboarding({ mode }: { mode: "family" | "child" }) {
   const router = useRouter();
@@ -165,9 +172,31 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
   // 새로고침 전에 아이를 만들었으면 그다음 화면부터
   const [at, setAt] = useState(() => (resume ? Math.max(0, steps.indexOf("together")) : 0));
   const step: OnboardingStep = steps[Math.min(at, steps.length - 1)];
-  const go = (d: number) => {
+  /** 이번에 뜬 첫 시작의 표 — 새로고침 전에 쌓인 칸(적은 것이 이미 사라졌다)과 가른다 */
+  const session = useRef("");
+  /** 지금 기록 칸의 표시 — 이번 첫 시작이 쌓은 것일 때만 */
+  const markHere = () => {
+    const mark = window.history.state as StepMark;
+    return mark?.__wiz === session.current ? mark : null;
+  };
+  /**
+   * 한 화면 앞으로 — 브라우저 기록에도 한 칸 쌓는다. 쌓지 않으면 폰의 뒤로가 첫 시작 밖으로 나가
+   * 적은 것을 다 잃었다(9/30 점검). 누른 자리에서 쌓는다 — 누르지 않고 쌓은 칸은 브라우저가 건너뛴다
+   */
+  const forward = (to: number) => {
     setProblem(null);
-    setAt((i) => Math.max(0, Math.min(steps.length - 1, i + d)));
+    const n = Math.max(0, Math.min(steps.length - 1, to));
+    if (n === at) return;
+    window.history.pushState(
+      {
+        ...(window.history.state ?? {}),
+        __step: n,
+        __wiz: session.current,
+        __depth: (markHere()?.__depth ?? 0) + 1,
+      },
+      "",
+    );
+    setAt(n);
   };
   // 가족, 아이를 만든 뒤에는 그 앞으로 돌아가지 않는다(두 번 만들지 않게). 아이만 못 만들었으면 아이 화면까지는 고친다
   const firstEditable = childId
@@ -182,18 +211,68 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
     roleMode !== "kid" &&
     family != null &&
     !family.profiles?.some((p) => p.role === "CHILD");
+  // 가족 만들기의 첫 화면에서 뒤로 가면 새 가족 만들기와 초대 코드로 참여하기를 고르는 화면으로
   const exit = () =>
     router.replace(
-      noChildYet ? "/settings" : mode === "child" && roleMode !== "kid" ? "/parent" : "/start",
+      noChildYet
+        ? "/settings"
+        : mode === "family"
+          ? NEW_ACCOUNT_PATH
+          : roleMode !== "kid"
+            ? "/parent"
+            : "/start",
     );
+  /** 화면의 「뒤로」 — 기록에 쌓인 칸이면 폰의 뒤로와 같은 길로 간다. 둘이 어긋나면 폰의 뒤로가 한 번 헛돈다 */
+  const stepBack = () => {
+    if (markHere()?.__step === at) {
+      window.history.back();
+      return;
+    }
+    setProblem(null);
+    setAt((i) => Math.max(0, i - 1));
+  };
   const back =
     step === "done"
       ? undefined
       : at > firstEditable
-        ? () => go(-1)
+        ? stepBack
         : at === 0 && !childId
           ? exit
           : undefined;
+
+  // 폰이나 브라우저의 뒤로는 쌓아 둔 칸으로 돌아간다. 가족과 아이를 만든 앞 화면으로는 가지 않는다(두 번 만들지 않게)
+  const floor = useRef(firstEditable);
+  useEffect(() => {
+    floor.current = firstEditable;
+  }, [firstEditable]);
+  useEffect(() => {
+    session.current = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+    window.history.replaceState(
+      { ...(window.history.state ?? {}), __step: at, __wiz: session.current, __depth: 0 },
+      "",
+    );
+    const onPop = () => {
+      const mark = window.history.state as StepMark;
+      if (typeof mark?.__step !== "number") return;
+      if (mark.__wiz !== session.current) {
+        // 새로고침 전에 쌓인 칸 — 적은 것이 사라져 돌아갈 칸이 없다(빈 칸으로 가면 빈 이름으로 가족을 만든다).
+        // 첫 시작에 들어오기 전으로 한 번에 나간다
+        window.history.go(-((mark.__depth ?? 0) + 1));
+        return;
+      }
+      if (mark.__step < floor.current) {
+        // 만든 앞 화면이다 — 한 칸 앞으로 되돌려 그 자리에 남는다
+        window.history.forward();
+        return;
+      }
+      setProblem(null);
+      setAt(mark.__step);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+    // 처음 칸을 한 번 적어 두고 듣기만 한다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 가족이 이미 있는데 가족 만들기가 처음부터 떴다 — 새로고침이다. 다시 만들면 「이미 가족이 있어요」 에 갇힌다
   const hadFamily =
@@ -281,7 +360,13 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       setChild(id || null);
       setMode("parent");
       // 새로고침해도 이 아이로 이어 가게 — 처음부터 다시 적으면 아이가 둘이 된다
-      if (id) window.history.replaceState(null, "", `?child=${encodeURIComponent(id)}`);
+      // 칸 번호는 남긴다 — 지우면 폰의 뒤로가 이 칸에서 한 번 헛돈다
+      if (id)
+        window.history.replaceState(
+          { ...(window.history.state ?? {}), __step: at },
+          "",
+          `?child=${encodeURIComponent(id)}`,
+        );
       // 이 기기에만 두는 것(키, 몸무게)은 따로 — 저장소가 가득 차 못 적어도 아이는 이미 만들어졌다
       try {
         // 서버가 키, 몸무게를 따로 받지 못한다 — 첫 측정 때 같이 보낸다(BACKEND_ASKS)
@@ -357,7 +442,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
       finish(measurable);
       return;
     }
-    go(1);
+    forward(at + 1);
   };
 
   // 다음으로 갈 수 있나 — 화면마다
@@ -455,7 +540,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
                 label="가족 이름"
                 value={familyName}
                 onChange={setFamilyName}
-                placeholder="서준이네"
+                placeholder="튼튼 가족"
                 autoFocus
               />
             </Field>
@@ -468,7 +553,12 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
               />
             </Field>
             <Field label="보호자님 성별" as="div">
-              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="보호자 성별">
+              <div
+                className="grid grid-cols-2 gap-2"
+                role="radiogroup"
+                aria-label="보호자 성별"
+                onKeyDown={radioKeys}
+              >
                 <ChoiceButton selected={meSex === "F"} onClick={() => setMeSex("F")} title="여성" />
                 <ChoiceButton selected={meSex === "M"} onClick={() => setMeSex("M")} title="남성" />
               </div>
@@ -512,7 +602,12 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
               />
             </Field>
             <Field label="성별" as="div">
-              <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="아이 성별">
+              <div
+                className="grid grid-cols-2 gap-2"
+                role="radiogroup"
+                aria-label="아이 성별"
+                onKeyDown={radioKeys}
+              >
                 <ChoiceButton
                   selected={kidSex === "F"}
                   onClick={() => setKidSex("F")}
@@ -560,10 +655,13 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
                     multi
                     selected={consent.personalData}
                     onClick={() => setConsent((c) => ({ ...c, personalData: !c.personalData }))}
-                    title="개인정보 처리에 동의해요"
+                    title="개인정보 수집 및 이용 동의(필수)"
                   />
                   <div className="flex">
-                    <TermsLink label="개인정보 처리" onClick={() => terms.show("personal")} />
+                    <TermsLink
+                      label="개인정보 수집 및 이용"
+                      onClick={() => terms.show("personal")}
+                    />
                   </div>
                 </div>
                 <div>
@@ -571,7 +669,7 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
                     multi
                     selected={consent.healthData}
                     onClick={() => setConsent((c) => ({ ...c, healthData: !c.healthData }))}
-                    title="건강정보 처리에 동의해요"
+                    title="민감정보(건강정보) 처리 동의(필수)"
                   />
                   <div className="flex">
                     <TermsLink label="건강정보 처리" onClick={() => terms.show("health")} />
@@ -654,7 +752,12 @@ export function Onboarding({ mode }: { mode: "family" | "child" }) {
                 <legend className="text-ink-soft text-sm font-bold">
                   보호자님은 얼마나 같이 하실래요?
                 </legend>
-                <div className="mt-2 space-y-2" role="radiogroup" aria-label="참여 방식">
+                <div
+                  className="mt-2 space-y-2"
+                  role="radiogroup"
+                  aria-label="참여 방식"
+                  onKeyDown={radioKeys}
+                >
                   {SUPPORT.map((s) => (
                     <ChoiceButton
                       key={s.value}
@@ -740,7 +843,7 @@ function BigInput({
       placeholder={placeholder}
       autoFocus={autoFocus}
       enterKeyHint="next"
-      className="field text-xl font-bold"
+      className="field text-xl font-bold placeholder:font-normal"
     />
   );
 }
@@ -787,6 +890,8 @@ function UnitInput({
   /** 범위를 벗어나면 까닭 한 줄 — 「다음」 이 왜 안 눌리는지 */
   problem: string | null;
 }) {
+  // 도움말 · 범위를 벗어난 까닭 줄 — 칸에 잇고, 바뀌면 화면 읽기가 읽는다(말없이 글자만 바뀌었다)
+  const noteId = useId();
   return (
     <label className="block">
       <span className="text-ink-soft text-sm font-bold">{label}</span>
@@ -797,17 +902,20 @@ function UnitInput({
           step="0.1"
           aria-label={label}
           aria-invalid={problem != null}
+          aria-describedby={noteId}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           enterKeyHint="next"
-          className="field pr-14 text-xl font-bold"
+          className="field pr-14 text-xl font-bold placeholder:font-normal"
         />
         <span className="text-ink-soft absolute top-1/2 right-4 -translate-y-1/2 text-base font-bold">
           {unit}
         </span>
       </span>
       <span
+        id={noteId}
+        aria-live="polite"
         className={cn(
           "text-caption mt-1 block",
           problem ? "text-signal-deep font-bold" : "text-faint",

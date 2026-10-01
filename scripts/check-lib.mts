@@ -18,7 +18,7 @@ import {
   zoneOf,
 } from "@/lib/league";
 import { NO_PEER_NORMS_NOTE, memberNoPeerNormsNote, noPeerNormsNote } from "@/lib/fitness-factors";
-import { VERIFIED_COPY } from "@/lib/mission";
+import { VERIFIED_COPY, familyToday, partAction, partLine, partOf, playLock } from "@/lib/mission";
 import { projectOrtho } from "@/lib/ortho";
 import { withJosa } from "@/lib/utils";
 import {
@@ -38,6 +38,7 @@ import {
   daySummary,
   dayWork,
   didSomething,
+  isOpenMonth,
   isRealDate,
   missionsOn,
   missionTitle,
@@ -69,6 +70,7 @@ import {
   canRemoveMember,
   familySetupPath,
   guardiansName,
+  NEW_ACCOUNT_CHOICES,
   mustAddChild,
   mustSetUpFamily,
   openWithoutChild,
@@ -81,8 +83,23 @@ import {
   onboardingSteps,
 } from "@/lib/onboarding";
 
-import { PRIVACY_HREF, PRIVACY_POLICY, TERMS_HREF, TERMS_OF_SERVICE } from "@/lib/legal";
-import { REVIEW_WAYS, afterSignIn, reviewDestination } from "@/lib/review-login";
+import {
+  CONSENT_TERMS,
+  OFFICER_PENDING,
+  PRIVACY_HREF,
+  PRIVACY_OFFICER,
+  PRIVACY_POLICY,
+  TERMS_HREF,
+  TERMS_OF_SERVICE,
+} from "@/lib/legal";
+import { verifiedLabel } from "@/lib/mission";
+import {
+  REVIEW_WAYS,
+  UNUSED_INVITE_COPY,
+  afterSignIn,
+  reviewDestination,
+  unusedInvite,
+} from "@/lib/review-login";
 import {
   childBirthRule,
   guardianBirthRule,
@@ -101,10 +118,37 @@ import {
   cameAfterWithdrawal,
   withdrawalCase,
 } from "@/lib/withdrawal";
+import { homeOf, modeFor } from "@/lib/role-mode";
+import { PARENT_TABS, parentTabOf } from "@/lib/parent-tabs";
+
+import { ApiError } from "@/lib/api/client";
+import {
+  CLAIM_ERROR_COPY,
+  INVITE_ROLE_NAME,
+  blocksClaim,
+  claimBody,
+  claimErrorMessage,
+  familyInviteBody,
+  inviteBirthRule,
+  inviteCodeTitle,
+  inviteLink,
+  invitePeekLine,
+  inviteShareText,
+  isFamilyInvite,
+  joinButtonLabel,
+  joinProblem,
+  joinReady,
+  normalizeCode,
+  pendingInviteDetail,
+  pendingInviteTitle,
+} from "@/lib/invite";
 
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { BAND_COPY, FOCUS_COPY } from "@/lib/api/types";
+import { MEMO_MAX, oneLine } from "@/lib/stickers";
+import { aloneKids, aloneNotice, sharedDays, togetherBlock } from "@/lib/schedule";
+import type { AvailabilitySlot, Weekday } from "@/lib/api/types";
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -231,7 +275,7 @@ check("점수가 같으면 같은 등수", placeAt(table, 2) === 2);
 check("점수가 없는 집은 등수가 없다", placeAt(table, 3) === null);
 check("옛 서버처럼 점수가 없으면 달성률로 센다", placeAt([{ rate: 70 }, { rate: 90 }], 0) === 2);
 
-/* ─── 직접 짜기 ──────────────────────────────────────── */
+/* ─── 직접 만들기 ──────────────────────────────────────── */
 
 const clip = (id: string, phase: ClipView["phase"]): ClipView => ({
   clipId: id,
@@ -362,7 +406,7 @@ const dayLog: DayLog = {
 };
 const day = daySummary(dayLog);
 check(
-  "직접 적은 걸음수는 끝낸 운동으로 세지 않는다(홈 링과 같게)",
+  "직접 적은 걸음수는 완료한 운동으로 세지 않는다(홈 링과 같게)",
   day.total === 4 && day.done === 3,
 );
 check("끝낸 칸의 분만 단계마다", same(day.phases, { WARMUP: 1, MAIN: 8, COOLDOWN: 0 }));
@@ -400,6 +444,23 @@ check(
 check(
   "직접 적어 낸 걸음수는 확인 전에도 한 것으로 보인다",
   didSomething({ ...dayLog.entries[1], completed: false }),
+);
+check(
+  "직접 적은 기록 — 부모가 확인하면 확인함, 모르면 확인 필요(확인된 척하지 않는다)",
+  verifiedLabel("SELF_REPORT", false) === "직접 적었어요(부모 확인함)" &&
+    verifiedLabel("SELF_REPORT", true) === "직접 적었어요(부모 확인 필요)" &&
+    verifiedLabel("SELF_REPORT", undefined) === "직접 적었어요(부모 확인 필요)" &&
+    verifiedLabel("TIMER", false) === "타이머로 확인했어요",
+);
+check(
+  "캘린더가 보여 줄 달 — 2020년 1월부터 다음 달까지, 그 밖(0000-01 · 2031-01)은 아니다",
+  isOpenMonth("2026-10", "2026-09-30") &&
+    isOpenMonth("2020-01", "2026-09-30") &&
+    !isOpenMonth("2026-11", "2026-09-30") &&
+    !isOpenMonth("0000-01", "2026-09-30") &&
+    !isOpenMonth("2031-01", "2026-09-30") &&
+    !isOpenMonth("2026-13", "2026-09-30") &&
+    isOpenMonth("2027-01", "2026-12-15"),
 );
 check("달력에 있는 날", isRealDate("2026-09-23") && isRealDate("2024-02-29"));
 check(
@@ -560,7 +621,7 @@ check(
     finderHref({ factor: null, profileId: undefined }) === "/videos?phase=MAIN",
   );
   check(
-    "아이 칸과 AI 편성 화면의 직접 짜기는 그 아이를 주소에 싣는다",
+    "아이 칸과 AI 편성 화면의 직접 만들기는 그 아이를 주소에 싣는다",
     childFinderHref(kid) === `/videos?profileId=${kid}`,
   );
   check(
@@ -714,8 +775,23 @@ check("보호자가 없으면 「보호자」", guardiansName([]) === "보호자
 
 /* ─── 가족이 없는 계정 ─────────────────────────────────── */
 
-check("가족이 없으면 가족 만들기로 보낸다", familySetupPath("CREATE_FAMILY") === "/start/family");
-check("초대코드로 합류하기 전이면 합류 화면으로 보낸다", familySetupPath("CLAIM") === "/claim");
+check(
+  "가족이 없는 새 계정은 가족 만들기로 곧장 가지 않고 시작을 고르는 화면으로",
+  familySetupPath("CREATE_FAMILY") === "/start/welcome",
+);
+check(
+  "시작을 고르는 화면은 새 가족 만들기와 초대 코드로 참여하기 둘이다",
+  same(
+    NEW_ACCOUNT_CHOICES.map((c) => [c.title, c.href]),
+    [
+      ["새 가족 만들기", "/start/family"],
+      ["초대 코드로 참여하기", "/claim"],
+    ],
+  ) &&
+    NEW_ACCOUNT_CHOICES.every((c) => c.description.trim() !== "" && !/[·—–]/.test(c.description)),
+);
+check("시작을 고르는 화면이 있다", existsSync("src/app/start/welcome/page.tsx"));
+check("초대 코드로 합류하기 전이면 합류 화면으로 보낸다", familySetupPath("CLAIM") === "/claim");
 check(
   "가족이 있거나 아직 모르면 보내지 않는다",
   familySetupPath("HOME") === null &&
@@ -732,7 +808,7 @@ check(
     "/calendar",
     "/plan",
     "/notifications",
-  ].every((p) => mustSetUpFamily({ nextStep: "CREATE_FAMILY", pathname: p }) === "/start/family"),
+  ].every((p) => mustSetUpFamily({ nextStep: "CREATE_FAMILY", pathname: p }) === "/start/welcome"),
 );
 check(
   "합류 전 계정이 부모 홈에 들어오면 합류 화면으로 보낸다",
@@ -975,7 +1051,7 @@ check(
   reviewDestination({ nextStep: "CREATE_FAMILY" }) === "/",
 );
 check(
-  "초대받은 보호자는 받은 초대코드를 채운 합류 화면으로",
+  "초대받은 보호자는 받은 초대 코드를 채운 합류 화면으로",
   reviewDestination({ nextStep: "CREATE_FAMILY", inviteCode: "K7M2QT" }) === "/claim?code=K7M2QT",
 );
 check(
@@ -983,7 +1059,7 @@ check(
   reviewDestination({ nextStep: "CLAIM", inviteCode: "K7M2QT" }) === "/claim?code=K7M2QT",
 );
 check(
-  "초대코드는 주소에 맞게 싸서 붙인다",
+  "초대 코드는 주소에 맞게 싸서 붙인다",
   reviewDestination({ nextStep: "CLAIM", inviteCode: "A B&" }) === "/claim?code=A%20B%26",
 );
 check(
@@ -998,6 +1074,12 @@ check(
     page.includes("REVIEW_WAYS") && page.includes("reviewLogin.mutateAsync(kind)"),
   );
   check("개발용 로그인 묶음은 그대로 둔다", page.includes("개발용으로 구글 없이 들어가기"));
+  check(
+    "로그인 화면에 초대 코드로 시작하는 입구가 있고, 넣은 코드를 들고 구글 로그인으로 간다",
+    page.includes("초대 코드가 있어요") &&
+      page.includes("useInvitePeek") &&
+      page.includes("start(entered)"),
+  );
 }
 
 /* ─── 키울 요인을 부르는 두 이름(결정 7) ─────────────────── */
@@ -1280,38 +1362,771 @@ check(
 
 /* ─── 약관과 방침의 탈퇴 문구가 탈퇴 규칙과 같다 ─────────────────── */
 
+// 약관과 방침은 조문 틀이다(담당자 c2440b9). 조 이름으로 찾아 그 조의 글(항과 호)을 한 줄씩 본다
+const legalLines = (doc: typeof TERMS_OF_SERVICE, title: string) =>
+  (doc.articles.find((a) => a.title === title)?.body ?? []).flatMap((b) =>
+    typeof b === "string"
+      ? [b]
+      : "items" in b
+        ? b.items
+        : b.rows.map((r) => `${r.label} ${r.text}`),
+  );
+/** 한 편의 글 전부(조 이름과 머리글, 부칙 포함) */
+const legalText = (doc: typeof TERMS_OF_SERVICE) => [
+  doc.preamble ?? "",
+  ...doc.articles.flatMap((a) => [a.title, ...legalLines(doc, a.title)]),
+  ...(doc.addendum ?? []),
+];
+const consentText = Object.values(CONSENT_TERMS).flatMap((c) => [
+  c.title,
+  c.lead,
+  c.refusal,
+  ...c.rows.map((r) => `${r.label} ${r.text}`),
+]);
 {
-  const section = (doc: typeof TERMS_OF_SERVICE, heading: string) =>
-    doc.sections.find((s) => s.heading === heading)?.lines ?? [];
-  const terms = section(TERMS_OF_SERVICE, "탈퇴");
-  const keep = section(PRIVACY_POLICY, "보관과 파기");
+  const lines = legalLines;
+  const terms = lines(TERMS_OF_SERVICE, "이용계약의 해지");
+  const keep = lines(PRIVACY_POLICY, "개인정보의 파기 절차 및 방법");
   check(
-    "약관은 언제든 탈퇴할 수 있고 그 사람의 정보를 바로 지운다고 말한다",
-    terms.some((l) => l.includes("언제든 탈퇴할 수 있어요")) &&
-      terms.some((l) => l.includes("그 사람의 정보를 바로 지워요")),
+    "약관은 설정의 계정 탈퇴에서 언제든 탈퇴할 수 있고 그 회원의 정보를 지체 없이 파기한다고 말한다",
+    terms.some((l) => l.includes("언제든지 설정의 계정 탈퇴에서")) &&
+      terms.some((l) => l.includes("그 회원의 정보를 지체 없이 파기")),
     terms.join(" / "),
   );
   check(
-    "약관은 가족을 만든 사람이 다른 구성원을 내보낸 뒤 탈퇴하고 그때 가족 정보도 지운다고 말한다",
+    "약관은 가족을 만든 회원이 다른 구성원을 모두 내보낸 뒤 탈퇴하고 그때 가족 정보도 파기한다고 말한다",
     terms.some(
-      (l) => l.includes("다른 구성원을 모두 내보낸 뒤") && l.includes("가족 정보도 지워요"),
+      (l) => l.includes("다른 구성원을 모두 내보낸 뒤") && l.includes("가족의 정보도 함께 파기"),
     ),
   );
   check(
-    "약관은 한 사람이 탈퇴해도 가족의 정보를 모두 지운다고 말하지 않는다",
-    terms.every((l) => !l.includes("가족의 정보를 지워요")),
+    "약관은 다른 보호자가 없다고 가족과 자녀 정보를 함께 지운다고 말하지 않는다(가족을 만든 회원만 가족을 지운다)",
+    terms.every((l) => !l.includes("다른 보호자가 없으면")),
   );
   check(
-    "방침의 보관과 파기는 내보낸 구성원의 정보도 바로 지운다고 말한다",
-    keep.some((l) => l.includes("내보낸 구성원의 정보도 바로 지워요")) &&
-      terms.some((l) => l.includes("내보낸 구성원의 정보도 바로 지워요")),
+    "방침의 파기와 약관의 해지는 구성원을 내보내면 그 구성원의 프로필과 기록을 지체 없이 파기한다고 말한다",
+    [keep, terms].every((doc) =>
+      doc.some(
+        (l) =>
+          l.includes("구성원을 내보내면") &&
+          l.includes("그 구성원의 프로필과 기록을 지체 없이 파기"),
+      ),
+    ),
     keep.join(" / "),
   );
   check(
-    "탈퇴 문구에 가운데 점과 긴 대시를 쓰지 않는다",
-    [...terms, ...keep].every((l) => !/[·—–]/.test(l)),
+    "방침의 파기와 약관의 해지는 내보낸 구성원의 계정이 남는다고 말한다(BE 는 내보내도 계정을 지우지 않는다)",
+    [keep, terms].every((doc) =>
+      doc.some((l) => l.includes("자기 계정이 있는 회원이면") && l.includes("남으며")),
+    ),
+  );
+  check(
+    "방침의 파기는 탈퇴하면 그 회원의 계정과 프로필, 기록을 지체 없이 파기한다고 말한다",
+    keep.some((l) =>
+      l.includes("탈퇴하면 운영자는 그 회원의 계정과 프로필, 기록을 지체 없이 파기"),
+    ),
+  );
+  check(
+    "약관과 방침은 로그인 화면에서도 볼 수 있다고 적는다(/privacy, /terms)",
+    (TERMS_OF_SERVICE.articles.find((a) => a.title === "약관의 게시와 개정")?.body ?? []).some(
+      (b) => typeof b === "string" && b.includes("로그인 화면과 설정 화면"),
+    ) && (PRIVACY_POLICY.preamble ?? "").includes("로그인 화면과 설정 화면"),
   );
 }
+
+/* ─── 약관, 방침, 동의서는 화면 글이다. 가운데 점과 긴 대시를 쓰지 않는다 ─────────────────── */
+
+{
+  const all = [
+    PRIVACY_POLICY.title,
+    TERMS_OF_SERVICE.title,
+    ...legalText(PRIVACY_POLICY),
+    ...legalText(TERMS_OF_SERVICE),
+    ...consentText,
+  ];
+  const bad = all.filter((l) => /[·—–]/.test(l));
+  check("약관, 방침, 동의서 글에 가운데 점과 긴 대시가 없다", bad.length === 0, bad[0]);
+}
+
+/* ─── 약관과 방침 — 글 안에서 조 번호로 서로 가리키는 곳. 조를 넣거나 빼면 번호가 밀린다 ─── */
+{
+  const article = (doc: { articles: { title: string }[] }, n: number) =>
+    doc.articles[n - 1]?.title ?? "";
+  const says = (doc: typeof TERMS_OF_SERVICE, n: number, ref: string) =>
+    legalLines(doc, article(doc, n)).some((l) => l.includes(ref));
+  check(
+    "건강정보 동의와 방침 제7조(위탁)가 가리키는 방침 제8조는 국외 이전",
+    article(PRIVACY_POLICY, 8) === "개인정보의 국외 이전" &&
+      article(PRIVACY_POLICY, 7) === "개인정보 처리업무의 위탁" &&
+      says(PRIVACY_POLICY, 7, "제8조") &&
+      CONSENT_TERMS.health.rows.some((r) => r.text.includes("개인정보 처리방침 제8조")),
+  );
+  check(
+    "방침 제10조(권리)가 가리키는 방침 제13조는 개인정보 보호책임자",
+    article(PRIVACY_POLICY, 10) === "정보주체와 법정대리인의 권리, 의무 및 행사 방법" &&
+      article(PRIVACY_POLICY, 13) === "개인정보 보호책임자" &&
+      says(PRIVACY_POLICY, 10, "제13조의 개인정보 보호책임자"),
+  );
+  check(
+    "방침 제5조가 가리키는 제1조는 처리 목적",
+    article(PRIVACY_POLICY, 1) === "개인정보의 처리 목적" && says(PRIVACY_POLICY, 5, "제1조"),
+  );
+  check(
+    "약관 제11조와 제12조가 가리키는 제8조는 회원의 의무, 제9조는 측정 결과와 운동",
+    article(TERMS_OF_SERVICE, 8) === "회원의 의무" &&
+      article(TERMS_OF_SERVICE, 9) === "측정 결과와 운동의 성격" &&
+      says(TERMS_OF_SERVICE, 11, "제8조") &&
+      says(TERMS_OF_SERVICE, 12, "제9조"),
+  );
+}
+
+/* ─── 약관, 방침, 동의서가 실제 동작과 같다 ─────────────────── */
+{
+  const policy = legalText(PRIVACY_POLICY);
+  const terms = legalText(TERMS_OF_SERVICE);
+  const transfer = legalLines(PRIVACY_POLICY, "개인정보의 국외 이전");
+  const transferItems = transfer.find((l) => l.startsWith("이전 항목")) ?? "";
+
+  // 보호자가 아이의 동의를 철회하면 BE 가 그 아이의 측정 기록과 운동 기록을 지운다(사용자 결정)
+  check(
+    "동의를 철회하면 그 아동의 건강정보를 지체 없이 파기한다고 방침, 약관, 건강정보 동의서가 함께 말한다",
+    policy.some((l) => l.includes("동의를 철회하면") && l.includes("지체 없이 파기")) &&
+      terms.some((l) => l.includes("동의를 철회하면") && l.includes("지체 없이 파기")) &&
+      CONSENT_TERMS.health.rows.some(
+        (r) => r.text.includes("동의를 철회하면") && r.text.includes("지체 없이 파기"),
+      ),
+  );
+  check(
+    "동의를 철회해도 프로필과 동의 이력은 남는다고 적는다",
+    policy.some((l) => l.includes("프로필") && l.includes("동의 이력") && l.includes("남기")),
+  );
+  // 운영 로그는 30일 뒤 지운다(BE README). 「통신비밀보호법」 3개월은 이 서비스에 맞지 않는다
+  check(
+    "서버 로그 보관은 30일이고 3개월이라고 적지 않는다",
+    policy.some((l) => l.includes("서버 로그") && l.includes("30일")) &&
+      [...policy, ...terms].every((l) => !l.includes("3개월")),
+  );
+  check(
+    "접속 IP 를 데이터베이스에 저장하지 않는다고 적고, 모든 통신이 HTTPS 라고 쓰지 않는다",
+    policy.some((l) => l.includes("접속 IP 주소를 데이터베이스에 저장하지 않습니다")) &&
+      policy.every((l) => !l.includes("모든 통신")),
+  );
+  check(
+    "서버 호스팅(AWS Lightsail, CloudFront)을 처리 위탁으로 적는다",
+    legalLines(PRIVACY_POLICY, "개인정보 처리업무의 위탁").some(
+      (l) => l.includes("Lightsail") && l.includes("CloudFront"),
+    ),
+  );
+  // 운영 AI 서버에는 Anthropic 키만 있다. 한쪽이 실패해도 Google 로 넘기지 않는다
+  check(
+    "국외 이전은 Anthropic 한 곳이고 Google 로 보내지 않는다",
+    transfer.some((l) => l.startsWith("이전받는 자") && l.includes("Anthropic, PBC")) &&
+      transfer.every((l) => !l.includes("Google")) &&
+      CONSENT_TERMS.health.rows.every((r) => !r.text.includes("Google")),
+  );
+  check(
+    "국외로 보내는 항목에 키와 몸무게가 없고, 보내지 않는다고 따로 적는다",
+    transferItems !== "" &&
+      !transferItems.includes("몸무게") &&
+      transfer.some((l) => l.includes("키, 몸무게와 체력 측정값은 전송하지 않으며")),
+    transferItems,
+  );
+  check(
+    "이전받는 자의 보유 기간은 Anthropic API 보관 기준(30일)으로 적는다",
+    transfer.some((l) => l.startsWith("보유 및 이용 기간") && l.includes("30일")),
+  );
+  // 화면 이름(사용자 결정). 「AI 편성」 「직접 짜기」 는 화면에 없는 말이다
+  check(
+    "법적 문서는 「AI 운동 추천」 「직접 만들기」 로 부르고 「AI 편성」 「직접 짜기」 를 쓰지 않는다",
+    [...policy, ...terms, ...consentText].every(
+      (l) => !l.includes("AI 편성") && !l.includes("직접 짜기"),
+    ) &&
+      policy.some((l) => l.includes("「AI 운동 추천 받기」")) &&
+      policy.some((l) => l.includes("「직접 만들기」")),
+  );
+  // 로그인 화면 한 줄로 약관 동의를 받는다(사용자 결정). 약관 제4조가 그 글을 그대로 옮긴다
+  const signInNotice = "로그인하면 이용약관과 개인정보 처리방침에 동의하는 것으로 봅니다";
+  check(
+    "약관 제4조는 로그인 화면의 안내 한 줄로 약관 동의를 받는다고 적는다",
+    legalLines(TERMS_OF_SERVICE, "이용계약의 성립").some((l) =>
+      l.includes(`「${signInNotice}」`),
+    ) && terms.every((l) => !l.includes("이 약관에 동의하고 구글 계정으로 가입")),
+  );
+  check(
+    "법정대리인 동의를 확인하는 방법(동의한 보호자 계정과 일시를 기록)을 적는다",
+    legalLines(PRIVACY_POLICY, "만 14세 미만 아동의 개인정보 처리").some((l) =>
+      l.includes("동의한 보호자의 계정과 동의 일시를 기록"),
+    ),
+  );
+  check(
+    "처리 근거를 동의 없이 처리하는 것과 동의를 받아 처리하는 것으로 나눠 적는다",
+    policy.some((l) => l.startsWith("정보주체의 동의 없이 처리하는 개인정보")) &&
+      policy.some((l) => l.startsWith("정보주체의 동의를 받아 처리하는 개인정보")),
+  );
+}
+
+/* ─── 개인정보 보호책임자 — 값을 지어내지 않는다. 비어 있으면 안내를 띄운다 ─────────────────── */
+{
+  const rows = (
+    PRIVACY_POLICY.articles.find((a) => a.title === "개인정보 보호책임자")?.body ?? []
+  ).flatMap((b) => (typeof b !== "string" && "rows" in b ? b.rows : []));
+  const name = PRIVACY_OFFICER.name.trim();
+  const contact = PRIVACY_OFFICER.contact.trim();
+  check(
+    "보호책임자 표는 정한 값만 보이고, 비어 있으면 「지정 후 이 방침에 공개합니다」 를 보인다",
+    !name && !contact
+      ? rows.length === 1 && rows[0].text.endsWith(OFFICER_PENDING)
+      : rows.length === 2 &&
+          rows[0].text === (name || OFFICER_PENDING) &&
+          rows[1].label === "연락처" &&
+          rows[1].text === (contact || OFFICER_PENDING),
+    rows.map((r) => `${r.label}: ${r.text}`).join(" / "),
+  );
+}
+
+/* ─── 칭찬 한마디는 한 덩어리 글이다 ─────────────────── */
+
+check("한마디의 줄바꿈은 띄어쓰기 하나로 바꾼다", oneLine("최고야\n사랑해") === "최고야 사랑해");
+check(
+  "붙여 넣은 글의 줄바꿈 여러 개도 띄어쓰기 하나로",
+  oneLine("오늘도\r\n\n잘했어") === "오늘도 잘했어",
+  JSON.stringify(oneLine("오늘도\r\n\n잘했어")),
+);
+check("줄바꿈이 없으면 그대로 둔다", oneLine("끝까지 했네 ") === "끝까지 했네 ");
+check("한마디는 서버가 받는 길이(100자) 안이다", MEMO_MAX > 0 && MEMO_MAX <= 100);
+
+/* ─── 운동 시간표가 겹치는 요일 ─────────────────── */
+
+{
+  const week = (...days: Weekday[]): AvailabilitySlot[] =>
+    days.map((day) => ({ day, start: "19:00", minutes: 20 }));
+  const weekdays = week("MON", "TUE", "WED", "THU", "FRI");
+  const weekend = week("SAT", "SUN");
+  const kid = { name: "서준", slots: week("MON", "WED", "FRI", "SAT") };
+  const mom = { name: "은영", slots: week("SAT") };
+  const dad = { name: "도현", slots: week("SUN") };
+  const blank = { name: "지호", slots: [] };
+
+  check(
+    "평일만인 아이와 주말만인 보호자는 겹치는 요일이 없다",
+    same(sharedDays([weekdays, weekend]), []),
+  );
+  check("겹치는 요일만 남긴다", same(sharedDays([kid.slots, mom.slots]), ["SAT"]));
+  check(
+    "셋이 고르면 셋 모두 적어 둔 요일만",
+    same(sharedDays([weekdays, week("MON", "TUE", "SAT"), week("TUE", "MON")]), ["MON", "TUE"]),
+  );
+  check(
+    "시간표를 아예 비워 둔 사람은 빼고 본다",
+    same(sharedDays([kid.slots, []]), ["MON", "WED", "FRI", "SAT"]),
+  );
+  check("모두 비워 뒀으면 겹치는 요일이 없다", same(sharedDays([[], []]), []));
+  check("아무도 안 골랐으면 겹치는 요일이 없다", same(sharedDays([]), []));
+  check(
+    "요일은 월요일부터 차례대로",
+    same(sharedDays([week("SUN", "MON", "FRI"), week("FRI", "SUN", "MON")]), ["MON", "FRI", "SUN"]),
+  );
+
+  check("둘 다 적어 둔 요일이면 같이 할 수 있다", togetherBlock("SAT", kid, mom) === null);
+  check(
+    "보호자가 그 요일을 적어 두지 않았으면 보호자 이름으로 막는다",
+    togetherBlock("MON", kid, dad) ===
+      "월요일은 도현이 운동할 수 있는 날이 아니라서 같이 할 수 없어요",
+    String(togetherBlock("MON", kid, dad)),
+  );
+  check(
+    "아이가 그 요일을 적어 두지 않았으면 아이 이름으로 막는다",
+    togetherBlock("SUN", kid, dad) ===
+      "일요일은 서준이 운동할 수 있는 날이 아니라서 같이 할 수 없어요",
+    String(togetherBlock("SUN", kid, dad)),
+  );
+  check(
+    "둘 다 아니면 둘 다 부른다",
+    togetherBlock("THU", kid, mom) ===
+      "목요일은 서준과 은영이 운동할 수 있는 날이 아니라서 같이 할 수 없어요",
+    String(togetherBlock("THU", kid, mom)),
+  );
+  check(
+    "받침 없는 이름에도 조사를 맞춘다",
+    togetherBlock("MON", { name: "지호", slots: weekend }, { name: "아빠", slots: weekend }) ===
+      "월요일은 지호와 아빠가 운동할 수 있는 날이 아니라서 같이 할 수 없어요",
+    String(
+      togetherBlock("MON", { name: "지호", slots: weekend }, { name: "아빠", slots: weekend }),
+    ),
+  );
+  check(
+    "보호자 시간표가 아예 비어 있으면 막지 않는다",
+    togetherBlock("THU", kid, { name: "도현", slots: [] }) === null,
+  );
+  check(
+    "아이 시간표가 아예 비어 있으면 보호자 시간표만 본다",
+    togetherBlock("SAT", blank, mom) === null &&
+      togetherBlock("MON", blank, mom) ===
+        "월요일은 은영이 운동할 수 있는 날이 아니라서 같이 할 수 없어요",
+    String(togetherBlock("MON", blank, mom)),
+  );
+
+  check("한 보호자와라도 겹치면 혼자인 아이가 아니다", same(aloneKids([kid], [mom, dad]), []));
+  check(
+    "어떤 보호자와도 겹치는 요일이 없는 아이를 찾는다",
+    same(aloneKids([kid, { name: "지우", slots: weekdays }], [mom, dad]), ["지우"]),
+  );
+  check(
+    "보호자 시간표가 하나라도 비어 있으면 그 보호자와는 막히지 않는다",
+    same(aloneKids([{ name: "지우", slots: weekdays }], [dad, { name: "은영", slots: [] }]), []),
+  );
+  check("시간표를 비워 둔 아이는 찾지 않는다", same(aloneKids([blank], [mom, dad]), []));
+  check("보호자가 없으면 찾지 않는다", same(aloneKids([kid], []), []));
+
+  check(
+    "겹치는 요일이 없는 아이를 이름으로 알린다",
+    aloneNotice(["서준"]) ===
+      "서준과 보호자가 겹치는 요일이 없어요. 같이 운동하려면 요일을 하나 이상 맞춰 주세요",
+    String(aloneNotice(["서준"])),
+  );
+  check(
+    "아이가 여럿이면 쉼표로 잇는다",
+    aloneNotice(["서준", "지호"]) ===
+      "서준, 지호와 보호자가 겹치는 요일이 없어요. 같이 운동하려면 요일을 하나 이상 맞춰 주세요",
+    String(aloneNotice(["서준", "지호"])),
+  );
+  check("모두 겹치면 알리지 않는다", aloneNotice([]) === null);
+  const lines = [
+    togetherBlock("THU", kid, mom),
+    togetherBlock("MON", kid, dad),
+    aloneNotice(["서준", "지호"]),
+  ];
+  check(
+    "시간표 안내 글에 가운데 점과 긴 대시를 쓰지 않는다",
+    lines.every((l) => l !== null && !/[·—–]/.test(l)),
+  );
+}
+
+/* ─── 가족 초대 코드 만들기 ─────────────────────────────── */
+
+check(
+  "초대할 역할은 보호자와 아이 둘이다",
+  INVITE_ROLE_NAME.PARENT === "보호자" && INVITE_ROLE_NAME.CHILD === "아이",
+);
+check(
+  "보호자 초대는 역할만 보낸다(동의 칸을 싣지 않는다)",
+  same(familyInviteBody("PARENT", { personalData: false, healthData: false }), {
+    role: "PARENT",
+  }),
+);
+check(
+  "아이 초대는 동의를 하나라도 안 했으면 만들지 않는다",
+  familyInviteBody("CHILD", { personalData: true, healthData: false }) === null &&
+    familyInviteBody("CHILD", { personalData: false, healthData: true }) === null,
+);
+check(
+  "아이 초대는 아이 등록과 같은 보호자 동의를 함께 보낸다",
+  same(familyInviteBody("CHILD", { personalData: true, healthData: true }), {
+    role: "CHILD",
+    guardianConsent: { personalData: true, healthData: true },
+  }),
+);
+check(
+  "초대 링크는 이 앱의 합류 화면에 코드를 붙인다",
+  inviteLink("https://kium.app", "H3N8WD") === "https://kium.app/claim?code=H3N8WD" &&
+    inviteLink("https://kium.app", "A B") === "https://kium.app/claim?code=A%20B",
+);
+check(
+  "가족 초대 코드의 제목은 역할로, 자리 초대는 그 사람 이름으로",
+  inviteCodeTitle({ role: "PARENT" }) === "보호자 초대 코드" &&
+    inviteCodeTitle({ role: "CHILD" }) === "아이 초대 코드" &&
+    inviteCodeTitle({ role: "PARENT", seatName: "도현" }) === "도현 자리 초대 코드",
+);
+check(
+  "공유 글은 가족 이름, 역할, 코드를 말한다",
+  inviteShareText({ familyName: "서준이네", code: "H3N8WD", role: "PARENT" }) ===
+    "서준이네에 보호자로 초대해요. 초대 코드 H3N8WD" &&
+    inviteShareText({ familyName: "서준이네", code: "Q2W3E4", role: "CHILD" }) ===
+      "서준이네에 아이로 초대해요. 초대 코드 Q2W3E4",
+  inviteShareText({ familyName: "서준이네", code: "Q2W3E4", role: "CHILD" }),
+);
+check(
+  "자리 초대의 공유 글은 그 사람 자리로 부른다",
+  inviteShareText({ familyName: "서준이네", code: "K7M2QT", role: "PARENT", seatName: "도현" }) ===
+    "서준이네에 도현 자리로 초대해요. 초대 코드 K7M2QT",
+);
+check(
+  "보낸 초대 한 줄은 역할과 기한, 보낸 사람",
+  pendingInviteTitle({ role: "CHILD" }) === "아이 초대" &&
+    pendingInviteDetail({ expiresAt: "2026-10-08", issuedByName: "은영" }) ===
+      "10월 8일까지, 은영님이 보냈어요" &&
+    pendingInviteDetail({ expiresAt: "2026-10-08", issuedByName: null }) === "10월 8일까지",
+);
+check(
+  "초대 문구에 가운데 점과 긴 대시를 쓰지 않는다",
+  [
+    inviteCodeTitle({ role: "CHILD" }),
+    inviteShareText({ familyName: "서준이네", code: "Q2W3E4", role: "CHILD" }),
+    pendingInviteDetail({ expiresAt: "2026-10-08", issuedByName: "은영" }),
+  ].every((l) => !/[·—–]/.test(l)),
+);
+{
+  const page = readFileSync("src/app/parent/family/page.tsx", "utf8");
+  const sheet = readFileSync("src/components/domain/invite-sheet.tsx", "utf8");
+  check(
+    "가족 관리의 「보호자 더하기」(정보 먼저 입력)는 초대로 바뀐다",
+    !page.includes("보호자 더하기") && !page.includes("useCreateProfile"),
+  );
+  check(
+    "폰 없는 아이는 지금처럼 「아이 등록하기」 로 넣는다",
+    page.includes("아이 등록하기") && page.includes('href="/start/child"'),
+  );
+  check(
+    "초대 시트는 가족 초대 코드를 만들고 자리 초대도 남긴다",
+    sheet.includes("useCreateFamilyInvite") && sheet.includes("useOpenInvite"),
+  );
+  check(
+    "가족 관리는 아직 쓰지 않은 초대를 보이고 취소할 수 있다",
+    page.includes("useFamilyInvites") && page.includes("useCancelFamilyInvite"),
+  );
+}
+
+/* ─── 초대 코드로 참여하기 ─────────────────────────────── */
+
+{
+  const ON = "2026-10-01";
+  const familyPeek = { kind: "FAMILY" as const, familyName: "서준이네", role: "PARENT" as const };
+  const kidPeek = { ...familyPeek, role: "CHILD" as const };
+  const seatPeek = {
+    kind: "PROFILE" as const,
+    familyName: "서준이네",
+    profileName: "도현",
+    role: "PARENT" as const,
+  };
+  const adult = {
+    name: " 지수 ",
+    birthDate: "1990-05-05",
+    sex: "F" as const,
+    height: "",
+    weight: "",
+  };
+
+  check(
+    "코드는 대문자와 숫자 여섯 자리로 다듬는다",
+    normalizeCode(" h3n-8wd ") === "H3N8WD" && normalizeCode("abcdefgh") === "ABCDEF",
+  );
+  check(
+    "kind 가 FAMILY 일 때만 가족 초대다. 안 주는 서버는 자리 초대로 본다",
+    isFamilyInvite(familyPeek) &&
+      !isFamilyInvite(seatPeek) &&
+      !isFamilyInvite({}) &&
+      !isFamilyInvite(undefined),
+  );
+  check(
+    "미리 보기 한 줄은 가족 초대면 가족과 역할, 자리 초대면 그 자리",
+    invitePeekLine(familyPeek) === "서준이네에 보호자로 초대받았어요" &&
+      invitePeekLine(kidPeek) === "서준이네에 아이로 초대받았어요" &&
+      invitePeekLine(seatPeek) === "서준이네 도현 자리",
+  );
+  check(
+    "생년월일 고르기는 지금 쓰는 규칙 그대로(보호자, 아이)",
+    same(inviteBirthRule("PARENT", ON), guardianBirthRule(ON)) &&
+      same(inviteBirthRule("CHILD", ON), childBirthRule(ON)),
+  );
+  check(
+    "이름, 생년월일, 성별을 다 넣어야 참여할 수 있다",
+    joinReady("PARENT", adult, ON) &&
+      !joinReady("PARENT", { ...adult, name: "  " }, ON) &&
+      !joinReady("PARENT", { ...adult, birthDate: "" }, ON) &&
+      !joinReady("PARENT", { ...adult, sex: null }, ON),
+  );
+  check(
+    "보호자로 초대받았는데 만 14세 미만이면 까닭을 말하고 막는다",
+    joinProblem("PARENT", { ...adult, birthDate: "2015-05-05" }, ON) ===
+      "보호자는 만 14세부터 참여할 수 있어요" &&
+      !joinReady("PARENT", { ...adult, birthDate: "2015-05-05" }, ON),
+  );
+  check(
+    "아이로 초대받았으면 어린 나이도 된다",
+    joinProblem("CHILD", { ...adult, birthDate: "2018-03-05" }, ON) === null &&
+      joinReady("CHILD", { ...adult, birthDate: "2018-03-05" }, ON),
+  );
+  check(
+    "키와 몸무게는 비워도 되고, 적었으면 범위 안이어야 한다",
+    joinReady("PARENT", { ...adult, height: "165", weight: "55" }, ON) &&
+      joinProblem("PARENT", { ...adult, height: "400" }, ON) === "230cm보다 작아야 해요." &&
+      !joinReady("PARENT", { ...adult, height: "400" }, ON),
+  );
+  check(
+    "자리 초대는 코드만 보낸다",
+    same(claimBody("K7M2QT", seatPeek, adult), { claimCode: "K7M2QT" }) &&
+      same(claimBody("K7M2QT", undefined, adult), { claimCode: "K7M2QT" }),
+  );
+  check(
+    "가족 초대는 이름(앞뒤 빈칸 없이), 생년월일, 성별을 싣고 적은 키와 몸무게만 싣는다",
+    same(claimBody("H3N8WD", familyPeek, adult), {
+      claimCode: "H3N8WD",
+      name: "지수",
+      birthDate: "1990-05-05",
+      sex: "F",
+    }) &&
+      same(claimBody("H3N8WD", familyPeek, { ...adult, height: "165.5", weight: "55" }), {
+        claimCode: "H3N8WD",
+        name: "지수",
+        birthDate: "1990-05-05",
+        sex: "F",
+        heightCm: 165.5,
+        weightKg: 55,
+      }),
+  );
+  check(
+    "참여 단추는 가족 초대면 「가족 참여하기」, 자리 초대면 그 자리로",
+    joinButtonLabel(familyPeek) === "가족 참여하기" &&
+      joinButtonLabel(seatPeek) === "도현 자리로 들어가기" &&
+      joinButtonLabel(undefined) === "가족 참여하기",
+  );
+  const claimPage = readFileSync("src/app/claim/page.tsx", "utf8");
+  check(
+    "합류 화면은 가족 초대면 지금 쓰는 달력 부품으로 생년월일을 받는다",
+    claimPage.includes("DateField") && claimPage.includes("inviteBirthRule"),
+  );
+}
+
+/* ─── 초대 코드 오류 안내 ─────────────────────────────── */
+
+{
+  const err = (code: string, status = 409) => new ApiError(status, code, "");
+  // BE 와 맞춘 claim 의 오류 전부
+  const claimCodes = [
+    "BAD_REQUEST",
+    "UNDER_14_NOT_ALLOWED",
+    "CODE_NOT_FOUND",
+    "ALREADY_CLAIMED",
+    "CODE_EXPIRED",
+    "ALREADY_MEMBER",
+    "ALREADY_IN_FAMILY",
+    "TOO_MANY",
+  ];
+  check(
+    "합류 화면의 표는 claim 오류 코드를 빠짐없이 말한다",
+    claimCodes.every((c) => (CLAIM_ERROR_COPY[c] ?? "").trim() !== ""),
+    claimCodes.filter((c) => !CLAIM_ERROR_COPY[c]).join(", "),
+  );
+  check(
+    "다른 가족에 이미 있는 계정은 까닭과 해결법(설정에서 탈퇴)을 듣는다",
+    claimErrorMessage(err("ALREADY_IN_FAMILY")) ===
+      "이미 다른 가족에 참여한 계정이에요. 설정에서 계정을 탈퇴한 뒤 다시 시도해 주세요.",
+  );
+  check(
+    "이미 이 가족인 사람(초대한 보호자)은 초대받는 분의 기기에서 넣으라고 듣는다",
+    claimErrorMessage(err("ALREADY_MEMBER")) ===
+      "이미 이 가족의 구성원이에요. 초대받는 분의 기기에서 코드를 입력해 주세요.",
+  );
+  check(
+    "모르는 실패는 「들어가지 못했어요」 하나로 끝내지 않고 다시 해 보라고 한다",
+    claimErrorMessage(err("SOMETHING_NEW", 500)) ===
+      "가족에 참여하지 못했어요. 잠시 뒤에 다시 해 주세요." &&
+      claimErrorMessage(new Error("network")) ===
+        "가족에 참여하지 못했어요. 잠시 뒤에 다시 해 주세요.",
+  );
+  check(
+    "미리 보기가 이 코드로는 못 들어간다고 하면 단추를 잠근다",
+    [
+      "CODE_NOT_FOUND",
+      "CODE_EXPIRED",
+      "ALREADY_CLAIMED",
+      "ALREADY_MEMBER",
+      "ALREADY_IN_FAMILY",
+      "TOO_MANY",
+    ].every((c) => blocksClaim(err(c))) &&
+      !blocksClaim(err("UNAUTHORIZED", 401)) &&
+      !blocksClaim(err("UNKNOWN", 500)) &&
+      !blocksClaim(new Error("network")),
+  );
+  const common = [
+    "CODE_NOT_FOUND",
+    "CODE_EXPIRED",
+    "ALREADY_CLAIMED",
+    "ALREADY_MEMBER",
+    "ALREADY_IN_FAMILY",
+    "INVITE_NOT_FOUND",
+    "FAMILY_NOT_FOUND",
+    "UNDER_14_NOT_ALLOWED",
+  ];
+  check(
+    "여러 화면에서 같은 뜻인 초대 코드 오류는 공통 문구(COMMON_MESSAGE)에도 있다",
+    common.every((c) => !!err(c).commonMessage),
+    common.filter((c) => !err(c).commonMessage).join(", "),
+  );
+  check(
+    "공통 문구와 합류 화면이 같은 코드를 같은 말로 한다",
+    ["CODE_NOT_FOUND", "CODE_EXPIRED", "ALREADY_MEMBER", "ALREADY_IN_FAMILY"].every(
+      (c) => err(c).commonMessage === CLAIM_ERROR_COPY[c],
+    ),
+  );
+  check(
+    "오류 문구에 가운데 점과 긴 대시를 쓰지 않는다",
+    [...Object.values(CLAIM_ERROR_COPY), ...common.map((c) => err(c).commonMessage ?? "")].every(
+      (l) => !/[·—–]/.test(l),
+    ),
+  );
+  const claimPage = readFileSync("src/app/claim/page.tsx", "utf8");
+  check(
+    "합류 화면은 lib/invite 의 표 하나로 말한다",
+    claimPage.includes("claimErrorMessage") && !claimPage.includes("들어가지 못했어요"),
+  );
+}
+
+/* ─── 가족이 있는 계정이 초대 코드를 들고 로그인했다 ─────────── */
+
+check(
+  "가족이 있는 계정(홈, 참여 방식)이 코드를 들고 로그인하면 코드를 쓰지 않은 것이다",
+  unusedInvite({ nextStep: "HOME" }, "H3N8WD") &&
+    unusedInvite({ nextStep: "SUPPORT_MODE" }, "H3N8WD"),
+);
+check(
+  "가족이 없는 계정이나 코드 없이 들어온 계정은 알리지 않는다",
+  !unusedInvite({ nextStep: "CLAIM" }, "H3N8WD") &&
+    !unusedInvite({ nextStep: "CREATE_FAMILY" }, "H3N8WD") &&
+    !unusedInvite({ nextStep: "HOME" }, undefined) &&
+    !unusedInvite({ nextStep: "HOME" }, ""),
+);
+check(
+  "코드를 쓰지 않았다는 안내는 까닭과 해결법을 말한다",
+  UNUSED_INVITE_COPY.title === "이미 가족이 있는 계정이라 초대 코드를 쓰지 않았어요" &&
+    UNUSED_INVITE_COPY.detail.includes("설정에서 계정을 탈퇴한 뒤") &&
+    ![UNUSED_INVITE_COPY.title, UNUSED_INVITE_COPY.detail].some((l) => /[·—–]/.test(l)),
+);
+{
+  const page = readFileSync("src/app/login/page.tsx", "utf8");
+  check(
+    "로그인 화면은 버려질 뻔한 코드를 한 번 알린다",
+    page.includes("unusedInvite(") && page.includes("UNUSED_INVITE_COPY"),
+  );
+}
+
+/* ─── 부모가 자기 몫의 운동을 한다 ─────────────────────── */
+
+{
+  const now = "2026-10-01";
+  const run = (over: Record<string, unknown> = {}) =>
+    ({
+      missionId: "m",
+      startDate: now,
+      endDate: now,
+      targetMetric: "TIMER_MINUTES",
+      sessions: [
+        { position: 1, phase: "WARMUP", title: "a", minutes: 1 },
+        { position: 2, phase: "MAIN", title: "b", minutes: 4 },
+        { position: 3, phase: "COOLDOWN", title: "c", minutes: 1 },
+      ],
+      participants: [
+        { profileId: "KID", completed: false, doneSessions: [1, 2] },
+        { profileId: "MOM", completed: false, doneSessions: [] },
+      ],
+      ...over,
+    }) as unknown as Parameters<typeof plannedDay>[0];
+
+  check("함께 하는 보호자는 오늘 운동을 할 수 있다", playLock(run(), "MOM", now) === null);
+  check("참여자가 아니면 볼 수만 있다", playLock(run(), "DAD", now) === "other");
+  check(
+    "앞날 운동은 그날 하고 지난 운동은 볼 수만 있다",
+    playLock(run({ startDate: "2026-10-02", endDate: "2026-10-02" }), "MOM", now) === "later" &&
+      playLock(run({ startDate: "2026-09-29", endDate: "2026-09-30" }), "MOM", now) === "over",
+  );
+  check("운동을 아직 못 받았으면 막지 않는다", playLock(undefined, "MOM", now) === null);
+
+  check(
+    "내 몫은 내가 끝낸 칸으로 센다. 아이가 끝낸 칸이 내 것이 되지 않는다",
+    same(partOf(run(), "MOM"), { done: 0, total: 3 }) &&
+      same(partOf(run(), "KID"), { done: 2, total: 3 }),
+  );
+  check("참여자가 아니면 내 몫이 없다", partOf(run(), "DAD") === null);
+  check(
+    "사람마다 한 만큼은 다 했어요, 몇 개 했는지, 아직이에요 가운데 하나",
+    partLine({ done: 3, total: 3 }) === "다 했어요" &&
+      partLine({ done: 2, total: 3 }) === "2 / 3개" &&
+      partLine({ done: 0, total: 3 }) === "아직이에요",
+  );
+  check(
+    "내 몫의 단추는 시작하기, 이어서 하기, 다 했어요",
+    partAction({ done: 0, total: 3 }) === "시작하기" &&
+      partAction({ done: 2, total: 3 }) === "이어서 하기" &&
+      partAction({ done: 3, total: 3 }) === "다 했어요",
+  );
+
+  const list = familyToday(
+    [
+      run({ missionId: "today" }),
+      run({ missionId: "long", startDate: "2026-09-28", endDate: "2026-10-04" }),
+      run({ missionId: "steps", targetMetric: "STEPS" }),
+      run({ missionId: "later", startDate: "2026-10-02", endDate: "2026-10-02" }),
+      run({ missionId: "over", startDate: "2026-09-30", endDate: "2026-09-30" }),
+    ],
+    now,
+  );
+  check(
+    "오늘 가족 운동은 오늘이 기간 안에 드는 것만, 걸음수는 빼고",
+    same(
+      list.map((m) => m.missionId),
+      ["today", "long"],
+    ),
+  );
+  check("운동을 못 받았으면 빈 목록", familyToday(undefined, now).length === 0);
+}
+
+/* ─── 이 기기를 누가 쓰는지는 계정의 역할로 정한다 ─────────────── */
+
+check("정해 둔 것이 없으면 보호자 계정은 부모 화면이다", modeFor("PARENT", null) === "parent");
+check("정해 둔 것이 없으면 자녀 계정은 아이 화면이다", modeFor("CHILD", null) === "kid");
+check(
+  "보호자가 폰을 아이에게 빌려준 중이면 아이 화면을 그대로 둔다",
+  modeFor("PARENT", "kid") === "kid",
+);
+check("자녀 계정은 기기에 부모가 남아 있어도 아이 화면이다", modeFor("CHILD", "parent") === "kid");
+check(
+  "계정의 역할을 모르면 정해 둔 것만 따르고 없으면 정하지 않는다",
+  modeFor(undefined, "parent") === "parent" && modeFor(undefined, null) === null,
+);
+check(
+  "아이 화면은 아이 홈, 부모 화면은 부모 홈, 정하지 못했으면 누가 쓰는지 고르는 화면",
+  homeOf("kid") === "/kid" && homeOf("parent") === "/parent" && homeOf(null) === "/start",
+);
+
+/* ─── 부모 화면의 하단 탭 ─────────────────────────────── */
+
+check(
+  "하단 탭은 홈, 운동, 기록, 리그, 가족 다섯 칸이다",
+  same(
+    PARENT_TABS.map((t) => t.label),
+    ["홈", "운동", "기록", "리그", "가족"],
+  ),
+);
+check(
+  "탭마다 첫 화면에서 그 탭이 켜진다",
+  parentTabOf("/parent") === "home" &&
+    parentTabOf("/parent/workout") === "workout" &&
+    parentTabOf("/parent/records") === "records" &&
+    parentTabOf("/parent/league") === "league" &&
+    parentTabOf("/parent/dashboard") === "family",
+);
+check("주소 끝의 빗금은 없는 것으로 본다", parentTabOf("/parent/league/") === "league");
+check(
+  "탭의 첫 화면이 아니면 탭을 두지 않는다(운동하기, 칭찬 스티커, 가족 관리, 측정, 아이 화면)",
+  [
+    "/parent/m/x",
+    "/parent/sticker/x",
+    "/parent/child/x",
+    "/parent/family",
+    "/plan",
+    "/calendar",
+    "/p/x/measure",
+    "/kid",
+    "/kid/m/x",
+    "/settings",
+  ].every((p) => parentTabOf(p) === null),
+);
+check(
+  "탭이 가는 곳은 저마다 다르고 모두 탭이 켜지는 곳이다",
+  PARENT_TABS.length === 5 &&
+    new Set(PARENT_TABS.map((t) => t.href)).size === PARENT_TABS.length &&
+    PARENT_TABS.every((t) => parentTabOf(t.href) === t.id),
+);
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);

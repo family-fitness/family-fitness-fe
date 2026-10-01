@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/errors";
 import type { ProfileSummary } from "@/lib/api/types";
 import { useFamilyProfiles, useUpdateConsent } from "@/lib/api/queries";
+import { useBodyStore } from "@/stores/body-store";
 import { usePhotoStore } from "@/stores/photo-store";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -69,7 +70,8 @@ function ConsentPageContent() {
         {needConsent.length === 0 ? (
           <EmptyState scene="waiting" title="동의가 필요한 가족이 없어요" />
         ) : (
-          <ul className="divide-rows">
+          // 내용은 전부 카드 위 — 동의 줄만 회색 바탕에 떠 있었다
+          <ul className="card divide-rows py-0">
             {needConsent.map((child) => (
               <ConsentRow key={child.profileId} child={child} familyId={familyId ?? ""} />
             ))}
@@ -89,6 +91,7 @@ function ConsentPageContent() {
 function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: string }) {
   const update = useUpdateConsent(child.profileId ?? "", familyId);
   const removePhoto = usePhotoStore((s) => s.remove);
+  const clearBody = useBodyStore((s) => s.clear);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -98,8 +101,11 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
     setError(null);
     try {
       await update.mutateAsync({ personalData, healthData });
-      // 동의를 거두면 이 기기에 둔 아이 사진도 지운다 — 건강정보와 함께 거둔 것이다
-      if (!personalData && child.profileId) removePhoto(child.profileId);
+      // 동의를 거두면 이 기기에 둔 아이 사진 · 키 · 몸무게도 지운다 — 건강정보와 함께 거둔 것이다(방침 제9조)
+      if (!personalData && child.profileId) {
+        removePhoto(child.profileId);
+        clearBody(child.profileId);
+      }
       setConfirming(false);
     } catch (e) {
       setError(
@@ -141,6 +147,10 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
         title={`${child.name}의 동의를 철회할까요`}
       >
         <div className="space-y-4">
+          <p className="text-body text-ink-soft">
+            동의를 철회하면 {child.name}의 체력 측정 기록과 운동 기록이 모두 삭제되며, 삭제한 기록은
+            되돌릴 수 없어요. 프로필과 동의 이력은 남고, 다시 동의하면 새로 기록할 수 있어요.
+          </p>
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -148,7 +158,7 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
               className="flex-1"
               onClick={() => setConfirming(false)}
             >
-              그대로 두기
+              취소
             </Button>
             <Button
               variant="danger"
@@ -157,7 +167,7 @@ function ConsentRow({ child, familyId }: { child: ProfileSummary; familyId: stri
               loading={update.isPending}
               onClick={() => apply(false, false)}
             >
-              철회하기
+              철회하고 삭제
             </Button>
           </div>
         </div>

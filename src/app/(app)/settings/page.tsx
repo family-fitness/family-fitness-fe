@@ -28,8 +28,8 @@ const version = process.env.NEXT_PUBLIC_APP_VERSION;
  * 설정 — 로그인 계정 · 누가 쓰는지 · 동의 · 약관 · 앱 정보 · 로그아웃(9/28 「설정에 이런 식으로」).
  * 로그아웃 아래에 계정 탈퇴가 있다.
  *
- * 쓰는 자리가 따로 있는 것은 그리로 옮겼다(9/23) — 가족 · 초대 · 참여 방식은 가족 관리, 운동할 수 있는 시간은
- * 짜는 화면 · 직접 짜기 · 캘린더, 즐겨찾기는 운동 찾기. 자녀 프로필에는 없는 줄은 비활성으로 두지 않고 아예 내지 않는다.
+ * 쓰는 자리가 따로 있는 것은 그리로 옮겼다(9/23) — 가족 · 초대 · 참여 방식은 가족 관리, 운동 루틴은
+ * 짜는 화면 · 직접 만들기 · 캘린더, 즐겨찾기는 운동 찾기. 자녀 프로필에는 없는 줄은 비활성으로 두지 않고 아예 내지 않는다.
  */
 export default function SettingsPage() {
   const router = useRouter();
@@ -144,15 +144,13 @@ export default function SettingsPage() {
         </ul>
 
         <ul className="card divide-rows py-1">
-          <ListRow href={PRIVACY_HREF} title="개인정보처리방침" />
+          <ListRow href={PRIVACY_HREF} title="개인정보 처리방침" />
           <ListRow href={TERMS_HREF} title="이용약관" />
         </ul>
 
         <section className="card">
+          {/* 이름 · 버전만 — 「…그리는 우리 가족 체력 지도」 같은 소개 줄은 설명 문구다(9/25) */}
           <p className="font-extrabold">우리가족 체력키움</p>
-          <p className="text-ink-soft mt-1 text-sm">
-            국민체력100 데이터로 그리는 우리 가족 체력 지도
-          </p>
           <p className="text-ink-soft mt-1 text-sm">버전 {version}</p>
         </section>
 

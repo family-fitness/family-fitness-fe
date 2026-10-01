@@ -62,7 +62,7 @@ function Proposal() {
   const [asking, setAsking] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
 
-  // 아직 짜는 중이면 과정 화면으로
+  // 아직 만드는 중이면 과정 화면으로
   const running = run?.status === "RUNNING";
   useEffect(() => {
     if (running) router.replace(`/plan/run/${runId}`);
@@ -140,19 +140,15 @@ function Proposal() {
           <EmptyState
             scene="rest"
             title="제안을 짜지 못했어요"
+            // 왜 못 짰는지. 서버가 준 까닭 코드를 말로
+            description={failureText(run.failureCode)}
             action={
-              <>
-                {/* 왜 못 짰는지 — 서버가 준 까닭 코드를 말로 */}
-                <p className="text-ink-soft text-sm font-semibold">
-                  {failureText(run.failureCode)}
-                </p>
-                <Link
-                  href="/plan"
-                  className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"
-                >
-                  다시 짜기
-                </Link>
-              </>
+              <Link
+                href="/plan"
+                className="press bg-signal-strong mt-2 flex min-h-12 items-center rounded-2xl px-6 text-sm font-extrabold text-white"
+              >
+                다시 만들기
+              </Link>
             }
           />
         ) : (
@@ -232,7 +228,7 @@ function Proposal() {
               href={approved ? "/parent" : "/plan"}
               className="press bg-sub flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold"
             >
-              {approved ? "홈으로" : "다시 짜기"}
+              {approved ? "홈으로" : "다시 만들기"}
             </Link>
           </div>
         )}
@@ -258,7 +254,7 @@ function Proposal() {
               href="/plan"
               className="press bg-paper shadow-card flex min-h-12 items-center justify-center rounded-2xl text-sm font-bold"
             >
-              조건 바꿔 다시 짜기
+              조건 바꿔 다시 만들기
             </Link>
             <button
               type="button"

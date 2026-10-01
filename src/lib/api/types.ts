@@ -71,7 +71,18 @@ export type ProfileSummary = S["ProfileSummary"];
 export type MeResponse = S["MeResponse"];
 export type AuthResponse = S["AuthResponse"];
 export type FamilyProfiles = S["FamilyProfilesResponse"];
+/** 자리 초대 — 보호자가 먼저 등록한 구성원(폰 없던 아이)에게 계정을 붙이는 코드 */
 export type InviteCode = S["InviteResponse"];
+/**
+ * 가족 초대 — 자리 없이 코드부터 만든다. 받은 사람이 자기 이름, 생년월일, 성별을 넣고 들어온다.
+ * 아이로 초대하면 만들 때 보호자 동의(`GuardianConsent`)를 함께 보낸다
+ */
+export type FamilyInvite = S["FamilyInviteResponse"];
+/** 아직 쓰지 않았고 기한이 남은 가족 초대 한 장 */
+export type PendingInvite = S["FamilyInviteView"];
+export type PendingInviteList = S["FamilyInviteListResponse"];
+/** 만 14세 미만 아이를 등록하거나 아이로 초대할 때 받는 보호자 동의. 둘 다 true 여야 한다 */
+export type GuardianConsent = { personalData: boolean; healthData: boolean };
 /** 가족을 만들면 돌아오는 것 — 가족 id 와 만든 사람의 프로필 */
 export type FamilyCreated = S["FamilyCreatedResponse"];
 export type Cheer = S["CheerResponse"];
@@ -119,7 +130,7 @@ export type Mission = S["MissionView"];
 
 /**
  * ▲ 요청: `POST /auth/review-login` 응답의 `inviteCode` — kind 가 INVITED 일 때 서버가 꾸며 둔
- * 체험 가족의 초대코드. 합류 화면에 미리 채운다
+ * 체험 가족의 초대 코드. 합류 화면에 미리 채운다
  */
 export type ReviewLoginResponse = AuthResponse & { inviteCode?: string | null };
 
@@ -174,20 +185,30 @@ export type LatestWithBody = LatestFitnessTest & {
 export type ProfileWithSex = ProfileSummary & { sex?: "M" | "F" | null };
 
 /**
- * 초대코드가 어느 자리인지 미리 보기.
+ * 초대 코드의 종류.
  *
- * ▲ 요청: `GET /invites/{claimCode}`.
- * 코드는 **가족 전체가 아니라 자리 하나**에 발급된다(`POST /profiles/{id}/invite`).
- * 그런데 받는 쪽 화면은 그걸 모른 채 코드를 넣고 나서야 자기가 누가 됐는지 안다.
- * 넣기 전에 「서준이네 · 아빠 자리」 를 보여 줘야 **역할을 고를 수 없다**는 것이
- * 화면에서 사실이 된다.
+ *   FAMILY   가족 초대. 보호자가 역할(보호자, 아이)만 정해 만든다. 받은 사람이 자기 이름, 생년월일, 성별을 넣는다
+ *   PROFILE  자리 초대. 보호자가 먼저 등록한 구성원(폰 없던 아이)에게 계정을 붙인다. 코드만 넣는다
+ */
+export type InviteKind = "FAMILY" | "PROFILE";
+
+/**
+ * 초대 코드를 넣기 전에 미리 보기(`GET /invites/{claimCode}`).
  *
- * 없는 코드는 404, 기한이 지났으면 410 을 주세요.
+ * 받는 쪽 화면이 코드를 넣고 나서야 어디에 들어갔는지 알면 안 된다. 넣기 전에 가족 이름과
+ * 무슨 초대인지(보호자로, 아이로, 아니면 이미 등록된 누구의 자리로) 보여 준다.
+ * 자리 초대면 그 자리 이름이 오고, 가족 초대면 `profileName` 이 null 이다.
+ *
+ * 로그인한 계정만 부른다. 판정 차례: 너무 많이 틀림 429, 없는 코드 404, 이미 쓴 코드 409 ALREADY_CLAIMED, 기한이 지났으면 410.
+ * 계정에 이미 가족이 있는지는 보지 않는다(코드로 참여하기가 409 ALREADY_MEMBER, ALREADY_IN_FAMILY 를 준다).
+ * ▲ 요청: 로그인 화면의 「초대 코드가 있어요」 가 로그인 전에 가족 이름을 보여 주려면 토큰 없이도 부를 수 있어야 한다
  */
 export interface InvitePeek {
+  /** 없으면(예전 서버) 자리 초대(PROFILE)로 본다 */
+  kind?: InviteKind | null;
   familyName: string;
-  /** 이 코드가 가리키는 자리 */
-  profileName: string;
+  /** 자리 초대의 자리 이름. 가족 초대면 null */
+  profileName: string | null;
   role: Role;
   ageGroup?: AgeGroup | null;
   /** 누가 보냈는지 */
@@ -195,6 +216,19 @@ export interface InvitePeek {
   /** ISO-8601 */
   expiresAt?: string | null;
 }
+
+/**
+ * 초대 코드로 참여하기(`POST /profiles/claim`) 본문.
+ * 자리 초대는 코드만, 가족 초대는 들어오는 사람의 이름, 생년월일, 성별을 함께 보낸다(키, 몸무게는 골라서)
+ */
+export type ClaimBody = {
+  claimCode: string;
+  name?: string;
+  birthDate?: string;
+  sex?: "M" | "F";
+  heightCm?: number;
+  weightKg?: number;
+};
 
 /**
  * 영상 속 **구간**.
@@ -406,7 +440,7 @@ export interface XpEvent {
 export type Weekday = "MON" | "TUE" | "WED" | "THU" | "FRI" | "SAT" | "SUN";
 
 /**
- * 운동할 수 있는 시간 — 한 사람의 한 주.
+ * 운동 루틴 — 한 사람의 한 주.
  *
  * ▲ 요청: `GET · PUT /profiles/{profileId}/availability`
  * AI 편성이 「몇 분」 의 기본값으로 쓴다. 이 시간이 아니라고 운동을 막지는 않는다 —

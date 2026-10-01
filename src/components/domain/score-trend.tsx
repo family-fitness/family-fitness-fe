@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { EmptyState } from "@/components/ui/empty-state";
 import type { FitnessTestSummary } from "@/lib/api/types";
 
 /*
@@ -27,6 +28,18 @@ export function ScoreTrend({ tests }: { tests: FitnessTestSummary[] }) {
   const [active, setActive] = useState<number | null>(null);
 
   if (points.length === 0) return null;
+  // 점이 하나면 이을 선이 없다. 가운데 점 하나만 찍힌 그래프 대신 다음 측정을 기다리는 키움이
+  if (points.length === 1) {
+    return (
+      <EmptyState
+        size="card"
+        // scene/kiumi-no-growth 그림이 오면 이 줄을 no-growth 로 바꾼다
+        scene="no-record"
+        title="한 번 더 측정하면 점수 흐름이 보여요"
+        description="두 번 이상 측정하면 점수가 어떻게 달라졌는지 그래프로 보여 드려요"
+      />
+    );
+  }
 
   const x = (i: number) =>
     points.length === 1
@@ -48,6 +61,8 @@ export function ScoreTrend({ tests }: { tests: FitnessTestSummary[] }) {
     return gap > 8 && gap < 24 ? y(v) + 19 : y(v) - 11;
   };
   const shown = active != null ? points[active] : null;
+  /** 누르는 띠의 폭 — 손가락 하나(44). 점이 촘촘하면 이웃 띠와 겹치지 않게 간격만큼 */
+  const hitW = points.length > 1 ? Math.min(44, (W - PAD.l - PAD.r) / (points.length - 1)) : 44;
   const labeled = new Set(
     points.length <= LABEL_ALL
       ? points.map((_, i) => i)
@@ -64,7 +79,7 @@ export function ScoreTrend({ tests }: { tests: FitnessTestSummary[] }) {
       <div className="relative">
         <svg
           viewBox={`0 0 ${W} ${H}`}
-          className="block w-full"
+          className="block w-full overflow-visible"
           role="group"
           aria-label={`신체 점수 흐름. ${points.map((p) => `${month(p.testedOn)} ${p.overallPercentile}`).join(", ")}. 또래 평균 50`}
         >
@@ -121,8 +136,8 @@ export function ScoreTrend({ tests }: { tests: FitnessTestSummary[] }) {
               onBlur={() => setActive(null)}
               className="cursor-pointer"
             >
-              {/* 누르는 자리는 점보다 넓게 */}
-              <circle cx={x(i)} cy={y(p.overallPercentile)} r={14} fill="transparent" />
+              {/* 누르는 자리는 점보다 넓게 — 그래프 높이만큼의 세로 띠. 끝 점의 띠는 그래프 밖(카드 여백)으로 조금 나간다 */}
+              <rect x={x(i) - hitW / 2} y={0} width={hitW} height={H} fill="transparent" />
               <circle
                 cx={x(i)}
                 cy={y(p.overallPercentile)}

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { ArtIcon } from "@/components/ui/art-icon";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { IconLink } from "@/components/ui/icon-link";
 import { Illustration } from "@/components/ui/illustration";
@@ -17,7 +18,8 @@ import { PanelCell, PanelCells, WeekPanel } from "@/components/domain/week-panel
 import { KiumIsland } from "@/components/scene/kium-island";
 import { NotificationBell } from "@/components/domain/notification-bell";
 import { XpGauge } from "@/components/domain/xp-gauge";
-import type { Mission } from "@/lib/api/types";
+import { WelcomeSheet } from "@/components/domain/welcome-sheet";
+import type { CheerLog, Mission } from "@/lib/api/types";
 import type { ProfileWithSex } from "@/lib/api/types";
 import {
   useCalendar,
@@ -32,6 +34,7 @@ import { callName } from "@/lib/family";
 import { badgeArt, stageOf } from "@/lib/levels";
 import { PHASE_LABEL, sessionsOf, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
+import { FACTOR_POSE, poseArt } from "@/lib/poses";
 import { dayOf, longDate, today, weekOf } from "@/lib/today";
 import { stickerOf } from "@/lib/stickers";
 import { useRoleStore } from "@/stores/role-store";
@@ -72,6 +75,8 @@ export default function KidHomePage() {
     refetch: refetchCalendar,
   } = useCalendar(familyId, childProfileId ?? undefined, week);
   const { data: cheers } = useCheers(familyId, childProfileId ?? undefined);
+  // 오늘 운동을 알렸는지 · 부모가 붙여 줬는지 — 아이가 보낸 것도 봐야 해서 가족 것 전부
+  const { data: familyCheers } = useCheers(familyId);
   const { data: family } = useFamilyProfiles(familyId);
   // 보호자는 프로필 이름으로 부른다(엄마 · 아빠로 박지 않는다)
   const nameOf = (profileId: string, fallback: string) =>
@@ -131,7 +136,7 @@ export default function KidHomePage() {
   // 운동한 날만큼 섬에 나무가 선다. 줄지 않는다
   const trees = progress?.activeDays ?? 0;
   const score = me.latest?.overallPercentile ?? null;
-  // 잰 적은 있는데 점수가 없는 아이 — 만 7~10세는 비교할 기준이 없다(규칙 8). 「아직 재지 않았어요」 가 아니다
+  // 잰 적은 있는데 점수가 없는 아이 — 만 7~10세는 비교할 기준이 없다(규칙 8). 「아직 측정하지 않았어요」 가 아니다
   const measured = Boolean(me.latest?.testedOn);
   // 쉬는 날 카드(부모가 쓴다) — 이번 주 기록에 같이 온다. 쓴 날이면 오늘 운동 대신 「쉬는 날」
   const restToday = Boolean(calendar?.days.find((d) => d.date === now)?.rest);
@@ -201,9 +206,18 @@ export default function KidHomePage() {
             </button>
           </div>
         ) : mine.length > 0 && !todo ? (
-          // 다 했으면 쉬는 날이어도 다 했다고 — 「그래도 할래요」 로 한 것을 덮지 않는다
+          // 다 했으면 쉬는 날이어도 다 했다고 — 「그래도 할래요」 로 한 것을 덮지 않는다.
+          // 알렸으면 부모가 붙여 줄 때까지 「기다리는 중」, 붙여 주면 그 스티커(규칙 12) — 운동하기 화면과 같은 말
+          <DoneToday
+            missionIds={mine.map((m) => m.missionId ?? "")}
+            kidId={childProfileId}
+            cheers={familyCheers?.cheers}
+            nameOf={nameOf}
+          />
+        ) : todo && me.consentRequired && !me.consentGiven ? (
+          // 보호자가 동의를 거뒀다 — 해도 기록이 남지 않는다. 시작을 권하지 않고 지금 상태만(아이가 풀 일이 아니다)
           <div className="card-hero text-center">
-            <p className="text-lead font-extrabold">오늘 거 다 했어요!</p>
+            <p className="text-lead font-extrabold">지금은 기록을 남길 수 없어요</p>
           </div>
         ) : restToday && !started ? (
           // 쉬는 날 카드를 쓴 날 — 「안 한 날」 이 아니라 「쉬기로 한 날」. 그래도 하고 싶으면 한다
@@ -222,8 +236,15 @@ export default function KidHomePage() {
         ) : todo ? (
           <TodayHero mission={todo} profileId={childProfileId} />
         ) : (
-          <div className="card-hero text-center">
-            <p className="text-lead font-extrabold">오늘 운동이 아직 없어요</p>
+          // 아이는 운동을 만들 수 없다. 버튼 없이 무엇을 기다리는지만 말한다
+          <div className="card-hero">
+            <EmptyState
+              size="card"
+              scene="no-mission"
+              title="오늘 운동이 아직 없어요"
+              description="운동이 생기면 여기서 바로 시작할 수 있어요"
+              className="py-1"
+            />
           </div>
         )}
 
@@ -253,7 +274,13 @@ export default function KidHomePage() {
                 label="받은 스티커"
                 // 누가 붙여 줬는지 — 보호자의 프로필 이름. 스티커 말은 그림이 한다
                 note={nameOf(sticker.fromProfileId, sticker.fromName)}
-                art={<StickerArt id={sticker.stickerId} className="size-10" />}
+                art={
+                  <>
+                    <StickerArt id={sticker.stickerId} className="size-10" />
+                    {/* 그림만 있으면 화면 읽기로는 무슨 스티커인지 모른다 */}
+                    <span className="sr-only">{stickerOf(sticker.stickerId)?.label}</span>
+                  </>
+                }
               />
             )}
             <PanelCell
@@ -264,12 +291,19 @@ export default function KidHomePage() {
                 badge?.title ??
                 (progress ? "아직 없어요" : progressError ? "못 불러왔어요" : undefined)
               }
-              art={badge ? <ArtIcon name={badgeArt(badge.code)} className="size-10" /> : null}
+              art={
+                badge ? (
+                  <ArtIcon name={badgeArt(badge.code)} className="size-10" />
+                ) : progress ? (
+                  // 아직 받은 업적이 없으면 첫 업적 메달을 흐리게 둔다. 그림 자리를 비워 두지 않는다
+                  <ArtIcon name="badge/badge-first-step" className="size-10 opacity-30 grayscale" />
+                ) : null
+              }
             />
             {/* 점수 하나는 아이도 본다. 등수로 바꾸지 않고 또래 평균 50 눈금과 같이(규칙 10) */}
             <PanelCell
               label="신체 점수"
-              note={score != null ? "또래 평균 50" : measured ? "쟀어요" : "아직 재지 않았어요"}
+              note={score != null ? "또래 평균 50" : measured ? "쟀어요" : "아직 측정 전이에요"}
               art={
                 score == null && measured ? (
                   // 쟀는데 비교할 점수가 없는 나이 — 0 이 아니라 비어 있음이다
@@ -295,17 +329,68 @@ export default function KidHomePage() {
                       <span className="record-avg" />
                     </span>
                   </span>
-                ) : null
+                ) : (
+                  // 아직 측정 전이다. 0점으로 그리지 않고 측정 그림을 둔다(규칙 10)
+                  <ArtIcon name="icon/menu-measure" className="size-10" />
+                )
               }
             />
           </PanelCells>
         </WeekPanel>
       </Stage>
+      {/* 처음 들어올 때 한 번 — 사용법 세 줄 */}
+      <WelcomeSheet who="kid" />
     </>
   );
 }
 
 /** 오늘 운동 — 파랑 큰 카드. 누르면 바로 운동하기로 */
+/**
+ * 오늘 거 다 한 뒤 — 알렸으면 「알렸어요 · 기다리는 중」, 부모가 붙여 주면 그 스티커와 누가 붙였는지.
+ * 재촉하지 않는다 — 알리지 않았으면 다 했다는 말만(알리기는 운동하기 끝 칸에 있다)
+ */
+function DoneToday({
+  missionIds,
+  kidId,
+  cheers,
+  nameOf,
+}: {
+  missionIds: string[];
+  kidId: string | null;
+  cheers: CheerLog[] | undefined;
+  nameOf: (profileId: string, fallback: string) => string;
+}) {
+  const about = (cheers ?? []).filter((c) => c.missionId && missionIds.includes(c.missionId));
+  const told = about.some((c) => c.fromProfileId === kidId);
+  const praise = about
+    .filter((c) => c.toProfileId === kidId && c.stickerId && stickerOf(c.stickerId))
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0];
+
+  return (
+    <div className="card-hero flex flex-col items-center text-center">
+      {praise && <StickerArt id={praise.stickerId} className="mb-2 size-20" />}
+      {/* 알리고 아직 답이 없으면 글만 두지 않고 칭찬을 기다리는 키움이를 세운다 */}
+      {!praise && told && (
+        <div className="mb-1">
+          <Illustration name="scene/kiumi-waiting" size={96} />
+        </div>
+      )}
+      <p className="text-lead font-extrabold">오늘 거 다 했어요!</p>
+      {praise ? (
+        <p className="text-caption text-ink-soft mt-1 font-bold">
+          {nameOf(praise.fromProfileId, praise.fromName)}, {stickerOf(praise.stickerId)?.label}
+        </p>
+      ) : (
+        told && (
+          <p className="text-caption text-ink-soft mt-1 font-bold">
+            알렸어요. 답을 기다리는 중이에요
+          </p>
+        )
+      )}
+    </div>
+  );
+}
+
 function TodayHero({ mission, profileId }: { mission: Mission; profileId: string | null }) {
   const sessions = sessionsOf(mission, profileId);
   const minutes = totalMinutes(sessions);
@@ -315,20 +400,28 @@ function TodayHero({ mission, profileId }: { mission: Mission; profileId: string
     .map(([p, n]) => `${PHASE_LABEL[p].replace("운동", "")} ${n}`)
     .join(", ");
   const done = sessions.filter((s) => s.completed).length;
+  // 본운동이 기르는 힘을 하는 키움이(9/30) — 동작 그림이 들어오기 전에는 자리를 두지 않는다
+  const factor = sessions.find((s) => s.phase === "MAIN")?.factor;
+  const pose = factor && FACTOR_POSE[factor] ? poseArt(FACTOR_POSE[factor]) : null;
 
   return (
     <NavLink
       href={`/kid/m/${mission.missionId}`}
       className="press bg-signal-strong shadow-lift block rounded-3xl p-5 text-white"
     >
-      <p className="text-caption font-bold text-white">오늘 운동</p>
-      <p className="text-metric mt-1 leading-tight font-extrabold">
-        {sessions.length}개, {minutes}분
-      </p>
-      <p className="text-caption mt-1 font-semibold text-white">
-        {phases}
-        {done > 0 && ` 중 ${done}개 했어요`}
-      </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-caption font-bold text-white">오늘 운동</p>
+          <p className="text-metric mt-1 leading-tight font-extrabold">
+            {sessions.length}개, {minutes}분
+          </p>
+          <p className="text-caption mt-1 font-semibold text-white">
+            {phases}
+            {done > 0 && ` 중 ${done}개 했어요`}
+          </p>
+        </div>
+        {pose && <ArtIcon name={pose} className="-my-2 size-20" />}
+      </div>
       <span className="text-signal-strong mt-4 flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-white text-lg font-extrabold">
         <Play aria-hidden className="size-5 fill-current" />
         {done > 0 ? "이어서 하기" : "시작하기"}

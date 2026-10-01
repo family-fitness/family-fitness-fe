@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardHead } from "@/components/ui/card";
+import { EmptyState, EmptyStateAction } from "@/components/ui/empty-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DayRings } from "@/components/domain/day-rings";
@@ -19,7 +20,7 @@ import { cn } from "@/lib/utils";
  */
 
 /**
- * 이번 달 숫자 — 운동한 날 · 움직인 시간 · 이어서 · 받은 칭찬. 한 카드 안에 선으로 나눈다.
+ * 이번 달 숫자 — 운동한 날 · 운동 시간 · 이어서 · 받은 칭찬. 한 카드 안에 선으로 나눈다.
  * 칭찬은 받은 달에만, 이어서는 이틀부터 칸을 둔다 — 「0장」 · 「0일째」 를 적어 두면 못 한 달이 된다
  * (규칙 12 · 캘린더 달 칸 · 아이 홈과 같게). 못 받았거나 받는 중이면 자리는 둔다.
  */
@@ -52,10 +53,20 @@ export function MonthStats({
   const stickers = days.reduce((sum, d) => sum + d.stickers.length, 0);
   const calendar: Load = error ? "error" : isPending ? "pending" : "ready";
 
-  const cells: StatCell[] = [
-    { key: "days", label: "이번 달 운동한 날", value: active.length, unit: "일", state: calendar },
-    { key: "minutes", label: "움직인 시간", value: minutes, unit: "분", state: calendar },
-  ];
+  // 이번 달에 운동한 날이 없으면 「0일」 「0분」 칸을 세우지 않는다. 아래 최근 기록 카드가 빈 자리를 말한다
+  const cells: StatCell[] =
+    calendar === "ready" && active.length === 0
+      ? []
+      : [
+          {
+            key: "days",
+            label: "이번 달 운동한 날",
+            value: active.length,
+            unit: "일",
+            state: calendar,
+          },
+          { key: "minutes", label: "운동 시간", value: minutes, unit: "분", state: calendar },
+        ];
   if ((streak ?? 0) >= 2 || streakState !== "ready") {
     cells.push({
       key: "streak",
@@ -74,6 +85,7 @@ export function MonthStats({
       state: calendar,
     });
   }
+  if (cells.length === 0) return null;
 
   return (
     <section aria-label="이번 달" className="card grid grid-cols-2 px-0 py-1">
@@ -178,12 +190,22 @@ export function RecentDays({
         <button
           type="button"
           onClick={() => void refetch()}
-          className="press text-ink-soft mt-1 min-h-10 text-sm font-bold"
+          className="press text-ink-soft mt-1 min-h-11 text-sm font-bold"
         >
           불러오지 못했어요. 다시 불러오기
         </button>
       ) : days.length === 0 ? (
-        <p className="text-ink-soft mt-1 text-sm">최근 기록이 없어요</p>
+        <EmptyState
+          size="card"
+          scene="no-mission"
+          title="최근 운동 기록이 없어요"
+          description="운동한 날마다 여기에 한 줄씩 쌓여요"
+          action={
+            <EmptyStateAction href={`/plan?profileId=${encodeURIComponent(profileId)}`}>
+              AI 운동 추천 받기
+            </EmptyStateAction>
+          }
+        />
       ) : (
         <ul className="divide-rows mt-1">
           {days.map((d) => {
@@ -205,15 +227,13 @@ export function RecentDays({
                     </span>
                   </span>
                   <DayRings log={d} size={40} stroke={5} gap={2} />
+                  {/* 분은 둘째 줄로 — 오른쪽 칸을 따로 두면 320 폭에서 제목이 두세 글자로 잘렸다(9/30 점검) */}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-bold">{titles}</span>
+                    <span className="line-clamp-2 text-sm font-bold">{titles}</span>
                     <span className="text-caption text-ink-soft block whitespace-nowrap tabular-nums">
-                      {s.total > 0 ? `${s.done} / ${s.total}개` : ""}
+                      {s.total > 0 && `${s.done} / ${s.total}개, `}
+                      <b className="text-ink font-extrabold">{d.minutes}</b>분
                     </span>
-                  </span>
-                  <span className="w-12 shrink-0 text-right text-base font-extrabold tabular-nums">
-                    {d.minutes}
-                    <span className="text-ink-soft text-caption ml-0.5 font-bold">분</span>
                   </span>
                   {/* 스티커 자리는 늘 비워 둔다 — 있는 줄 · 없는 줄의 분이 한 세로줄에 서게 */}
                   <span className="size-8 shrink-0">

@@ -7,7 +7,7 @@ import { Fragment, Suspense, useDeferredValue, useEffect, useRef, useState } fro
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
 import { Dock } from "@/components/ui/dock";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, EmptyStateAction } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Sheet } from "@/components/ui/sheet";
@@ -18,7 +18,7 @@ import { FactorIcon } from "@/components/domain/factor-icon";
 import type { ClipView, SessionPhase } from "@/lib/api/types";
 import { useClipPages, useToggleClipFavorite } from "@/lib/api/queries";
 import { FACTORS, isFactor, type Factor } from "@/lib/fitness-factors";
-import { routineMinutes } from "@/lib/routine";
+import { MAX_MOVES, routineMinutes } from "@/lib/routine";
 import { PHASE_LABEL, clock } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { cn } from "@/lib/utils";
@@ -31,7 +31,7 @@ import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
  * 운동 찾기 — 키우고 싶은 힘으로.
  *
  * AI 편성과 다른 길이다. 부모가 「우리 애 유연성 좀」 하고 직접 고른다(회의: 검색이 안
- * 되면 카테고리를 눌렀을 때 해당 영상이 쫙 나오게). 고른 동작을 담아 **직접 짜기**로
+ * 되면 카테고리를 눌렀을 때 해당 영상이 쫙 나오게). 고른 동작을 담아 **직접 만들기**로
  * 가져가면 차례 · 시간 · 누가 · 언제를 정해 그날의 운동이 된다 — 직접 짠 루틴이다.
  *
  * 한 줄이 영상 한 편이 아니라 **영상 속 한 동작**이다. 국민체력100 영상 한 편에 동작이
@@ -88,7 +88,7 @@ function Finder() {
   const [allAges, setAllAges] = useState(false);
   const [q, setQ] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(params.get("list") === "favorites");
-  // 담은 동작은 직접 짜기와 같이 본다 — 두 화면을 오가도 남는다
+  // 담은 동작은 직접 만들기와 같이 본다 — 두 화면을 오가도 남는다
   const moves = useRoutineStore((s) => s.moves);
   // 탭 저장소를 읽은 뒤에야 담은 것이 보인다. 그 전에는 쟁반을 내지 않는다(첫 화면과 어긋나지 않게)
   useRoutineReady();
@@ -142,7 +142,8 @@ function Finder() {
     <>
       <AppBar back title="운동 찾기" />
       <Stage wide className={cn("space-y-3", moves.length > 0 && !kidView && "pb-32")}>
-        <div className="card flex items-center gap-2 py-2">
+        {/* 초점은 칸 전체에 — 안쪽 입력의 테두리는 끄고 카드가 파란 고리를 두른다(초점이 안 보였다) */}
+        <div className="card focus-within:outline-signal flex items-center gap-2 py-2 focus-within:outline-2 focus-within:outline-offset-2">
           <Search aria-hidden className="text-faint size-5 shrink-0" />
           <input
             type="search"
@@ -206,7 +207,7 @@ function Finder() {
                 aria-pressed={phase === p.value}
                 onClick={() => setPhase(p.value)}
                 className={cn(
-                  "press min-h-10 min-w-11 rounded-full px-3 text-sm font-bold",
+                  "press min-h-11 min-w-11 rounded-full px-3 text-sm font-bold",
                   phase === p.value ? "bg-signal-strong text-white" : "text-ink-soft",
                 )}
               >
@@ -258,6 +259,21 @@ function Finder() {
           <EmptyState
             scene="no-mission"
             title={favoritesOnly ? "아직 즐겨찾기한 동작이 없어요" : "조건에 맞는 동작이 없어요"}
+            description={favoritesOnly ? "하트를 누른 동작이 여기에 모여요" : undefined}
+            // 고른 조건과 즐겨찾기를 모두 끄고 처음 목록으로(나이대는 그대로 둔다)
+            action={
+              <EmptyStateAction
+                onClick={() => {
+                  setFactor(null);
+                  setPhase(null);
+                  setQuiet(false);
+                  setQ("");
+                  setFavoritesOnly(false);
+                }}
+              >
+                전체 보기
+              </EmptyStateAction>
+            }
           />
         ) : (
           <>
@@ -269,6 +285,7 @@ function Finder() {
                   owner={owner}
                   picked={inTray(c)}
                   canPick={!kidView}
+                  full={moves.length >= MAX_MOVES}
                   onPick={() => toggleMove(c)}
                   onPreview={() => {
                     setPreviewId(c.clipId);
@@ -378,6 +395,7 @@ function ClipRow({
   owner,
   picked,
   canPick,
+  full,
   onPick,
   onPreview,
 }: {
@@ -385,6 +403,8 @@ function ClipRow({
   owner: string | undefined;
   picked: boolean;
   canPick: boolean;
+  /** 열 개를 다 담았다 — 더 담는 단추는 눌러도 아무 일이 없으니 꺼 둔다. 빼기는 된다 */
+  full: boolean;
   onPick: () => void;
   onPreview: () => void;
 }) {
@@ -427,7 +447,8 @@ function ClipRow({
             ))}
         </p>
       </div>
-      {/* 즐겨찾기 · 담기는 위아래로 — 옆으로 두면 360px 에서 이름 칸이 100px 남짓으로 줄어 두 글자씩 끊겼다 */}
+      {/* 즐겨찾기 · 담기는 위아래로 — 옆으로 두면 360px 에서 이름 칸이 100px 남짓으로 줄어 두 글자씩 끊겼다.
+          단추는 누르는 자리 44px(size-11)를 지킨다 */}
       <div className="-my-1 flex shrink-0 flex-col items-center">
         {owner && (
           <button
@@ -436,7 +457,7 @@ function ClipRow({
             aria-label={c.favorited ? `${c.title} 즐겨찾기 빼기` : `${c.title} 즐겨찾기`}
             disabled={favorite.isPending}
             onClick={() => favorite.mutate({ clipId: c.clipId, favorited: !c.favorited })}
-            className="press grid size-10 place-items-center"
+            className="press grid size-11 place-items-center"
           >
             <Heart
               aria-hidden
@@ -449,9 +470,10 @@ function ClipRow({
             type="button"
             aria-pressed={picked}
             aria-label={picked ? `${c.title} 빼기` : `${c.title} 담기`}
+            disabled={!picked && full}
             onClick={onPick}
             className={cn(
-              "press grid size-10 place-items-center rounded-full",
+              "press grid size-11 place-items-center rounded-full disabled:opacity-30",
               picked ? "bg-signal-strong text-white" : "bg-sub text-ink",
             )}
           >
@@ -498,9 +520,9 @@ function Preview({ clip, alternates }: { clip: ClipView; alternates: ClipView[] 
 }
 
 /**
- * 담은 동작 — 아래에 붙는 쟁반. 누르면 직접 짜기로 간다.
+ * 담은 동작 — 아래에 붙는 쟁반. 누르면 직접 만들기로 간다.
  *
- * 차례 · 시간 · 누가 · 언제는 직접 짜기에서 정한다(오늘 · 지금 보는 아이가 기본이라
+ * 차례 · 시간 · 누가 · 언제는 직접 만들기에서 정한다(오늘 · 지금 보는 아이가 기본이라
  * 오늘 운동 하나면 두 번 누르면 된다). 열 개까지만 담는다(회의: 열 개가 넘으면 짜증난다).
  */
 function Tray({ onClear }: { onClear: () => void }) {
@@ -512,12 +534,12 @@ function Tray({ onClear }: { onClear: () => void }) {
       <div className="card-hero flex items-center gap-3 py-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-extrabold">
-            담은 동작 {moves.length}개, {minutes}분
+            담은 동작 {moves.length}개, {minutes}분{moves.length >= MAX_MOVES && ", 다 담았어요"}
           </p>
           <button
             type="button"
             onClick={onClear}
-            className="press text-caption text-ink-soft -ml-1 min-h-10 px-1 font-semibold"
+            className="press text-caption text-ink-soft -ml-1 min-h-11 px-1 font-semibold"
           >
             모두 빼기
           </button>
