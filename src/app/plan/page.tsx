@@ -13,6 +13,7 @@ import { CardHead } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ChildSwitch } from "@/components/domain/child-switch";
 import { FactorIcon } from "@/components/domain/factor-icon";
 import { FactorRadar } from "@/components/domain/factor-radar";
 import { ScoreLine } from "@/components/domain/factor-view";
@@ -46,6 +47,9 @@ import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
  *
  * 보호자가 키워 주고 싶은 역량(focus_factor)을 고르지 않으면 코치가 가장 낮은 요인을 고른다 — 육각형에서 안쪽으로
  * 들어간 꼭지점이다. 그래서 여기에 그 육각형을 같이 둔다.
+ *
+ * 추천 대상은 아이들과 로그인한 보호자 본인이다. 보호자를 고르면 서버가 성인 나이로 AI 에 보내 성인 영상으로 짠다.
+ * 그때는 「같이」 칩과 시간표 겹침 안내처럼 아이에게만 맞는 칸을 숨긴다. 다른 보호자는 고르지 않는다.
  */
 const MINUTES = [10, 20, 30, 40] as const;
 
@@ -74,24 +78,32 @@ function PlanForm() {
   // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
   const { data: map, isLoading: mapLoading, error: mapError, refetch } = useFitnessMap(familyId);
   const childProfileId = useRoleStore((s) => s.childProfileId);
-  // 방금 잰 아이의 결과에서 왔으면 그 아이로 — 홈에서 고른 아이로 짜면 다른 아이의 제안이 된다
+  const setChild = useRoleStore((s) => s.setChild);
+  // 방금 잰 사람의 결과에서 왔으면 그 사람으로 — 홈에서 고른 아이로 짜면 다른 아이의 제안이 된다
   const wanted = useSearchParams().get("profileId");
   // 뒤로는 들어온 탭으로. 운동 탭에서 왔으면 운동 탭, 홈에서 왔으면 홈
   const back = useTabStore((s) => s.last);
-  const kids = (map?.members ?? []).filter((m) => m.role === "CHILD");
-  const kid =
-    kids.find((k) => k.profileId === wanted) ??
+  const members = map?.members ?? [];
+  const kids = members.filter((m) => m.role === "CHILD");
+  // 추천 대상 칩은 아이들 다음에 나(로그인한 보호자). 다른 보호자는 넣지 않는다
+  const me = members.find((m) => m.role === "PARENT" && m.profileId === profile?.profileId);
+  const choices = me ? [...kids, me] : kids;
+  // 고른 적이 없으면 홈에서 고른 아이, 아이가 없으면 나
+  const who =
+    choices.find((m) => m.profileId === wanted) ??
     kids.find((k) => k.profileId === childProfileId) ??
-    kids[0];
-  const { data: latest } = useLatestFitnessTest(kid?.profileId);
-  // 안 잰 아이는 연령대 · 성별 · 키 · 몸무게로 짠다(9/30 시연) — 키 · 몸무게는 가입 때 이 기기에 적은 값
-  const deviceBody = useBodyStore((s) => (kid?.profileId ? s.byProfile[kid.profileId] : undefined));
+    kids[0] ??
+    me;
+  const forMe = who != null && who === me;
+  const { data: latest } = useLatestFitnessTest(who?.profileId);
+  // 안 잰 사람은 연령대 · 성별 · 키 · 몸무게로 짠다(9/30 시연) — 키 · 몸무게는 가입 때 이 기기에 적은 값
+  const deviceBody = useBodyStore((s) => (who?.profileId ? s.byProfile[who.profileId] : undefined));
   const start = useStartCoachRun(familyId ?? "");
   // 이미 짜고 있거나 받아 둔 제안 — 다시 짜 달라고 했다가 막히면 그리로 간다
-  // 지금 짜려는 아이의 것만 — 「제안 보기」 가 형제의 제안으로 가지 않게
-  const { data: current } = useLatestCoachRun(familyId, kid?.profileId);
+  // 지금 짜려는 사람의 것만 — 「제안 보기」 가 형제의 제안으로 가지 않게
+  const { data: current } = useLatestCoachRun(familyId, who?.profileId);
 
-  const { data: availability } = useAvailability(kid?.profileId);
+  const { data: availability } = useAvailability(who?.profileId);
   // 「같이」 는 아이와 나(보호자)의 시간표가 오늘 요일에 겹칠 때만
   const { data: myWeek } = useAvailability(profile?.profileId);
   // 고르기 전에는 오늘 적어 둔 시간이 기본이다. 적어 둔 게 없으면 20분
@@ -109,16 +121,18 @@ function PlanForm() {
   const [pickedWithParent, setWithParent] = useState<boolean | null>(null);
   const weekend = weekdayCode() === "SAT" || weekdayCode() === "SUN";
   // 「같이」 는 아이와 나의 시간표가 오늘 요일에 겹칠 때만 한다(사용자 결정). 겹치지 않으면
-  // 「매번 같이」 와 「주말에는 같이」 의 기본값도 끈다. 두 시간표를 다 받기 전에는 막지 않는다
+  // 「매번 같이」 와 「주말에는 같이」 의 기본값도 끈다. 두 시간표를 다 받기 전에는 막지 않는다.
+  // 내 운동을 받을 때는 같이 할 사람이 따로 없다. 겹침을 보지 않고 「같이」 도 끈다
   const notTogether =
-    kid && availability && myWeek
+    who && !forMe && availability && myWeek
       ? togetherBlock(
           weekdayCode(),
-          { name: kid.name ?? "아이", slots: availability.slots },
+          { name: who.name ?? "아이", slots: availability.slots },
           { name: profile?.name ?? "나", slots: myWeek.slots },
         )
       : null;
   const withParent =
+    !forMe &&
     !notTogether &&
     (pickedWithParent ??
       (profile?.supportMode === "FULL" || (profile?.supportMode === "WEEKEND" && weekend)));
@@ -160,8 +174,9 @@ function PlanForm() {
     );
   }
 
-  // 아이가 없는 가족(혼자 쓰는 어른) — 꺼진 단추만 두지 않고 왜 못 짜는지와 아이 등록 화면으로 가는 링크를 보인다
-  if (!kid) {
+  // 고를 사람이 없다(아이도 없고 체력 지도에 나도 없다). 꺼진 단추만 두지 않고 아이 등록 화면으로 가는 링크를 보인다.
+  // 아이가 없어도 내가 있으면 내 운동을 받는다
+  if (!who) {
     return (
       <>
         <AppBar backHref={back} title="AI 운동 추천" />
@@ -183,27 +198,36 @@ function PlanForm() {
     );
   }
 
-  const name = kid.name ?? "아이";
+  const name = who.name ?? (forMe ? "나" : "아이");
   // 서버가 준 가장 낮은 요인. 보호자가 키워 주고 싶은 역량을 고르지 않으면 코치가 이걸 키운다 — 육각형 밖(협응력 · 평형성)이면 두지 않는다
   const given = latest?.weakest?.factor;
   const weakest = isFactor(given) ? given : undefined;
   const shownFocus = focus ?? weakest ?? null;
-  // 이 아이를 잰 적이 있나. 없으면 빈 육각형 대신 연령대 · 키 · 몸무게와 「아직 측정하지 않았어요」(규칙 4)
-  // 안 잰 아이도 AI 단추는 둔다(9/30 시연). 지금 서버가 422 NO_MEASURED_MEMBER 로 막으면
+  // 이 사람을 잰 적이 있나. 없으면 빈 육각형 대신 연령대 · 키 · 몸무게와 「아직 측정하지 않았어요」(규칙 4)
+  // 안 잰 사람도 AI 단추는 둔다(9/30 시연). 지금 서버가 422 NO_MEASURED_MEMBER 로 막으면
   // 아래 알림 카드가 첫 측정으로 가는 길을 주고, 화면이 그 카드까지 내려간다
-  const measured = Boolean(kid.latest?.testedOn);
+  const measured = Boolean(who.latest?.testedOn);
   const heightCm = latest?.heightCm ?? deviceBody?.heightCm;
   const weightKg = latest?.weightKg ?? deviceBody?.weightKg;
-  const measureHref = `/p/${kid.profileId}/measure`;
+  const measureHref = `/p/${who.profileId}/measure`;
+
+  // 대상 칩. 주소에 실어 두면 새로고침해도 그 사람이다. 아이를 고르면 홈의 아이도 같이 바꾼다(캘린더와 같다)
+  const choose = (id: string) => {
+    if (kids.some((k) => k.profileId === id)) setChild(id);
+    setError(null);
+    setExisting(false);
+    setUnmeasured(false);
+    router.replace(`/plan?profileId=${encodeURIComponent(id)}`, { scroll: false });
+  };
 
   const submit = async () => {
-    if (!kid.profileId) return;
+    if (!who.profileId) return;
     setError(null);
     setExisting(false);
     setUnmeasured(false);
     try {
       const run = await start.mutateAsync({
-        profileId: kid.profileId,
+        profileId: who.profileId,
         date: today(),
         minutes,
         quiet,
@@ -244,13 +268,15 @@ function PlanForm() {
     <>
       <AppBar backHref={back} title="AI 운동 추천" />
       <Stage wide className="space-y-3 pb-28">
+        {/* 누구 운동을 받을지. 아이 칩들 다음에 나. 고를 사람이 하나면 그리지 않는다 */}
+        <ChildSwitch kids={choices} selectedId={who.profileId} onSelect={choose} />
         <section className="card-hero">
           <p className="text-lead font-extrabold">{name}의 체력</p>
           {!measured ? (
             <>
               {/* 안 쟀어도 AI 는 연령대 · 성별 · 키 · 몸무게로 짠다(9/30). 체력은 모른다 — 0점으로 그리지 않는다(규칙 10) */}
               <dl className="mt-3 grid grid-cols-3 gap-2">
-                <BodyTile label="연령대" value={kid.ageGroup} />
+                <BodyTile label="연령대" value={who.ageGroup} />
                 <BodyTile label="키" value={heightCm} unit="cm" />
                 <BodyTile label="몸무게" value={weightKg} unit="kg" />
               </dl>
@@ -261,7 +287,7 @@ function PlanForm() {
                   아직 측정하지 않았어요
                 </p>
                 {/* 만 4세 미만은 잴 수 없다 — 길을 두지 않는다(규칙 4) */}
-                {kid.measurable !== false && (
+                {who.measurable !== false && (
                   <NavLink
                     href={measureHref}
                     className="press text-signal-strong inline-flex min-h-11 items-center text-sm font-extrabold"
@@ -284,12 +310,12 @@ function PlanForm() {
                 name={name}
                 focus={shownFocus}
                 legend={false}
-                note={memberNoPeerNormsNote(kid)}
+                note={memberNoPeerNormsNote(who)}
                 className="mx-auto mt-2 max-w-72"
               />
               {/* 육각형 아래 통합 신체 점수(9/25). 안 쟀으면 그리지 않는다 */}
-              {kid.latest?.overallPercentile != null && (
-                <ScoreLine score={kid.latest.overallPercentile} />
+              {who.latest?.overallPercentile != null && (
+                <ScoreLine score={who.latest.overallPercentile} />
               )}
               {shownFocus && (
                 <p className="mt-3 text-center text-sm font-bold">
@@ -303,7 +329,7 @@ function PlanForm() {
 
         {/* AI 말고 직접 — 운동 찾기에서 동작을 담아 짠다 */}
         <NavLink
-          href={gathered > 0 ? "/plan/custom" : childFinderHref(kid?.profileId)}
+          href={gathered > 0 ? "/plan/custom" : childFinderHref(who.profileId)}
           className="card press flex min-h-16 items-center gap-3"
         >
           <span className="min-w-0 flex-1">
@@ -397,33 +423,36 @@ function PlanForm() {
             </div>
           </div>
 
-          <div className="py-3.5">
-            <CardHead title="누가 해요" />
-            <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="누가 해요">
-              <Chip on={!withParent} onClick={() => setWithParent(false)}>
-                <Named name={name} tail="혼자" spaced />
-              </Chip>
-              <Chip
-                on={withParent}
-                disabled={Boolean(notTogether)}
-                onClick={() => setWithParent(true)}
-              >
-                <Named name={profile?.name ?? "나"} tail="도 같이" />
-              </Chip>
-            </div>
-            {/* 같이를 못 켜는 날은 까닭과 시간표로 가는 길을 둔다 */}
-            {notTogether && (
-              <div className="mt-2">
-                <p className="text-caption text-ink-soft">{notTogether}</p>
-                <NavLink
-                  href="/settings/schedule"
-                  className="press text-signal-deep inline-flex min-h-11 items-center text-sm font-bold"
+          {/* 내 운동이면 같이 할 사람을 고를 것이 없어 칸째 두지 않는다 */}
+          {!forMe && (
+            <div className="py-3.5">
+              <CardHead title="누가 해요" />
+              <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="누가 해요">
+                <Chip on={!withParent} onClick={() => setWithParent(false)}>
+                  <Named name={name} tail="혼자" spaced />
+                </Chip>
+                <Chip
+                  on={withParent}
+                  disabled={Boolean(notTogether)}
+                  onClick={() => setWithParent(true)}
                 >
-                  운동 루틴 바꾸기
-                </NavLink>
+                  <Named name={profile?.name ?? "나"} tail="도 같이" />
+                </Chip>
               </div>
-            )}
-          </div>
+              {/* 같이를 못 켜는 날은 까닭과 시간표로 가는 길을 둔다 */}
+              {notTogether && (
+                <div className="mt-2">
+                  <p className="text-caption text-ink-soft">{notTogether}</p>
+                  <NavLink
+                    href="/settings/schedule"
+                    className="press text-signal-deep inline-flex min-h-11 items-center text-sm font-bold"
+                  >
+                    운동 루틴 바꾸기
+                  </NavLink>
+                </div>
+              )}
+            </div>
+          )}
         </section>
         {error && (
           <div ref={errorRef} role="alert" className="card flex items-center justify-between gap-3">
@@ -441,7 +470,7 @@ function PlanForm() {
               </NavLink>
             )}
             {/* 만 4세 미만이면 측정 길을 두지 않는다(규칙 4) */}
-            {unmeasured && kid.profileId && kid.measurable !== false && (
+            {unmeasured && who.profileId && who.measurable !== false && (
               <NavLink
                 href={measureHref}
                 className="press text-signal-strong min-h-11 shrink-0 content-center text-sm font-extrabold"

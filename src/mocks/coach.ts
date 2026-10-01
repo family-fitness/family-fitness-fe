@@ -6,6 +6,7 @@
  * retrieve(국민체력100 처방 · 영상 찾기) · compose(순서 짜기) · verify(근거 확인하기).
  * 목은 단계마다 1.1초씩 걸리게 흉내 낸다.
  * 다 짜면 **제안**이 된다. 부모가 「오늘 운동으로 등록」 해야 미션이 생긴다(규칙 1).
+ * 대상은 아이뿐 아니라 보호자 본인도 된다. 그러면 참여자 역할이 PARENT 이고 처방 근거가 성인 연령대다.
  *
  * ▲ 서버의 편성 요청(`StartCoachRunRequest`)은 한 주 단위다. 하루 단위와 조건
  * (`date` · `quiet` · `place` · `focusFactor` · `withParent`)을 요청해 두었다.
@@ -51,8 +52,12 @@ const STEP_MS = 1100;
 /** AI 서비스의 네 단계 그대로(인터페이스 명세 §5.4) — assess · retrieve · compose · verify */
 const STEP_NAMES = ["assess", "retrieve", "compose", "verify"] as const;
 
+function profileOf(profileId: string) {
+  return db.profiles.profiles.find((p) => p.profileId === profileId);
+}
+
 function nameOf(profileId: string) {
-  return db.profiles.profiles.find((p) => p.profileId === profileId)?.name ?? "아이";
+  return profileOf(profileId)?.name ?? "아이";
 }
 
 /**
@@ -99,8 +104,7 @@ function stepSummary(
         : `지금 키우기 좋은 영역 ${focus}`;
       if (measuredOf(p.profileId))
         return `${who}, 측정 ${latest?.items?.length ?? 0}항목, ${target}`;
-      const group =
-        db.profiles.profiles.find((x) => x.profileId === p.profileId)?.ageGroup ?? "유소년";
+      const group = profileOf(p.profileId)?.ageGroup ?? "유소년";
       const body = p.heightCm && p.weightKg ? `, 키 ${p.heightCm}cm, 몸무게 ${p.weightKg}kg` : "";
       return `${who}, 측정 없음, ${group}${body}, ${target}`;
     }
@@ -120,10 +124,11 @@ function proposalFor(p: PlanParams, focus: string, runId: string) {
   const kid = nameOf(p.profileId);
   const first = sessions.find((s) => s.phase === "MAIN") ?? sessions[0];
   // 같이 하는 사람은 지금 짜는 보호자 — 새 가족에서 시연 가족 엄마가 들어가지 않게
-  const parentId = acting()?.role === "PARENT" ? acting()?.profileId : undefined;
-  // 처방 근거는 그 아이의 연령대로
-  const ageGroup =
-    db.profiles.profiles.find((x) => x.profileId === p.profileId)?.ageGroup ?? "유소년";
+  const parentId = (acting()?.role === "PARENT" ? acting()?.profileId : undefined) ?? DEMO.mom;
+  // 대상은 아이일 수도, 보호자 본인일 수도 있다(서버처럼 대상의 역할 그대로)
+  const subject = profileOf(p.profileId);
+  // 처방 근거는 대상의 연령대로. 보호자면 성인
+  const ageGroup = subject?.ageGroup ?? "유소년";
   return {
     position: 0,
     title: `${focus} 키우기 ${minutes}분`,
@@ -136,10 +141,11 @@ function proposalFor(p: PlanParams, focus: string, runId: string) {
     targetValue: minutes,
     startDate: p.date,
     endDate: p.date,
+    // 대상이 맨 앞. 보호자 본인의 운동이면 같이 하는 사람을 또 넣지 않는다(서버도 대상과 같으면 뺀다)
     participants: [
-      { profileId: p.profileId, role: "CHILD", coachRole: "주인공" },
-      ...(p.withParent
-        ? [{ profileId: parentId ?? DEMO.mom, role: "PARENT", coachRole: "같이 하는 사람" }]
+      { profileId: p.profileId, role: subject?.role ?? "CHILD", coachRole: "주인공" },
+      ...(p.withParent && parentId !== p.profileId
+        ? [{ profileId: parentId, role: "PARENT", coachRole: "같이 하는 사람" }]
         : []),
     ],
     video: null,
@@ -238,8 +244,12 @@ export const coaching = [
     const body = ((await request.json().catch(() => ({}))) ?? {}) as Partial<PlanParams> & {
       minutesPerSession?: number;
     };
-    const kid =
+    // 대상은 가족 누구든(아이 또는 보호자 본인). 서버처럼 가족이 아니면 422
+    const subject =
       body.profileId ?? db.profiles.profiles.find((p) => p.role === "CHILD")?.profileId ?? DEMO.kid;
+    if (body.profileId && !profileOf(body.profileId)) {
+      return fail(422, "NOT_FAMILY_MEMBER", "이 가족 구성원이 아닙니다");
+    }
     const minutes = Math.max(5, Math.min(60, body.minutes ?? body.minutesPerSession ?? 20));
     const run: Run = {
       coachRunId: uuid(),
@@ -253,7 +263,7 @@ export const coaching = [
       missionCount: 0,
       rejectedReason: null,
       params: {
-        profileId: kid,
+        profileId: subject,
         date: body.date ?? toDateString(new Date()),
         minutes,
         quiet: body.quiet ?? true,
@@ -261,8 +271,8 @@ export const coaching = [
         focusFactor: body.focusFactor ?? null,
         withParent: body.withParent ?? false,
         // 편성 요청에 실어 온 값이 먼저, 없으면 가입 때 받아 둔 값
-        heightCm: body.heightCm ?? db.body[kid]?.heightCm ?? null,
-        weightKg: body.weightKg ?? db.body[kid]?.weightKg ?? null,
+        heightCm: body.heightCm ?? db.body[subject]?.heightCm ?? null,
+        weightKg: body.weightKg ?? db.body[subject]?.weightKg ?? null,
       },
       startedAt: Date.now(),
     };

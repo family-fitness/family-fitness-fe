@@ -2,7 +2,6 @@
 
 import { ArrowDown, ArrowUp, Minus, Plus, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -22,40 +21,45 @@ import {
   useFamilyProfiles,
   useRestDaysIn,
 } from "@/lib/api/queries";
-import type { Uuid } from "@/lib/api/types";
+import type { Uuid, Weekday } from "@/lib/api/types";
 import { errorMessage } from "@/lib/errors";
 import {
   MAX_MOVES,
   MOVE_MINUTES,
-  repeatDates,
   routineMinutes,
   routineTitle,
   toSessions,
   upcomingDays,
 } from "@/lib/routine";
-import { sharedDays } from "@/lib/schedule";
+import { WEEK, dayLabel, sharedDays } from "@/lib/schedule";
 import { PHASE_LABEL } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
-import { WEEKDAY, monthOf, today, weekdayCode } from "@/lib/today";
+import { monthOf, today, weekOf, weekdayCode } from "@/lib/today";
 import { cn } from "@/lib/utils";
-import { childFinderHref, clipHref } from "@/lib/videos";
+import { childFinderHref, clipHref, exerciseLine } from "@/lib/videos";
 import { useRoleStore } from "@/stores/role-store";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
 /**
- * 직접 만들기 — 담은 동작을 세우고, 누가 · 언제 할지 정해 등록한다.
+ * 직접 만들기. 담은 동작을 세우고, 누가 어느 요일에 몇 주 동안 할지 정해 루틴으로 등록한다.
  *
- * AI 편성의 다른 길이다(9/23 "선택해서 미션을 생성"). 부모가 고른 것이라 제안을 거치지 않고
- * 바로 그날의 운동이 된다. 여러 날 · 몇 주에 한 번에 넣을 수 있다(삼성헬스 프로그램처럼) —
- * 날마다 하나씩 따로 등록돼서, 한 날을 못 해도 다른 날은 그대로다.
+ * AI 운동 추천의 다른 길이다(9/23 "선택해서 미션을 생성"). 보호자가 고른 것이라 제안을 거치지 않고
+ * 바로 그날의 운동이 된다. 루틴은 서버에 날마다 하나씩 따로 등록돼서, 한 날을 못 해도 다른 날은 그대로다.
  *
- * 누르는 차례가 곧 한 화면의 차례다: 동작 → 누가 → 언제 → 등록.
+ * 누르는 차례가 곧 한 화면의 차례다: 동작, 누가, 운동 요일과 기간, 등록.
  */
 const WEEKS = [
-  { value: "1", label: "이번 한 번" },
+  { value: "1", label: "이번 주만" },
   { value: "2", label: "2주" },
   { value: "4", label: "4주" },
 ] as const;
+
+/** 요일 글자를 월요일부터 이어 쓴다. 「월, 수, 금」 */
+function weekdayList(list: readonly Weekday[]): string {
+  return WEEK.filter((d) => list.includes(d))
+    .map(dayLabel)
+    .join(", ");
+}
 
 export default function CustomPlanPage() {
   return (
@@ -66,7 +70,6 @@ export default function CustomPlanPage() {
 }
 
 function CustomPlan() {
-  const router = useRouter();
   const { familyId, error: sessionError, refetch: refetchMe } = useSession();
   const childProfileId = useRoleStore((s) => s.childProfileId);
   const {
@@ -88,19 +91,23 @@ function CustomPlan() {
   const kidIds = new Set(kids.map((k) => k.profileId ?? ""));
   // 아이가 적어도 하나 — 부모만 하는 운동은 아이 화면 · 캘린더 · 리그 어디에도 안 보인다
   const chosenKid = chosen.find((id) => kidIds.has(id));
-  // 「운동할 수 있는 날」 점은 고른 사람 모두의 시간표가 겹치는 요일에. 첫 아이 것만 보면
-  // 아이는 평일, 보호자는 주말인데도 평일에 점이 찍혔다
+  // 운동 루틴에 적은 요일은 고른 사람 모두의 시간표가 겹치는 요일이다. 첫 아이 것만 보면
+  // 아이는 평일, 보호자는 주말인데도 평일이 골라졌다
   const schedules = useAvailabilities(chosen);
   const now = today();
-  const [days, setDays] = useState<string[]>([now]);
-  const [weeks, setWeeks] = useState<(typeof WEEKS)[number]["value"]>("1");
+  /** 보호자가 직접 고른 요일. 손대기 전(null)에는 운동 루틴에 적은 요일을 쓴다 */
+  const [picked, setPicked] = useState<Weekday[] | null>(null);
+  const [weeks, setWeeks] = useState<(typeof WEEKS)[number]["value"]>("4");
   const [problem, setProblem] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  /** 등록을 마쳤다 — 떠나는 사이 담은 동작이 비어 「아직 없어요」 가 번쩍 뜨지 않게 */
-  const [sent, setSent] = useState(false);
+  /**
+   * 등록을 마치고 보여 줄 요약 한 줄. 떠나는 사이 담은 동작이 비어 「아직 없어요」 가
+   * 번쩍 뜨지 않게, 이 값이 있으면 등록 안내만 세운다
+   */
+  const [sent, setSent] = useState<string | null>(null);
   /** 이미 등록한 날 — 중간에 실패해 다시 누르면 이 날들은 건너뛴다(두 번 생기지 않게) */
   const [created, setCreated] = useState<string[]>([]);
-  /** 화면을 떠났나 — 등록이 끝나도 떠난 사람을 캘린더로 끌고 가지 않는다 */
+  /** 화면을 떠났나. 떠난 뒤에 등록이 끝나면 화면 상태를 건드리지 않는다 */
   const here = useRef(true);
   useEffect(() => {
     here.current = true;
@@ -110,23 +117,37 @@ function CustomPlan() {
   }, []);
 
   const minutes = routineMinutes(moves);
-  const upcoming = upcomingDays(now);
+  const free = schedules ? sharedDays(schedules.map((w) => w.slots)) : [];
+  // 운동 루틴을 아직 안 적었으면 오늘 요일 하나로 시작한다
+  const weekdays = picked ?? (free.length > 0 ? free : [weekdayCode(now)]);
+  const freeLabel = chosen.length > 1 ? "다 같이 운동할 수 있는 요일" : "운동 루틴에 적은 요일";
   /*
-    쉬는 날 카드를 쓴 날에는 운동을 넣지 않는다. 쉬는 날이 이어서 한 날 · 리그에서 빠지는 날인데
-    직접 만들기로 운동을 넣으면 아이 홈은 「오늘은 쉬는 날이에요」 이고 운동은 걸려 있는 날이 된다.
-    고를 날 · 되풀이한 날이 든 달의 쉬는 날을 모두 받는다(4주 되풀이면 달을 넘는다)
+    기간은 오늘부터 센다. 이번 주만은 오늘부터 이번 주 일요일까지, 2주와 4주는 오늘부터 14일과 28일.
+    그 사이 고른 요일마다 하루씩 운동이 생긴다. 오늘 요일을 골랐으면 오늘부터다
   */
-  const span = repeatDates(upcoming, Number(weeks));
+  const span =
+    weeks === "1" ? weekOf(now).days.filter((d) => d >= now) : upcomingDays(now, 7 * Number(weeks));
+  /*
+    쉬는 날 카드를 쓴 날에는 운동을 넣지 않는다. 쉬는 날이 이어서 한 날, 리그에서 빠지는 날인데
+    직접 만들기로 운동을 넣으면 아이 홈은 「오늘은 쉬는 날이에요」 이고 운동은 걸려 있는 날이 된다.
+    기간이 든 달의 쉬는 날을 모두 받는다(4주면 달을 넘는다)
+  */
   const rest = useRestDaysIn(familyId ?? undefined, [...new Set(span.map(monthOf))]);
-  const repeated = repeatDates(
-    days.filter((d) => !rest.has(d)),
-    Number(weeks),
-  );
-  const dates = repeated.filter((d) => !rest.has(d));
-  const skippedRest = repeated.length - dates.length;
+  const inPeriod = span.filter((d) => weekdays.includes(weekdayCode(d)));
+  const dates = inPeriod.filter((d) => !rest.has(d));
+  const skippedRest = inPeriod.length - dates.length;
   const pending = dates.filter((d) => !created.includes(d));
-  const free = new Set(schedules ? sharedDays(schedules.map((w) => w.slots)) : []);
-  const freeLabel = chosen.length > 1 ? "다 같이 운동할 수 있는 날" : "운동할 수 있는 날";
+  /** 「매주 월, 수, 금, 4주 동안(12회)」 처럼 사람이 읽는 한 줄 */
+  const summary =
+    weekdays.length === 0
+      ? "운동 요일을 골라 주세요"
+      : dates.length === 0
+        ? weeks === "1"
+          ? "이번 주에는 남은 운동 요일이 없어요"
+          : "고른 요일이 모두 쉬는 날이에요"
+        : weeks === "1"
+          ? `이번 주 ${weekdayList(dates.map(weekdayCode))}(${dates.length}회)`
+          : `${dates[0] === now ? "오늘부터 " : ""}매주 ${weekdayList(weekdays)}, ${weeks}주 동안(${dates.length}회)`;
 
   const toggleWho = (id: Uuid) => {
     const next = chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id];
@@ -134,8 +155,8 @@ function CustomPlan() {
     if (!next.some((x) => kidIds.has(x))) return;
     setWho(next);
   };
-  const toggleDay = (d: string) =>
-    setDays((list) => (list.includes(d) ? list.filter((x) => x !== d) : [...list, d].sort()));
+  const toggleWeekday = (d: Weekday) =>
+    setPicked(weekdays.includes(d) ? weekdays.filter((x) => x !== d) : [...weekdays, d]);
 
   const submit = async () => {
     if (moves.length === 0 || !chosenKid || pending.length === 0) return;
@@ -157,11 +178,10 @@ function CustomPlan() {
         });
         done.push(date);
       }
-      // 다 등록했다. 담아 둔 동작은 비운다 — 떠난 뒤라도
+      // 다 등록했다. 담아 둔 동작은 비운다. 떠난 뒤라도
       clear();
       if (!here.current) return;
-      setSent(true);
-      router.push(dates.length === 1 && dates[0] === now ? "/parent" : "/calendar");
+      setSent(summary);
     } catch (e) {
       const made = [...created, ...done];
       setCreated(made);
@@ -170,7 +190,7 @@ function CustomPlan() {
         { NOT_A_PARENT: "보호자만 운동을 만들 수 있어요." },
         "등록하지 못했어요.",
       );
-      setProblem(made.length > 0 ? `${made.length}일은 등록했어요. ${reason}` : reason);
+      setProblem(made.length > 0 ? `${made.length}회는 등록했어요. ${reason}` : reason);
     } finally {
       if (here.current) setSaving(false);
     }
@@ -181,9 +201,24 @@ function CustomPlan() {
       <>
         <AppBar back title="직접 만들기" />
         <Stage wide>
-          <p className="card-hero text-center text-sm font-extrabold" role="status">
-            등록했어요
-          </p>
+          <div className="card-hero text-center" role="status">
+            <p className="text-lead font-extrabold">루틴을 등록했어요</p>
+            <p className="text-caption text-ink-soft mt-1 font-semibold">{sent}</p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <NavLink
+                href="/parent"
+                className="press bg-sub flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold"
+              >
+                홈으로
+              </NavLink>
+              <NavLink
+                href="/calendar"
+                className="press bg-signal-strong flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold text-white"
+              >
+                캘린더 보기
+              </NavLink>
+            </div>
+          </div>
         </Stage>
       </>
     );
@@ -226,13 +261,7 @@ function CustomPlan() {
   }
 
   const label =
-    dates.length === 0
-      ? "할 날을 골라 주세요"
-      : dates.length === 1 && dates[0] === now
-        ? "오늘 운동으로 등록"
-        : created.length > 0
-          ? `남은 ${pending.length}일 등록`
-          : `${dates.length}일에 등록`;
+    created.length > 0 && pending.length > 0 ? `남은 ${pending.length}회 등록` : "루틴 등록";
 
   return (
     <>
@@ -273,6 +302,9 @@ function CustomPlan() {
                     <span className="min-w-0 flex-1">
                       <span className="line-clamp-2 text-sm leading-snug font-extrabold">
                         {m.clip.title}
+                      </span>
+                      <span className="text-caption text-ink-soft block truncate">
+                        {exerciseLine(m.clip)}
                       </span>
                       <span className="text-caption text-ink-soft block">
                         {PHASE_LABEL[m.clip.phase]} {m.minutes}분
@@ -391,48 +423,36 @@ function CustomPlan() {
           </ul>
         </Card>
 
-        {/* 3. 언제 — 이번 주 날짜. 운동할 수 있는 날에 점 */}
+        {/* 3. 운동 요일과 기간. 처음에는 운동 루틴에 적은 요일이 골라져 있고, 그 요일에 점 */}
         <Card>
-          <CardHead title="언제 할까요" meta={`${dates.length}일`} />
+          <CardHead
+            title="운동 요일"
+            meta={weekdays.length > 0 ? `주 ${weekdays.length}일` : undefined}
+          />
           <ul className="mt-3 grid grid-cols-7 gap-1.5">
-            {upcoming.map((d) => {
-              const resting = rest.has(d);
-              const on = days.includes(d) && !resting;
+            {WEEK.map((d) => {
+              const on = weekdays.includes(d);
+              const mine = free.includes(d);
               return (
                 <li key={d}>
                   <button
                     type="button"
                     aria-pressed={on}
-                    disabled={resting}
-                    aria-label={`${Number(d.slice(8))}일 ${WEEKDAY[new Date(`${d}T00:00:00`).getDay()]}요일${resting ? ", 쉬는 날" : free.has(weekdayCode(d)) ? `, ${freeLabel}` : ""}`}
-                    onClick={() => toggleDay(d)}
+                    aria-label={`${dayLabel(d)}요일${mine ? `, ${freeLabel}` : ""}`}
+                    onClick={() => toggleWeekday(d)}
                     className={cn(
-                      "press flex min-h-16 w-full flex-col items-center justify-center gap-0.5 rounded-2xl text-xs font-extrabold",
-                      on ? "bg-signal-strong text-white" : "bg-sub",
-                      resting && "text-faint opacity-60",
+                      "press flex min-h-14 w-full flex-col items-center justify-center gap-1 rounded-2xl text-sm font-extrabold",
+                      on ? "bg-signal-strong text-white" : "bg-sub text-ink-soft",
                     )}
                   >
-                    <span className={cn(!on && "text-ink-soft")}>
-                      {d === now ? "오늘" : WEEKDAY[new Date(`${d}T00:00:00`).getDay()]}
-                    </span>
-                    <span className="text-sm tabular-nums">{Number(d.slice(8))}</span>
-                    {resting ? (
-                      <span aria-hidden className="text-micro leading-none">
-                        쉬는 날
-                      </span>
-                    ) : (
-                      <span
-                        aria-hidden
-                        className={cn(
-                          "size-1.5 rounded-full",
-                          free.has(weekdayCode(d))
-                            ? on
-                              ? "bg-white"
-                              : "bg-signal"
-                            : "bg-transparent",
-                        )}
-                      />
-                    )}
+                    {dayLabel(d)}
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "size-1.5 rounded-full",
+                        mine ? (on ? "bg-white" : "bg-signal") : "bg-transparent",
+                      )}
+                    />
                   </button>
                 </li>
               );
@@ -444,22 +464,26 @@ function CustomPlan() {
             </p>
           )}
           <p className="text-caption text-ink-soft mt-2">
-            점이 찍힌 날은 {freeLabel}이에요.{" "}
+            {free.length > 0
+              ? `점이 찍힌 요일은 ${freeLabel}이에요.`
+              : "운동 루틴에 요일을 적어 두면 그 요일이 먼저 골라져요."}{" "}
             <NavLink href="/settings/schedule" className="text-signal-deep font-bold">
-              바꾸기
+              {free.length > 0 ? "바꾸기" : "적으러 가기"}
             </NavLink>
           </p>
           <div className="mt-3 flex items-center justify-between gap-2">
-            <p className="text-sm font-bold">되풀이</p>
-            <Segmented value={weeks} options={WEEKS} onChange={setWeeks} label="몇 주 되풀이" />
+            <p className="text-sm font-bold">기간</p>
+            <Segmented value={weeks} options={WEEKS} onChange={setWeeks} label="기간" />
           </div>
         </Card>
       </Stage>
 
       <Dock>
         <div className="card-hero py-3">
-          <p className="text-caption text-ink-soft text-center font-semibold">
-            {moves.length}개, {minutes}분.{" "}
+          {/* 루틴 한 줄. 「매주 월, 수, 금, 4주 동안(12회)」 */}
+          <p className="text-center text-sm font-extrabold">{summary}</p>
+          <p className="text-caption text-ink-soft mt-0.5 text-center font-semibold">
+            {moves.length}개, {minutes}분,{" "}
             {/* 가족을 받는 동안은 「아무도 안 골랐어요」 가 아니다 */}
             {familyLoading
               ? "…"

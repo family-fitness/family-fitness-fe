@@ -3,7 +3,7 @@
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { ParentOnly } from "@/components/app-shell/parent-only";
@@ -29,6 +29,7 @@ import { fromSessions } from "@/lib/routine";
 import { PHASE_LABEL, proposalSessions, stepMinutes, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { cn, withJosa } from "@/lib/utils";
+import { exerciseLine, sessionHref } from "@/lib/videos";
 import { useRoutineReady, useRoutineStore } from "@/stores/routine-store";
 
 /**
@@ -105,6 +106,13 @@ function Proposal() {
   const nameOf = (id: string | undefined) =>
     family?.profiles?.find((p) => p.profileId === id)?.name ?? "가족";
   const people = (proposal?.participants ?? []).map((p) => nameOf(p.profileId));
+  // 첫 참여자가 추천 대상이다(서버가 대상을 맨 앞에 둔다). 다시 만들기도 그 사람으로 연다
+  const subjectId = proposal?.participants?.[0]?.profileId;
+  const replanHref = subjectId ? `/plan?profileId=${encodeURIComponent(subjectId)}` : "/plan";
+  // 보호자 본인의 운동이면 보호자 홈(고른 아이의 운동만 보인다) 대신 「시작하기」 가 있는 운동 탭으로
+  const forParent =
+    (proposal?.participants ?? []).length > 0 &&
+    !(proposal?.participants ?? []).some((p) => p.role === "CHILD");
   const phases = (["WARMUP", "MAIN", "COOLDOWN"] as const)
     .map((p) => [p, sessions.filter((s) => s.phase === p).length] as const)
     .filter(([, n]) => n > 0)
@@ -132,7 +140,7 @@ function Proposal() {
     setProblem(null);
     try {
       await approve.mutateAsync();
-      router.push("/parent");
+      router.push(forParent ? "/parent/workout" : "/parent");
     } catch (e) {
       setProblem(
         errorMessage(
@@ -235,7 +243,7 @@ function Proposal() {
 
             {open && (
               <Link
-                href="/plan"
+                href={replanHref}
                 className="press text-ink-soft flex min-h-11 items-center justify-center text-sm font-bold"
               >
                 조건 바꿔 다시 만들기
@@ -247,7 +255,7 @@ function Proposal() {
         {settled && (
           <div className="grid grid-cols-2 gap-2">
             <Link
-              href={approved ? "/parent" : "/plan"}
+              href={approved ? "/parent" : replanHref}
               className="press bg-sub flex min-h-12 items-center justify-center rounded-2xl text-sm font-extrabold"
             >
               {approved ? "홈으로" : "다시 만들기"}
@@ -350,7 +358,7 @@ function MoveList({ sessions }: { sessions: MissionSession[] }) {
           >
             {i + 1}
           </span>
-          <div className="card flex items-center gap-3">
+          <MoveRow href={sessionHref(s)}>
             {s.clip?.videoId ? (
               <VideoThumb
                 videoId={s.clip.videoId}
@@ -362,13 +370,28 @@ function MoveList({ sessions }: { sessions: MissionSession[] }) {
             )}
             <span className="min-w-0 flex-1">
               <span className="line-clamp-2 text-sm font-extrabold">{s.title}</span>
-              <span className="text-caption text-ink-soft mt-0.5 block">
+              <span className="text-caption text-ink-soft mt-0.5 block truncate">
+                {exerciseLine(s)}
+              </span>
+              <span className="text-caption text-ink-soft block">
                 {PHASE_LABEL[s.phase]} {stepMinutes(s)}분
               </span>
             </span>
-          </div>
+          </MoveRow>
         </li>
       ))}
     </ol>
+  );
+}
+
+/** 동작 카드 하나. 영상이 있으면 누르면 운동 상세(영상과 설명)로 */
+function MoveRow({ href, children }: { href: string | undefined; children: ReactNode }) {
+  const card = "card flex items-center gap-3";
+  return href ? (
+    <Link href={href} className={cn("press", card)}>
+      {children}
+    </Link>
+  ) : (
+    <div className={card}>{children}</div>
   );
 }

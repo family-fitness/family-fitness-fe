@@ -21,7 +21,9 @@ import {
   unusedInvite,
   type ReviewKind,
 } from "@/lib/review-login";
+import { api, path } from "@/lib/api/client";
 import { useDevLogin, useGoogleLogin, useInvitePeek, useReviewLogin } from "@/lib/api/queries";
+import type { FamilyProfiles } from "@/lib/api/types";
 import { blocksClaim, claimErrorMessage, invitePeekLine, normalizeCode } from "@/lib/invite";
 import { WITHDRAWN_NOTICE, cameAfterWithdrawal } from "@/lib/withdrawal";
 import { useAuthStore } from "@/stores/auth-store";
@@ -246,8 +248,10 @@ function LoginContent() {
    *            `signIn` 이 기기에 남은 역할을 비운다
    *   FRESH    평소 가입과 같이 스플래시가 시작 고르기(새 가족 만들기, 초대 코드로 참여하기)로 보낸다
    *   INVITED  서버가 준 초대 코드를 채운 합류 화면으로
+   *   아이 입장  FAMILY 로 들어가 이 기기를 아이 화면으로 두고 체험 가족의 첫 아이 홈으로(`asKid`).
+   *            아이를 못 찾으면 아이 홈이 누구인지 고르게 한다
    */
-  const review = async (kind: ReviewKind) => {
+  const review = async (kind: ReviewKind, asKid = false) => {
     setPicking(false);
     setError(null);
     setSigning("review");
@@ -257,6 +261,20 @@ function LoginContent() {
         new Promise((done) => setTimeout(done, STAND_IN_MIN_MS)),
       ]);
       signIn(auth);
+      if (asKid) {
+        const familyId = auth.profiles?.find((p) => p.familyId)?.familyId;
+        const family = familyId
+          ? await api
+              .get<FamilyProfiles>(path`/families/${familyId}/profiles`)
+              .catch(() => undefined)
+          : undefined;
+        const firstKid = family?.profiles?.find((p) => p.role === "CHILD");
+        const role = useRoleStore.getState();
+        role.setMode("kid");
+        role.setChild(firstKid?.profileId ?? null);
+        router.replace("/kid");
+        return;
+      }
       if (kind === "FAMILY") useRoleStore.getState().setMode("parent");
       router.replace(reviewDestination(auth));
     } catch (e) {
@@ -440,10 +458,10 @@ function LoginContent() {
       <Sheet open={picking} onClose={() => setPicking(false)} title="어떻게 둘러볼까요">
         <ul className="space-y-2 pb-2">
           {REVIEW_WAYS.map((way) => (
-            <li key={way.kind}>
+            <li key={way.title}>
               <button
                 type="button"
-                onClick={() => void review(way.kind)}
+                onClick={() => void review(way.kind, way.asKid)}
                 className="press bg-sub flex min-h-16 w-full items-center gap-3 rounded-2xl px-4 py-3 text-left"
               >
                 <span className="min-w-0 flex-1">

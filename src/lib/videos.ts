@@ -1,6 +1,8 @@
 import type { ClipView, SessionPhase, VideoClip } from "@/lib/api/types";
 import { isFactor, type Factor } from "@/lib/fitness-factors";
 import { safeUrl } from "@/lib/safe-url";
+import { PHASE_LABEL } from "@/lib/session-plan";
+import { withJosa } from "@/lib/utils";
 
 /**
  * 운동 찾기(`/videos`) 주소와 「누구의 목록인가」.
@@ -310,6 +312,50 @@ export function sessionHref(s: {
     mediaUrl: s.clip.mediaUrl ?? null,
     thumbnailUrl: s.clip.thumbnailUrl ?? null,
   });
+}
+
+const PHASE_ONLY: Record<SessionPhase, string> = {
+  WARMUP: "몸을 데우는 준비운동이에요",
+  MAIN: "힘을 기르는 본운동이에요",
+  COOLDOWN: "몸을 천천히 푸는 정리운동이에요",
+};
+
+/**
+ * 운동 목록 칸마다 이름 아래에 쓰는 한 줄 설명. 상세 화면 제목 아래에도 같은 말을 쓴다.
+ *
+ * 설명 원문을 주는 API 가 없어서 칸에 있는 값으로 짓는다. 앞 문장은 단계와 기르는 체력,
+ * 뒤 문장은 집에서 할 수 있는지, 조용한지, 도구가 드는지. 모르는 값은 말하지 않는다.
+ * 아이 화면도 같은 말을 쓴다. 「근력을 기르는 본운동이에요. 집에서 조용히 할 수 있어요」
+ */
+export function exerciseLine(e: {
+  phase?: SessionPhase | null;
+  factor?: string | null;
+  homeOk?: boolean | null;
+  quiet?: boolean | null;
+  props?: boolean | null;
+}): string {
+  const factor = isFactor(e.factor) ? e.factor : null;
+  const what =
+    factor && e.phase
+      ? `${withJosa(factor, "을를")} 기르는 ${PHASE_LABEL[e.phase]}이에요`
+      : factor
+        ? `${withJosa(factor, "을를")} 기르는 운동이에요`
+        : e.phase
+          ? PHASE_ONLY[e.phase]
+          : "영상을 보며 따라 하는 운동이에요";
+
+  const place = [e.homeOk && "집에서", e.quiet && "조용히"].filter(Boolean).join(" ");
+  const how =
+    e.props === true
+      ? place
+        ? `도구가 있으면 ${place} 할 수 있어요`
+        : "도구가 있어야 해요"
+      : e.props === false
+        ? `도구 없이 ${place ? `${place} ` : ""}할 수 있어요`
+        : place
+          ? `${place} 할 수 있어요`
+          : "";
+  return how ? `${what}. ${how}` : what;
 }
 
 /** 공단 장면 이미지 주소만 받는다. 다른 주소는 CSP 가 막아 어차피 빈 칸이 된다 */
