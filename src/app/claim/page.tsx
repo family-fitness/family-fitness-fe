@@ -8,13 +8,15 @@ import { Button } from "@/components/ui/button";
 import { DateField } from "@/components/ui/date-field";
 import { Field } from "@/components/ui/field";
 import { ApiError } from "@/lib/api/client";
+import { NavLink } from "@/components/ui/nav-link";
 import type { InvitePeek, Role } from "@/lib/api/types";
-import { errorMessage } from "@/lib/errors";
 import { useClaimProfile, useInvitePeek } from "@/lib/api/queries";
 import { rangeHint } from "@/lib/body";
 import {
   type JoinForm,
+  blocksClaim,
   claimBody,
+  claimErrorMessage,
   inviteBirthRule,
   invitePeekLine,
   isFamilyInvite,
@@ -28,9 +30,6 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { Initial } from "@/components/ui/initial";
 import { ArtIcon } from "@/components/ui/art-icon";
-
-/** 코드가 틀렸다는 뜻인 것만 — 이 코드로는 들어갈 수 없다. 그 밖의 실패는 넣어 보게 둔다 */
-const BAD_CODE = new Set(["CODE_NOT_FOUND", "CODE_EXPIRED", "ALREADY_CLAIMED"]);
 
 const EMPTY_FORM: JoinForm = { name: "", birthDate: "", sex: null, height: "", weight: "" };
 
@@ -52,7 +51,8 @@ function ClaimContent() {
 
   const [code, setCode] = useState(() => normalizeCode(params.get("code") ?? ""));
   const [form, setForm] = useState<JoinForm>(EMPTY_FORM);
-  const [error, setError] = useState<string | null>(null);
+  /** 마지막으로 누른 참여가 실패한 까닭. 문구는 lib/invite 의 표 하나로 정한다 */
+  const [failure, setFailure] = useState<unknown>(null);
   /*
     코드가 어디로 들어가는 초대인지 넣기 전에 본다.
 
@@ -64,11 +64,14 @@ function ClaimContent() {
   const seat = peek.data;
   const family = isFamilyInvite(seat);
   /*
-    미리 보기가 「틀린 코드」 라고 할 때만 막는다. 미리 보기가 없는 서버이거나 망이 흔들렸으면
-    넣어 보게 둔다 — 진짜 답은 `/profiles/claim` 이 준다. 전에는 미리 보기가 안 되면 단추가 영영 잠겼다
+    미리 보기가 「이 코드로는 못 들어간다」 고 할 때만 막는다(없음, 기한, 이미 씀, 이미 이 가족, 이미 다른 가족,
+    너무 많이 틀림). 미리 보기가 없는 서버이거나 망이 흔들렸으면 넣어 보게 둔다 — 진짜 답은 `/profiles/claim` 이 준다.
+    전에는 미리 보기가 안 되면 단추가 영영 잠겼다
   */
-  const badCode =
-    peek.error instanceof ApiError && BAD_CODE.has(peek.error.code) ? peek.error : null;
+  const badCode = blocksClaim(peek.error) ? peek.error : null;
+  const shownError = failure ?? badCode;
+  // 다른 가족에 이미 있는 계정 — 탈퇴는 설정에 있다
+  const inOtherFamily = shownError instanceof ApiError && shownError.code === "ALREADY_IN_FAMILY";
   const role: Role = seat?.role ?? "PARENT";
   const problem = family ? joinProblem(role, form) : null;
   const canSubmit =
@@ -91,7 +94,7 @@ function ClaimContent() {
 
   const submit = async () => {
     if (!canSubmit) return;
-    setError(null);
+    setFailure(null);
     try {
       const res = await claim.mutateAsync(claimBody(code, seat, form));
       // 가입 도중이라는 걸 다음 화면이 알아야 한다. 고르고 나서 멈추면 안 된다
@@ -99,13 +102,13 @@ function ClaimContent() {
         res.nextStep === "SUPPORT_MODE" ? "/settings/support-mode?from=claim" : "/start",
       );
     } catch (e) {
-      setError(claimMessage(e));
+      setFailure(e);
     }
   };
 
   const edit = (patch: Partial<JoinForm>) => {
     setForm((f) => ({ ...f, ...patch }));
-    setError(null);
+    setFailure(null);
   };
 
   return (
@@ -120,7 +123,7 @@ function ClaimContent() {
           value={code}
           onChange={(e) => {
             setCode(normalizeCode(e.target.value));
-            setError(null);
+            setFailure(null);
           }}
           onKeyDown={(e) => e.key === "Enter" && !family && void submit()}
           placeholder="ABC123"
@@ -136,10 +139,18 @@ function ClaimContent() {
         {/* 가족 초대 — 들어오는 사람이 자기 정보를 넣는다 */}
         {seat && family && <JoinFields role={role} form={form} onChange={edit} problem={problem} />}
 
-        {(error ?? badCode) && (
+        {shownError != null && (
           <p role="alert" className="text-signal-deep text-center text-sm font-semibold">
-            {error ?? claimMessage(badCode)}
+            {claimErrorMessage(shownError)}
           </p>
+        )}
+        {inOtherFamily && (
+          <NavLink
+            href="/settings"
+            className="press text-signal-strong mx-auto flex min-h-11 w-fit items-center px-4 text-sm font-bold"
+          >
+            설정으로 가기
+          </NavLink>
         )}
 
         <Button size="block" disabled={!canSubmit} loading={claim.isPending} onClick={submit}>
@@ -303,16 +314,3 @@ function BodyInput({
     </label>
   );
 }
-
-const claimMessage = (error: unknown) =>
-  errorMessage(
-    error,
-    {
-      CODE_NOT_FOUND: "없는 코드예요.",
-      CODE_EXPIRED: "기한이 지난 코드예요.",
-      ALREADY_CLAIMED: "다른 계정이 먼저 연결한 코드예요.",
-      ALREADY_MEMBER: "이미 이 가족의 구성원이에요.",
-      UNDER_14_NOT_ALLOWED: "보호자는 만 14세부터 참여할 수 있어요.",
-    },
-    "들어가지 못했어요.",
-  );

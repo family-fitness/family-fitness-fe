@@ -110,9 +110,13 @@ import {
   withdrawalCase,
 } from "@/lib/withdrawal";
 
+import { ApiError } from "@/lib/api/client";
 import {
+  CLAIM_ERROR_COPY,
   INVITE_ROLE_NAME,
+  blocksClaim,
   claimBody,
+  claimErrorMessage,
   familyInviteBody,
   inviteBirthRule,
   inviteCodeTitle,
@@ -1720,6 +1724,91 @@ check(
   check(
     "합류 화면은 가족 초대면 지금 쓰는 달력 부품으로 생년월일을 받는다",
     claimPage.includes("DateField") && claimPage.includes("inviteBirthRule"),
+  );
+}
+
+/* ─── 초대 코드 오류 안내 ─────────────────────────────── */
+
+{
+  const err = (code: string, status = 409) => new ApiError(status, code, "");
+  // BE 와 맞춘 claim 의 오류 전부
+  const claimCodes = [
+    "BAD_REQUEST",
+    "UNDER_14_NOT_ALLOWED",
+    "CODE_NOT_FOUND",
+    "ALREADY_CLAIMED",
+    "CODE_EXPIRED",
+    "ALREADY_MEMBER",
+    "ALREADY_IN_FAMILY",
+    "TOO_MANY",
+  ];
+  check(
+    "합류 화면의 표는 claim 오류 코드를 빠짐없이 말한다",
+    claimCodes.every((c) => (CLAIM_ERROR_COPY[c] ?? "").trim() !== ""),
+    claimCodes.filter((c) => !CLAIM_ERROR_COPY[c]).join(", "),
+  );
+  check(
+    "다른 가족에 이미 있는 계정은 까닭과 해결법(설정에서 탈퇴)을 듣는다",
+    claimErrorMessage(err("ALREADY_IN_FAMILY")) ===
+      "이미 다른 가족에 참여한 계정이에요. 설정에서 계정을 탈퇴한 뒤 다시 시도해 주세요.",
+  );
+  check(
+    "이미 이 가족인 사람(초대한 보호자)은 초대받는 분의 기기에서 넣으라고 듣는다",
+    claimErrorMessage(err("ALREADY_MEMBER")) ===
+      "이미 이 가족의 구성원이에요. 초대받는 분의 기기에서 코드를 입력해 주세요.",
+  );
+  check(
+    "모르는 실패는 「들어가지 못했어요」 하나로 끝내지 않고 다시 해 보라고 한다",
+    claimErrorMessage(err("SOMETHING_NEW", 500)) ===
+      "가족에 참여하지 못했어요. 잠시 뒤에 다시 해 주세요." &&
+      claimErrorMessage(new Error("network")) ===
+        "가족에 참여하지 못했어요. 잠시 뒤에 다시 해 주세요.",
+  );
+  check(
+    "미리 보기가 이 코드로는 못 들어간다고 하면 단추를 잠근다",
+    [
+      "CODE_NOT_FOUND",
+      "CODE_EXPIRED",
+      "ALREADY_CLAIMED",
+      "ALREADY_MEMBER",
+      "ALREADY_IN_FAMILY",
+      "TOO_MANY",
+    ].every((c) => blocksClaim(err(c))) &&
+      !blocksClaim(err("UNAUTHORIZED", 401)) &&
+      !blocksClaim(err("UNKNOWN", 500)) &&
+      !blocksClaim(new Error("network")),
+  );
+  const common = [
+    "CODE_NOT_FOUND",
+    "CODE_EXPIRED",
+    "ALREADY_CLAIMED",
+    "ALREADY_MEMBER",
+    "ALREADY_IN_FAMILY",
+    "INVITE_NOT_FOUND",
+    "FAMILY_NOT_FOUND",
+    "UNDER_14_NOT_ALLOWED",
+  ];
+  check(
+    "여러 화면에서 같은 뜻인 초대 코드 오류는 공통 문구(COMMON_MESSAGE)에도 있다",
+    common.every((c) => !!err(c).commonMessage),
+    common.filter((c) => !err(c).commonMessage).join(", "),
+  );
+  check(
+    "공통 문구와 합류 화면이 같은 코드를 같은 말로 한다",
+    ["CODE_NOT_FOUND", "CODE_EXPIRED", "ALREADY_MEMBER", "ALREADY_IN_FAMILY"].every(
+      (c) => err(c).commonMessage === CLAIM_ERROR_COPY[c],
+    ),
+  );
+  check(
+    "오류 문구에 가운데 점과 긴 대시를 쓰지 않는다",
+    [...Object.values(CLAIM_ERROR_COPY), ...common.map((c) => err(c).commonMessage ?? "")].every(
+      (l) => !/[·—–]/.test(l),
+    ),
+  );
+  const claimPage = readFileSync("src/app/claim/page.tsx", "utf8");
+  check(
+    "합류 화면은 lib/invite 의 표 하나로 말한다",
+    claimPage.includes("claimErrorMessage") && !claimPage.includes("들어가지 못했어요"),
   );
 }
 

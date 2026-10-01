@@ -1,6 +1,9 @@
+import { ApiError } from "./api/client";
 import type { ClaimBody, GuardianConsent, InvitePeek, PendingInvite, Role } from "./api/types";
 import { bodyError, bodyValue } from "./body";
 import { type DateRule, childBirthRule, guardianBirthRule, inRule } from "./date-pick";
+import { errorMessage } from "./errors";
+import { INVITE_ERROR_COPY } from "./invite-copy";
 import { GUARDIAN_MIN_AGE, guardianOldEnough } from "./onboarding";
 import { today } from "./today";
 import { formatDate, withJosa } from "./utils";
@@ -156,4 +159,40 @@ export function joinButtonLabel(
 ): string {
   if (!peek || isFamilyInvite(peek) || !peek.profileName) return "가족 참여하기";
   return `${peek.profileName} 자리로 들어가기`;
+}
+
+/* ─── 초대 코드 오류 안내 ─────────────────────────────── */
+
+/**
+ * 합류 화면이 claim 과 미리 보기의 오류를 말하는 표. BE 와 맞춘 claim 오류를 빠짐없이 둔다.
+ * 어느 화면에서나 같은 뜻인 것(없음, 기한, 이미 씀, 이미 이 가족, 이미 다른 가족)은 공통 문구와 같은 말이다
+ */
+export const CLAIM_ERROR_COPY: Record<string, string> = {
+  ...INVITE_ERROR_COPY,
+  BAD_REQUEST: "이름, 생년월일, 성별을 다시 확인해 주세요.",
+  UNDER_14_NOT_ALLOWED: "보호자는 만 14세부터 참여할 수 있어요. 생년월일을 확인해 주세요.",
+  TOO_MANY: "초대 코드를 너무 많이 틀렸어요. 잠시 뒤에 다시 입력해 주세요.",
+  // 같은 가족에 두 사람이 한꺼번에 들어오면 늦은 쪽이 받는다. 다시 누르면 된다
+  CONFLICT: "다른 요청과 겹쳤어요. 다시 눌러 주세요.",
+};
+
+const CLAIM_FALLBACK = "가족에 참여하지 못했어요. 잠시 뒤에 다시 해 주세요.";
+
+/** claim 이나 미리 보기의 실패를 화면 문구로 */
+export function claimErrorMessage(error: unknown): string {
+  return errorMessage(error, CLAIM_ERROR_COPY, CLAIM_FALLBACK);
+}
+
+/** 미리 보기가 이렇게 답하면 이 코드로는 들어갈 수 없다. 그 밖의 실패(망, 서버)는 넣어 보게 둔다 */
+const BLOCKING = new Set([
+  "CODE_NOT_FOUND",
+  "CODE_EXPIRED",
+  "ALREADY_CLAIMED",
+  "ALREADY_MEMBER",
+  "ALREADY_IN_FAMILY",
+  "TOO_MANY",
+]);
+
+export function blocksClaim(error: unknown): boolean {
+  return error instanceof ApiError && BLOCKING.has(error.code);
 }
