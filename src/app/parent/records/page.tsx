@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { ListRow } from "@/components/ui/list-row";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FamilyCalendar } from "@/components/domain/family-calendar";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import type { FitnessMapMember } from "@/lib/api/types";
 import { useFitnessMap } from "@/lib/api/queries";
@@ -15,9 +16,10 @@ import { useSession } from "@/lib/session";
 import { longDate } from "@/lib/today";
 
 /**
- * 기록 탭. 캘린더와 체력.
+ * 기록 탭. 가족 캘린더, 아이별 캘린더, 체력.
  *
- *   「캘린더」  아이마다 한 달 기록(`/calendar?profileId=`)
+ *   「가족 캘린더」  아이와 보호자 모두의 한 달 운동을 한 달력에. 날을 누르면 그날 누가 무엇을 했는지 펼친다
+ *   「아이별 캘린더」 아이마다 한 달 기록(`/calendar?profileId=`)
  *   「체력」    나와 아이들. 사람마다 측정하기, 측정한 적이 있으면 결과 보기
  *
  * 보호자도 자기 체력을 측정한다. 측정 항목은 측정하는 사람의 연령대로 받고(성인 항목이 있다), 결과도 같은 화면이다.
@@ -61,26 +63,33 @@ export default function RecordsTabPage() {
   const kids = members.filter((m) => m.role === "CHILD");
   const me = members.find((m) => m.profileId === profile?.profileId);
   const people = [...(me ? [me] : []), ...kids];
+  // 가족 캘린더는 보호자도 모두 올린다. 나, 다른 보호자, 아이 차례
+  const guardians = members.filter((m) => m.role !== "CHILD" && m !== me);
+  const family = [...(me ? [me] : []), ...guardians, ...kids];
 
   return (
     <>
       {header}
       <Stage wide className="space-y-3">
-        <section className="card" aria-label="캘린더">
-          <CardHead title="캘린더" />
-          <ul className="divide-rows">
-            {kids.map((k) => (
-              <ListRow
-                key={k.profileId}
-                href={`/calendar?profileId=${encodeURIComponent(k.profileId ?? "")}`}
-                art="icon/menu-calendar"
-                title={`${k.name}의 캘린더`}
-              />
-            ))}
-          </ul>
-        </section>
+        <FamilyCalendar familyId={familyId ?? undefined} people={family} />
 
-        <section className="card-hero" aria-label="체력">
+        {kids.length > 0 && (
+          <section className="card" aria-label="아이별 캘린더">
+            <CardHead title="아이별 캘린더" />
+            <ul className="divide-rows">
+              {kids.map((k) => (
+                <ListRow
+                  key={k.profileId}
+                  href={`/calendar?profileId=${encodeURIComponent(k.profileId ?? "")}`}
+                  art="icon/menu-calendar"
+                  title={`${k.name}의 캘린더`}
+                />
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <section className="card" aria-label="체력">
           <CardHead title="체력" meta={`${people.length}명`} />
           <ul className="divide-rows">
             {people.map((p) => (
