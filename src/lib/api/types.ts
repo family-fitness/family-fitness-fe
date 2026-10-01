@@ -185,20 +185,30 @@ export type LatestWithBody = LatestFitnessTest & {
 export type ProfileWithSex = ProfileSummary & { sex?: "M" | "F" | null };
 
 /**
- * 초대코드가 어느 자리인지 미리 보기.
+ * 초대 코드의 종류.
  *
- * ▲ 요청: `GET /invites/{claimCode}`.
- * 코드는 **가족 전체가 아니라 자리 하나**에 발급된다(`POST /profiles/{id}/invite`).
- * 그런데 받는 쪽 화면은 그걸 모른 채 코드를 넣고 나서야 자기가 누가 됐는지 안다.
- * 넣기 전에 「서준이네 · 아빠 자리」 를 보여 줘야 **역할을 고를 수 없다**는 것이
- * 화면에서 사실이 된다.
+ *   FAMILY   가족 초대. 보호자가 역할(보호자, 아이)만 정해 만든다. 받은 사람이 자기 이름, 생년월일, 성별을 넣는다
+ *   PROFILE  자리 초대. 보호자가 먼저 등록한 구성원(폰 없던 아이)에게 계정을 붙인다. 코드만 넣는다
+ */
+export type InviteKind = "FAMILY" | "PROFILE";
+
+/**
+ * 초대 코드를 넣기 전에 미리 보기(`GET /invites/{claimCode}`).
  *
- * 없는 코드는 404, 기한이 지났으면 410 을 주세요.
+ * 받는 쪽 화면이 코드를 넣고 나서야 어디에 들어갔는지 알면 안 된다. 넣기 전에 가족 이름과
+ * 무슨 초대인지(보호자로, 아이로, 아니면 이미 등록된 누구의 자리로) 보여 준다.
+ * 자리 초대면 그 자리 이름이 오고, 가족 초대면 `profileName` 이 null 이다.
+ *
+ * 없는 코드 404, 이미 쓴 코드 409 ALREADY_CLAIMED, 기한이 지났으면 410, 너무 많이 틀리면 429.
+ * ▲ 요청: 로그인 전에도 부를 수 있게(로그인 화면의 「초대 코드가 있어요」). 로그인한 계정에 이미 가족이 있으면
+ * 409 ALREADY_MEMBER(이 가족) 또는 409 ALREADY_IN_FAMILY(다른 가족)
  */
 export interface InvitePeek {
+  /** ▲ 아직 안 주는 서버가 있으면 자리 초대(PROFILE)로 본다 */
+  kind?: InviteKind | null;
   familyName: string;
-  /** 이 코드가 가리키는 자리 */
-  profileName: string;
+  /** 자리 초대의 자리 이름. 가족 초대면 null */
+  profileName: string | null;
   role: Role;
   ageGroup?: AgeGroup | null;
   /** 누가 보냈는지 */
@@ -206,6 +216,19 @@ export interface InvitePeek {
   /** ISO-8601 */
   expiresAt?: string | null;
 }
+
+/**
+ * 초대 코드로 참여하기(`POST /profiles/claim`) 본문.
+ * 자리 초대는 코드만, 가족 초대는 들어오는 사람의 이름, 생년월일, 성별을 함께 보낸다(키, 몸무게는 골라서)
+ */
+export type ClaimBody = {
+  claimCode: string;
+  name?: string;
+  birthDate?: string;
+  sex?: "M" | "F";
+  heightCm?: number;
+  weightKg?: number;
+};
 
 /**
  * 영상 속 **구간**.

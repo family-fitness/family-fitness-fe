@@ -983,6 +983,267 @@ const pendingCodes = async () =>
   setActingProfile(DEMO.mom);
 }
 
+/* ─── 9. 초대 코드로 가족에 참여한다 ─────────────────────────── */
+
+{
+  type Peek = {
+    kind?: string;
+    role?: string;
+    familyName?: string;
+    profileName?: string | null;
+    invitedByName?: string | null;
+  };
+  type Claimed = { profileId?: string; familyId?: string; role?: string; nextStep?: string };
+  type Member = {
+    profileId?: string;
+    name?: string;
+    role?: string;
+    hasAccount?: boolean;
+    consentGiven?: boolean;
+  };
+  /** 로그인 화면은 토큰 없이 미리 본다 */
+  const peekAnon = (code: string) => fetch(`${BASE}/invites/${code}`);
+  const claim = (body: Record<string, unknown>) => post("/profiles/claim", body);
+  const login = async (providerUserId: string, claimCode?: string) =>
+    (await (await post("/auth/dev-login", { providerUserId, claimCode })).json()) as {
+      nextStep?: string;
+    };
+  const members = async () =>
+    (
+      (await (await get(`/families/${DEMO.familyId}/profiles`)).json()) as {
+        profiles?: Member[];
+      }
+    ).profiles ?? [];
+  const make = async (body: Record<string, unknown>) =>
+    ((await (await post(invitesPath(), body)).json()) as { code?: string }).code ?? "";
+  const adult = { name: "지수", birthDate: daysBefore(365 * 36), sex: "F" };
+
+  // 서준이네 은영이 보호자 초대와 아이 초대를 하나씩 만든다
+  await login("demo-parent");
+  const parentCode = await make({ role: "PARENT" });
+  const childCode = await make({ role: "CHILD", guardianConsent: CONSENT });
+
+  let res = await peekAnon(parentCode);
+  const anon = (await res.json().catch(() => ({}))) as Peek;
+  check(
+    "로그인하기 전에도 가족 초대를 미리 본다(▲ 요청)",
+    res.status === 200 &&
+      anon.kind === "FAMILY" &&
+      anon.role === "PARENT" &&
+      anon.familyName === "서준이네" &&
+      anon.profileName === null &&
+      anon.invitedByName === "은영",
+    `${res.status} ${JSON.stringify(anon)}`,
+  );
+  res = await peekAnon("K7M2QT");
+  const seatPeek = (await res.json().catch(() => ({}))) as Peek;
+  check(
+    "자리 초대를 미리 보면 kind PROFILE 과 자리 이름이 온다",
+    seatPeek.kind === "PROFILE" && seatPeek.role === "PARENT" && seatPeek.profileName === "도현",
+    JSON.stringify(seatPeek),
+  );
+  res = await peekAnon("X4T7EM");
+  check(
+    "기한이 지난 코드를 미리 보면 410 CODE_EXPIRED",
+    res.status === 410 && (await codeOf(res)) === "CODE_EXPIRED",
+    `${res.status}`,
+  );
+  res = await peekAnon("ZZZZZZ");
+  check(
+    "없는 코드를 미리 보면 404 CODE_NOT_FOUND",
+    res.status === 404 && (await codeOf(res)) === "CODE_NOT_FOUND",
+    `${res.status}`,
+  );
+
+  // (나) 초대한 은영이 제 폰에서 코드를 넣는다
+  res = await get(`/invites/${parentCode}`);
+  check(
+    "이 가족 구성원이 미리 보면 409 ALREADY_MEMBER(▲ 요청)",
+    res.status === 409 && (await codeOf(res)) === "ALREADY_MEMBER",
+    `${res.status}`,
+  );
+  res = await claim({ claimCode: parentCode, ...adult });
+  check(
+    "이 가족 구성원이 가족 초대 코드를 넣으면 409 ALREADY_MEMBER",
+    res.status === 409 && (await codeOf(res)) === "ALREADY_MEMBER",
+    `${res.status}`,
+  );
+  res = await claim({ claimCode: "K7M2QT" });
+  check(
+    "자리 초대 코드도 이 가족 구성원이 넣으면 409 ALREADY_MEMBER",
+    res.status === 409 && (await codeOf(res)) === "ALREADY_MEMBER",
+    `${res.status}`,
+  );
+
+  // 가족 없는 새 계정이 초대 코드를 들고 로그인한다
+  const fresh = await login("demo-fresh", parentCode);
+  check(
+    "가족 없는 계정이 코드를 들고 로그인하면 nextStep CLAIM",
+    fresh.nextStep === "CLAIM",
+    `${fresh.nextStep}`,
+  );
+  res = await claim({ claimCode: parentCode });
+  check(
+    "가족 초대는 이름, 생년월일, 성별이 없으면 400",
+    res.status === 400 && (await codeOf(res)) === "BAD_REQUEST",
+    `${res.status}`,
+  );
+  res = await claim({ claimCode: parentCode, ...adult, birthDate: daysBefore(365 * 11) });
+  check(
+    "보호자 초대에 만 14세 미만 생년월일이면 422 UNDER_14_NOT_ALLOWED",
+    res.status === 422 && (await codeOf(res)) === "UNDER_14_NOT_ALLOWED",
+    `${res.status}`,
+  );
+  res = await claim({ claimCode: parentCode, ...adult, heightCm: 400 });
+  check("키가 범위를 벗어나면 400", res.status === 400, `${res.status}`);
+  res = await claim({ claimCode: "ZZZZZZ", ...adult });
+  check(
+    "없는 코드면 404 CODE_NOT_FOUND",
+    res.status === 404 && (await codeOf(res)) === "CODE_NOT_FOUND",
+    `${res.status}`,
+  );
+  res = await claim({ claimCode: "X4T7EM", ...adult, birthDate: daysBefore(365 * 8) });
+  check(
+    "기한이 지난 코드면 410 CODE_EXPIRED",
+    res.status === 410 && (await codeOf(res)) === "CODE_EXPIRED",
+    `${res.status}`,
+  );
+
+  res = await claim({
+    claimCode: parentCode.toLowerCase(),
+    ...adult,
+    name: " 지수 ",
+    heightCm: 165,
+    weightKg: 55,
+  });
+  const joined = (await res.json().catch(() => ({}))) as Claimed;
+  check(
+    "보호자 초대로 들어오면 서준이네 보호자가 되고 다음은 참여 방식",
+    res.status === 200 &&
+      joined.role === "PARENT" &&
+      joined.familyId === DEMO.familyId &&
+      joined.nextStep === "SUPPORT_MODE",
+    `${res.status} ${JSON.stringify(joined)}`,
+  );
+  const jisu = (await members()).find((p) => p.profileId === joined.profileId);
+  check(
+    "들어온 사람이 넣은 이름으로 가족에 생기고 계정이 붙는다",
+    jisu?.name === "지수" && jisu.hasAccount === true && jisu.role === "PARENT",
+    JSON.stringify(jisu),
+  );
+  const meAfter = (await (await get("/me")).json()) as { nextStep?: string };
+  check(
+    "참여 방식을 고르기 전에 다시 열면 참여 방식으로",
+    meAfter.nextStep === "SUPPORT_MODE",
+    `${meAfter.nextStep}`,
+  );
+
+  // 같은 코드를 다른 새 계정이 넣는다
+  await login("demo-fresh");
+  res = await claim({ claimCode: parentCode, ...adult, name: "민호", sex: "M" });
+  check(
+    "이미 쓴 코드는 409 ALREADY_CLAIMED",
+    res.status === 409 && (await codeOf(res)) === "ALREADY_CLAIMED",
+    `${res.status}`,
+  );
+  res = await peekAnon(parentCode);
+  check(
+    "이미 쓴 코드를 미리 보면 409 ALREADY_CLAIMED",
+    res.status === 409 && (await codeOf(res)) === "ALREADY_CLAIMED",
+    `${res.status}`,
+  );
+
+  // 폰이 있는 아이가 아이 초대로 들어온다. 이름과 생일은 아이가 넣는다
+  res = await claim({
+    claimCode: childCode,
+    name: "하린",
+    birthDate: daysBefore(365 * 8),
+    sex: "F",
+  });
+  const kidJoined = (await res.json().catch(() => ({}))) as Claimed;
+  check(
+    "아이 초대로 들어오면 아이가 되고 다음은 홈",
+    res.status === 200 && kidJoined.role === "CHILD" && kidJoined.nextStep === "HOME",
+    `${res.status} ${JSON.stringify(kidJoined)}`,
+  );
+  const harin = (await members()).find((p) => p.profileId === kidJoined.profileId);
+  check(
+    "아이는 초대할 때 받은 보호자 동의를 그대로 쓴다",
+    harin?.consentGiven === true && harin.hasAccount === true && harin.role === "CHILD",
+    JSON.stringify(harin),
+  );
+
+  await login("demo-parent");
+  const left = await pendingCodes();
+  check(
+    "쓴 초대는 보호자의 목록에서 빠진다",
+    !left.includes(parentCode) && !left.includes(childCode),
+  );
+
+  // (다) 가족이 있는 계정이 코드를 들고 로그인해도 코드를 쓰지 않는다
+  const home = await login("demo-parent", "H3N8WD");
+  check(
+    "가족이 있는 계정은 코드를 들고 로그인해도 홈으로 간다",
+    home.nextStep === "HOME",
+    `${home.nextStep}`,
+  );
+  check("그 코드는 쓰이지 않고 남는다", (await pendingCodes()).includes("H3N8WD"));
+
+  // (가) 새 계정이 먼저 자기 가족을 만들고 나서 코드를 넣는다
+  const another = await make({ role: "PARENT" });
+  await login("demo-fresh");
+  await post("/families", { familyName: "민호네", owner: { ...adult, name: "민호", sex: "M" } });
+  res = await get(`/invites/${another}`);
+  check(
+    "다른 가족에 이미 있는 계정이 미리 보면 409 ALREADY_IN_FAMILY(▲ 요청)",
+    res.status === 409 && (await codeOf(res)) === "ALREADY_IN_FAMILY",
+    `${res.status}`,
+  );
+  res = await claim({ claimCode: another, ...adult, name: "민호", sex: "M" });
+  check(
+    "다른 가족에 이미 있는 계정이 코드를 넣으면 409 ALREADY_IN_FAMILY",
+    res.status === 409 && (await codeOf(res)) === "ALREADY_IN_FAMILY",
+    `${res.status}`,
+  );
+
+  // 자리 초대 — 도현 자리 코드로 들어온다
+  await login("demo-parent-2");
+  res = await claim({ claimCode: "K7M2QT" });
+  const dad = (await res.json().catch(() => ({}))) as Claimed;
+  check(
+    "자리 초대는 코드만으로 그 자리에 붙는다",
+    res.status === 200 && dad.profileId === DEMO.dad && dad.nextStep === "SUPPORT_MODE",
+    `${res.status} ${JSON.stringify(dad)}`,
+  );
+  await login("demo-fresh");
+  res = await claim({ claimCode: "K7M2QT" });
+  check(
+    "이미 계정이 붙은 자리의 코드는 409 ALREADY_CLAIMED",
+    res.status === 409 && (await codeOf(res)) === "ALREADY_CLAIMED",
+    `${res.status}`,
+  );
+  // 이 탭에서 벌써 도현 자리에 붙었다 — 다시 들어오면 코드를 묻지 않는다. 참여 방식을 아직 안 골라 그 화면으로
+  const again = await login("demo-parent-2");
+  check(
+    "초대받은 계정으로 다시 들어오면 코드를 다시 묻지 않고 참여 방식으로",
+    again.nextStep === "SUPPORT_MODE",
+    `${again.nextStep}`,
+  );
+
+  // 없는 코드를 너무 많이 넣으면 막는다. 다시 로그인하면 처음부터 센다
+  await login("demo-fresh");
+  let last = res;
+  for (let i = 0; i < 11; i++) last = await claim({ claimCode: "ZZZZZZ" });
+  check(
+    "없는 코드를 열 번 넘게 넣으면 429 TOO_MANY",
+    last.status === 429 && (await codeOf(last)) === "TOO_MANY",
+    `${last.status}`,
+  );
+  await login("demo-fresh");
+  res = await claim({ claimCode: "ZZZZZZ" });
+  check("다시 로그인하면 처음부터 센다", res.status === 404, `${res.status}`);
+}
+
 server.close();
 console.log(failed === 0 ? "\n전부 통과" : `\n${failed}건 실패`);
 process.exit(failed === 0 ? 0 : 1);

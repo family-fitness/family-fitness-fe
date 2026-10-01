@@ -74,7 +74,7 @@ function ClaimContent() {
     if (!canSubmit) return;
     setError(null);
     try {
-      const res = await claim.mutateAsync(code);
+      const res = await claim.mutateAsync({ claimCode: code });
       // 가입 도중이라는 걸 다음 화면이 알아야 한다. 고르고 나서 멈추면 안 된다
       router.replace(
         res.nextStep === "SUPPORT_MODE" ? "/settings/support-mode?from=claim" : "/start",

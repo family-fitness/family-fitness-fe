@@ -23,6 +23,7 @@ import type {
   CalendarView,
   Cheer,
   CheerLogList,
+  ClaimBody,
   CoachApproveResult,
   CoachRejectResult,
   TargetMetric,
@@ -319,14 +320,17 @@ export function useInvitePeek(code: string) {
   });
 }
 
-/** 다음에 갈 곳은 서버가 정한다 — 부모면 SUPPORT_MODE, 자녀면 HOME */
+/**
+ * 초대 코드로 가족에 참여한다. 자리 초대는 코드만, 가족 초대는 이름, 생년월일, 성별을 함께 보낸다.
+ * 다음에 갈 곳은 서버가 정한다 — 부모면 SUPPORT_MODE, 자녀면 HOME
+ */
 export function useClaimProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (claimCode: string) =>
+    mutationFn: (body: ClaimBody) =>
       api.post<{ profileId: Uuid; familyId: Uuid; role: Role; nextStep: NextStep }>(
         "/profiles/claim",
-        { claimCode },
+        body,
       ),
     // 이 계정의 세상이 바뀐다(가족이 생긴다) — 받아 둔 옛 `/me` 로 다음 화면이 길을 정하지 않게 비운다.
     // 코드 미리 보기는 남긴다 — 지우면 떠나는 동안 코드 화면이 다시 물어 방금 쓴 코드를 「이미 쓴 코드」 라 했다

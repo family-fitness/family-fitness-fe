@@ -7,6 +7,7 @@
 import { HttpResponse } from "msw";
 
 import type {
+  AgeGroup,
   CheerLog,
   FitnessTestSummary,
   LeagueTier,
@@ -403,6 +404,33 @@ export type Profile = Concrete<ProfileSummary> & {
   birthDate?: string;
 };
 export type MapMember = Concrete<FitnessMap>["members"][number];
+
+/** 만 나이로 연령대를 고른다. 서버와 같은 구간이다 */
+export function ageGroupOf(age: number): AgeGroup {
+  if (age <= 6) return "유아기";
+  if (age <= 12) return "유소년";
+  if (age <= 18) return "청소년";
+  if (age <= 64) return "성인";
+  return "어르신";
+}
+
+/** 프로필 하나를 체력 지도의 한 줄로 */
+export function mapMemberOf(profile: Profile): MapMember {
+  return {
+    profileId: profile.profileId,
+    name: profile.name,
+    role: profile.role,
+    ageGroup: profile.ageGroup,
+    sex: profile.sex,
+    hasAccount: profile.hasAccount,
+    supportMode: profile.supportMode,
+    measurable: profile.measurable,
+    consentRequired: profile.consentRequired,
+    consentGiven: profile.consentGiven,
+    headline: null,
+    latest: null,
+  } as MapMember;
+}
 export type MissionRow = Concrete<Mission>;
 /**
  * 참여자 한 사람 — 끝낸 칸을 사람마다 든다(`MissionParticipant.doneSessions`).

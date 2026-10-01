@@ -196,6 +196,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/invites/{claimCode}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["preview"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/families/{familyId}/invites/{code}": {
     parameters: {
       query?: never;
@@ -640,6 +656,34 @@ export interface components {
     };
     ClaimRequest: {
       claimCode: string;
+      /** FAMILY 초대만. 들어오는 사람의 이름 */
+      name?: string | null;
+      /**
+       * Format: date
+       * @description FAMILY 초대만
+       */
+      birthDate?: string | null;
+      /**
+       * @description FAMILY 초대만
+       * @enum {string|null}
+       */
+      sex?: "M" | "F" | null;
+      heightCm?: number | null;
+      weightKg?: number | null;
+    };
+    InvitePreviewResponse: {
+      /** @enum {string} */
+      kind?: "FAMILY" | "PROFILE";
+      familyName?: string;
+      /** @description PROFILE 초대의 자리 이름. FAMILY 면 null */
+      profileName?: string | null;
+      /** @enum {string} */
+      role?: "PARENT" | "CHILD";
+      /** @enum {string|null} */
+      ageGroup?: "유아기" | "유소년" | "청소년" | "성인" | "어르신" | null;
+      invitedByName?: string | null;
+      /** Format: date-time */
+      expiresAt?: string | null;
     };
     ClaimResponse: {
       /** Format: uuid */
@@ -1578,6 +1622,28 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["FamilyInviteResponse"];
+        };
+      };
+    };
+  };
+  preview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        claimCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvitePreviewResponse"];
         };
       };
     };
