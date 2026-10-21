@@ -30,7 +30,6 @@ const FIELDS = [
 /** 앞뒤 공백과 제어 문자를 걷고 자른다. 남는 게 없으면 undefined */
 function clean(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
-
   const text = value.replace(/[\u0000-\u001f\u007f]/g, "").trim();
   return text ? text.slice(0, UTM_MAX) : undefined;
 }
