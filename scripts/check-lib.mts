@@ -120,6 +120,7 @@ import {
 } from "@/lib/withdrawal";
 import { homeOf, modeFor } from "@/lib/role-mode";
 import { PARENT_TABS, parentTabOf } from "@/lib/parent-tabs";
+import { UTM_MAX, forgetUtm, readUtm, rememberUtm, savedUtm } from "@/lib/signup-source";
 
 import { ApiError } from "@/lib/api/client";
 import {
@@ -2128,6 +2129,55 @@ check(
     new Set(PARENT_TABS.map((t) => t.href)).size === PARENT_TABS.length &&
     PARENT_TABS.every((t) => parentTabOf(t.href) === t.id),
 );
+
+// ── 가입 유입 경로(utm) ──
+const memStore = () => {
+  const map = new Map<string, string>();
+  return {
+    getItem: (k: string) => map.get(k) ?? null,
+    setItem: (k: string, v: string) => void map.set(k, v),
+    removeItem: (k: string) => void map.delete(k),
+  };
+};
+check(
+  "주소에서 utm 세 값을 읽고 다른 값은 버린다",
+  same(readUtm("?utm_source=insta&utm_medium=story&utm_campaign=fall&ref=x"), {
+    utmSource: "insta",
+    utmMedium: "story",
+    utmCampaign: "fall",
+  }),
+);
+check("utm 이 하나도 없으면 null", readUtm("?ref=x") === null && readUtm("") === null);
+check(
+  "앞뒤 공백과 제어 문자를 걷고, 빈 값은 없는 것으로 본다",
+  same(readUtm("?utm_source=%20insta%0A%20&utm_medium=%20%20"), { utmSource: "insta" }),
+);
+check(
+  `${UTM_MAX}자를 넘는 값은 잘라서 둔다`,
+  readUtm(`?utm_campaign=${"a".repeat(300)}`)?.utmCampaign?.length === UTM_MAX,
+);
+{
+  const store = memStore();
+  rememberUtm("?utm_source=first", store);
+  rememberUtm("?utm_source=second&utm_campaign=x", store);
+  check(
+    "처음 들어온 utm 만 두고 나중 링크로 덮어쓰지 않는다",
+    same(savedUtm(store), { utmSource: "first" }),
+  );
+  rememberUtm("?ref=x", store);
+  check(
+    "utm 없이 다시 들어와도 둔 값을 지우지 않는다",
+    same(savedUtm(store), { utmSource: "first" }),
+  );
+  forgetUtm(store);
+  check("로그인 뒤 지우면 빈 값이다", same(savedUtm(store), {}));
+}
+{
+  const broken = memStore();
+  broken.setItem("ff-utm", "{깨진 값");
+  check("저장된 값이 깨졌으면 빈 값이다", same(savedUtm(broken), {}));
+  check("저장소를 못 쓰면 아무것도 붙이지 않는다", same(savedUtm(null), {}));
+}
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);

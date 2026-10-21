@@ -25,6 +25,7 @@ import { api, path } from "@/lib/api/client";
 import { useDevLogin, useGoogleLogin, useInvitePeek, useReviewLogin } from "@/lib/api/queries";
 import type { FamilyProfiles } from "@/lib/api/types";
 import { blocksClaim, claimErrorMessage, invitePeekLine, normalizeCode } from "@/lib/invite";
+import { forgetUtm, savedUtm } from "@/lib/signup-source";
 import { WITHDRAWN_NOTICE, cameAfterWithdrawal } from "@/lib/withdrawal";
 import { useAuthStore } from "@/stores/auth-store";
 import { useRoleStore } from "@/stores/role-store";
@@ -175,10 +176,13 @@ function LoginContent() {
         ? googleLogin.mutateAsync({
             authorizationCode: code,
             redirectUri: `${window.location.origin}${REDIRECT_PATH}`,
+            // 처음 들어온 링크의 유입 경로. 서버는 처음 가입할 때만 남긴다
+            ...savedUtm(),
           })
         : Promise.reject(new Error("state mismatch"));
     exchange
       .then((auth) => {
+        forgetUtm();
         signIn(auth);
         proceed(auth, saved?.claimCode);
       })

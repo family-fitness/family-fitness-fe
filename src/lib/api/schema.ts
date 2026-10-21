@@ -960,6 +960,9 @@ export interface components {
       authorizationCode: string;
       redirectUri: string;
       claimCode?: string | null;
+      utmSource?: string | null;
+      utmMedium?: string | null;
+      utmCampaign?: string | null;
     };
     DevLoginRequest: {
       providerUserId: string;
