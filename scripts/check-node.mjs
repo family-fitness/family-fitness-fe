@@ -1,7 +1,7 @@
 /**
  * 검사 전에 Node 판을 확인한다.
  *
- *   npm run check:node
+ *   npm run check:node        (verify, check:mocks, check:lib 가 먼저 부른다)
  *
  * 이 저장소는 Node 22 이상(.nvmrc, package.json engines)에서 돈다. Node 20 으로 돌리면 tsx 가
  * src/lib/api/client.ts 를 두 번 불러 ApiError 가 둘이 되고, 화면 코드는 맞는데도 check:lib 3건 ·
