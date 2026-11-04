@@ -15,6 +15,7 @@ import { ErrorState } from "@/components/ui/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorIcon } from "@/components/domain/factor-icon";
 import { FactorView } from "@/components/domain/factor-view";
+import { FitnessAgeCard } from "@/components/domain/fitness-age-card";
 import { GradeCard } from "@/components/domain/grade-card";
 import { RecordRow } from "@/components/domain/record-bar";
 import { isFactor, noPeerNormsNote } from "@/lib/fitness-factors";
@@ -148,6 +149,9 @@ export default function ResultPage() {
             />
           </section>
         )}
+
+        {/* 체력 나이는 성인만 나온다. 아이 프로필은 부르지 않는다 */}
+        {who?.ageGroup === "성인" && <FitnessAgeCard profileId={profileId} />}
 
         {/* 잘하는 것을 먼저 말한다 */}
         {(showStrong || showWeak) && (
