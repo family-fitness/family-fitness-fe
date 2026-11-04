@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FamilyCalendar } from "@/components/domain/family-calendar";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import type { FitnessMapMember } from "@/lib/api/types";
-import { useFitnessMap } from "@/lib/api/queries";
+import { useFitnessAge, useFitnessMap } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { longDate } from "@/lib/today";
 
@@ -109,6 +109,11 @@ function PersonLine({ person, me }: { person: FitnessMapMember; me: boolean }) {
   // 만 4세 미만은 국민체력100 기준이 없다. 측정 화면도 폼을 띄우지 않는다
   const measurable = person.measurable !== false;
   const id = encodeURIComponent(person.profileId ?? "");
+  // 체력 나이는 성인만 나온다. 측정한 어른만 부른다
+  const { data: age } = useFitnessAge(
+    person.profileId ?? undefined,
+    Boolean(testedOn) && person.ageGroup === "성인",
+  );
 
   return (
     <li className="py-3">
@@ -130,6 +135,11 @@ function PersonLine({ person, me }: { person: FitnessMapMember; me: boolean }) {
                 ? `${longDate(testedOn)}에 측정했어요`
                 : "아직 측정하지 않았어요"}
           </span>
+          {age?.fitnessAge != null && (
+            <span className="text-caption text-ink-soft block truncate font-bold">
+              체력 나이 {age.fitnessAge}세
+            </span>
+          )}
         </span>
         {testedOn && score != null && (
           <span
