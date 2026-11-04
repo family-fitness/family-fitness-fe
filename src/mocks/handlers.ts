@@ -40,6 +40,7 @@ import {
 
 import { clips } from "./clips";
 import { coaching } from "./coach";
+import { fitnessAge } from "./fitness-age";
 import { history } from "./history";
 import { invites } from "./invites";
 import { league } from "./league";
@@ -883,6 +884,7 @@ export const handlers = [
   ...fitness,
   ...coaching,
   ...missions,
+  ...fitnessAge,
   ...history,
   ...league,
   ...progress,

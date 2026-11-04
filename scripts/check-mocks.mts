@@ -1276,6 +1276,46 @@ const pendingCodes = async () =>
   );
 }
 
+/* ─── 체력 나이 ──────────────────────────────────────────── */
+{
+  const res = await get(`/profiles/${DEMO.dad}/fitness-age`);
+  const age = (await res.json()) as {
+    status?: string;
+    age?: number;
+    fitnessAge?: number;
+    ageGap?: number;
+    items?: { itemCode: string }[];
+    excludedItems?: { itemCode: string }[];
+  };
+  check("성인은 체력 나이가 나온다", res.status === 200 && age.status === "OK", String(age.status));
+  check(
+    "실제 나이와의 차이는 체력 나이에서 실제 나이를 뺀 값이다",
+    age.ageGap === (age.fitnessAge ?? 0) - (age.age ?? 0),
+  );
+  check(
+    "나이와 관계가 약한 앉아윗몸앞으로굽히기는 빠지고 까닭과 함께 온다",
+    !age.items?.some((i) => i.itemCode === "012") &&
+      Boolean(age.excludedItems?.some((i) => i.itemCode === "012")),
+  );
+  const kid = (await (await get(`/profiles/${DEMO.kid}/fitness-age`)).json()) as {
+    status?: string;
+    fitnessAge?: number | null;
+  };
+  check(
+    "아이는 체력 나이 대신 나이 범위 밖이라고 온다",
+    kid.status === "AGE_OUT_OF_RANGE" && kid.fitnessAge == null,
+  );
+  const history = (await (await get(`/profiles/${DEMO.dad}/fitness-age/history`)).json()) as {
+    tests?: { testedOn: string; fitnessAge: number | null }[];
+  };
+  check(
+    "회차 이력은 늦은 것부터 오고 맨 앞은 체력 나이 조회와 같다",
+    (history.tests?.length ?? 0) >= 2 &&
+      history.tests?.[0].fitnessAge === age.fitnessAge &&
+      (history.tests?.[0].testedOn ?? "") > (history.tests?.[1].testedOn ?? ""),
+  );
+}
+
 server.close();
 console.log(failed === 0 ? "\n전부 통과" : `\n${failed}건 실패`);
 process.exit(failed === 0 ? 0 : 1);
