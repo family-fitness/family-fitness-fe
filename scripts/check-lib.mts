@@ -120,6 +120,15 @@ import {
 } from "@/lib/withdrawal";
 import { homeOf, modeFor } from "@/lib/role-mode";
 import { PARENT_TABS, parentTabOf } from "@/lib/parent-tabs";
+import {
+  ageGapLine,
+  agePosition,
+  ageText,
+  changeLine,
+  itemAgeText,
+  moreItemsLine,
+  trendOf,
+} from "@/lib/fitness-age";
 
 import { ApiError } from "@/lib/api/client";
 import {
@@ -2127,6 +2136,64 @@ check(
   PARENT_TABS.length === 5 &&
     new Set(PARENT_TABS.map((t) => t.href)).size === PARENT_TABS.length &&
     PARENT_TABS.every((t) => parentTabOf(t.href) === t.id),
+);
+
+/* ─── 체력 나이 ───────────────────────────────────────────── */
+check(
+  "정수 나이는 소수점 없이, 평균이면 소수 첫째 자리까지",
+  ageText(42) === "42세" && ageText(41.5) === "41.5세",
+);
+check(
+  "표의 끝에 걸린 항목은 이하, 이상으로 적는다",
+  itemAgeText({ itemAge: 19, bound: "YOUNGER" }) === "19세 이하" &&
+    itemAgeText({ itemAge: 64, bound: "OLDER" }) === "64세 이상" &&
+    itemAgeText({ itemAge: 39.5, bound: "NONE" }) === "39.5세",
+);
+check(
+  "실제 나이와의 차이는 탓하지 않고 그대로 말한다",
+  ageGapLine(40, -1) === "실제 나이 40세보다 1살 젊어요" &&
+    ageGapLine(40, 2) === "실제 나이 40세보다 2살 많아요" &&
+    ageGapLine(40, 0) === "실제 나이 40세와 같아요",
+);
+check(
+  "자리는 범위 안의 백분율이고 범위 밖은 끝에 붙는다",
+  agePosition(19, 19, 64) === 0 &&
+    agePosition(64, 19, 64) === 100 &&
+    agePosition(41.5, 19, 64) === 50 &&
+    agePosition(70, 19, 64) === 100,
+);
+{
+  const row = (testedOn: string, fitnessAge: number | null) => ({
+    testedOn,
+    age: 40,
+    status: (fitnessAge == null ? "NOT_ENOUGH_ITEMS" : "OK") as "OK" | "NOT_ENOUGH_ITEMS",
+    fitnessAge,
+    ageGap: fitnessAge == null ? null : fitnessAge - 40,
+    itemCount: fitnessAge == null ? 1 : 4,
+  });
+  const tests = [row("2026-10-01", 39), row("2026-08-01", null), row("2026-06-01", 41)];
+  check(
+    "흐름은 체력 나이가 있는 회차만 오래된 것부터 잇는다",
+    same(
+      trendOf(tests).map((t) => t.testedOn),
+      ["2026-06-01", "2026-10-01"],
+    ),
+  );
+  check(
+    "지난 회차보다 줄면 젊어졌다고 말한다",
+    changeLine(tests) === "지난 측정보다 2살 젊어졌어요",
+  );
+  check(
+    "지난 회차보다 늘면 많아졌다고, 같으면 같다고 말한다",
+    changeLine([row("2026-10-01", 42), row("2026-06-01", 41)]) === "지난 측정보다 1살 많아졌어요" &&
+      changeLine([row("2026-10-01", 41), row("2026-06-01", 41)]) === "지난 측정과 같아요",
+  );
+  check("견줄 회차가 없으면 말하지 않는다", changeLine([row("2026-10-01", 39)]) === null);
+}
+check(
+  "항목이 모자라면 몇 개 더 측정하면 되는지 말한다",
+  moreItemsLine(2, 1) === "항목을 1개 더 측정하면 나와요" &&
+    moreItemsLine(2, 0) === "항목을 2개 더 측정하면 나와요",
 );
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);

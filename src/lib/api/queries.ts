@@ -51,6 +51,8 @@ import type {
   RestDays,
   FamilyCreated,
   FamilyProfiles,
+  FitnessAge,
+  FitnessAgeHistory,
 } from "./types";
 
 /**
@@ -76,6 +78,9 @@ const qk = {
   profile: {
     latestTest: (profileId: Uuid) => ["profile", profileId, "fitness-tests", "latest"] as const,
     tests: (profileId: Uuid) => ["profile", profileId, "fitness-tests", "list"] as const,
+    fitnessAge: (profileId: Uuid) => ["profile", profileId, "fitness-age"] as const,
+    fitnessAgeHistory: (profileId: Uuid) =>
+      ["profile", profileId, "fitness-age", "history"] as const,
     progress: (profileId: Uuid) => ["profile", profileId, "progress"] as const,
     availability: (profileId: Uuid) => ["profile", profileId, "availability"] as const,
   },
@@ -390,6 +395,24 @@ export function useLatestFitnessTest(profileId: Uuid | undefined) {
   });
 }
 
+/** 체력 나이. 성인만 나오므로 `enabled` 로 성인일 때만 부른다 */
+export function useFitnessAge(profileId: Uuid | undefined, enabled = true) {
+  return useQuery({
+    queryKey: qk.profile.fitnessAge(profileId ?? ""),
+    queryFn: () => api.get<FitnessAge>(path`/profiles/${profileId}/fitness-age`),
+    enabled: enabled && Boolean(profileId),
+  });
+}
+
+/** 회차마다의 체력 나이 */
+export function useFitnessAgeHistory(profileId: Uuid | undefined, enabled = true) {
+  return useQuery({
+    queryKey: qk.profile.fitnessAgeHistory(profileId ?? ""),
+    queryFn: () => api.get<FitnessAgeHistory>(path`/profiles/${profileId}/fitness-age/history`),
+    enabled: enabled && Boolean(profileId),
+  });
+}
+
 export function useCreateFitnessTest(profileId: Uuid, familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
@@ -403,6 +426,7 @@ export function useCreateFitnessTest(profileId: Uuid, familyId: Uuid) {
     onSuccess: () => {
       // 최근 회차와 이력을 같이. 다시 잰 값이 점수 흐름에 바로 한 점 더해져야 한다
       qc.invalidateQueries({ queryKey: ["profile", profileId, "fitness-tests"] });
+      qc.invalidateQueries({ queryKey: qk.profile.fitnessAge(profileId) });
       qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId) });
       refreshProgress(qc);
     },
