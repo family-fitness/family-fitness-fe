@@ -602,3 +602,56 @@ export interface RestDays {
   /** 쓴 날(YYYY-MM-DD) */
   days: string[];
 }
+
+/**
+ * 체력 나이(`GET /profiles/{profileId}/fitness-age`). 성인(측정일 기준 만 19~64세)만 나온다.
+ * 서버가 또래 분포 표로 셈하고 저장하지 않는다. 화면은 받은 값을 그대로 쓴다.
+ *
+ *   OK                체력 나이가 있다
+ *   NO_TEST           측정 기록이 없다
+ *   AGE_OUT_OF_RANGE  측정일 기준 19세 미만이거나 65세 이상이다
+ *   NOT_ENOUGH_ITEMS  쓸 수 있는 항목이 `minItems` 개 미만이다
+ */
+export type FitnessAgeStatus = "OK" | "NO_TEST" | "AGE_OUT_OF_RANGE" | "NOT_ENOUGH_ITEMS";
+
+export type FitnessAgeItem = {
+  itemCode: string;
+  itemName: string;
+  unit: string;
+  value: number;
+  /** 같은 거리의 나이가 여럿이면 평균이라 소수 첫째 자리까지 온다 */
+  itemAge: number;
+  /** 표의 끝에 걸렸는지. YOUNGER 는 19세보다 젊게, OLDER 는 64세보다 많게 나온 경우다 */
+  bound: "NONE" | "YOUNGER" | "OLDER";
+};
+
+export type FitnessAge = {
+  status: FitnessAgeStatus;
+  testedOn: string | null;
+  age: number | null;
+  fitnessAge: number | null;
+  /** 체력 나이 - 측정일 기준 만 나이. 음수면 실제보다 젊다 */
+  ageGap: number | null;
+  minItems: number;
+  range: { min: number; max: number };
+  items: FitnessAgeItem[];
+  excludedItems: { itemCode: string; itemName: string; reason: string }[];
+  /** 그 회차에 재지 않은, 더 재면 좋은 항목 */
+  missingItems: {
+    itemCode: string;
+    itemName: string;
+    unit: string;
+    equipment: string | null;
+  }[];
+};
+
+/** 회차마다의 체력 나이. 측정일이 늦은 것부터 최근 12회차가 온다 */
+export type FitnessAgeTest = {
+  testedOn: string;
+  age: number;
+  status: Exclude<FitnessAgeStatus, "NO_TEST">;
+  fitnessAge: number | null;
+  ageGap: number | null;
+  itemCount: number;
+};
+export type FitnessAgeHistory = { tests: FitnessAgeTest[] };
