@@ -52,6 +52,7 @@ import type {
   FamilyCreated,
   FamilyProfiles,
 } from "./types";
+import type { SignupSource } from "@/lib/signup-source";
 
 /**
  * 쿼리 키를 한 곳에서 만든다.
@@ -150,8 +151,9 @@ export function useDevLogin() {
 export function useGoogleLogin() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: { authorizationCode: string; redirectUri: string; claimCode?: string }) =>
-      api.post<AuthResponse>("/auth/google", body),
+    mutationFn: (
+      body: { authorizationCode: string; redirectUri: string; claimCode?: string } & SignupSource,
+    ) => api.post<AuthResponse>("/auth/google", body),
     onSuccess: (auth) => seedAccount(qc, auth),
   });
 }

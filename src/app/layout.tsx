@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DesktopBanner } from "@/components/app-shell/desktop-banner";
+import { UtmCatcher } from "@/components/app-shell/utm-catcher";
 
 import { MswProvider } from "@/providers/msw-provider";
 import { PwaProvider } from "@/providers/pwa-provider";
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="ko" className="h-full">
       <body className="min-h-full antialiased">
         <PwaProvider />
+        <UtmCatcher />
         <MswProvider>
           <QueryProvider>
             <div className="app-frame relative z-[1]">{children}</div>
