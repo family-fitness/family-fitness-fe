@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useFitnessAge, useFitnessAgeHistory } from "@/lib/api/queries";
 import type { FitnessAge } from "@/lib/api/types";
 import { ageGapLine, agePosition, changeLine, itemAgeText, moreItemsLine } from "@/lib/fitness-age";
+import { measureHref } from "@/lib/measure-focus";
 import { cn } from "@/lib/utils";
 
 /**
@@ -156,7 +157,10 @@ function MissingItems({ data, profileId }: { data: FitnessAge; profileId: string
   if (data.missingItems.length === 0) return null;
   return (
     <NavLink
-      href={`/p/${encodeURIComponent(profileId)}/measure`}
+      href={measureHref(
+        profileId,
+        data.missingItems.map((m) => m.itemCode),
+      )}
       className={cn("press bg-sub mt-4 flex min-h-13 items-center gap-2 rounded-2xl px-4 py-3")}
     >
       <span className="min-w-0 flex-1">

@@ -25,6 +25,7 @@ import { daysSince, today } from "@/lib/today";
 import { bodyError, bodyValue, rangeHint } from "@/lib/body";
 import { useBodyStore } from "@/stores/body-store";
 import { cn, withJosa } from "@/lib/utils";
+import { codesIn, parseItemCodes, pinFirst } from "@/lib/measure-focus";
 import { ArtIcon } from "@/components/ui/art-icon";
 
 /** RHF 필드 이름. 항목 코드가 "012" 라 그대로 쓰면 경로 파서가 숫자로 본다 */
@@ -34,7 +35,11 @@ export default function MeasurePage() {
   const router = useRouter();
   const { profileId } = useParams<{ profileId: string }>();
   // 첫 시작에서 왔다 — 여기까지 전부 바꿔치기라 뒤로 갈 곳이 없다(홈 화면 앱이면 앱을 나간다). 뒤로는 홈으로
-  const fromStart = useSearchParams().get("from") === "start";
+  const search = useSearchParams();
+  const fromStart = search.get("from") === "start";
+  // 체력 나이의 「더 측정할 항목」 에서 왔다 — 그 항목을 위로 올린다. 서버 목록에 없는 코드는 아래에서 걸러진다
+  const itemsParam = search.get("items");
+  const wanted = useMemo(() => parseItemCodes(itemsParam), [itemsParam]);
   const nav = fromStart ? { backHref: "/parent" } : { back: true };
   const {
     familyId,
@@ -63,7 +68,8 @@ export default function MeasurePage() {
     refetch: refetchItems,
   } = useFitnessItems(profile?.ageGroup);
 
-  const [showEquipment, setShowEquipment] = useState(false);
+  // 누가 펼치거나 접기 전에는 null — 재러 온 항목이 장비 구역에 있으면 펼친 채로 연다
+  const [equipmentOpen, setEquipmentOpen] = useState<boolean | null>(null);
   const [source, setSource] = useState<FitnessTestSource>("SELF_INPUT");
   const [serverError, setServerError] = useState<string | null>(null);
   const [testedOn, setTestedOn] = useState(today());
@@ -105,10 +111,17 @@ export default function MeasurePage() {
   const { easy, equipment } = useMemo(() => {
     const list: FitnessItem[] = itemsData?.items ?? [];
     return {
-      easy: list.filter((i) => i.inputGroup !== "EQUIPMENT"),
-      equipment: list.filter((i) => i.inputGroup === "EQUIPMENT"),
+      easy: pinFirst(
+        list.filter((i) => i.inputGroup !== "EQUIPMENT"),
+        wanted,
+      ),
+      equipment: pinFirst(
+        list.filter((i) => i.inputGroup === "EQUIPMENT"),
+        wanted,
+      ),
     };
-  }, [itemsData]);
+  }, [itemsData, wanted]);
+  const showEquipment = equipmentOpen ?? codesIn(equipment, wanted).length > 0;
 
   const filledCount = Object.entries(values).filter(
     ([key, v]) => key.startsWith("item_") && v !== "" && v !== undefined,
@@ -223,7 +236,7 @@ export default function MeasurePage() {
       return raw !== undefined && raw !== "" && rules(item).validate(raw) !== true;
     });
     if (hidden && !showEquipment) {
-      setShowEquipment(true);
+      setEquipmentOpen(true);
       setServerError(
         `${withJosa(hidden.itemLabel ?? hidden.itemName ?? "", "을를")} 다시 봐 주세요.`,
       );
@@ -383,7 +396,7 @@ export default function MeasurePage() {
             <section className="card">
               <button
                 type="button"
-                onClick={() => setShowEquipment((v) => !v)}
+                onClick={() => setEquipmentOpen(!showEquipment)}
                 aria-expanded={showEquipment}
                 className="press flex min-h-12 w-full items-center gap-3 text-left"
               >
