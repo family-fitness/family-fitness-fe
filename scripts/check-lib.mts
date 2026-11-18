@@ -129,6 +129,7 @@ import {
   moreItemsLine,
   trendOf,
 } from "@/lib/fitness-age";
+import { codesIn, measureHref, parseItemCodes, pinFirst } from "@/lib/measure-focus";
 
 import { ApiError } from "@/lib/api/client";
 import {
@@ -2195,6 +2196,44 @@ check(
   moreItemsLine(2, 1) === "항목을 1개 더 측정하면 나와요" &&
     moreItemsLine(2, 0) === "항목을 2개 더 측정하면 나와요",
 );
+
+// 측정 화면에 재러 온 항목 넘기기
+check(
+  "주소의 항목 코드는 세 자리 숫자만, 같은 코드는 한 번만 받는다",
+  JSON.stringify(parseItemCodes("020, 021,020")) === '["020","021"]' &&
+    JSON.stringify(parseItemCodes("../me,02,0201,abc,021?x=1,012")) === '["012"]' &&
+    parseItemCodes(null).length === 0 &&
+    parseItemCodes("").length === 0,
+);
+check(
+  "코드가 아무리 많아도 스무 개까지만 받는다",
+  parseItemCodes(Array.from({ length: 50 }, (_, i) => String(100 + i)).join(",")).length === 20,
+);
+check(
+  "측정 화면 주소는 넘길 항목이 없으면 그냥 측정 화면이다",
+  measureHref("p1", ["020", "021"]) === "/p/p1/measure?items=020,021" &&
+    measureHref("p1", []) === "/p/p1/measure" &&
+    measureHref("a/b", ["x"]) === "/p/a%2Fb/measure",
+);
+{
+  const list = [{ itemCode: "012" }, { itemCode: "019" }, { itemCode: "020" }, { itemCode: "028" }];
+  check(
+    "넘겨받은 항목은 넘겨받은 차례대로 맨 위에, 나머지는 서버 차례대로",
+    pinFirst(list, ["028", "020"])
+      .map((i) => i.itemCode)
+      .join() === "028,020,012,019" &&
+      pinFirst(list, [])
+        .map((i) => i.itemCode)
+        .join() === "012,019,020,028",
+  );
+  check(
+    "서버 목록에 없는 코드는 순서를 바꾸지 않고 장비 구역도 펼치지 않는다",
+    pinFirst(list, ["999"])
+      .map((i) => i.itemCode)
+      .join() === "012,019,020,028" && codesIn(list, ["999", "021"]).length === 0,
+  );
+  check("목록에 있는 코드만 골라낸다", codesIn(list, ["021", "020"]).join() === "020");
+}
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);
