@@ -67,3 +67,15 @@ export function lastKnownAge(
 ): (FitnessAgeTest & { fitnessAge: number }) | null {
   return trendOf(tests).at(-1) ?? null;
 }
+
+/**
+ * 항목 이름은 측정 화면과 같은 라벨로(규칙 5). 왕복오래달리기는 연령대마다 거리가 달라 라벨이 따로 온다.
+ * 체력 나이 응답에는 이름(itemName)만 오므로 그 연령대 항목 목록에서 코드로 찾고, 없으면 받은 이름 그대로 쓴다
+ */
+export function itemLabelOf(
+  itemCode: string,
+  itemName: string,
+  catalogue: readonly { itemCode?: string | null; itemLabel?: string | null }[] | undefined,
+): string {
+  return catalogue?.find((item) => item.itemCode === itemCode)?.itemLabel || itemName;
+}

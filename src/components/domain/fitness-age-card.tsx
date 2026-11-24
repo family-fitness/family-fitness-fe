@@ -6,13 +6,14 @@ import { FitnessAgeTrend } from "@/components/domain/fitness-age-trend";
 import { CardHead } from "@/components/ui/card";
 import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useFitnessAge, useFitnessAgeHistory } from "@/lib/api/queries";
-import type { FitnessAge } from "@/lib/api/types";
+import { useFitnessAge, useFitnessAgeHistory, useFitnessItems } from "@/lib/api/queries";
+import type { FitnessAge, FitnessItem } from "@/lib/api/types";
 import {
   ageGapLine,
   agePosition,
   changeLine,
   itemAgeText,
+  itemLabelOf,
   lastKnownAge,
   moreItemsLine,
 } from "@/lib/fitness-age";
@@ -32,6 +33,8 @@ export function FitnessAgeCard({ profileId }: { profileId: string }) {
     profileId,
     data?.status === "OK" || data?.status === "NOT_ENOUGH_ITEMS",
   );
+  // 항목 이름을 측정 화면과 같은 라벨로 쓰려고 받는다. 측정 화면과 같은 쿼리라 한 번 받으면 같이 쓴다
+  const { data: catalogue } = useFitnessItems("성인");
 
   if (isPending) return <Skeleton className="h-56 w-full rounded-3xl" />;
   if (error || !data) {
@@ -88,8 +91,8 @@ export function FitnessAgeCard({ profileId }: { profileId: string }) {
           )}
         </>
       )}
-      <ItemAges data={data} />
-      <MissingItems data={data} profileId={profileId} />
+      <ItemAges data={data} catalogue={catalogue?.items} />
+      <MissingItems data={data} catalogue={catalogue?.items} profileId={profileId} />
     </section>
   );
 }
@@ -143,7 +146,7 @@ function AgeScale({
 }
 
 /** 항목마다의 나이. 뺀 항목은 값 대신 「계산에 안 씀」 */
-function ItemAges({ data }: { data: FitnessAge }) {
+function ItemAges({ data, catalogue }: { data: FitnessAge; catalogue?: FitnessItem[] }) {
   if (data.items.length === 0 && data.excludedItems.length === 0) return null;
   return (
     <div className="mt-5">
@@ -152,7 +155,9 @@ function ItemAges({ data }: { data: FitnessAge }) {
         {data.items.map((item) => (
           <li key={item.itemCode} className="flex items-baseline justify-between gap-3 py-2.5">
             <span className="min-w-0">
-              <span className="text-sm font-bold">{item.itemName}</span>
+              <span className="text-sm font-bold">
+                {itemLabelOf(item.itemCode, item.itemName, catalogue)}
+              </span>
               <span className="text-caption text-ink-soft ml-1.5">
                 {item.value}
                 {item.unit}
@@ -163,7 +168,9 @@ function ItemAges({ data }: { data: FitnessAge }) {
         ))}
         {data.excludedItems.map((item) => (
           <li key={item.itemCode} className="flex items-baseline justify-between gap-3 py-2.5">
-            <span className="text-ink-soft min-w-0 text-sm font-bold">{item.itemName}</span>
+            <span className="text-ink-soft min-w-0 text-sm font-bold">
+              {itemLabelOf(item.itemCode, item.itemName, catalogue)}
+            </span>
             <span className="text-caption text-ink-soft shrink-0 font-semibold">계산에 안 씀</span>
           </li>
         ))}
@@ -173,7 +180,15 @@ function ItemAges({ data }: { data: FitnessAge }) {
 }
 
 /** 더 측정하면 좋은 항목. 측정 화면으로 간다 */
-function MissingItems({ data, profileId }: { data: FitnessAge; profileId: string }) {
+function MissingItems({
+  data,
+  catalogue,
+  profileId,
+}: {
+  data: FitnessAge;
+  catalogue?: FitnessItem[];
+  profileId: string;
+}) {
   if (data.missingItems.length === 0) return null;
   return (
     <NavLink
@@ -186,7 +201,7 @@ function MissingItems({ data, profileId }: { data: FitnessAge; profileId: string
       <span className="min-w-0 flex-1">
         <span className="text-caption text-ink-soft block font-bold">더 측정할 항목</span>
         <span className="block text-sm font-extrabold">
-          {data.missingItems.map((m) => m.itemName).join(", ")}
+          {data.missingItems.map((m) => itemLabelOf(m.itemCode, m.itemName, catalogue)).join(", ")}
         </span>
       </span>
       <ChevronRight aria-hidden className="text-ink-soft size-4 shrink-0" />

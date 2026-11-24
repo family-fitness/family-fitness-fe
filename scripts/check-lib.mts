@@ -125,6 +125,7 @@ import {
   agePosition,
   ageText,
   changeLine,
+  itemLabelOf,
   lastKnownAge,
   itemAgeText,
   moreItemsLine,
@@ -2214,6 +2215,24 @@ check(
   check(
     "셈한 회차가 없으면 지난 체력 나이도 없다",
     lastKnownAge([row("2026-11-25", null)]) === null && lastKnownAge([]) === null,
+  );
+}
+{
+  const adult = [
+    { itemCode: "020", itemName: "왕복오래달리기", itemLabel: "20m 왕복오래달리기" },
+    { itemCode: "022", itemName: "제자리멀리뛰기", itemLabel: "제자리멀리뛰기" },
+  ];
+  check(
+    "체력 나이의 항목 이름은 측정 화면과 같은 라벨로 쓴다",
+    itemLabelOf("020", "왕복오래달리기", adult) === "20m 왕복오래달리기" &&
+      itemLabelOf("022", "제자리멀리뛰기", adult) === "제자리멀리뛰기",
+  );
+  check(
+    "항목 목록이 아직 없거나 목록에 없는 코드면 받은 이름 그대로 쓴다",
+    itemLabelOf("020", "왕복오래달리기", undefined) === "왕복오래달리기" &&
+      itemLabelOf("099", "새 항목", adult) === "새 항목" &&
+      itemLabelOf("020", "왕복오래달리기", [{ itemCode: "020", itemLabel: "" }]) ===
+        "왕복오래달리기",
   );
 }
 
