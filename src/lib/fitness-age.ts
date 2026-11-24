@@ -41,11 +41,17 @@ export function trendOf(
     .sort((a, b) => a.testedOn.localeCompare(b.testedOn));
 }
 
-/** 지난 회차와 견준 한 줄. 견줄 회차가 없으면 null */
+/**
+ * 지난 회차와 견준 한 줄. 견줄 회차가 없으면 null.
+ * 셈에 쓴 항목 수가 다르면 견주지 않는다 — 다섯 항목으로 32세, 두 항목으로 25세가 나와 「7살 젊어졌어요」 라고 했지만
+ * 몸이 바뀐 게 아니라 잰 항목이 바뀐 것이었다(11/23 실제 서버로 확인)
+ */
 export function changeLine(tests: readonly FitnessAgeTest[]): string | null {
   const trend = trendOf(tests);
   if (trend.length < 2) return null;
-  const change = trend[trend.length - 1].fitnessAge - trend[trend.length - 2].fitnessAge;
+  const [before, now] = trend.slice(-2);
+  if (before.itemCount !== now.itemCount) return null;
+  const change = now.fitnessAge - before.fitnessAge;
   if (change === 0) return "지난 측정과 같아요";
   return change < 0
     ? `지난 측정보다 ${-change}살 젊어졌어요`
