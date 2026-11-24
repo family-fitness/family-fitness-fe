@@ -17,9 +17,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MeasureField } from "@/components/domain/measure-field";
 import { errorMessage } from "@/lib/errors";
 import type { FitnessItem, FitnessTestSource } from "@/lib/api/types";
-import { useCreateFitnessTest, useFamilyProfiles, useFitnessItems } from "@/lib/api/queries";
+import {
+  useCreateFitnessTest,
+  useFamilyProfiles,
+  useFitnessItems,
+  useFitnessTests,
+} from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
-import { REMEASURE_DAYS } from "@/lib/remeasure";
+import { REMEASURE_DAYS, measuredOn } from "@/lib/remeasure";
 import { measuredRule } from "@/lib/date-pick";
 import { daysSince, today } from "@/lib/today";
 import { bodyError, bodyValue, rangeHint } from "@/lib/body";
@@ -73,6 +78,7 @@ export default function MeasurePage() {
   const [source, setSource] = useState<FitnessTestSource>("SELF_INPUT");
   const [serverError, setServerError] = useState<string | null>(null);
   const [testedOn, setTestedOn] = useState(today());
+  const { data: past } = useFitnessTests(profileId);
 
   /**
    * 키와 몸무게. 한 달 안에 적은 값만 미리 채운다 — 그보다 오래된 값을 채워 두면 항목만 적고 저장한 순간
@@ -107,6 +113,9 @@ export default function MeasurePage() {
   const values = useWatch({ control });
 
   const create = useCreateFitnessTest(profileId, familyId ?? "");
+  // 하루에 한 회차다. 고른 날에 이미 잰 회차가 있으면 다 적기 전에 말한다.
+  // 저장한 뒤에는 말하지 않는다 — 저장이 회차 목록을 새로 받으므로, 결과로 넘어가는 사이 방금 적은 회차를 두고 막는 말이 뜰 수 있다
+  const dayTaken = !create.isSuccess && measuredOn(past?.tests, testedOn);
 
   const { easy, equipment } = useMemo(() => {
     const list: FitnessItem[] = itemsData?.items ?? [];
@@ -219,6 +228,10 @@ export default function MeasurePage() {
       setServerError("측정한 날짜를 다시 봐 주세요.");
       return;
     }
+    if (dayTaken) {
+      setServerError("그날 잰 기록이 이미 있어요.");
+      return;
+    }
     // 몸 칸이 범위를 벗어났으면 보내지 않는다 — 빼고 보내면 적은 줄 알았던 키가 사라진다
     const wrongBody = [
       heightProblem && "키",
@@ -310,6 +323,11 @@ export default function MeasurePage() {
               onChange={setTestedOn}
               rule={measuredRule()}
             />
+            {dayTaken && (
+              <p role="alert" className="text-signal-deep text-sm font-semibold">
+                그날 잰 기록이 이미 있어요.
+              </p>
+            )}
 
             {/* 크게 키운 화면(200%)에서도 넘치지 않게 줄을 바꾼다 */}
             <div className="flex flex-wrap gap-2">
@@ -437,7 +455,7 @@ export default function MeasurePage() {
             type="submit"
             size="block"
             loading={create.isPending}
-            disabled={filledCount === 0}
+            disabled={filledCount === 0 || dayTaken}
           >
             결과 보기
           </Button>

@@ -1297,6 +1297,14 @@ const pendingCodes = async () =>
     !age.items?.some((i) => i.itemCode === "012") &&
       Boolean(age.excludedItems?.some((i) => i.itemCode === "012")),
   );
+  const named = (await (await get(`/profiles/${DEMO.dad}/fitness-age`)).json()) as {
+    items?: { itemCode: string; itemName: string }[];
+  };
+  check(
+    "체력 나이의 항목 이름은 서버처럼 라벨이 아니라 이름으로 온다(왕복오래달리기)",
+    named.items?.find((i) => i.itemCode === "020")?.itemName === "왕복오래달리기",
+    JSON.stringify(named.items?.map((i) => i.itemName)),
+  );
   const kid = (await (await get(`/profiles/${DEMO.kid}/fitness-age`)).json()) as {
     status?: string;
     fitnessAge?: number | null;
@@ -1313,6 +1321,47 @@ const pendingCodes = async () =>
     (history.tests?.length ?? 0) >= 2 &&
       history.tests?.[0].fitnessAge === age.fitnessAge &&
       (history.tests?.[0].testedOn ?? "") > (history.tests?.[1].testedOn ?? ""),
+  );
+
+  // 「더 측정할 항목」 하나만 다시 재면 그 하나짜리 회차가 최근이 된다. 실제 서버와 같게(11/23 로컬 백엔드로 확인)
+  const remeasure = await post(`/profiles/${DEMO.dad}/fitness-tests`, {
+    testedOn: today,
+    source: "SELF_INPUT",
+    items: [{ itemCode: "022", value: 185 }],
+  });
+  const after = (await (await get(`/profiles/${DEMO.dad}/fitness-age`)).json()) as {
+    status?: string;
+    fitnessAge?: number | null;
+  };
+  const afterHistory = (await (await get(`/profiles/${DEMO.dad}/fitness-age/history`)).json()) as {
+    tests?: { status: string; fitnessAge: number | null; itemCount: number }[];
+  };
+  check(
+    "하나만 다시 재면 체력 나이는 항목이 모자란 회차로 온다",
+    remeasure.ok && after.status === "NOT_ENOUGH_ITEMS" && after.fitnessAge == null,
+    `${remeasure.status} ${after.status}`,
+  );
+  check(
+    "이력 맨 앞도 그 회차라 체력 나이가 없고, 지난 회차의 체력 나이는 남는다",
+    afterHistory.tests?.[0].status === "NOT_ENOUGH_ITEMS" &&
+      afterHistory.tests?.[0].fitnessAge === null &&
+      afterHistory.tests?.[0].itemCount === 1 &&
+      afterHistory.tests?.[1].fitnessAge != null,
+    JSON.stringify(afterHistory.tests?.slice(0, 2)),
+  );
+  // 「한 번에 2개」 를 같은 날 다시 재면 서버는 409 다 — 하루에 한 회차, 있는 회차에 항목을 더하는 길은 없다
+  const again = await post(`/profiles/${DEMO.dad}/fitness-tests`, {
+    testedOn: today,
+    source: "SELF_INPUT",
+    items: [
+      { itemCode: "019", value: 27 },
+      { itemCode: "041", value: 0.46 },
+    ],
+  });
+  check(
+    "같은 날 다시 재면 서버처럼 409 DUPLICATE_DATE",
+    again.status === 409 && (await codeOf(again)) === "DUPLICATE_DATE",
+    String(again.status),
   );
 }
 

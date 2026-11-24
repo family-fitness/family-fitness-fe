@@ -578,6 +578,11 @@ const fitness = [
         waistCm?: number;
         items: { itemCode: string; value: number }[];
       };
+      // 하루에 한 회차다. 서버는 동의 다음, 항목 검사 전에 같은 날 회차를 본다(409 DUPLICATE_DATE).
+      // 목이 받아 주면 같은 날 다시 재는 흐름이 목에서만 됐다
+      if ((db.tests[profileId] ?? []).some((t) => t.testedOn === body.testedOn)) {
+        return fail(409, "DUPLICATE_DATE", "같은 날짜의 측정이 이미 있습니다");
+      }
       // 지난 날짜로 적은 회차는 이력에만 들어간다 — 가장 최근 회차가 「지금」 이다
       const newest = !((db.latest[profileId]?.testedOn ?? "") > body.testedOn);
       const measured = (body.items ?? []).filter((i) => Number.isFinite(i.value));

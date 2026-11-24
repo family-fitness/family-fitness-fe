@@ -125,11 +125,14 @@ import {
   agePosition,
   ageText,
   changeLine,
+  itemLabelOf,
+  lastKnownAge,
   itemAgeText,
   moreItemsLine,
   trendOf,
 } from "@/lib/fitness-age";
 import { codesIn, measureHref, parseItemCodes, pinFirst } from "@/lib/measure-focus";
+import { measuredOn } from "@/lib/remeasure";
 
 import { ApiError } from "@/lib/api/client";
 import {
@@ -2190,12 +2193,57 @@ check(
       changeLine([row("2026-10-01", 41), row("2026-06-01", 41)]) === "지난 측정과 같아요",
   );
   check("견줄 회차가 없으면 말하지 않는다", changeLine([row("2026-10-01", 39)]) === null);
+  check(
+    "셈에 쓴 항목 수가 다른 회차끼리는 견주지 않는다 — 잰 항목이 바뀐 것이지 몸이 바뀐 게 아니다",
+    changeLine([{ ...row("2026-11-26", 25), itemCount: 2 }, row("2026-11-14", 32)]) === null &&
+      changeLine([
+        { ...row("2026-11-26", 25), itemCount: 2 },
+        { ...row("2026-11-14", 32), itemCount: 2 },
+      ]) === "지난 측정보다 7살 젊어졌어요",
+  );
 }
 check(
-  "항목이 모자라면 몇 개 더 측정하면 되는지 말한다",
-  moreItemsLine(2, 1) === "항목을 1개 더 측정하면 나와요" &&
-    moreItemsLine(2, 0) === "항목을 2개 더 측정하면 나와요",
+  "항목이 모자라면 한 회차에 몇 개를 함께 재야 하는지 말한다 — 다시 재면 새 회차라 「1개 더」 는 맞지 않다",
+  moreItemsLine(2) === "한 번에 2개 이상 측정하면 나와요",
 );
+{
+  const row = (testedOn: string, fitnessAge: number | null) => ({
+    testedOn,
+    age: 38,
+    status: (fitnessAge == null ? "NOT_ENOUGH_ITEMS" : "OK") as "OK" | "NOT_ENOUGH_ITEMS",
+    fitnessAge,
+    ageGap: fitnessAge == null ? null : fitnessAge - 38,
+    itemCount: fitnessAge == null ? 1 : 5,
+  });
+  // 실제 서버에서 본 그대로 — 5개 잰 회차 뒤에 제자리멀리뛰기 하나만 다시 쟀다
+  const tests = [row("2026-11-25", null), row("2026-11-14", 32), row("2026-10-01", 34)];
+  check(
+    "항목이 모자란 회차를 볼 때는 셈한 회차 가운데 가장 최근의 체력 나이를 든다",
+    lastKnownAge(tests)?.testedOn === "2026-11-14" && lastKnownAge(tests)?.fitnessAge === 32,
+  );
+  check(
+    "셈한 회차가 없으면 지난 체력 나이도 없다",
+    lastKnownAge([row("2026-11-25", null)]) === null && lastKnownAge([]) === null,
+  );
+}
+{
+  const adult = [
+    { itemCode: "020", itemName: "왕복오래달리기", itemLabel: "20m 왕복오래달리기" },
+    { itemCode: "022", itemName: "제자리멀리뛰기", itemLabel: "제자리멀리뛰기" },
+  ];
+  check(
+    "체력 나이의 항목 이름은 측정 화면과 같은 라벨로 쓴다",
+    itemLabelOf("020", "왕복오래달리기", adult) === "20m 왕복오래달리기" &&
+      itemLabelOf("022", "제자리멀리뛰기", adult) === "제자리멀리뛰기",
+  );
+  check(
+    "항목 목록이 아직 없거나 목록에 없는 코드면 받은 이름 그대로 쓴다",
+    itemLabelOf("020", "왕복오래달리기", undefined) === "왕복오래달리기" &&
+      itemLabelOf("099", "새 항목", adult) === "새 항목" &&
+      itemLabelOf("020", "왕복오래달리기", [{ itemCode: "020", itemLabel: "" }]) ===
+        "왕복오래달리기",
+  );
+}
 
 // 측정 화면에 재러 온 항목 넘기기
 check(
@@ -2234,6 +2282,17 @@ check(
   );
   check("목록에 있는 코드만 골라낸다", codesIn(list, ["021", "020"]).join() === "020");
 }
+
+// 하루에 한 회차 — 고른 날에 이미 잰 회차가 있는가
+check(
+  "고른 날에 잰 회차가 있으면 다 적기 전에 안다",
+  measuredOn([{ testedOn: "2026-11-25" }, { testedOn: "2026-11-14" }], "2026-11-25") &&
+    !measuredOn([{ testedOn: "2026-11-14" }], "2026-11-25"),
+);
+check(
+  "회차 목록이 아직 없거나 날짜가 비면 막지 않는다",
+  !measuredOn(undefined, "2026-11-25") && !measuredOn([{ testedOn: "2026-11-25" }], ""),
+);
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);

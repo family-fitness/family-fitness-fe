@@ -41,18 +41,47 @@ export function trendOf(
     .sort((a, b) => a.testedOn.localeCompare(b.testedOn));
 }
 
-/** 지난 회차와 견준 한 줄. 견줄 회차가 없으면 null */
+/**
+ * 지난 회차와 견준 한 줄. 견줄 회차가 없으면 null.
+ * 셈에 쓴 항목 수가 다르면 견주지 않는다 — 다섯 항목으로 32세, 두 항목으로 25세가 나와 「7살 젊어졌어요」 라고 했지만
+ * 몸이 바뀐 게 아니라 잰 항목이 바뀐 것이었다(11/23 실제 서버로 확인)
+ */
 export function changeLine(tests: readonly FitnessAgeTest[]): string | null {
   const trend = trendOf(tests);
   if (trend.length < 2) return null;
-  const change = trend[trend.length - 1].fitnessAge - trend[trend.length - 2].fitnessAge;
+  const [before, now] = trend.slice(-2);
+  if (before.itemCount !== now.itemCount) return null;
+  const change = now.fitnessAge - before.fitnessAge;
   if (change === 0) return "지난 측정과 같아요";
   return change < 0
     ? `지난 측정보다 ${-change}살 젊어졌어요`
     : `지난 측정보다 ${change}살 많아졌어요`;
 }
 
-/** 항목이 모자라 계산하지 못할 때 */
-export function moreItemsLine(minItems: number, used: number): string {
-  return `항목을 ${Math.max(1, minItems - used)}개 더 측정하면 나와요`;
+/**
+ * 항목이 모자라 계산하지 못할 때. 서버는 가장 최근 회차 하나로만 셈하고, 다시 재면 새 회차가 된다.
+ * 그래서 「1개 더」 가 아니라 한 회차에 몇 개를 함께 재야 하는지 말한다 — 1개 더 재러 가면 그 1개만 든 새 회차가 되어
+ * 다시 「아직 계산할 수 없어요」 였다(11/23 실제 서버로 확인)
+ */
+export function moreItemsLine(minItems: number): string {
+  return `한 번에 ${minItems}개 이상 측정하면 나와요`;
+}
+
+/** 항목이 모자란 회차를 볼 때 함께 적는 가장 최근의 체력 나이. 셈한 회차가 없으면 null */
+export function lastKnownAge(
+  tests: readonly FitnessAgeTest[],
+): (FitnessAgeTest & { fitnessAge: number }) | null {
+  return trendOf(tests).at(-1) ?? null;
+}
+
+/**
+ * 항목 이름은 측정 화면과 같은 라벨로(규칙 5). 왕복오래달리기는 연령대마다 거리가 달라 라벨이 따로 온다.
+ * 체력 나이 응답에는 이름(itemName)만 오므로 그 연령대 항목 목록에서 코드로 찾고, 없으면 받은 이름 그대로 쓴다
+ */
+export function itemLabelOf(
+  itemCode: string,
+  itemName: string,
+  catalogue: readonly { itemCode?: string | null; itemLabel?: string | null }[] | undefined,
+): string {
+  return catalogue?.find((item) => item.itemCode === itemCode)?.itemLabel || itemName;
 }

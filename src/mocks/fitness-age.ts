@@ -28,6 +28,15 @@ function catalogue() {
   return fixtures.itemsByAgeGroup["성인"]?.items ?? [];
 }
 
+/**
+ * 서버는 체력 나이에 항목 이름(itemName)을 싣는다. 측정 화면의 라벨(itemLabel)이 아니다 —
+ * 「왕복오래달리기」 와 「20m 왕복오래달리기」. 목이 라벨을 주면 카드가 이름을 라벨로 바꾸지 않아도 맞아 보였다
+ */
+function nameOf(itemCode: string | null | undefined, label: string | null | undefined): string {
+  const item = catalogue().find((i) => i.itemCode === itemCode);
+  return item?.itemName ?? label ?? itemCode ?? "";
+}
+
 function estimate(profile: Profile): FitnessAge {
   const age = ageOfProfile(profile);
   const test = db.latest[profile.profileId];
@@ -64,7 +73,7 @@ function estimate(profile: Profile): FitnessAge {
       const itemAge = Math.min(MAX, Math.max(MIN, raw));
       return {
         itemCode: m.itemCode ?? "",
-        itemName: m.itemLabel ?? m.itemCode ?? "",
+        itemName: nameOf(m.itemCode, m.itemLabel),
         unit: m.unit ?? "",
         value: m.value ?? 0,
         itemAge,
@@ -76,7 +85,7 @@ function estimate(profile: Profile): FitnessAge {
     .filter((m) => m.itemCode === NOT_AGE_RELATED)
     .map((m) => ({
       itemCode: NOT_AGE_RELATED,
-      itemName: m.itemLabel ?? NOT_AGE_RELATED,
+      itemName: nameOf(m.itemCode, m.itemLabel),
       reason: "NOT_AGE_RELATED",
     }));
   const common = { ...base, age, items, excludedItems, missingItems: missing };
@@ -89,34 +98,46 @@ function estimate(profile: Profile): FitnessAge {
 function historyOf(profile: Profile): FitnessAgeHistory {
   const age = ageOfProfile(profile);
   const current = estimate(profile);
-  const tests: FitnessAgeTest[] = [...(db.tests[profile.profileId] ?? [])]
+  const latestId = db.latest[profile.profileId]?.fitnessTestId;
+  const recent = [...(db.tests[profile.profileId] ?? [])]
     .sort((a, b) => b.testedOn.localeCompare(a.testedOn))
-    .slice(0, 12)
-    .map((t) => {
-      if (profile.ageGroup !== "성인") {
-        return {
-          testedOn: t.testedOn,
-          age,
-          status: "AGE_OUT_OF_RANGE",
-          fitnessAge: null,
-          ageGap: null,
-          itemCount: 0,
-        };
-      }
-      // 가장 최근 회차는 체력 나이 조회와 같은 값이어야 한다
-      const fitnessAge =
-        t.testedOn === current.testedOn && current.fitnessAge != null
-          ? current.fitnessAge
-          : Math.round(ageFrom(age, t.overallPercentile ?? 50));
+    .slice(0, 12);
+  // 체력 나이 조회가 셈한 회차. 시드 회차는 아이디가 따로라 날짜로 찾는다(같은 날이면 새로 적은 것이 앞이다)
+  const byId = recent.findIndex((t) => t.fitnessTestId === latestId);
+  const latestIndex = byId >= 0 ? byId : recent.findIndex((t) => t.testedOn === current.testedOn);
+  const tests: FitnessAgeTest[] = recent.map((t, index) => {
+    if (profile.ageGroup !== "성인") {
       return {
         testedOn: t.testedOn,
         age,
-        status: "OK",
-        fitnessAge,
-        ageGap: fitnessAge - age,
-        itemCount: t.testedOn === current.testedOn ? current.items.length : 5,
+        status: "AGE_OUT_OF_RANGE",
+        fitnessAge: null,
+        ageGap: null,
+        itemCount: 0,
       };
-    });
+    }
+    // 가장 최근 회차는 체력 나이 조회와 같아야 한다 — 항목이 모자라면 이력에서도 체력 나이가 없다.
+    // 전에는 모자란 회차에도 백분위로 나이를 지어 넣어, 하나만 다시 잰 뒤 체력 나이가 사라지는 걸 목이 가렸다
+    if (index === latestIndex) {
+      return {
+        testedOn: t.testedOn,
+        age,
+        status: current.status === "OK" ? "OK" : "NOT_ENOUGH_ITEMS",
+        fitnessAge: current.fitnessAge,
+        ageGap: current.ageGap,
+        itemCount: current.items.length,
+      };
+    }
+    const fitnessAge = Math.round(ageFrom(age, t.overallPercentile ?? 50));
+    return {
+      testedOn: t.testedOn,
+      age,
+      status: "OK",
+      fitnessAge,
+      ageGap: fitnessAge - age,
+      itemCount: 5,
+    };
+  });
   return { tests };
 }
 
