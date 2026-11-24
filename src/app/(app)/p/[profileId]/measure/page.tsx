@@ -78,9 +78,7 @@ export default function MeasurePage() {
   const [source, setSource] = useState<FitnessTestSource>("SELF_INPUT");
   const [serverError, setServerError] = useState<string | null>(null);
   const [testedOn, setTestedOn] = useState(today());
-  // 하루에 한 회차다. 고른 날에 이미 잰 회차가 있으면 다 적기 전에 말한다
   const { data: past } = useFitnessTests(profileId);
-  const dayTaken = measuredOn(past?.tests, testedOn);
 
   /**
    * 키와 몸무게. 한 달 안에 적은 값만 미리 채운다 — 그보다 오래된 값을 채워 두면 항목만 적고 저장한 순간
@@ -115,6 +113,9 @@ export default function MeasurePage() {
   const values = useWatch({ control });
 
   const create = useCreateFitnessTest(profileId, familyId ?? "");
+  // 하루에 한 회차다. 고른 날에 이미 잰 회차가 있으면 다 적기 전에 말한다.
+  // 저장한 뒤에는 말하지 않는다 — 저장이 회차 목록을 새로 받으므로, 결과로 넘어가는 사이 방금 적은 회차를 두고 막는 말이 뜰 수 있다
+  const dayTaken = !create.isSuccess && measuredOn(past?.tests, testedOn);
 
   const { easy, equipment } = useMemo(() => {
     const list: FitnessItem[] = itemsData?.items ?? [];
