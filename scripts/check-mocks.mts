@@ -1314,6 +1314,33 @@ const pendingCodes = async () =>
       history.tests?.[0].fitnessAge === age.fitnessAge &&
       (history.tests?.[0].testedOn ?? "") > (history.tests?.[1].testedOn ?? ""),
   );
+
+  // 「더 측정할 항목」 하나만 다시 재면 그 하나짜리 회차가 최근이 된다. 실제 서버와 같게(11/23 로컬 백엔드로 확인)
+  const remeasure = await post(`/profiles/${DEMO.dad}/fitness-tests`, {
+    testedOn: today,
+    source: "SELF_INPUT",
+    items: [{ itemCode: "022", value: 185 }],
+  });
+  const after = (await (await get(`/profiles/${DEMO.dad}/fitness-age`)).json()) as {
+    status?: string;
+    fitnessAge?: number | null;
+  };
+  const afterHistory = (await (await get(`/profiles/${DEMO.dad}/fitness-age/history`)).json()) as {
+    tests?: { status: string; fitnessAge: number | null; itemCount: number }[];
+  };
+  check(
+    "하나만 다시 재면 체력 나이는 항목이 모자란 회차로 온다",
+    remeasure.ok && after.status === "NOT_ENOUGH_ITEMS" && after.fitnessAge == null,
+    `${remeasure.status} ${after.status}`,
+  );
+  check(
+    "이력 맨 앞도 그 회차라 체력 나이가 없고, 지난 회차의 체력 나이는 남는다",
+    afterHistory.tests?.[0].status === "NOT_ENOUGH_ITEMS" &&
+      afterHistory.tests?.[0].fitnessAge === null &&
+      afterHistory.tests?.[0].itemCount === 1 &&
+      afterHistory.tests?.[1].fitnessAge != null,
+    JSON.stringify(afterHistory.tests?.slice(0, 2)),
+  );
 }
 
 server.close();
