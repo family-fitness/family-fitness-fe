@@ -1349,6 +1349,20 @@ const pendingCodes = async () =>
       afterHistory.tests?.[1].fitnessAge != null,
     JSON.stringify(afterHistory.tests?.slice(0, 2)),
   );
+  // 「한 번에 2개」 를 같은 날 다시 재면 서버는 409 다 — 하루에 한 회차, 있는 회차에 항목을 더하는 길은 없다
+  const again = await post(`/profiles/${DEMO.dad}/fitness-tests`, {
+    testedOn: today,
+    source: "SELF_INPUT",
+    items: [
+      { itemCode: "019", value: 27 },
+      { itemCode: "041", value: 0.46 },
+    ],
+  });
+  check(
+    "같은 날 다시 재면 서버처럼 409 DUPLICATE_DATE",
+    again.status === 409 && (await codeOf(again)) === "DUPLICATE_DATE",
+    String(again.status),
+  );
 }
 
 server.close();
