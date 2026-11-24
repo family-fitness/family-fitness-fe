@@ -52,7 +52,18 @@ export function changeLine(tests: readonly FitnessAgeTest[]): string | null {
     : `지난 측정보다 ${change}살 많아졌어요`;
 }
 
-/** 항목이 모자라 계산하지 못할 때 */
-export function moreItemsLine(minItems: number, used: number): string {
-  return `항목을 ${Math.max(1, minItems - used)}개 더 측정하면 나와요`;
+/**
+ * 항목이 모자라 계산하지 못할 때. 서버는 가장 최근 회차 하나로만 셈하고, 다시 재면 새 회차가 된다.
+ * 그래서 「1개 더」 가 아니라 한 회차에 몇 개를 함께 재야 하는지 말한다 — 1개 더 재러 가면 그 1개만 든 새 회차가 되어
+ * 다시 「아직 계산할 수 없어요」 였다(11/23 실제 서버로 확인)
+ */
+export function moreItemsLine(minItems: number): string {
+  return `한 번에 ${minItems}개 이상 측정하면 나와요`;
+}
+
+/** 항목이 모자란 회차를 볼 때 함께 적는 가장 최근의 체력 나이. 셈한 회차가 없으면 null */
+export function lastKnownAge(
+  tests: readonly FitnessAgeTest[],
+): (FitnessAgeTest & { fitnessAge: number }) | null {
+  return trendOf(tests).at(-1) ?? null;
 }

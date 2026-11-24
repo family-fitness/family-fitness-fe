@@ -8,9 +8,16 @@ import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFitnessAge, useFitnessAgeHistory } from "@/lib/api/queries";
 import type { FitnessAge } from "@/lib/api/types";
-import { ageGapLine, agePosition, changeLine, itemAgeText, moreItemsLine } from "@/lib/fitness-age";
+import {
+  ageGapLine,
+  agePosition,
+  changeLine,
+  itemAgeText,
+  lastKnownAge,
+  moreItemsLine,
+} from "@/lib/fitness-age";
 import { measureHref } from "@/lib/measure-focus";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 
 /**
  * 체력 나이 — 보호자 측정 결과에만 둔다. 서버가 성인(만 19~64세)만 셈하고, 아이에게는 내지 않는다.
@@ -20,7 +27,11 @@ import { cn } from "@/lib/utils";
  */
 export function FitnessAgeCard({ profileId }: { profileId: string }) {
   const { data, isPending, error, refetch, isRefetching } = useFitnessAge(profileId);
-  const { data: history } = useFitnessAgeHistory(profileId, data?.status === "OK");
+  // 항목이 모자란 회차에서도 이력을 받는다 — 하나만 다시 잰 뒤에 지난 체력 나이가 화면에서 사라졌다
+  const { data: history } = useFitnessAgeHistory(
+    profileId,
+    data?.status === "OK" || data?.status === "NOT_ENOUGH_ITEMS",
+  );
 
   if (isPending) return <Skeleton className="h-56 w-full rounded-3xl" />;
   if (error || !data) {
@@ -41,6 +52,7 @@ export function FitnessAgeCard({ profileId }: { profileId: string }) {
   if (data.status === "AGE_OUT_OF_RANGE" || data.status === "NO_TEST") return null;
 
   const change = changeLine(history?.tests ?? []);
+  const last = lastKnownAge(history?.tests ?? []);
 
   return (
     <section className="card" aria-label="체력 나이">
@@ -64,8 +76,16 @@ export function FitnessAgeCard({ profileId }: { profileId: string }) {
         <>
           <p className="text-body font-extrabold">아직 계산할 수 없어요</p>
           <p className="text-caption text-ink-soft mt-0.5 font-semibold">
-            {moreItemsLine(data.minItems, data.items.length)}
+            {moreItemsLine(data.minItems)}
           </p>
+          {last && (
+            <p className="text-body mt-3 font-bold">
+              지난 체력 나이 {last.fitnessAge}세
+              <span className="text-caption text-ink-soft ml-1.5 font-semibold">
+                {formatDate(last.testedOn)}
+              </span>
+            </p>
+          )}
         </>
       )}
       <ItemAges data={data} />
