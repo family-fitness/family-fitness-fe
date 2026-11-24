@@ -28,6 +28,15 @@ function catalogue() {
   return fixtures.itemsByAgeGroup["성인"]?.items ?? [];
 }
 
+/**
+ * 서버는 체력 나이에 항목 이름(itemName)을 싣는다. 측정 화면의 라벨(itemLabel)이 아니다 —
+ * 「왕복오래달리기」 와 「20m 왕복오래달리기」. 목이 라벨을 주면 카드가 이름을 라벨로 바꾸지 않아도 맞아 보였다
+ */
+function nameOf(itemCode: string | null | undefined, label: string | null | undefined): string {
+  const item = catalogue().find((i) => i.itemCode === itemCode);
+  return item?.itemName ?? label ?? itemCode ?? "";
+}
+
 function estimate(profile: Profile): FitnessAge {
   const age = ageOfProfile(profile);
   const test = db.latest[profile.profileId];
@@ -64,7 +73,7 @@ function estimate(profile: Profile): FitnessAge {
       const itemAge = Math.min(MAX, Math.max(MIN, raw));
       return {
         itemCode: m.itemCode ?? "",
-        itemName: m.itemLabel ?? m.itemCode ?? "",
+        itemName: nameOf(m.itemCode, m.itemLabel),
         unit: m.unit ?? "",
         value: m.value ?? 0,
         itemAge,
@@ -76,7 +85,7 @@ function estimate(profile: Profile): FitnessAge {
     .filter((m) => m.itemCode === NOT_AGE_RELATED)
     .map((m) => ({
       itemCode: NOT_AGE_RELATED,
-      itemName: m.itemLabel ?? NOT_AGE_RELATED,
+      itemName: nameOf(m.itemCode, m.itemLabel),
       reason: "NOT_AGE_RELATED",
     }));
   const common = { ...base, age, items, excludedItems, missingItems: missing };

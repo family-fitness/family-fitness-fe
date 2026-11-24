@@ -1297,6 +1297,14 @@ const pendingCodes = async () =>
     !age.items?.some((i) => i.itemCode === "012") &&
       Boolean(age.excludedItems?.some((i) => i.itemCode === "012")),
   );
+  const named = (await (await get(`/profiles/${DEMO.dad}/fitness-age`)).json()) as {
+    items?: { itemCode: string; itemName: string }[];
+  };
+  check(
+    "체력 나이의 항목 이름은 서버처럼 라벨이 아니라 이름으로 온다(왕복오래달리기)",
+    named.items?.find((i) => i.itemCode === "020")?.itemName === "왕복오래달리기",
+    JSON.stringify(named.items?.map((i) => i.itemName)),
+  );
   const kid = (await (await get(`/profiles/${DEMO.kid}/fitness-age`)).json()) as {
     status?: string;
     fitnessAge?: number | null;
