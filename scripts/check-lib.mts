@@ -132,6 +132,7 @@ import {
   trendOf,
 } from "@/lib/fitness-age";
 import { codesIn, measureHref, parseItemCodes, pinFirst } from "@/lib/measure-focus";
+import { measuredOn } from "@/lib/remeasure";
 
 import { ApiError } from "@/lib/api/client";
 import {
@@ -2273,6 +2274,17 @@ check(
   );
   check("목록에 있는 코드만 골라낸다", codesIn(list, ["021", "020"]).join() === "020");
 }
+
+// 하루에 한 회차 — 고른 날에 이미 잰 회차가 있는가
+check(
+  "고른 날에 잰 회차가 있으면 다 적기 전에 안다",
+  measuredOn([{ testedOn: "2026-11-25" }, { testedOn: "2026-11-14" }], "2026-11-25") &&
+    !measuredOn([{ testedOn: "2026-11-14" }], "2026-11-25"),
+);
+check(
+  "회차 목록이 아직 없거나 날짜가 비면 막지 않는다",
+  !measuredOn(undefined, "2026-11-25") && !measuredOn([{ testedOn: "2026-11-25" }], ""),
+);
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);
