@@ -27,7 +27,7 @@ import { KiumIsland } from "@/components/scene/kium-island";
 import { StoneTrail } from "@/components/scene/stone-trail";
 import { XpGauge } from "@/components/domain/xp-gauge";
 import { ApiError } from "@/lib/api/client";
-import type { MissionSession } from "@/lib/api/types";
+import type { MissionFeel, MissionSession } from "@/lib/api/types";
 import {
   useCheers,
   useCompleteSession,
@@ -36,6 +36,7 @@ import {
   useProgress,
   useClips,
   useSendCheer,
+  useSendMissionFeel,
 } from "@/lib/api/queries";
 import { missionTitle, missionsOn } from "@/lib/day";
 import { errorMessage } from "@/lib/errors";
@@ -989,17 +990,18 @@ function StepPlayer({
   );
 }
 
+/** 어땠어요 — id 는 서버 값(`MissionFeel`) 그대로 */
 const FEELS = [
-  { id: "easy", label: "쉬웠어요" },
-  { id: "good", label: "딱 좋아요" },
-  { id: "hard", label: "힘들었어요" },
-] as const;
+  { id: "EASY", label: "쉬웠어요" },
+  { id: "GOOD", label: "딱 좋아요" },
+  { id: "HARD", label: "힘들었어요" },
+] as const satisfies readonly { id: MissionFeel; label: string }[];
 type Feel = (typeof FEELS)[number]["id"];
 /** 보호자한테 가는 말에 붙는 한 줄 */
 const FEEL_LINE: Record<Feel, string> = {
-  easy: "쉬웠어요.",
-  good: "딱 좋았어요.",
-  hard: "조금 힘들었어요.",
+  EASY: "쉬웠어요.",
+  GOOD: "딱 좋았어요.",
+  HARD: "조금 힘들었어요.",
 };
 
 /** 끝 칸 — 다 했어요 · 경험치 · 어땠어요 · 알리기 */
@@ -1056,8 +1058,17 @@ function Finish({
   const answered = !fresh && aboutThis.some((c) => c.toProfileId === kidId && c.stickerId);
   const told = toldNow || toldBefore;
   const [error, setError] = useState<string | null>(null);
-  /** 어땠어요 — 고르면 보호자한테 가는 말에 붙는다. 안 골라도 된다 */
+  /** 어땠어요 — 고르면 서버에 남고 보호자한테 가는 말에도 붙는다. 안 골라도 된다 */
   const [feel, setFeel] = useState<Feel | null>(null);
+  const sendFeel = useSendMissionFeel(missionId);
+  const pickFeel = (next: Feel) => {
+    const picked = feel === next ? null : next;
+    setFeel(picked);
+    // 고를 때마다 남긴다(서버가 덮어쓴다). 알리기와 따로다 — 보호자가 없어 알리기가 없는 집도 남는다.
+    // 다시 눌러 고른 것을 거둬도 서버에서 지우는 길은 없다 — 마지막으로 고른 것이 남는다.
+    // 남기지 못해도 알리기를 막지 않는다. 아이에게 「저장하지 못했어요」 를 띄울 일이 아니다
+    if (picked && kidId) sendFeel.mutate({ profileId: kidId, feel: picked });
+  };
 
   const stage = stageOf(progress?.level);
   const leveledUp = progress != null && levelBefore != null && progress.level > levelBefore;
@@ -1132,7 +1143,7 @@ function Finish({
                 key={f.id}
                 type="button"
                 aria-pressed={feel === f.id}
-                onClick={() => setFeel(feel === f.id ? null : f.id)}
+                onClick={() => pickFeel(f.id)}
                 className={cn(
                   "press min-h-12 rounded-2xl text-sm font-extrabold",
                   feel === f.id ? "bg-signal-soft text-signal-deep ring-signal ring-2" : "bg-sub",

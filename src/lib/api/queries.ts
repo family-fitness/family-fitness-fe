@@ -22,6 +22,7 @@ import type {
   MissionSession,
   CalendarView,
   Cheer,
+  MissionFeel,
   CheerLogList,
   ClaimBody,
   CoachApproveResult,
@@ -673,6 +674,17 @@ export function useSendCheer(familyId: Uuid) {
       qc.invalidateQueries({ queryKey: qk.notifications(sent.toProfileId) });
       refreshProgress(qc);
     },
+  });
+}
+
+/**
+ * 운동이 어땠는지 남긴다. 참여자 한 명에 한 줄이고 다시 보내면 덮어쓴다.
+ * 계정 없는 아이는 보호자 계정이 그 아이 이름으로 보낸다(서버가 허락하는 범위 그대로)
+ */
+export function useSendMissionFeel(missionId: Uuid) {
+  return useMutation({
+    mutationFn: (body: { profileId: Uuid; feel: MissionFeel }) =>
+      api.post<void>(path`/missions/${missionId}/feedback`, body),
   });
 }
 

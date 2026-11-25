@@ -313,6 +313,34 @@ check(
   (who(await partsOf(shared.missionId), DEMO.kid)?.doneSessions ?? []).length === 0,
 );
 
+// 운동이 어땠는지 — 계정 없는 아이 이름으로 보호자 계정이 남긴다. 다시 보내면 덮어쓴다
+setActingProfile(DEMO.mom);
+res = await post(`/missions/${shared.missionId}/feedback`, { profileId: DEMO.kid, feel: "GOOD" });
+check("운동 느낌은 남기면 204", res.status === 204, String(res.status));
+res = await post(`/missions/${shared.missionId}/feedback`, { profileId: DEMO.kid, feel: "HARD" });
+check("같은 사람이 다시 보내면 덮어쓴다(204)", res.status === 204, String(res.status));
+res = await post(`/missions/${shared.missionId}/feedback`, { profileId: DEMO.kid, feel: "SO_SO" });
+check(
+  "느낌은 EASY · GOOD · HARD 셋뿐이다(400 BAD_REQUEST)",
+  res.status === 400 && (await codeOf(res)) === "BAD_REQUEST",
+  String(res.status),
+);
+res = await post(`/missions/no-such-mission/feedback`, { profileId: DEMO.kid, feel: "GOOD" });
+check(
+  "없는 운동이면 404 MISSION_NOT_FOUND",
+  res.status === 404 && (await codeOf(res)) === "MISSION_NOT_FOUND",
+);
+res = await post(`/missions/${shared.missionId}/feedback`, { profileId: DEMO.dad, feel: "GOOD" });
+check(
+  "다른 보호자 이름으로는 못 남긴다 — 계정이 없어도(403 FORBIDDEN)",
+  res.status === 403 && (await codeOf(res)) === "FORBIDDEN",
+);
+res = await post(`/missions/${shared.missionId}/feedback`, { profileId: DEMO.mom, feel: "GOOD" });
+check(
+  "그 운동을 하지 않은 사람은 못 남긴다(403 NOT_A_PARTICIPANT)",
+  res.status === 403 && (await codeOf(res)) === "NOT_A_PARTICIPANT",
+);
+
 const xpOf = async (id: string) =>
   ((await (await get(`/profiles/${id}/progress`)).json()) as { xp: number }).xp;
 const before = await xpOf(DEMO.kid);
