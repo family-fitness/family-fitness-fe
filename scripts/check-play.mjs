@@ -5,7 +5,7 @@
  *
  * 시계를 빨리 돌린다(playwright clock). 4분짜리 칸을 4분 기다리지 않고
  * 「시작 → 시간이 다 됨 → 3초 쉼 → 다음 칸이 스스로 시작」 이 도는지,
- * 마지막 칸이 끝나면 「다 했어요」 와 알리기가 뜨는지 본다.
+ * 마지막 칸이 끝나면 「다 했어요」 와 알리기가 뜨는지, 고른 「어땠어요」 가 서버에 남는지 본다.
  *
  * 유튜브는 막는다. 영상이 안 떠도 타이머만으로 끝까지 가야 한다 — 그게 이 화면의 약속이다.
  */
@@ -122,10 +122,22 @@ for (const minutes of [4, 1, 1]) {
 await expect("다 끝나면 다 했어요가 뜬다", async () => {
   await page.getByRole("heading", { name: "오늘 거 다 했어요!" }).waitFor({ timeout: 5000 });
 });
+let feelSent = null;
 await expect("다 하고 나면 어땠는지 고를 수 있다", async () => {
   const good = page.getByRole("button", { name: "딱 좋아요" });
+  // 고르는 순간 남긴다 — 알리기와 따로다(보호자가 없어 알리기가 없는 집도 남는다)
+  const sent = page.waitForRequest(
+    (r) => r.method() === "POST" && /\/missions\/[^/]+\/feedback$/.test(r.url()),
+    { timeout: 5000 },
+  );
   await good.click({ timeout: 3000 });
   if ((await good.getAttribute("aria-pressed")) !== "true") throw new Error("눌리지 않는다");
+  feelSent = (await sent).postDataJSON();
+});
+await expect("고른 느낌은 그 아이 이름으로 서버에 남는다", async () => {
+  if (feelSent?.feel !== "GOOD" || !feelSent?.profileId) {
+    throw new Error(`보낸 것: ${JSON.stringify(feelSent)}`);
+  }
 });
 await expect("보호자한테 알리기가 있다", async () => {
   await page.getByRole("button", { name: /한테 알리기$/ }).waitFor({ timeout: 3000 });
