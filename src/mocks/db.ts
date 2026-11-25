@@ -535,6 +535,11 @@ export const db = {
   /** 주고받은 칭찬 · 알림. */
   cheers: loadCheers(),
   /**
+   * 운동이 어땠는지 — `미션:프로필` 마다 한 줄, 다시 보내면 덮어쓴다.
+   * 서버도 저장만 하고 돌려주지 않는다(다음 편성에 싣는 것은 AI 계약이 먼저). 목도 들고만 있다
+   */
+  feels: {} as Record<string, "EASY" | "GOOD" | "HARD">,
+  /**
    * 측정 회차에 같이 적은 키 · 몸무게.
    * ▲ 서버는 받아 두고도 `latest` 로 돌려주지 않는다. 목에서는 돌려준다.
    */
@@ -1224,6 +1229,9 @@ export function forgetProfile(profileId: string) {
     }))
     .filter((m) => m.participants.length > 0);
   db.cheers = db.cheers.filter((c) => c.fromProfileId !== profileId && c.toProfileId !== profileId);
+  for (const key of Object.keys(db.feels)) {
+    if (key.endsWith(`:${profileId}`)) delete db.feels[key];
+  }
   saveFamily();
   saveMissions();
   saveCheers(db.cheers);

@@ -874,6 +874,39 @@ const missions = [
       });
     },
   ),
+
+  /**
+   * 운동이 어땠는지. 판단 차례는 서버와 같다 — 미션 없음 404 → 그 프로필 이름으로 할 수 없음 403 FORBIDDEN
+   * (자기 프로필이거나, 보호자가 계정 없는 아이 이름으로만 — 계정 없는 다른 보호자는 안 된다) → 참여자 아님 403
+   * → 동의 없음 422. 성공하면 204
+   */
+  http.post<PathParams>(`${BASE}/missions/:missionId/feedback`, async ({ params, request }) => {
+    const body = (await request.json()) as { profileId?: string; feel?: string };
+    const feel = body.feel;
+    if (!body.profileId || (feel !== "EASY" && feel !== "GOOD" && feel !== "HARD")) {
+      return fail(400, "BAD_REQUEST", "profileId 와 feel(EASY · GOOD · HARD)이 필요합니다");
+    }
+    const mission = db.missions.find((m) => m.missionId === String(params.missionId));
+    if (!mission) return fail(404, "MISSION_NOT_FOUND", "미션이 없습니다");
+    const me = acting();
+    const target = db.profiles.profiles.find((p) => p.profileId === body.profileId);
+    const canAct =
+      me?.profileId === body.profileId ||
+      (me?.role === "PARENT" &&
+        target?.familyId === me.familyId &&
+        target.role === "CHILD" &&
+        !target.hasAccount);
+    if (!canAct) return fail(403, "FORBIDDEN", "그 프로필 이름으로 할 수 없습니다");
+    if (!participantOf(mission, body.profileId)) {
+      return fail(403, "NOT_A_PARTICIPANT", "이 운동을 하는 사람이 아닙니다");
+    }
+    // 동의가 필요한 아이가 동의가 없거나 거뒀을 때만 — 보호자는 동의 대상이 아니다
+    if (target?.consentRequired && !target.consentGiven) {
+      return fail(422, "CONSENT_REQUIRED", "보호자 동의가 필요합니다");
+    }
+    db.feels[`${mission.missionId}:${body.profileId}`] = feel;
+    return new HttpResponse(null, { status: 204 });
+  }),
 ];
 
 export const handlers = [
