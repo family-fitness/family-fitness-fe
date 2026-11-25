@@ -56,6 +56,7 @@ const ROUTES = [
   "/parent/family",
   "/parent/dashboard",
   "/parent/league",
+  "/parent/week",
   "/parent/workout",
   "/parent/records",
   "/parent/m/seed-today",

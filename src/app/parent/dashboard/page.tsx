@@ -189,6 +189,15 @@ export default function FamilyDashboardPage() {
             )}
             className="border-line mt-3 border-t pt-2"
           />
+          {/* 지난 주를 돌아본다 — 이번 달 숫자 곁의 한 줄. 새 카드를 세우지 않는다 */}
+          <NavLink
+            href="/parent/week"
+            className="press border-line mt-2 flex min-h-12 items-center gap-3 border-t pt-3"
+          >
+            <ArtIcon name="icon/menu-calendar" className="size-8" />
+            <span className="min-w-0 flex-1 text-sm font-extrabold">주간 돌아보기</span>
+            <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
+          </NavLink>
           {!restToday && (
             <NavLink
               href="/plan"

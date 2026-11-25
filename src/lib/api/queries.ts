@@ -15,42 +15,43 @@ import type { ReviewKind } from "@/lib/review-login";
 import type {
   AgeGroup,
   AuthResponse,
-  ReviewLoginResponse,
   Availability,
   AvailabilitySlot,
-  ClipList,
-  MissionSession,
   CalendarView,
   Cheer,
   CheerLogList,
   ClaimBody,
+  ClipList,
   CoachApproveResult,
   CoachRejectResult,
-  TargetMetric,
   CoachRun,
+  FamilyCreated,
+  FamilyInvite,
+  FamilyLeague,
+  FamilyProfiles,
   FitnessItems,
   FitnessMap,
   FitnessTestHistory,
   FitnessTestResult,
-  FamilyInvite,
   GuardianConsent,
   InviteCode,
   InvitePeek,
-  PendingInviteList,
-  NotificationList,
   LatestWithBody,
   MeResponse,
-  NextStep,
   MissionList,
-  ProgressView,
+  MissionSession,
+  NextStep,
+  NotificationList,
+  PendingInviteList,
   ProfileSummary,
+  ProgressView,
+  RestDays,
+  ReviewLoginResponse,
   Role,
   SupportMode,
+  TargetMetric,
   Uuid,
-  FamilyLeague,
-  RestDays,
-  FamilyCreated,
-  FamilyProfiles,
+  WeeklyReport,
 } from "./types";
 import type { SignupSource } from "@/lib/signup-source";
 
@@ -963,6 +964,18 @@ export function useMarkNotificationsRead(profileId: Uuid | undefined) {
  * 가족 리그 — 이번 달 티어 · 달성률 · 순위.
  * ▲ 서버에 아직 없는 엔드포인트다. 목 서버가 제안 모양으로 답한다.
  */
+/**
+ * 가족 주간 요약(월~일). 지난 주는 바뀌지 않지만, 이번 주는 운동할 때마다 바뀐다 — 다른 조회처럼 받아 둔 값을 오래 믿지 않는다
+ */
+export function useWeeklyReport(familyId: Uuid | undefined, weekStart: string) {
+  return useQuery({
+    queryKey: ["family", familyId ?? "", "weekly", weekStart] as const,
+    queryFn: () =>
+      api.get<WeeklyReport>(path`/families/${familyId}/report/weekly${query({ weekStart })}`),
+    enabled: Boolean(familyId),
+  });
+}
+
 export function useFamilyLeague(familyId: Uuid | undefined, month: string) {
   return useQuery({
     queryKey: qk.family.league(familyId ?? "", month),

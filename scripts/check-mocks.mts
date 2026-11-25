@@ -1276,6 +1276,45 @@ const pendingCodes = async () =>
   );
 }
 
+/* ─── 주간 돌아보기 ─────────────────────────────────────── */
+{
+  setActingProfile(DEMO.mom);
+  const monday = (d: string) => {
+    const back = (new Date(`${d}T00:00:00`).getDay() + 6) % 7;
+    return daysBefore(back, d);
+  };
+  const lastWeek = daysBefore(7, monday(today));
+  const midweek = daysBefore(-2, lastWeek);
+  const res = await get(`/families/${DEMO.familyId}/report/weekly?weekStart=${midweek}`);
+  const week = (await res.json()) as {
+    weekStart: string;
+    weekEnd: string;
+    members: { profileId: string; verifiedMinutes: number; activeMinutes: number }[];
+    missionStats: { total: number; completed: number };
+  };
+  check(
+    "주중 날짜를 주면 그 주 월요일부터 일요일까지로 맞춘다",
+    res.status === 200 && week.weekStart === lastWeek && week.weekEnd === daysBefore(-6, lastWeek),
+    `${week.weekStart} ~ ${week.weekEnd}`,
+  );
+  const cal = (await (
+    await get(
+      `/families/${DEMO.familyId}/calendar?profileId=${DEMO.kid}&from=${week.weekStart}&to=${week.weekEnd}`,
+    )
+  ).json()) as { days: { minutes: number }[] };
+  const kidWeek = week.members.find((m) => m.profileId === DEMO.kid);
+  check(
+    "아이의 확인된 시간은 같은 주 달력의 분을 더한 것과 같다",
+    kidWeek?.verifiedMinutes === cal.days.reduce((sum, d) => sum + d.minutes, 0),
+    `${kidWeek?.verifiedMinutes} / ${cal.days.reduce((sum, d) => sum + d.minutes, 0)}`,
+  );
+  check(
+    "모든 출처 시간은 확인된 시간보다 작지 않고, 모두 끝낸 운동은 그 주 운동 수를 넘지 않는다",
+    week.members.every((m) => m.activeMinutes >= m.verifiedMinutes) &&
+      week.missionStats.completed <= week.missionStats.total,
+  );
+}
+
 server.close();
 console.log(failed === 0 ? "\n전부 통과" : `\n${failed}건 실패`);
 process.exit(failed === 0 ? 0 : 1);

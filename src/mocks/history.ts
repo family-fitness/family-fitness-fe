@@ -17,8 +17,9 @@ import type {
   SessionPhase,
   StickerLog,
   VerifiedBy,
+  WeeklyReport,
 } from "@/lib/api/types";
-import { dayOf, daysBefore, today, weekdayCode } from "@/lib/today";
+import { dayOf, daysBefore, today, weekOf, weekdayCode } from "@/lib/today";
 
 import {
   BASE,
@@ -285,5 +286,58 @@ export const history = [
       .filter((d): d is DayLog => d !== null);
 
     return HttpResponse.json<CalendarView>({ profileId, from, to, days });
+  }),
+
+  /**
+   * 가족 주간 요약(월~일). 서버와 같은 모양 — 구성원마다 그 주의 운동 시간(모든 출처 · 타이머와 영상)과 끝낸 운동 수,
+   * 그 주에 걸친 운동 수와 모두 끝낸 운동 수, 응원 수. 날짜를 안 주면 이번 주, 주중 날짜면 그 주 월요일로 맞춘다.
+   * 같은 가족이면 누구나 본다. summary 는 목에 코치 회차 설명이 없어 null 이다
+   */
+  http.get<PathParams>(`${BASE}/families/:familyId/report/weekly`, ({ request }) => {
+    const raw = new URL(request.url).searchParams.get("weekStart");
+    const weekStart = weekOf(raw && /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : today()).from;
+    const weekEnd = daysBefore(-6, weekStart);
+    const days = Array.from({ length: 7 }, (_, i) => daysBefore(-i, weekStart));
+    const overlapping = db.missions.filter((m) => {
+      const start = m.startDate ?? "";
+      const end = m.endDate ?? start;
+      return start <= weekEnd && end >= weekStart;
+    });
+    const members = db.profiles.profiles.map((p) => {
+      const logs = days
+        .map((d) => dayLogFor(p.profileId, d))
+        .filter((d): d is DayLog => d !== null);
+      // 달력의 분은 서버가 아는 것(타이머 · 영상)이다. 직접 적은 기록은 운동 줄의 분으로 더한다
+      const verifiedMinutes = logs.reduce((sum, d) => sum + d.minutes, 0);
+      const reported = logs
+        .flatMap((d) => d.entries)
+        .filter((e) => e.verifiedBy === "SELF_REPORT")
+        .reduce((sum, e) => sum + e.minutes, 0);
+      const completedMissions = overlapping.filter(
+        (m) => participantOf(m, p.profileId)?.completed,
+      ).length;
+      return {
+        profileId: p.profileId,
+        name: p.name,
+        activeMinutes: verifiedMinutes + reported,
+        verifiedMinutes,
+        completedMissions,
+      };
+    });
+    const allDone = overlapping.filter(
+      (m) => (m.participants ?? []).length > 0 && (m.participants ?? []).every((p) => p.completed),
+    ).length;
+    const cheerCount = db.cheers.filter((c) => {
+      const day = dayOf(c.createdAt);
+      return day >= weekStart && day <= weekEnd;
+    }).length;
+    return HttpResponse.json<WeeklyReport>({
+      weekStart,
+      weekEnd,
+      summary: null,
+      missionStats: { total: overlapping.length, completed: allDone },
+      members,
+      cheerCount,
+    });
   }),
 ];
