@@ -1,4 +1,4 @@
-import type { WeeklyReport } from "./api/types";
+import type { DayLog, WeeklyReport } from "./api/types";
 import { daysBefore, weekOf } from "./today";
 import { formatDate } from "./utils";
 
@@ -46,4 +46,25 @@ export function familyWeek(report: WeeklyReport | undefined): {
   const minutes = (report?.members ?? []).reduce((sum, m) => sum + (m.verifiedMinutes ?? 0), 0);
   const completed = report?.missionStats?.completed ?? 0;
   return { minutes, completed, moved: minutes > 0 || completed > 0 };
+}
+
+/**
+ * 한 주 일곱 날마다 가족이 움직인 분 — 구성원 달력의 확인된 분을 날짜마다 더한다(요일 기둥 탑의 한 사람 자리에 가족을 세운다).
+ * 달력이 하나라도 아직 오지 않았으면 undefined — 덜 더한 값으로 기둥을 지었다가 다시 지으면 깜빡이고 값이 틀린 채 보인다
+ */
+export function familyDays(
+  days: readonly string[],
+  calendars: readonly ({ days?: readonly Pick<DayLog, "date" | "minutes">[] } | undefined)[],
+): DayLog[] | undefined {
+  if (calendars.length === 0 || calendars.some((c) => c === undefined)) return undefined;
+  return days.map((date) => ({
+    date,
+    minutes: calendars.reduce(
+      (sum, c) => sum + (c?.days?.find((d) => d.date === date)?.minutes ?? 0),
+      0,
+    ),
+    plannedMinutes: null,
+    entries: [],
+    stickers: [],
+  }));
 }
