@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -272,12 +272,30 @@ function MemberRow({
             tone={profile.role === "CHILD" ? "signal" : "mark"}
           />
         )}
-        <div className="min-w-0 flex-1">
-          <p className="text-body font-bold">{profile.name}</p>
-          <p className="text-faint mt-0.5 text-xs">
-            {profile.ageGroup}, {profile.role === "PARENT" ? "보호자" : "아이"}
-          </p>
-        </div>
+        {/* 이름을 누르면 고치기 — 줄 끝에 단추를 더 두면 이름 칸이 좁아져 「성인, 보호자」 가 두 줄로 꺾였다 */}
+        {onEdit ? (
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label={`${profile.name ?? ""} 정보 고치기`}
+            className="press min-w-0 flex-1 py-1 text-left"
+          >
+            <span className="flex items-center gap-1">
+              <span className="text-body truncate font-bold">{profile.name}</span>
+              <Pencil aria-hidden className="text-faint size-3.5 shrink-0" />
+            </span>
+            <span className="text-faint mt-0.5 block truncate text-xs">
+              {profile.ageGroup}, {profile.role === "PARENT" ? "보호자" : "아이"}
+            </span>
+          </button>
+        ) : (
+          <div className="min-w-0 flex-1">
+            <p className="text-body truncate font-bold">{profile.name}</p>
+            <p className="text-faint mt-0.5 truncate text-xs">
+              {profile.ageGroup}, {profile.role === "PARENT" ? "보호자" : "아이"}
+            </p>
+          </div>
+        )}
 
         <div className="flex shrink-0 items-center gap-1">
           {profile.hasAccount ? (
@@ -292,16 +310,6 @@ function MemberRow({
             >
               초대하기
             </Button>
-          )}
-          {onEdit && (
-            <button
-              type="button"
-              onClick={onEdit}
-              aria-label={`${profile.name ?? ""} 정보 고치기`}
-              className="press text-ink-soft text-caption min-h-11 px-2 font-bold"
-            >
-              고치기
-            </button>
           )}
           {onRemove && (
             <button
