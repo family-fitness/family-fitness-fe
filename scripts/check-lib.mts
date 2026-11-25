@@ -67,12 +67,16 @@ import {
 } from "@/lib/videos";
 import {
   callName,
+  canEditMember,
   canRemoveMember,
   familySetupPath,
   guardiansName,
-  NEW_ACCOUNT_CHOICES,
+  memberEdit,
+  memberNameProblem,
   mustAddChild,
   mustSetUpFamily,
+  needsConsentAfterEdit,
+  NEW_ACCOUNT_CHOICES,
   openWithoutChild,
   removeMemberCopy,
 } from "@/lib/family";
@@ -2177,6 +2181,54 @@ check(
   broken.setItem("ff-utm", "{깨진 값");
   check("저장된 값이 깨졌으면 빈 값이다", same(savedUtm(broken), {}));
   check("저장소를 못 쓰면 아무것도 붙이지 않는다", same(savedUtm(null), {}));
+}
+
+// 구성원 정보 고치기
+{
+  const mom = { profileId: "m", role: "PARENT" as const };
+  check(
+    "보호자는 자기 프로필과 계정 없는 구성원을 고칠 수 있다",
+    canEditMember(mom, { profileId: "m", hasAccount: true }) &&
+      canEditMember(mom, { profileId: "k", hasAccount: false }) &&
+      canEditMember(mom, { profileId: "d", hasAccount: false }),
+  );
+  check(
+    "계정 붙은 다른 사람과, 아이 계정은 고칠 수 없다",
+    !canEditMember(mom, { profileId: "d", hasAccount: true }) &&
+      !canEditMember({ profileId: "k", role: "CHILD" }, { profileId: "k", hasAccount: true }) &&
+      !canEditMember(undefined, { profileId: "k", hasAccount: false }),
+  );
+  check(
+    "이름은 서버와 같게 1~20자, 공백만은 안 된다",
+    memberNameProblem("서준") === null &&
+      memberNameProblem("   ") !== null &&
+      memberNameProblem("가".repeat(21)) !== null &&
+      memberNameProblem(` ${"가".repeat(20)} `) === null,
+  );
+  check(
+    "고친 칸만 보낸다 — 같은 이름 · 같은 성별 · 고르지 않은 생일은 빠진다",
+    JSON.stringify(
+      memberEdit({ name: "서준", sex: "M" }, { name: " 서준 ", sex: "M", birthDate: "" }),
+    ) === "{}" &&
+      JSON.stringify(
+        memberEdit({ name: "서준", sex: "M" }, { name: "하준", sex: "F", birthDate: "2016-03-01" }),
+      ) === '{"name":"하준","sex":"F","birthDate":"2016-03-01"}',
+  );
+  check(
+    "생일을 고쳐 새로 동의가 필요해졌을 때만 알린다",
+    needsConsentAfterEdit(
+      { consentRequired: false, consentGiven: true },
+      { consentRequired: true, consentGiven: false },
+    ) &&
+      !needsConsentAfterEdit(
+        { consentRequired: true, consentGiven: true },
+        { consentRequired: true, consentGiven: true },
+      ) &&
+      !needsConsentAfterEdit(
+        { consentRequired: true, consentGiven: false },
+        { consentRequired: true, consentGiven: false },
+      ),
+  );
 }
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);

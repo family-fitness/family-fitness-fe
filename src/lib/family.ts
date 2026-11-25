@@ -117,6 +117,51 @@ export function canRemoveMember(
 }
 
 /**
+ * 이 줄의 구성원 정보(이름 · 생년월일 · 성별)를 고칠 수 있나. 보호자가 자기 프로필과 계정 없는 구성원만 —
+ * 서버도 계정 붙은 다른 사람이면 403 FORBIDDEN, 아이 계정이면 403 NOT_A_PARENT 로 거절한다
+ */
+export function canEditMember(
+  me: Pick<ProfileWithSex, "profileId" | "role"> | undefined,
+  member: Pick<ProfileWithSex, "profileId" | "hasAccount">,
+): boolean {
+  if (me?.role !== "PARENT" || !me.profileId || !member.profileId) return false;
+  return member.profileId === me.profileId || !member.hasAccount;
+}
+
+/** 구성원 이름 검사 — 서버와 같게 1~20자, 공백만은 안 된다 */
+export function memberNameProblem(name: string): string | null {
+  const trimmed = name.trim();
+  if (!trimmed) return "이름을 적어 주세요.";
+  if (trimmed.length > 20) return "이름은 20자까지 적을 수 있어요.";
+  return null;
+}
+
+/**
+ * 고친 칸만 보낸다 — 서버는 빠진 칸을 그대로 둔다. 이름은 앞뒤 공백을 걷어 견주고,
+ * 생년월일은 지금 값을 받지 못해 비워 두므로 고른 때만 싣는다
+ */
+export function memberEdit(
+  before: { name?: string | null; sex?: "M" | "F" | null },
+  form: { name: string; sex: "M" | "F" | null; birthDate: string },
+): { name?: string; sex?: "M" | "F"; birthDate?: string } {
+  const out: { name?: string; sex?: "M" | "F"; birthDate?: string } = {};
+  const name = form.name.trim();
+  if (name && name !== (before.name ?? "").trim()) out.name = name;
+  if (form.sex && form.sex !== before.sex) out.sex = form.sex;
+  if (form.birthDate) out.birthDate = form.birthDate;
+  return out;
+}
+
+/** 고친 뒤 새로 보호자 동의가 필요해졌나 — 아이 생일을 만 14세 미만으로 고치면 동의 기록이 없어 측정이 막힌다 */
+export function needsConsentAfterEdit(
+  before: Pick<ProfileWithSex, "consentRequired" | "consentGiven">,
+  after: Pick<ProfileWithSex, "consentRequired" | "consentGiven">,
+): boolean {
+  const lacking = (p: typeof before) => Boolean(p.consentRequired) && !p.consentGiven;
+  return lacking(after) && !lacking(before);
+}
+
+/**
  * 구성원 내보내기 확인 시트의 제목과 글. 내보내면 그 사람의 프로필과 기록이 지워진다.
  * 계정이 있는 사람이면 계정은 남고 우리 가족에서만 빠진다
  */
