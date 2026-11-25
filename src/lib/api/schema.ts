@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+  "/api/v1/profiles/{profileId}/availability": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["get"];
+    put: operations["replace"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/videos/{videoId}/progress": {
     parameters: {
       query?: never;
@@ -36,22 +52,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/profiles/{profileId}/predictions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations["predict"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/api/v1/profiles/{profileId}/invite": {
     parameters: {
       query?: never;
@@ -75,7 +75,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    get: operations["history"];
     put?: never;
     post: operations["register"];
     delete?: never;
@@ -100,6 +100,58 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/notifications/read": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["read"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/missions/{missionId}/sessions/{seq}/done": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * @deprecated
+     * @description 전환기 별칭 — `/api/v1/missions/{missionId}/sessions/{seq}/complete` 와 같은 핸들러다. FE 가 계약 이름으로 옮기면 걷는다.
+     */
+    post: operations["completeSession_transitional"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/missions/{missionId}/sessions/{seq}/complete": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["completeSession"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/missions/{missionId}/participants/{profileId}/confirm": {
     parameters: {
       query?: never;
@@ -110,6 +162,22 @@ export interface paths {
     get?: never;
     put?: never;
     post: operations["confirm"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/missions/{missionId}/feedback": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["feedback"];
     delete?: never;
     options?: never;
     head?: never;
@@ -164,6 +232,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/families/{familyId}/rest-days": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * @deprecated
+     * @description 전환기 별칭 — `/api/v1/families/{familyId}/rest-cards` 와 같은 핸들러다. FE 가 계약 이름으로 옮기면 걷는다.
+     */
+    get: operations["month_transitional"];
+    put?: never;
+    /**
+     * @deprecated
+     * @description 전환기 별칭 — `/api/v1/families/{familyId}/rest-cards` 와 같은 핸들러다. FE 가 계약 이름으로 옮기면 걷는다.
+     */
+    post: operations["use_transitional"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/families/{familyId}/rest-cards": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["month"];
+    put?: never;
+    post: operations["use"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/families/{familyId}/profiles": {
     parameters: {
       query?: never;
@@ -180,54 +288,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/families/{familyId}/invites": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations["familyInvites"];
-    put?: never;
-    post: operations["createFamilyInvite"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/invites/{claimCode}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get: operations["preview"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/families/{familyId}/invites/{code}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post?: never;
-    delete: operations["cancelFamilyInvite"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/api/v1/families/{familyId}/missions": {
     parameters: {
       query?: never;
@@ -238,6 +298,22 @@ export interface paths {
     get: operations["list"];
     put?: never;
     post: operations["create_1"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/families/{familyId}/invites": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["list_1"];
+    put?: never;
+    post: operations["create_2"];
     delete?: never;
     options?: never;
     head?: never;
@@ -267,9 +343,61 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get?: never;
+    get: operations["cheers"];
     put?: never;
     post: operations["cheer"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/exercises/{exerciseId}/favorite": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["favorite_1"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/clips/{exerciseId}/favorite": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * @deprecated
+     * @description 전환기 별칭 — `/api/v1/exercises/{exerciseId}/favorite` 와 같은 핸들러다. FE 가 계약 이름으로 옮기면 걷는다.
+     */
+    post: operations["favorite_transitional"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/dev/clock": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["now"];
+    put?: never;
+    post: operations["travel"];
     delete?: never;
     options?: never;
     head?: never;
@@ -324,6 +452,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/auth/review-login": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["reviewLogin"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/auth/refresh": {
     parameters: {
       query?: never;
@@ -334,6 +478,22 @@ export interface paths {
     get?: never;
     put?: never;
     post: operations["refresh"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/auth/logout": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post: operations["logout"];
     delete?: never;
     options?: never;
     head?: never;
@@ -370,6 +530,22 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
+    trace?: never;
+  };
+  "/api/v1/profiles/{profileId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch: operations["edit"];
     trace?: never;
   };
   "/api/v1/profiles/{profileId}/support-mode": {
@@ -411,7 +587,23 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get: operations["list_1"];
+    get: operations["list_2"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/profiles/{profileId}/progress": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["progress_1"];
     put?: never;
     post?: never;
     delete?: never;
@@ -436,6 +628,70 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/profiles/{profileId}/fitness-age": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["fitnessAge"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/profiles/{profileId}/fitness-age/history": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["history_1"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/notifications": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["list_3"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/missions/{missionId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["get_1"];
+    put?: never;
+    post?: never;
+    delete: operations["delete"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/me": {
     parameters: {
       query?: never;
@@ -444,6 +700,22 @@ export interface paths {
       cookie?: never;
     };
     get: operations["me"];
+    put?: never;
+    post?: never;
+    delete: operations["withdraw"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/invites/{claimCode}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["preview"];
     put?: never;
     post?: never;
     delete?: never;
@@ -484,6 +756,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/families/{familyId}/league": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["league"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/families/{familyId}/fitness-map": {
     parameters: {
       query?: never;
@@ -500,6 +788,74 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/families/{familyId}/coach/runs/latest": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["latest_1"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/families/{familyId}/calendar": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["calendar"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/clips": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * @deprecated
+     * @description 전환기 별칭 — `/api/v1/exercises` 와 같은 핸들러다. FE 가 계약 이름으로 옮기면 걷는다.
+     */
+    get: operations["list_transitional"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/exercises": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["list_4"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/coach/runs/{runId}": {
     parameters: {
       query?: never;
@@ -507,10 +863,78 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    get: operations["get"];
+    get: operations["get_2"];
     put?: never;
     post?: never;
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/families/{familyId}/rest-cards/{restDate}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations["cancel"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/families/{familyId}/rest-days/{restDate}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * @deprecated
+     * @description 전환기 별칭 — `/api/v1/families/{familyId}/rest-cards/{restDate}` 와 같은 핸들러다. FE 가 계약 이름으로 옮기면 걷는다.
+     */
+    delete: operations["cancel_transitional"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/families/{familyId}/profiles/{profileId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations["removeMember"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/families/{familyId}/invites/{code}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations["cancel_1"];
     options?: never;
     head?: never;
     patch?: never;
@@ -520,17 +944,32 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
-    CurrentUser: {
+    AvailabilityRequest: {
+      slots: components["schemas"]["SlotInput"][];
+    };
+    SlotInput: {
+      day?: string | null;
+      start?: string | null;
+      minutes?: number | null;
+    };
+    AvailabilityResponse: {
       /** Format: uuid */
-      userId?: string;
+      profileId?: string;
+      slots?: components["schemas"]["SlotView"][];
+    };
+    SlotView: {
+      day?: string;
+      start?: string;
+      /** Format: int32 */
+      minutes?: number;
     };
     VideoProgressRequest: {
       /** Format: uuid */
-      profileId?: string;
+      profileId: string;
       /** Format: double */
-      progress?: number;
+      progress: number;
       /** Format: int32 */
-      watchedSec?: number;
+      watchedSec: number;
       /** Format: uuid */
       missionId?: string | null;
     };
@@ -547,8 +986,8 @@ export interface components {
     };
     FavoriteRequest: {
       /** Format: uuid */
-      profileId?: string;
-      favorited?: boolean;
+      profileId: string;
+      favorited: boolean;
     };
     FavoriteView: {
       videoId?: string;
@@ -558,31 +997,6 @@ export interface components {
       /** Format: date-time */
       favoritedAt?: string | null;
     };
-    PredictRequest: {
-      /** Format: uuid */
-      fitnessTestId?: string | null;
-      /** Format: int32 */
-      horizonYears?: number | null;
-      itemCode?: string | null;
-    };
-    Point: {
-      /** @enum {string} */
-      scenario?: "MAINTAIN" | "IMPROVE";
-      itemCode?: string;
-      /** Format: int32 */
-      yearsFromNow?: number;
-      p10?: number | null;
-      p50?: number | null;
-      p90?: number | null;
-    };
-    PredictionResponse: {
-      /** Format: uuid */
-      predictionId?: string;
-      modelVersion?: string;
-      basis?: string;
-      points?: components["schemas"]["Point"][];
-      notice?: string;
-    };
     InviteResponse: {
       claimCode?: string;
       /** Format: date-time */
@@ -590,19 +1004,27 @@ export interface components {
       shareUrl?: string;
     };
     ItemInput: {
-      itemCode: string | null;
-      value: number | null;
+      itemCode: string;
+      value: number;
     };
     RegisterFitnessTestRequest: {
       /** Format: date */
-      testedOn: string | null;
-      /** @enum {string|null} */
-      source: "SELF_INPUT" | "CENTER_SHEET" | null;
+      testedOn: string;
+      /** @enum {string} */
+      source: "SELF_INPUT" | "CENTER_SHEET";
       heightCm?: number | null;
       weightKg?: number | null;
       bodyFatPct?: number | null;
       waistCm?: number | null;
-      items: components["schemas"]["ItemInput"][] | null;
+      items: components["schemas"]["ItemInput"][];
+    };
+    Certification: {
+      /** @enum {string|null} */
+      grade?: "1등급" | "2등급" | "3등급" | "참가" | null;
+      /** @enum {string} */
+      status?: "GRADED" | "NEEDS_ITEMS" | "NO_CRITERIA";
+      missingItems?: components["schemas"]["MissingItem"][];
+      peers?: components["schemas"]["PeerGrade"][];
     };
     FactorPoint: {
       /** @enum {string} */
@@ -622,7 +1044,7 @@ export interface components {
       items?: components["schemas"]["ItemResult"][];
       weakest?: components["schemas"]["FactorPoint"] | null;
       strongest?: components["schemas"]["FactorPoint"] | null;
-      certification?: components["schemas"]["Certification"] | null;
+      certification?: components["schemas"]["Certification"];
       disclaimer?: string;
     };
     ItemResult: {
@@ -636,14 +1058,6 @@ export interface components {
       band?: "strength" | "steady" | "growth" | null;
       topPercentText?: string | null;
     };
-    Certification: {
-      /** @enum {string|null} */
-      grade?: "1등급" | "2등급" | "3등급" | "참가" | null;
-      /** @enum {string} */
-      status?: "GRADED" | "NEEDS_ITEMS" | "NO_CRITERIA";
-      missingItems?: components["schemas"]["MissingItem"][];
-      peers?: components["schemas"]["PeerGrade"][];
-    };
     MissingItem: {
       itemCodes?: string[];
       label?: string;
@@ -651,39 +1065,17 @@ export interface components {
     PeerGrade: {
       /** @enum {string} */
       grade?: "1등급" | "2등급" | "3등급" | "참가";
-      /** Format: double */
       ratio?: number;
     };
     ClaimRequest: {
       claimCode: string;
-      /** FAMILY 초대만. 들어오는 사람의 이름 */
       name?: string | null;
-      /**
-       * Format: date
-       * @description FAMILY 초대만
-       */
+      /** Format: date */
       birthDate?: string | null;
-      /**
-       * @description FAMILY 초대만
-       * @enum {string|null}
-       */
+      /** @enum {string|null} */
       sex?: "M" | "F" | null;
       heightCm?: number | null;
       weightKg?: number | null;
-    };
-    InvitePreviewResponse: {
-      /** @enum {string} */
-      kind?: "FAMILY" | "PROFILE";
-      familyName?: string;
-      /** @description PROFILE 초대의 자리 이름. FAMILY 면 null */
-      profileName?: string | null;
-      /** @enum {string} */
-      role?: "PARENT" | "CHILD";
-      /** @enum {string|null} */
-      ageGroup?: "유아기" | "유소년" | "청소년" | "성인" | "어르신" | null;
-      invitedByName?: string | null;
-      /** Format: date-time */
-      expiresAt?: string | null;
     };
     ClaimResponse: {
       /** Format: uuid */
@@ -694,6 +1086,33 @@ export interface components {
       role?: "PARENT" | "CHILD";
       /** @enum {string} */
       nextStep?: "CREATE_FAMILY" | "CLAIM" | "HOME" | "SUPPORT_MODE";
+    };
+    MarkReadRequest: {
+      /** Format: uuid */
+      profileId: string;
+      /** Format: date-time */
+      upTo?: string | null;
+    };
+    CompleteSessionRequest: {
+      /** Format: uuid */
+      profileId: string;
+      /** Format: int32 */
+      activeSeconds: number;
+      /** Format: date-time */
+      startedAt: string;
+      /** Format: date-time */
+      endedAt: string;
+    };
+    SessionCompletedView: {
+      /** Format: int32 */
+      position?: number;
+      /** @enum {string} */
+      verifiedBy?: "VIDEO_PROGRESS" | "TIMER" | "SELF_REPORT";
+      /** Format: double */
+      missionProgress?: number;
+      missionCompleted?: boolean;
+      /** Format: int32 */
+      xpGained?: number;
     };
     ConfirmParticipantView: {
       /** Format: uuid */
@@ -708,15 +1127,27 @@ export interface components {
       /** Format: date-time */
       verifiedAt?: string | null;
     };
+    MissionFeedbackRequest: {
+      /**
+       * Format: uuid
+       * @description 느낌을 남기는 참여자 프로필
+       */
+      profileId: string;
+      /**
+       * @description EASY 쉬웠어요 · GOOD 딱 좋아요 · HARD 힘들었어요
+       * @enum {string}
+       */
+      feel: "EASY" | "GOOD" | "HARD";
+    };
     RecordTimerRequest: {
       /** Format: uuid */
-      profileId?: string;
+      profileId: string;
       /** Format: date-time */
-      startedAt?: string;
+      startedAt: string;
       /** Format: date-time */
-      endedAt?: string;
+      endedAt: string;
       /** Format: int32 */
-      activeMinutes?: number;
+      activeMinutes: number;
     };
     TimerRecordedView: {
       /** Format: date */
@@ -732,11 +1163,11 @@ export interface components {
     };
     RecordStepsRequest: {
       /** Format: uuid */
-      profileId?: string;
+      profileId: string;
       /** Format: date */
-      activityDate?: string;
+      activityDate: string;
       /** Format: int32 */
-      steps?: number;
+      steps: number;
     };
     StepsRecordedView: {
       /** @enum {string} */
@@ -751,14 +1182,14 @@ export interface components {
     };
     CreateFamilyRequest: {
       familyName: string;
-      owner?: components["schemas"]["OwnerRequest"];
+      owner: components["schemas"]["OwnerRequest"];
     };
     OwnerRequest: {
       name: string;
       /** Format: date */
-      birthDate?: string;
+      birthDate: string;
       /** @enum {string} */
-      sex?: "M" | "F";
+      sex: "M" | "F";
     };
     FamilyCreatedResponse: {
       /** Format: uuid */
@@ -776,6 +1207,8 @@ export interface components {
       role?: "PARENT" | "CHILD";
       /** @enum {string} */
       ageGroup?: "유아기" | "유소년" | "청소년" | "성인" | "어르신";
+      /** @enum {string} */
+      sex?: "M" | "F";
       hasAccount?: boolean;
       /** @enum {string} */
       inviteStatus?: "NONE" | "ISSUED" | "EXPIRED" | "CLAIMED";
@@ -786,19 +1219,105 @@ export interface components {
       consentGiven?: boolean;
       isOwner?: boolean;
     };
+    UseRestCardRequest: {
+      date?: string | null;
+    };
+    RestCardsView: {
+      month?: string;
+      /** Format: int32 */
+      perMonth?: number;
+      /** Format: int32 */
+      left?: number;
+      days?: string[];
+    };
     AddMemberRequest: {
       name: string;
       /** Format: date */
-      birthDate?: string;
+      birthDate: string;
       /** @enum {string} */
-      sex?: "M" | "F";
+      sex: "M" | "F";
       /** @enum {string} */
-      role?: "PARENT" | "CHILD";
+      role: "PARENT" | "CHILD";
+      heightCm?: number | null;
+      weightKg?: number | null;
       guardianConsent?: components["schemas"]["GuardianConsentRequest"] | null;
     };
     GuardianConsentRequest: {
-      personalData: boolean | null;
-      healthData: boolean | null;
+      personalData: boolean;
+      healthData: boolean;
+    };
+    CreateMissionRequest: {
+      /** @description 운동 이름. 1~50자. 넘으면 400 BAD_REQUEST(서버가 잘라 저장하지 않는다) */
+      title: string;
+      /**
+       * Format: date
+       * @description 시작일(KST). dates 를 보내면 비운다. 오늘보다 앞이면 422 INVALID_DATE
+       */
+      startDate?: string | null;
+      /**
+       * Format: date
+       * @description 끝날(KST, 양끝 포함). startDate 와 같이 보낸다. startDate 보다 앞이면 400
+       */
+      endDate?: string | null;
+      /** @enum {string} */
+      targetMetric: "VIDEO_DONE" | "TIMER_MINUTES" | "STEPS";
+      /**
+       * Format: int32
+       * @description 목표값(1 이상). 칸이 있으면 칸 minutes 의 합과 같아야 한다(다르면 400). 칸 없는 TIMER_MINUTES 는 1~360분(넘으면 400 — 칸 끝의 재생 상한 10800초의 두 배를 넘어 끝낼 수 없다)
+       */
+      targetValue: number;
+      videoId?: string | null;
+      participantProfileIds: string[];
+      sessions?: components["schemas"]["MissionSessionRequest"][] | null;
+      /** @description 여러 날 한 번에(최대 28일 — 7요일 × 4주). 날마다 하루짜리 미션을 같은 이름 · 칸 · 참여자로 만들고, 같은 날은 한 번만 만든다. 하나라도 틀리면 아무것도 만들지 않는다. startDate · endDate 와 같이 보내지 않는다 */
+      dates?: string[] | null;
+    };
+    MissionSessionRequest: {
+      /** Format: int32 */
+      position: number;
+      /** @enum {string} */
+      phase: "WARMUP" | "MAIN" | "COOLDOWN";
+      title: string;
+      /** @enum {string|null} */
+      factor?:
+        | "심폐지구력"
+        | "근력"
+        | "근지구력"
+        | "유연성"
+        | "민첩성"
+        | "순발력"
+        | "협응력"
+        | "평형성"
+        | null;
+      /** Format: int32 */
+      minutes: number;
+      clip?: components["schemas"]["SessionClipRequest"] | null;
+    };
+    SessionClipRequest: {
+      videoId: string;
+      /** Format: int32 */
+      startSec: number;
+      /** Format: int32 */
+      endSec: number;
+      title?: string | null;
+    };
+    MissionCreatedView: {
+      /** Format: uuid */
+      missionId?: string;
+      /** @enum {string} */
+      origin?: "COACH" | "MANUAL";
+      /** Format: uuid */
+      coachRunId?: string | null;
+      serverVerifiable?: boolean;
+      missions?: components["schemas"]["MissionPeriodView"][];
+    };
+    MissionPeriodView: {
+      /** Format: uuid */
+      missionId?: string;
+      /** Format: date */
+      startDate?: string;
+      /** Format: date */
+      endDate?: string;
     };
     CreateFamilyInviteRequest: {
       /** @enum {string} */
@@ -814,48 +1333,38 @@ export interface components {
       /** Format: uuid */
       familyId?: string;
     };
-    FamilyInviteView: {
-      code?: string;
-      /** @enum {string} */
-      role?: "PARENT" | "CHILD";
-      /** Format: date-time */
-      expiresAt?: string;
-      /** Format: date-time */
-      createdAt?: string;
-      issuedByName?: string | null;
-    };
-    FamilyInviteListResponse: {
-      invites?: components["schemas"]["FamilyInviteView"][];
-    };
-    CreateMissionRequest: {
-      title: string;
-      /** Format: date */
-      startDate?: string;
-      /** Format: date */
-      endDate?: string;
-      /** @enum {string} */
-      targetMetric?: "VIDEO_DONE" | "TIMER_MINUTES" | "STEPS";
-      /** Format: int32 */
-      targetValue?: number;
-      videoId?: string | null;
-      participantProfileIds: string[];
-    };
-    MissionCreatedView: {
-      /** Format: uuid */
-      missionId?: string;
-      /** @enum {string} */
-      origin?: "COACH" | "MANUAL";
-      /** Format: uuid */
-      coachRunId?: string | null;
-      serverVerifiable?: boolean;
-    };
     StartCoachRunRequest: {
+      /** Format: uuid */
+      profileId: string;
       /** Format: date */
-      weekStart?: string | null;
+      date: string;
       /** Format: int32 */
-      daysPerWeek?: number;
+      minutes?: number | null;
       /** Format: int32 */
-      minutesPerSession?: number;
+      minutesPerSession?: number | null;
+      quiet?: boolean | null;
+      /** @enum {string|null} */
+      place?: "HOME" | "OUTDOOR" | null;
+      /** @enum {string|null} */
+      focusFactor?:
+        | "심폐지구력"
+        | "근력"
+        | "근지구력"
+        | "유연성"
+        | "민첩성"
+        | "순발력"
+        | "협응력"
+        | "평형성"
+        | null;
+      withParent?: boolean | null;
+      /** @description 대상의 키(cm), 30~230. 측정 기록이 없는 대상만 AI 요청에 싣는다(있으면 기록의 값). 벗어나면 400 */
+      heightCm?: number | null;
+      /** @description 대상의 몸무게(kg), 5~250. 쓰는 방식은 heightCm 과 같다. 벗어나면 400 */
+      weightKg?: number | null;
+      /** @description 날씨를 볼 위치의 위도, 33~39. 없으면 서울시청(37.5665) 기준. 장소를 집으로 고르면 날씨를 보지 않는다 */
+      latitude?: number | null;
+      /** @description 날씨를 볼 위치의 경도, 124~132. 없으면 서울시청(126.9780) 기준 */
+      longitude?: number | null;
     };
     CoachRunAcceptedView: {
       /** Format: uuid */
@@ -867,14 +1376,18 @@ export interface components {
     };
     CheerRequest: {
       /** Format: uuid */
-      fromProfileId?: string;
+      fromProfileId: string;
       /** Format: uuid */
-      toProfileId?: string;
+      toProfileId: string;
       message?: string | null;
+      stickerId?: string | null;
       emoji?: string | null;
+      /** @enum {string|null} */
+      kind?: "DONE" | "PRAISE" | "THANKS" | null;
       /** Format: uuid */
       missionId?: string | null;
-      contentPresent?: boolean;
+      /** Format: uuid */
+      replyToCheerId?: string | null;
     };
     CheerResponse: {
       /** Format: uuid */
@@ -883,12 +1396,52 @@ export interface components {
       fromProfileId?: string;
       /** Format: uuid */
       toProfileId?: string;
+      /** @enum {string} */
+      kind?: "DONE" | "PRAISE" | "THANKS";
       message?: string | null;
+      stickerId?: string | null;
       emoji?: string | null;
       /** Format: uuid */
       missionId?: string | null;
+      /** Format: uuid */
+      replyToCheerId?: string | null;
       /** Format: date-time */
       createdAt?: string;
+    };
+    ExerciseFavoriteRequest: {
+      /** Format: uuid */
+      profileId?: string | null;
+      favorited: boolean;
+    };
+    ExerciseFavoriteView: {
+      clipId?: string;
+      favorited?: boolean;
+    };
+    TravelRequest: {
+      /** Format: date-time */
+      to?: string | null;
+      by?: string | null;
+    };
+    Ran: {
+      task?: string;
+      /** Format: int32 */
+      runs?: number;
+      /** Format: int32 */
+      failures?: number;
+      /** Format: date-time */
+      first?: string;
+      /** Format: date-time */
+      last?: string;
+    };
+    Trip: {
+      /** Format: date-time */
+      from?: string;
+      /** Format: date-time */
+      now?: string;
+      /** Format: date */
+      today?: string;
+      offset?: string;
+      ran?: components["schemas"]["Ran"][];
     };
     RejectCoachRunRequest: {
       reason?: string | null;
@@ -922,7 +1475,7 @@ export interface components {
     };
     ChatRequest: {
       /** Format: uuid */
-      profileId?: string;
+      profileId: string;
       /** Format: uuid */
       conversationId?: string | null;
       question: string;
@@ -944,6 +1497,22 @@ export interface components {
       refused?: boolean;
       refusalReason?: string | null;
     };
+    ReviewLoginRequest: {
+      /** @enum {string|null} */
+      kind?: "FAMILY" | "FRESH" | "INVITED" | null;
+    };
+    ReviewLoginResponse: {
+      accessToken?: string;
+      refreshToken?: string;
+      /** Format: uuid */
+      userId?: string;
+      /** @enum {string} */
+      nextStep?: "CREATE_FAMILY" | "CLAIM" | "HOME" | "SUPPORT_MODE";
+      profiles?: components["schemas"]["ProfileSummary"][];
+      /** Format: uuid */
+      selfProfileId?: string | null;
+      inviteCode?: string | null;
+    };
     RefreshRequest: {
       refreshToken: string;
     };
@@ -955,6 +1524,11 @@ export interface components {
       /** @enum {string} */
       nextStep?: "CREATE_FAMILY" | "CLAIM" | "HOME" | "SUPPORT_MODE";
       profiles?: components["schemas"]["ProfileSummary"][];
+      /** Format: uuid */
+      selfProfileId?: string | null;
+    };
+    LogoutRequest: {
+      refreshToken?: string | null;
     };
     GoogleLoginRequest: {
       authorizationCode: string;
@@ -969,13 +1543,20 @@ export interface components {
       email?: string | null;
       claimCode?: string | null;
     };
+    EditProfileRequest: {
+      name?: string | null;
+      /** Format: date */
+      birthDate?: string | null;
+      /** @enum {string|null} */
+      sex?: "M" | "F" | null;
+    };
     SupportModeRequest: {
       /** @enum {string} */
-      supportMode?: "CHEER_ONLY" | "WEEKEND" | "FULL";
+      supportMode: "CHEER_ONLY" | "WEEKEND" | "FULL";
     };
     ConsentRequest: {
-      personalData: boolean | null;
-      healthData: boolean | null;
+      personalData: boolean;
+      healthData: boolean;
     };
     ConsentResponse: {
       consentGiven?: boolean;
@@ -1012,6 +1593,58 @@ export interface components {
       favorited?: boolean;
       /** Format: double */
       maxProgress?: number | null;
+      mediaUrl?: string | null;
+    };
+    AchievementView: {
+      code?: string;
+      title?: string;
+      description?: string;
+      /** Format: date-time */
+      earnedAt?: string | null;
+    };
+    ProgressView: {
+      /** Format: uuid */
+      profileId?: string;
+      /** Format: int32 */
+      level?: number;
+      /** Format: int32 */
+      xp?: number;
+      /** Format: int32 */
+      levelFloorXp?: number;
+      /** Format: int32 */
+      nextLevelXp?: number | null;
+      /** Format: int32 */
+      streakDays?: number;
+      /** Format: int32 */
+      activeDays?: number;
+      achievements?: components["schemas"]["AchievementView"][];
+      recentXp?: components["schemas"]["XpLineView"][];
+    };
+    XpLineView: {
+      /** @enum {string} */
+      kind?: "SESSION_DONE" | "MISSION_DONE" | "STICKER" | "REMEASURE";
+      /** Format: uuid */
+      fromProfileId?: string | null;
+      /** Format: int32 */
+      amount?: number;
+      /** Format: date */
+      occurredOn?: string;
+      reason?: string;
+      /** Format: date-time */
+      at?: string;
+    };
+    FitnessTestHistoryResponse: {
+      tests?: components["schemas"]["FitnessTestSummaryResponse"][];
+    };
+    FitnessTestSummaryResponse: {
+      /** Format: uuid */
+      fitnessTestId?: string;
+      /** Format: date */
+      testedOn?: string;
+      /** Format: int32 */
+      overallPercentile?: number | null;
+      heightCm?: number | null;
+      weightKg?: number | null;
     };
     LatestFitnessResponse: {
       /** Format: uuid */
@@ -1026,9 +1659,9 @@ export interface components {
       items?: components["schemas"]["ItemResult"][];
       weakest?: components["schemas"]["FactorPoint"] | null;
       strongest?: components["schemas"]["FactorPoint"] | null;
+      /** @enum {string|null} */
+      coachDirection?: "STRENGTHEN" | "GROWTH" | null;
       certification?: components["schemas"]["Certification"] | null;
-      /** @enum {string} */
-      coachDirection?: "STRENGTHEN" | "GROWTH";
       disclaimer?: string;
     };
     RadarPointResponse: {
@@ -1038,38 +1671,196 @@ export interface components {
       /** Format: int32 */
       percentile?: number | null;
     };
+    Excluded: {
+      itemCode?: string;
+      itemName?: string;
+      reason?: string;
+    };
+    FitnessAgeResponse: {
+      /** @enum {string} */
+      status?: "OK" | "NO_TEST" | "AGE_OUT_OF_RANGE" | "NOT_ENOUGH_ITEMS";
+      /** Format: date */
+      testedOn?: string | null;
+      /** Format: int32 */
+      age?: number | null;
+      /** Format: int32 */
+      fitnessAge?: number | null;
+      /** Format: int32 */
+      ageGap?: number | null;
+      /** Format: int32 */
+      minItems?: number;
+      range?: components["schemas"]["Range"];
+      items?: components["schemas"]["Item"][];
+      excludedItems?: components["schemas"]["Excluded"][];
+      missingItems?: components["schemas"]["Missing"][];
+    };
+    Item: {
+      itemCode?: string;
+      itemName?: string;
+      unit?: string;
+      value?: number;
+      itemAge?: number;
+      /** @enum {string} */
+      bound?: "NONE" | "YOUNGER" | "OLDER";
+    };
+    Missing: {
+      itemCode?: string;
+      itemName?: string;
+      unit?: string;
+      equipment?: string | null;
+    };
+    Range: {
+      /** Format: int32 */
+      min?: number;
+      /** Format: int32 */
+      max?: number;
+    };
+    Entry: {
+      /** Format: date */
+      testedOn?: string;
+      /** Format: int32 */
+      age?: number;
+      /** @enum {string} */
+      status?: "OK" | "NO_TEST" | "AGE_OUT_OF_RANGE" | "NOT_ENOUGH_ITEMS";
+      /** Format: int32 */
+      fitnessAge?: number | null;
+      /** Format: int32 */
+      ageGap?: number | null;
+      /** Format: int32 */
+      itemCount?: number;
+    };
+    FitnessAgeHistoryResponse: {
+      tests?: components["schemas"]["Entry"][];
+    };
+    NotificationListView: {
+      items?: components["schemas"]["NotificationView"][];
+      /** Format: int32 */
+      unread?: number;
+    };
+    NotificationView: {
+      /** Format: uuid */
+      notificationId?: string;
+      /** @enum {string} */
+      kind?: "KID_DONE" | "KID_THANKS" | "PRAISE" | "MISSION_READY" | "ACHIEVEMENT" | "REMEASURE";
+      title?: string;
+      body?: string | null;
+      /** Format: uuid */
+      aboutProfileId?: string | null;
+      /** Format: uuid */
+      fromProfileId?: string | null;
+      /** Format: uuid */
+      missionId?: string | null;
+      /** Format: date */
+      date?: string | null;
+      stickerId?: string | null;
+      /** Format: date-time */
+      createdAt?: string;
+      read?: boolean;
+      /** Format: uuid */
+      cheerId?: string | null;
+    };
+    MissionParticipantView: {
+      /** Format: uuid */
+      profileId?: string;
+      name?: string | null;
+      /** Format: double */
+      progress?: number;
+      completed?: boolean;
+      /** @enum {string|null} */
+      verifiedBy?: "VIDEO_PROGRESS" | "TIMER" | "SELF_REPORT" | null;
+      needsGuardianCheck?: boolean;
+      doneSessions?: number[];
+    };
+    MissionSessionView: {
+      /** Format: int32 */
+      position?: number;
+      /** @enum {string} */
+      phase?: "WARMUP" | "MAIN" | "COOLDOWN";
+      title?: string;
+      /** @enum {string|null} */
+      factor?:
+        | "심폐지구력"
+        | "근력"
+        | "근지구력"
+        | "유연성"
+        | "민첩성"
+        | "순발력"
+        | "협응력"
+        | "평형성"
+        | null;
+      /** Format: int32 */
+      minutes?: number;
+      clip?: components["schemas"]["SessionClipView"] | null;
+    };
+    MissionVideoView: {
+      videoId?: string;
+      title?: string | null;
+      url?: string;
+      /** Format: int32 */
+      durationSec?: number | null;
+      /** Format: int32 */
+      startSec?: number | null;
+      mediaUrl?: string | null;
+      thumbnailUrl?: string | null;
+    };
+    MissionView: {
+      /** Format: uuid */
+      missionId?: string;
+      title?: string;
+      /** @enum {string} */
+      origin?: "COACH" | "MANUAL";
+      /** Format: uuid */
+      coachRunId?: string | null;
+      /** @enum {string} */
+      targetMetric?: "VIDEO_DONE" | "TIMER_MINUTES" | "STEPS";
+      /** Format: int32 */
+      targetValue?: number;
+      serverVerifiable?: boolean;
+      /** Format: date */
+      startDate?: string;
+      /** Format: date */
+      endDate?: string;
+      rationale?: string | null;
+      video?: components["schemas"]["MissionVideoView"] | null;
+      participants?: components["schemas"]["MissionParticipantView"][];
+      sessions?: components["schemas"]["MissionSessionView"][];
+    };
+    SessionClipView: {
+      videoId?: string;
+      /** Format: int32 */
+      startSec?: number;
+      /** Format: int32 */
+      endSec?: number | null;
+      title?: string | null;
+      mediaUrl?: string | null;
+      thumbnailUrl?: string | null;
+    };
     MeResponse: {
       /** Format: uuid */
       userId?: string;
       /** @enum {string} */
       nextStep?: "CREATE_FAMILY" | "CLAIM" | "HOME" | "SUPPORT_MODE";
       profiles?: components["schemas"]["ProfileSummary"][];
+      /** Format: uuid */
+      selfProfileId?: string | null;
+    };
+    InvitePreviewResponse: {
+      /** @enum {string} */
+      kind?: "FAMILY" | "PROFILE";
+      familyName?: string;
+      profileName?: string | null;
+      /** @enum {string} */
+      role?: "PARENT" | "CHILD";
+      /** @enum {string|null} */
+      ageGroup?: "유아기" | "유소년" | "청소년" | "성인" | "어르신" | null;
+      invitedByName?: string | null;
+      /** Format: date-time */
+      expiresAt?: string;
     };
     FitnessItemsResponse: {
       /** @enum {string} */
       ageGroup?: "유아기" | "유소년" | "청소년" | "성인" | "어르신";
       items?: components["schemas"]["Item"][];
-    };
-    Item: {
-      itemCode?: string;
-      itemName?: string;
-      itemLabel?: string;
-      unit?: string;
-      /** @enum {string} */
-      factor?:
-        "심폐지구력" | "근력" | "근지구력" | "유연성" | "민첩성" | "순발력" | "협응력" | "평형성";
-      higherIsBetter?: boolean;
-      /** @enum {string} */
-      inputGroup?: "EASY" | "EQUIPMENT";
-      optional?: boolean;
-      equipment?: string | null;
-      range?: components["schemas"]["ValueRange"];
-    };
-    ValueRange: {
-      /** Format: int32 */
-      min?: number;
-      /** Format: int32 */
-      max?: number;
     };
     MemberReportView: {
       /** Format: uuid */
@@ -1108,46 +1899,46 @@ export interface components {
     MissionListView: {
       missions?: components["schemas"]["MissionView"][];
     };
-    MissionParticipantView: {
-      /** Format: uuid */
-      profileId?: string;
-      name?: string | null;
+    LeagueView: {
+      month?: string;
+      /** @enum {string} */
+      tier?: "BRONZE" | "SILVER" | "GOLD" | "PLATINUM" | "DIAMOND";
+      /** Format: int32 */
+      rate?: number | null;
       /** Format: double */
-      progress?: number;
-      completed?: boolean;
-      /** @enum {string|null} */
-      verifiedBy?: "VIDEO_PROGRESS" | "TIMER" | "SELF_REPORT" | null;
-      needsGuardianCheck?: boolean;
+      score?: number | null;
+      /** Format: int32 */
+      rank?: number | null;
+      /** Format: int32 */
+      groupSize?: number;
+      /** Format: int32 */
+      promote?: number;
+      /** Format: int32 */
+      demote?: number;
+      /** Format: int32 */
+      daysLeft?: number;
+      standings?: components["schemas"]["Standing"][];
     };
-    MissionVideoView: {
-      videoId?: string;
-      title?: string | null;
-      url?: string;
+    Standing: {
+      familyName?: string;
       /** Format: int32 */
-      durationSec?: number | null;
-      /** Format: int32 */
-      startSec?: number | null;
+      rate?: number | null;
+      /** Format: double */
+      score?: number | null;
+      me?: boolean;
     };
-    MissionView: {
-      /** Format: uuid */
-      missionId?: string;
-      title?: string;
+    FamilyInviteItem: {
+      code?: string;
       /** @enum {string} */
-      origin?: "COACH" | "MANUAL";
-      /** Format: uuid */
-      coachRunId?: string | null;
-      /** @enum {string} */
-      targetMetric?: "VIDEO_DONE" | "TIMER_MINUTES" | "STEPS";
-      /** Format: int32 */
-      targetValue?: number;
-      serverVerifiable?: boolean;
-      /** Format: date */
-      startDate?: string;
-      /** Format: date */
-      endDate?: string;
-      rationale?: string | null;
-      video?: components["schemas"]["MissionVideoView"] | null;
-      participants?: components["schemas"]["MissionParticipantView"][];
+      role?: "PARENT" | "CHILD";
+      /** Format: date-time */
+      expiresAt?: string;
+      /** Format: date-time */
+      createdAt?: string;
+      issuedByName?: string;
+    };
+    FamilyInviteListResponse: {
+      invites?: components["schemas"]["FamilyInviteItem"][];
     };
     FitnessMapResponse: {
       /** Format: uuid */
@@ -1165,8 +1956,8 @@ export interface components {
       overallPercentile?: number | null;
       weakest?: components["schemas"]["FactorPoint"] | null;
       strongest?: components["schemas"]["FactorPoint"] | null;
-      /** @enum {string} */
-      coachDirection?: "STRENGTHEN" | "GROWTH";
+      /** @enum {string|null} */
+      coachDirection?: "STRENGTHEN" | "GROWTH" | null;
     };
     Member: {
       /** Format: uuid */
@@ -1176,6 +1967,8 @@ export interface components {
       role?: "PARENT" | "CHILD";
       /** @enum {string} */
       ageGroup?: "유아기" | "유소년" | "청소년" | "성인" | "어르신";
+      /** @enum {string} */
+      sex?: "M" | "F";
       hasAccount?: boolean;
       /** @enum {string|null} */
       supportMode?: "CHEER_ONLY" | "WEEKEND" | "FULL" | null;
@@ -1194,6 +1987,10 @@ export interface components {
       status?: "RUNNING" | "AWAITING_APPROVAL" | "APPROVED" | "REJECTED" | "FAILED";
       /** Format: date */
       weekStart?: string;
+      /** Format: uuid */
+      profileId?: string | null;
+      /** Format: date */
+      date?: string | null;
       summary?: string | null;
       steps?: components["schemas"]["CoachStep"][];
       proposals?: components["schemas"]["ProposalView"][] | null;
@@ -1201,6 +1998,10 @@ export interface components {
       /** Format: int32 */
       missionCount?: number;
       rejectedReason?: string | null;
+      /** @enum {string|null} */
+      failureCode?:
+        "NO_CITATIONS" | "AI_FAILED" | "CONSENT_REQUIRED" | "BUSY" | "STALE" | "ERROR" | null;
+      notices?: string[];
     };
     CoachStep: {
       /** Format: int32 */
@@ -1230,6 +2031,8 @@ export interface components {
       /** Format: int32 */
       startSec?: number | null;
       badges?: string[];
+      mediaUrl?: string | null;
+      thumbnailUrl?: string | null;
     };
     ProposalView: {
       /** Format: int32 */
@@ -1246,6 +2049,103 @@ export interface components {
       participants?: components["schemas"]["ProposalParticipantView"][];
       video?: components["schemas"]["ProposalVideoView"] | null;
       citations?: components["schemas"]["ProposalCitationView"][];
+      sessions?: components["schemas"]["MissionSessionView"][];
+    };
+    CheerListResponse: {
+      cheers?: components["schemas"]["CheerView"][];
+    };
+    CheerView: {
+      /** Format: uuid */
+      cheerId?: string;
+      /** Format: uuid */
+      fromProfileId?: string;
+      fromName?: string;
+      /** Format: uuid */
+      toProfileId?: string;
+      /** @enum {string} */
+      kind?: "DONE" | "PRAISE" | "THANKS";
+      message?: string | null;
+      stickerId?: string | null;
+      /** Format: uuid */
+      missionId?: string | null;
+      /** Format: uuid */
+      replyToCheerId?: string | null;
+      /** Format: date-time */
+      createdAt?: string;
+    };
+    CalendarView: {
+      /** Format: uuid */
+      profileId?: string;
+      /** Format: date */
+      from?: string;
+      /** Format: date */
+      to?: string;
+      days?: components["schemas"]["Day"][];
+    };
+    Day: {
+      /** Format: date */
+      date?: string;
+      /** Format: int32 */
+      minutes?: number;
+      /** Format: int32 */
+      plannedMinutes?: number | null;
+      entries?: components["schemas"]["Entry"][];
+      stickers?: components["schemas"]["Sticker"][];
+      rest?: boolean | null;
+    };
+    Sticker: {
+      /** Format: uuid */
+      cheerId?: string;
+      stickerId?: string;
+      /** Format: uuid */
+      fromProfileId?: string;
+      fromName?: string;
+      message?: string | null;
+      /** Format: uuid */
+      missionId?: string | null;
+      /** Format: date-time */
+      createdAt?: string;
+    };
+    ExerciseListView: {
+      clips?: components["schemas"]["ExerciseView"][];
+      /** Format: int32 */
+      total?: number;
+      nextCursor?: string | null;
+    };
+    ExerciseView: {
+      clipId?: string;
+      videoId?: string;
+      /** Format: int32 */
+      startSec?: number;
+      /** Format: int32 */
+      endSec?: number;
+      title?: string;
+      /** @enum {string|null} */
+      factor?:
+        | "심폐지구력"
+        | "근력"
+        | "근지구력"
+        | "유연성"
+        | "민첩성"
+        | "순발력"
+        | "협응력"
+        | "평형성"
+        | null;
+      /** @enum {string} */
+      phase?: "WARMUP" | "MAIN" | "COOLDOWN";
+      homeOk?: boolean;
+      quiet?: boolean;
+      props?: boolean;
+      favorited?: boolean;
+      mediaUrl?: string | null;
+      thumbnailUrl?: string | null;
+    };
+    ClockView: {
+      /** Format: date-time */
+      now?: string;
+      /** Format: date */
+      today?: string;
+      offset?: string;
     };
   };
   responses: never;
@@ -1256,11 +2156,57 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        profileId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AvailabilityResponse"];
+        };
+      };
+    };
+  };
+  replace: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        profileId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AvailabilityRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AvailabilityResponse"];
+        };
+      };
+    };
+  };
   progress: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         videoId: string;
@@ -1286,9 +2232,7 @@ export interface operations {
   };
   favorite: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         videoId: string;
@@ -1312,39 +2256,9 @@ export interface operations {
       };
     };
   };
-  predict: {
-    parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
-      header?: never;
-      path: {
-        profileId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: {
-      content: {
-        "application/json": components["schemas"]["PredictRequest"];
-      };
-    };
-    responses: {
-      /** @description Created */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PredictionResponse"];
-        };
-      };
-    };
-  };
   invite: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         profileId: string;
@@ -1364,11 +2278,33 @@ export interface operations {
       };
     };
   };
+  history: {
+    parameters: {
+      query?: {
+        size?: number;
+      };
+      header?: never;
+      path: {
+        profileId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FitnessTestHistoryResponse"];
+        };
+      };
+    };
+  };
   register: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         profileId: string;
@@ -1394,9 +2330,7 @@ export interface operations {
   };
   claim: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path?: never;
       cookie?: never;
@@ -1418,11 +2352,85 @@ export interface operations {
       };
     };
   };
+  read: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MarkReadRequest"];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  completeSession_transitional: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        missionId: string;
+        seq: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CompleteSessionRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionCompletedView"];
+        };
+      };
+    };
+  };
+  completeSession: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        missionId: string;
+        seq: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CompleteSessionRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["SessionCompletedView"];
+        };
+      };
+    };
+  };
   confirm: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         missionId: string;
@@ -1443,11 +2451,33 @@ export interface operations {
       };
     };
   };
+  feedback: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        missionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MissionFeedbackRequest"];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   timer: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         missionId: string;
@@ -1473,9 +2503,7 @@ export interface operations {
   };
   steps: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         missionId: string;
@@ -1501,9 +2529,7 @@ export interface operations {
   };
   create: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path?: never;
       cookie?: never;
@@ -1525,11 +2551,109 @@ export interface operations {
       };
     };
   };
+  month_transitional: {
+    parameters: {
+      query?: {
+        month?: string;
+      };
+      header?: never;
+      path: {
+        familyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RestCardsView"];
+        };
+      };
+    };
+  };
+  use_transitional: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        familyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["UseRestCardRequest"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RestCardsView"];
+        };
+      };
+    };
+  };
+  month: {
+    parameters: {
+      query?: {
+        month?: string;
+      };
+      header?: never;
+      path: {
+        familyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RestCardsView"];
+        };
+      };
+    };
+  };
+  use: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        familyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["UseRestCardRequest"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RestCardsView"];
+        };
+      };
+    };
+  };
   profiles: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         familyId: string;
@@ -1551,9 +2675,7 @@ export interface operations {
   };
   addMember: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         familyId: string;
@@ -1577,107 +2699,9 @@ export interface operations {
       };
     };
   };
-  familyInvites: {
-    parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
-      header?: never;
-      path: {
-        familyId: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["FamilyInviteListResponse"];
-        };
-      };
-    };
-  };
-  createFamilyInvite: {
-    parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
-      header?: never;
-      path: {
-        familyId: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateFamilyInviteRequest"];
-      };
-    };
-    responses: {
-      /** @description Created */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["FamilyInviteResponse"];
-        };
-      };
-    };
-  };
-  preview: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        claimCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["InvitePreviewResponse"];
-        };
-      };
-    };
-  };
-  cancelFamilyInvite: {
-    parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
-      header?: never;
-      path: {
-        familyId: string;
-        code: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description No Content */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   list: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
+      query?: {
         scope?: "ALL" | "MINE" | "FAMILY";
         status?: "ACTIVE" | "DONE" | "EXPIRED";
       };
@@ -1702,9 +2726,7 @@ export interface operations {
   };
   create_1: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         familyId: string;
@@ -1728,18 +2750,64 @@ export interface operations {
       };
     };
   };
-  start: {
+  list_1: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         familyId: string;
       };
       cookie?: never;
     };
-    requestBody?: {
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FamilyInviteListResponse"];
+        };
+      };
+    };
+  };
+  create_2: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        familyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateFamilyInviteRequest"];
+      };
+    };
+    responses: {
+      /** @description Created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FamilyInviteResponse"];
+        };
+      };
+    };
+  };
+  start: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        familyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
       content: {
         "application/json": components["schemas"]["StartCoachRunRequest"];
       };
@@ -1756,11 +2824,36 @@ export interface operations {
       };
     };
   };
+  cheers: {
+    parameters: {
+      query?: {
+        toProfileId?: string;
+        fromProfileId?: string;
+        missionId?: string;
+        size?: number;
+      };
+      header?: never;
+      path: {
+        familyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CheerListResponse"];
+        };
+      };
+    };
+  };
   cheer: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         familyId: string;
@@ -1784,11 +2877,105 @@ export interface operations {
       };
     };
   };
+  favorite_1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        exerciseId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ExerciseFavoriteRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ExerciseFavoriteView"];
+        };
+      };
+    };
+  };
+  favorite_transitional: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        exerciseId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ExerciseFavoriteRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ExerciseFavoriteView"];
+        };
+      };
+    };
+  };
+  now: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ClockView"];
+        };
+      };
+    };
+  };
+  travel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["TravelRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Trip"];
+        };
+      };
+    };
+  };
   reject: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         runId: string;
@@ -1814,9 +3001,7 @@ export interface operations {
   };
   approve: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         runId: string;
@@ -1838,9 +3023,7 @@ export interface operations {
   };
   chat: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path?: never;
       cookie?: never;
@@ -1858,6 +3041,30 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ChatView"];
+        };
+      };
+    };
+  };
+  reviewLogin: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["ReviewLoginRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReviewLoginResponse"];
         };
       };
     };
@@ -1883,6 +3090,28 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["AuthResponse"];
         };
+      };
+    };
+  };
+  logout: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        "application/json": components["schemas"]["LogoutRequest"];
+      };
+    };
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
@@ -1934,11 +3163,35 @@ export interface operations {
       };
     };
   };
+  edit: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        profileId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EditProfileRequest"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProfileSummary"];
+        };
+      };
+    };
+  };
   supportMode: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         profileId: string;
@@ -1964,9 +3217,7 @@ export interface operations {
   };
   consent: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         profileId: string;
@@ -1990,10 +3241,9 @@ export interface operations {
       };
     };
   };
-  list_1: {
+  list_2: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
+      query?: {
         list?: "ALL" | "FAVORITES" | "RECENT";
         profileId?: string;
         ageGroup?: string;
@@ -2018,11 +3268,31 @@ export interface operations {
       };
     };
   };
+  progress_1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        profileId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ProgressView"];
+        };
+      };
+    };
+  };
   latest: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         profileId: string;
@@ -2042,11 +3312,117 @@ export interface operations {
       };
     };
   };
-  me: {
+  fitnessAge: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        profileId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FitnessAgeResponse"];
+        };
+      };
+    };
+  };
+  history_1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        profileId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FitnessAgeHistoryResponse"];
+        };
+      };
+    };
+  };
+  list_3: {
     parameters: {
       query: {
-        user: components["schemas"]["CurrentUser"];
+        profileId: string;
       };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["NotificationListView"];
+        };
+      };
+    };
+  };
+  get_1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        missionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["MissionView"];
+        };
+      };
+    };
+  };
+  delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        missionId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  me: {
+    parameters: {
+      query?: never;
       header?: never;
       path?: never;
       cookie?: never;
@@ -2064,10 +3440,52 @@ export interface operations {
       };
     };
   };
+  withdraw: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  preview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        claimCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["InvitePreviewResponse"];
+        };
+      };
+    };
+  };
   items: {
     parameters: {
-      query: {
-        ageGroup: string;
+      query?: {
+        ageGroup?: string;
+        profileId?: string;
+        testedOn?: string;
         sex?: string;
       };
       header?: never;
@@ -2089,8 +3507,7 @@ export interface operations {
   };
   weekly: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
+      query?: {
         weekStart?: string;
       };
       header?: never;
@@ -2112,11 +3529,33 @@ export interface operations {
       };
     };
   };
+  league: {
+    parameters: {
+      query?: {
+        month?: string;
+      };
+      header?: never;
+      path: {
+        familyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["LeagueView"];
+        };
+      };
+    };
+  };
   fitnessMap: {
     parameters: {
-      query: {
-        user: components["schemas"]["CurrentUser"];
-      };
+      query?: never;
       header?: never;
       path: {
         familyId: string;
@@ -2136,11 +3575,119 @@ export interface operations {
       };
     };
   };
-  get: {
+  latest_1: {
+    parameters: {
+      query?: {
+        profileId?: string;
+      };
+      header?: never;
+      path: {
+        familyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CoachRunView"];
+        };
+      };
+    };
+  };
+  calendar: {
     parameters: {
       query: {
-        user: components["schemas"]["CurrentUser"];
+        profileId: string;
+        from: string;
+        to: string;
       };
+      header?: never;
+      path: {
+        familyId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CalendarView"];
+        };
+      };
+    };
+  };
+  list_transitional: {
+    parameters: {
+      query?: {
+        factor?: string;
+        phase?: "WARMUP" | "MAIN" | "COOLDOWN";
+        quiet?: boolean;
+        q?: string;
+        list?: "ALL" | "FAVORITES";
+        profileId?: string;
+        ageGroup?: string;
+        cursor?: string;
+        size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ExerciseListView"];
+        };
+      };
+    };
+  };
+  list_4: {
+    parameters: {
+      query?: {
+        factor?: string;
+        phase?: "WARMUP" | "MAIN" | "COOLDOWN";
+        quiet?: boolean;
+        q?: string;
+        list?: "ALL" | "FAVORITES";
+        profileId?: string;
+        ageGroup?: string;
+        cursor?: string;
+        size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ExerciseListView"];
+        };
+      };
+    };
+  };
+  get_2: {
+    parameters: {
+      query?: never;
       header?: never;
       path: {
         runId: string;
@@ -2157,6 +3704,94 @@ export interface operations {
         content: {
           "application/json": components["schemas"]["CoachRunView"];
         };
+      };
+    };
+  };
+  cancel: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        familyId: string;
+        restDate: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RestCardsView"];
+        };
+      };
+    };
+  };
+  cancel_transitional: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        familyId: string;
+        restDate: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["RestCardsView"];
+        };
+      };
+    };
+  };
+  removeMember: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        familyId: string;
+        profileId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  cancel_1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        familyId: string;
+        code: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description No Content */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

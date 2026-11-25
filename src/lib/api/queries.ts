@@ -789,7 +789,7 @@ export function useCompleteSession(missionId: Uuid, familyId: Uuid) {
         missionProgress: number;
         missionCompleted: boolean;
         xpGained: number;
-      }>(path`/missions/${missionId}/sessions/${position}/done`, body),
+      }>(path`/missions/${missionId}/sessions/${position}/complete`, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
       qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
@@ -865,7 +865,7 @@ export function useClips(filter: {
     queryKey: qk.clips(filter),
     queryFn: () =>
       api.get<ClipList>(
-        path`/clips${query({
+        path`/exercises${query({
           factor: filter.factor ?? undefined,
           phase: filter.phase ?? undefined,
           quiet: filter.quiet ? "true" : undefined,
@@ -900,7 +900,7 @@ export function useClipPages(filter: {
     queryKey: ["clips", "pages", filter] as const,
     queryFn: ({ pageParam }) =>
       api.get<ClipList>(
-        path`/clips${query({
+        path`/exercises${query({
           factor: filter.factor ?? undefined,
           phase: filter.phase ?? undefined,
           quiet: filter.quiet ? "true" : undefined,
@@ -923,7 +923,7 @@ export function useToggleClipFavorite(profileId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ clipId, favorited }: { clipId: string; favorited: boolean }) =>
-      api.post(path`/clips/${clipId}/favorite`, { profileId, favorited }),
+      api.post(path`/exercises/${clipId}/favorite`, { profileId, favorited }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["clips"] }),
   });
 }
@@ -978,7 +978,7 @@ export function useFamilyLeague(familyId: Uuid | undefined, month: string) {
 export function useRestDays(familyId: Uuid | undefined, month: string) {
   return useQuery({
     queryKey: qk.family.restDays(familyId ?? "", month),
-    queryFn: () => api.get<RestDays>(path`/families/${familyId}/rest-days${query({ month })}`),
+    queryFn: () => api.get<RestDays>(path`/families/${familyId}/rest-cards${query({ month })}`),
     enabled: Boolean(familyId),
   });
 }
@@ -991,7 +991,7 @@ export function useRestDaysIn(familyId: Uuid | undefined, months: string[]) {
   return useQueries({
     queries: months.map((month) => ({
       queryKey: qk.family.restDays(familyId ?? "", month),
-      queryFn: () => api.get<RestDays>(path`/families/${familyId}/rest-days${query({ month })}`),
+      queryFn: () => api.get<RestDays>(path`/families/${familyId}/rest-cards${query({ month })}`),
       enabled: Boolean(familyId),
     })),
     combine: (results) => new Set(results.flatMap((r) => r.data?.days ?? [])),
@@ -1007,8 +1007,8 @@ export function useRestDay(familyId: Uuid) {
   return useMutation({
     mutationFn: ({ date, cancel }: { date: string; cancel?: boolean }) =>
       cancel
-        ? api.delete<RestDays>(path`/families/${familyId}/rest-days/${date}`)
-        : api.post<RestDays>(path`/families/${familyId}/rest-days`, { date }),
+        ? api.delete<RestDays>(path`/families/${familyId}/rest-cards/${date}`)
+        : api.post<RestDays>(path`/families/${familyId}/rest-cards`, { date }),
     onSuccess: (rest) => {
       // 돌려받은 카드를 바로 넣는다 — 다시 받기 전까지 되돌리기 줄이 남아 한 번 더 누르면 404 였다
       if (rest?.month) qc.setQueryData(qk.family.restDays(familyId, rest.month), rest);

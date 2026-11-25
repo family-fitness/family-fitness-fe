@@ -165,13 +165,13 @@ export const league = [
     return HttpResponse.json<FamilyLeague>(leagueOf(month));
   }),
 
-  http.get<PathParams>(`${BASE}/families/:familyId/rest-days`, ({ request }) => {
+  http.get<PathParams>(`${BASE}/families/:familyId/rest-cards`, ({ request }) => {
     const month = new URL(request.url).searchParams.get("month") ?? monthOf(today());
     return HttpResponse.json<RestDays>(restOf(month));
   }),
 
   /** 쉬는 날 카드 쓰기. 지난 날에는 못 쓴다 — 빈 날을 나중에 덮으면 카드가 핑계가 된다 */
-  http.post<PathParams>(`${BASE}/families/:familyId/rest-days`, async ({ request }) => {
+  http.post<PathParams>(`${BASE}/families/:familyId/rest-cards`, async ({ request }) => {
     // 쉬는 날 카드는 부모가 쓴다(규칙 15)
     if (acting()?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자만 쓸 수 있습니다");
     const { date } = (await request.json().catch(() => ({}))) as { date?: string };
@@ -200,7 +200,7 @@ export const league = [
   }),
 
   /** 쉬는 날 되돌리기 — 오늘이나 앞날만. 카드는 돌려준다 */
-  http.delete<PathParams>(`${BASE}/families/:familyId/rest-days/:date`, ({ params }) => {
+  http.delete<PathParams>(`${BASE}/families/:familyId/rest-cards/:date`, ({ params }) => {
     if (acting()?.role !== "PARENT")
       return fail(403, "NOT_A_PARENT", "보호자만 되돌릴 수 있습니다");
     const date = String(params.date);

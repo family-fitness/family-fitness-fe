@@ -1757,7 +1757,8 @@ check(
   pendingInviteTitle({ role: "CHILD" }) === "아이 초대" &&
     pendingInviteDetail({ expiresAt: "2026-10-08", issuedByName: "은영" }) ===
       "10월 8일까지, 은영님이 보냈어요" &&
-    pendingInviteDetail({ expiresAt: "2026-10-08", issuedByName: null }) === "10월 8일까지",
+    // 서버는 보낸 사람이 가족에서 빠지면 오너 이름을 준다(비지 않는다). 그래도 이름이 비면 기한만
+    pendingInviteDetail({ expiresAt: "2026-10-08", issuedByName: "" }) === "10월 8일까지",
 );
 check(
   "초대 문구에 가운데 점과 긴 대시를 쓰지 않는다",

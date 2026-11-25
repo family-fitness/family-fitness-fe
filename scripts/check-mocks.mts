@@ -318,7 +318,7 @@ const xpOf = async (id: string) =>
 const before = await xpOf(DEMO.kid);
 const done = { profileId: DEMO.kid, activeSeconds: 60, startedAt: today, endedAt: today };
 const first = (await (
-  await post(`/missions/${shared.missionId}/sessions/1/done`, done)
+  await post(`/missions/${shared.missionId}/sessions/1/complete`, done)
 ).json()) as { xpGained?: number; missionCompleted?: boolean; verifiedBy?: string };
 check("한 칸 끝은 타이머로 확인된다", first.verifiedBy === "TIMER");
 check("한 칸만 끝내면 아직 다 한 것이 아니다", first.missionCompleted === false);
@@ -343,17 +343,25 @@ const siblingDay = (await (
 check("형제의 오늘은 0분이다", (siblingDay.days[0]?.minutes ?? 0) === 0);
 
 const again = (await (
-  await post(`/missions/${shared.missionId}/sessions/1/done`, done)
+  await post(`/missions/${shared.missionId}/sessions/1/complete`, done)
 ).json()) as { xpGained?: number };
 check("같은 칸을 두 번 끝내도 두 번 쌓이지 않는다", again.xpGained === 0, `+${again.xpGained}`);
 
-res = await post(`/missions/${shared.missionId}/sessions/2/done`, { ...done, activeSeconds: 10 });
+res = await post(`/missions/${shared.missionId}/sessions/2/complete`, {
+  ...done,
+  activeSeconds: 10,
+});
 check("잡힌 시간의 절반도 안 했으면 끝이 아니다", (await codeOf(res)) === "TOO_SHORT");
 
-res = await post(`/missions/${shared.missionId}/sessions/2/done`, { ...done, profileId: DEMO.dad });
+res = await post(`/missions/${shared.missionId}/sessions/2/complete`, {
+  ...done,
+  profileId: DEMO.dad,
+});
 check("참여자가 아니면 끝낼 수 없다", (await codeOf(res)) === "NOT_A_PARTICIPANT");
 
-const last = (await (await post(`/missions/${shared.missionId}/sessions/2/done`, done)).json()) as {
+const last = (await (
+  await post(`/missions/${shared.missionId}/sessions/2/complete`, done)
+).json()) as {
   missionCompleted?: boolean;
 };
 parts = await partsOf(shared.missionId);
@@ -379,8 +387,8 @@ const together = (await (
     ],
   })
 ).json()) as MissionBody;
-await post(`/missions/${together.missionId}/sessions/1/done`, done);
-res = await post(`/missions/${together.missionId}/sessions/2/done`, {
+await post(`/missions/${together.missionId}/sessions/1/complete`, done);
+res = await post(`/missions/${together.missionId}/sessions/2/complete`, {
   ...done,
   profileId: DEMO.mom,
 });
@@ -418,7 +426,7 @@ const span = (await (
     sessions: [{ position: 1, phase: "MAIN", title: "하나", minutes: 1 }],
   })
 ).json()) as MissionBody;
-await post(`/missions/${span.missionId}/sessions/1/done`, {
+await post(`/missions/${span.missionId}/sessions/1/complete`, {
   ...done,
   profileId: sibling.profileId,
 });
@@ -492,7 +500,10 @@ const oneFor = async (profileId: string, title: string) =>
     })
   ).json()) as MissionBody;
 const solo = await oneFor(third.profileId, "혼자 하나");
-await post(`/missions/${solo.missionId}/sessions/1/done`, { ...done, profileId: third.profileId });
+await post(`/missions/${solo.missionId}/sessions/1/complete`, {
+  ...done,
+  profileId: third.profileId,
+});
 const xpDone = await xpOf(third.profileId);
 await oneFor(third.profileId, "하나 더");
 check(
@@ -555,7 +566,7 @@ check(
   res.status === 422 && (await codeOf(res)) === "CONSENT_REQUIRED",
 );
 
-res = await post(`/missions/${shared.missionId}/sessions/1/done`, done);
+res = await post(`/missions/${shared.missionId}/sessions/1/complete`, done);
 check("동의 철회 후 운동 기록도 차단", (await codeOf(res)) === "CONSENT_REQUIRED");
 
 /* ─── 6. 쉬는 날 · 이어서 한 날 · 리그 ─────────────────────── */
@@ -572,9 +583,9 @@ check("쉬는 날만으로는 이어서 한 날이 생기지 않는다", streakO
 
 // 쉬는 날 카드는 부모가 쓴다(규칙 15) — 아이 프로필로는 쓰지도 되돌리지도 못한다
 setActingProfile(DEMO.kid);
-res = await post(`/families/${DEMO.familyId}/rest-days`, { date: today });
+res = await post(`/families/${DEMO.familyId}/rest-cards`, { date: today });
 check("아이는 쉬는 날 카드를 쓸 수 없다", (await codeOf(res)) === "NOT_A_PARENT");
-res = await send("DELETE", `/families/${DEMO.familyId}/rest-days/${today}`);
+res = await send("DELETE", `/families/${DEMO.familyId}/rest-cards/${today}`);
 check("아이는 쉬는 날을 되돌릴 수 없다", (await codeOf(res)) === "NOT_A_PARENT");
 setActingProfile(DEMO.mom);
 
@@ -621,7 +632,7 @@ check(
     total: number;
     nextCursor: string | null;
   };
-  const page = async (qs: string) => (await (await get(`/clips?${qs}`)).json()) as Page;
+  const page = async (qs: string) => (await (await get(`/exercises?${qs}`)).json()) as Page;
   /** nextCursor 를 따라 끝까지 받는다 */
   async function all(qs: string) {
     const ids: string[] = [];
@@ -664,13 +675,13 @@ check(
   );
   const big = await page(`${kid}&ageGroup=ALL&size=500`);
   check("한 페이지는 100개를 넘지 않는다", big.clips.length === 100, `${big.clips.length}`);
-  const bad = await get(`/clips?${kid}&cursor=abc`);
+  const bad = await get(`/exercises?${kid}&cursor=abc`);
   check(
     "알아볼 수 없는 cursor 는 400 INVALID_INPUT",
     bad.status === 400 && (await codeOf(bad)) === "INVALID_INPUT",
     `${bad.status}`,
   );
-  const badAge = await get(`/clips?${kid}&ageGroup=KID`);
+  const badAge = await get(`/exercises?${kid}&ageGroup=KID`);
   check(
     "모르는 나이대는 400 INVALID_INPUT",
     badAge.status === 400 && (await codeOf(badAge)) === "INVALID_INPUT",
