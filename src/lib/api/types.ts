@@ -86,6 +86,11 @@ export type GuardianConsent = { personalData: boolean; healthData: boolean };
 /** 가족을 만들면 돌아오는 것 — 가족 id 와 만든 사람의 프로필 */
 export type FamilyCreated = S["FamilyCreatedResponse"];
 export type Cheer = S["CheerResponse"];
+/**
+ * 운동이 어땠는지 — `POST /missions/{missionId}/feedback` 본문 `{ profileId, feel }`, 성공하면 204.
+ * 참여자 한 명에 한 줄이고 다시 보내면 덮어쓴다. 서버는 저장만 하고 돌려주지 않는다(다음 편성에 싣는 것은 AI 계약이 먼저)
+ */
+export type MissionFeel = "EASY" | "GOOD" | "HARD";
 
 export type FitnessMap = S["FitnessMapResponse"];
 export type FitnessMapMember = S["Member"];
