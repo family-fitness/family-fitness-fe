@@ -439,7 +439,19 @@ export type Profile = Concrete<ProfileSummary> & {
   sex?: "M" | "F";
   /** 목만 든다 — 동의를 다시 줬을 때 만 4세가 넘었는지 다시 보려고 */
   birthDate?: string;
+  /**
+   * 목만 든다 — 보호자 동의 기록. 서버는 동의를 기록으로 남겨, 생일을 만 14세 이상으로 고쳤다가 되돌려도 기록이 살아 있다.
+   * 거둔 기록은 만 14세가 지나도 풀리지 않는다. 없으면 동의 필요 · 동의 여부로 미루어 본다
+   */
+  consentRecord?: "given" | "withdrawn";
 };
+
+/** 동의 기록 — 적어 둔 것이 없으면 지금 동의 상태로 미루어 본다(동의가 필요 없던 사람은 기록이 없다) */
+export function consentRecordOf(profile: Profile): "given" | "withdrawn" | undefined {
+  if (profile.consentRecord) return profile.consentRecord;
+  if (!profile.consentRequired) return undefined;
+  return profile.consentGiven ? "given" : "withdrawn";
+}
 export type MapMember = Concrete<FitnessMap>["members"][number];
 
 /** 만 나이로 연령대를 고른다. 서버와 같은 구간이다 */

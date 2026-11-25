@@ -1276,6 +1276,80 @@ const pendingCodes = async () =>
   );
 }
 
+/* ─── 구성원 정보 고치기 ──────────────────────────────────── */
+{
+  setActingProfile(DEMO.mom);
+  const patch = (id: string, body: unknown) => send("PATCH", `/profiles/${id}`, body);
+  let r = await patch(DEMO.kid, { name: "서준이" });
+  const renamed = (await r.json()) as { name?: string };
+  check("보호자가 계정 없는 아이 이름을 고친다", r.status === 200 && renamed.name === "서준이");
+  const map = (await (await get(`/families/${DEMO.familyId}/fitness-map`)).json()) as {
+    members: { profileId: string; name: string }[];
+  };
+  check(
+    "고친 이름은 체력 지도에도 바로 실린다",
+    map.members.find((m) => m.profileId === DEMO.kid)?.name === "서준이",
+  );
+  r = await patch(DEMO.kid, { name: "   " });
+  check("공백만인 이름은 400", r.status === 400);
+  r = await patch(DEMO.mom, { birthDate: `${new Date().getFullYear() - 10}-01-01` });
+  check(
+    "보호자를 만 14세 미만으로 고치면 422 UNDER_14_NOT_ALLOWED",
+    r.status === 422 && (await codeOf(r)) === "UNDER_14_NOT_ALLOWED",
+  );
+  r = await patch(DEMO.kid, { birthDate: `${new Date().getFullYear() - 16}-01-01` });
+  const teen = (await r.json()) as {
+    ageGroup?: string;
+    consentRequired?: boolean;
+    consentGiven?: boolean;
+  };
+  check(
+    "생일을 고치면 연령대와 동의 필요를 다시 셈한다(만 16세 → 청소년, 동의 필요 없음)",
+    teen.ageGroup === "청소년" && teen.consentRequired === false && teen.consentGiven === true,
+    JSON.stringify(teen),
+  );
+  r = await patch(DEMO.kid, { birthDate: `${new Date().getFullYear() - 9}-01-01` });
+  const child = (await r.json()) as {
+    consentRequired?: boolean;
+    consentGiven?: boolean;
+    measurable?: boolean;
+  };
+  check(
+    "다시 만 14세 미만으로 고쳐도 받아 둔 동의 기록이 살아 있어 그대로 잰다(서버와 같다)",
+    child.consentRequired === true && child.consentGiven === true && child.measurable === true,
+    JSON.stringify(child),
+  );
+  // 만 14세 이상으로 등록해 동의 기록이 없는 아이를 만 14세 미만으로 고치면 측정이 막힌다
+  const teenKid = (await (
+    await post(`/families/${DEMO.familyId}/profiles`, {
+      name: "막내",
+      birthDate: `${new Date().getFullYear() - 15}-01-01`,
+      sex: "F",
+      role: "CHILD",
+    })
+  ).json()) as { profileId: string };
+  r = await patch(teenKid.profileId, { birthDate: `${new Date().getFullYear() - 9}-01-01` });
+  const noRecord = (await r.json()) as {
+    consentRequired?: boolean;
+    consentGiven?: boolean;
+    measurable?: boolean;
+  };
+  check(
+    "동의 기록이 없는 아이를 만 14세 미만으로 고치면 동의가 필요하고 측정이 막힌다",
+    noRecord.consentRequired === true &&
+      noRecord.consentGiven === false &&
+      noRecord.measurable === false,
+    JSON.stringify(noRecord),
+  );
+  setActingProfile(DEMO.kid);
+  r = await patch(DEMO.kid, { name: "나" });
+  check(
+    "아이 계정은 고칠 수 없다(403 NOT_A_PARENT)",
+    r.status === 403 && (await codeOf(r)) === "NOT_A_PARENT",
+  );
+  setActingProfile(DEMO.mom);
+}
+
 server.close();
 console.log(failed === 0 ? "\n전부 통과" : `\n${failed}건 실패`);
 process.exit(failed === 0 ? 0 : 1);
