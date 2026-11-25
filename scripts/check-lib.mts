@@ -6,7 +6,14 @@
  * AGENTS.md — "lib/*.ts 순수 함수. 여기 있는 건 전부 테스트 가능해야 한다".
  * 테스트 프레임워크를 붙이는 PR 에서 정식 테스트로 옮긴다. 그 전까지는 이 한 파일이다.
  */
-import { familyWeek, isThisWeek, shiftWeek, weekParam, weekRangeLabel } from "@/lib/week-report";
+import {
+  familyDays,
+  familyWeek,
+  isThisWeek,
+  shiftWeek,
+  weekParam,
+  weekRangeLabel,
+} from "@/lib/week-report";
 import type { ClipView } from "@/lib/api/types";
 import type { DayLog } from "@/lib/api/types";
 import {
@@ -2216,6 +2223,25 @@ check(
     familyWeek({ members: [], missionStats: { total: 2, completed: 0 } }).moved === false &&
     familyWeek(undefined).moved === false,
 );
+
+{
+  const days = ["2026-11-16", "2026-11-17", "2026-11-18"];
+  const kid = {
+    days: [
+      { date: "2026-11-16", minutes: 20 },
+      { date: "2026-11-18", minutes: 10 },
+    ],
+  };
+  const mom = { days: [{ date: "2026-11-16", minutes: 15 }] };
+  check(
+    "요일마다 가족 달력의 분을 더하고, 아무도 안 움직인 날은 0",
+    JSON.stringify(familyDays(days, [kid, mom])?.map((d) => d.minutes)) === "[35,0,10]",
+  );
+  check(
+    "달력이 하나라도 아직 오지 않았으면 그리지 않는다 — 덜 더한 기둥이 섰다가 바뀌지 않게",
+    familyDays(days, [kid, undefined]) === undefined && familyDays(days, []) === undefined,
+  );
+}
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);
