@@ -34,6 +34,7 @@ import {
   upcomingDays,
 } from "@/lib/routine";
 import {
+  canCancelMission,
   dayRings,
   daySummary,
   dayWork,
@@ -43,6 +44,7 @@ import {
   missionsOn,
   missionTitle,
   plannedDay,
+  spansDays,
   todayLine,
 } from "@/lib/day";
 import { UNLOCKS, decorationsAt, newlyUnlocked, nextUnlock } from "@/lib/unlocks";
@@ -2177,6 +2179,36 @@ check(
   broken.setItem("ff-utm", "{깨진 값");
   check("저장된 값이 깨졌으면 빈 값이다", same(savedUtm(broken), {}));
   check("저장소를 못 쓰면 아무것도 붙이지 않는다", same(savedUtm(null), {}));
+}
+
+// 등록한 운동 지우기
+{
+  const plan = (over: Record<string, unknown> = {}, part: Record<string, unknown> = {}) =>
+    ({
+      missionId: "m",
+      startDate: "2026-12-01",
+      endDate: "2026-12-01",
+      participants: [{ profileId: "k", progress: 0, completed: false, doneSessions: [], ...part }],
+      ...over,
+    }) as unknown as Parameters<typeof canCancelMission>[0];
+  check(
+    "오늘 · 앞날 운동을 아무도 시작하지 않았으면 지울 수 있다",
+    canCancelMission(plan(), "2026-12-01") && canCancelMission(plan(), "2026-11-28"),
+  );
+  check(
+    "기간이 끝난 운동은 지울 수 없다(서버 409 MISSION_ENDED)",
+    !canCancelMission(plan(), "2026-12-02"),
+  );
+  check(
+    "누가 한 칸이라도 끝냈거나 다 했으면 지울 수 없다(서버 409 MISSION_ALREADY_STARTED)",
+    !canCancelMission(plan({}, { doneSessions: [1] }), "2026-12-01") &&
+      !canCancelMission(plan({}, { progress: 0.3 }), "2026-12-01") &&
+      !canCancelMission(plan({}, { completed: true }), "2026-12-01"),
+  );
+  check(
+    "여러 날에 걸친 운동인지 안다",
+    spansDays(plan({ endDate: "2026-12-05" })) && !spansDays(plan()),
+  );
 }
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
