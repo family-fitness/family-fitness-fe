@@ -784,7 +784,7 @@ const missions = [
    * 아니라 **잡힌 시간 동안 따라 했는지**로 판정한다 — 영상은 동작 시범일 뿐이다(9/23 회의).
    */
   http.post<PathParams>(
-    `${BASE}/missions/:missionId/sessions/:position/done`,
+    `${BASE}/missions/:missionId/sessions/:position/complete`,
     async ({ params, request }) => {
       const body = (await request.json()) as { profileId: string; activeSeconds: number };
       const mission = db.missions.find((m) => m.missionId === String(params.missionId));

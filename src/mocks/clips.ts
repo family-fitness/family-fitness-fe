@@ -91,7 +91,7 @@ function alternate(list: FinderClip[]): FinderClip[] {
 }
 
 export const clips = [
-  http.get(`${BASE}/clips`, ({ request }) => {
+  http.get(`${BASE}/exercises`, ({ request }) => {
     const p = new URL(request.url).searchParams;
     const factor = p.get("factor");
     const phase = p.get("phase");
@@ -161,7 +161,7 @@ export const clips = [
     return HttpResponse.json(body);
   }),
 
-  http.post<PathParams>(`${BASE}/clips/:clipId/favorite`, async ({ params, request }) => {
+  http.post<PathParams>(`${BASE}/exercises/:clipId/favorite`, async ({ params, request }) => {
     const body = (await request.json()) as { profileId?: string; favorited?: boolean };
     const id = String(params.clipId);
     if (!body.profileId) return fail(400, "PROFILE_REQUIRED", "누구의 즐겨찾기인지 알려 주세요");
