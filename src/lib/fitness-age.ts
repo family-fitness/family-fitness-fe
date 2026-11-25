@@ -85,3 +85,16 @@ export function itemLabelOf(
 ): string {
   return catalogue?.find((item) => item.itemCode === itemCode)?.itemLabel || itemName;
 }
+
+/**
+ * 더 측정할 항목 — 맨몸으로 재는 것을 앞에(서버 차례는 그 안에서 지킨다). 측정 화면도 넘겨받은 차례대로 위에 올리므로
+ * 바로 잴 수 있는 것부터 보인다
+ */
+export function missingInOrder<T extends { equipment?: string | null }>(items: readonly T[]): T[] {
+  return [...items.filter((m) => !m.equipment), ...items.filter((m) => m.equipment)];
+}
+
+/** 항목 이름 곁에 필요한 것 — 「상대악력(악력계)」. 맨몸이면 이름만 */
+export function missingName(label: string, equipment: string | null | undefined): string {
+  return equipment ? `${label}(${equipment})` : label;
+}

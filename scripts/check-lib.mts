@@ -127,6 +127,8 @@ import {
   changeLine,
   itemLabelOf,
   lastKnownAge,
+  missingInOrder,
+  missingName,
   itemAgeText,
   moreItemsLine,
   trendOf,
@@ -2317,6 +2319,27 @@ check(
       ]),
     ) === '{"012":0}',
 );
+
+// 더 측정할 항목의 장비와 차례
+{
+  const missing = [
+    { itemCode: "020", equipment: "공간" },
+    { itemCode: "019", equipment: null },
+    { itemCode: "028", equipment: "악력계" },
+    { itemCode: "041", equipment: null },
+  ];
+  check(
+    "맨몸으로 재는 항목을 앞에, 그 안에서는 서버 차례대로",
+    missingInOrder(missing)
+      .map((m) => m.itemCode)
+      .join() === "019,041,020,028",
+  );
+  check(
+    "필요한 것은 이름 곁에 괄호로, 맨몸이면 이름만",
+    missingName("상대악력", "악력계") === "상대악력(악력계)" &&
+      missingName("교차윗몸일으키기", null) === "교차윗몸일으키기",
+  );
+}
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);

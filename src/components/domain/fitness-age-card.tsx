@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
+import { Fragment } from "react";
 
 import { FitnessAgeTrend } from "@/components/domain/fitness-age-trend";
 import { CardHead } from "@/components/ui/card";
@@ -15,6 +16,8 @@ import {
   itemAgeText,
   itemLabelOf,
   lastKnownAge,
+  missingInOrder,
+  missingName,
   moreItemsLine,
 } from "@/lib/fitness-age";
 import { measureHref } from "@/lib/measure-focus";
@@ -190,18 +193,28 @@ function MissingItems({
   profileId: string;
 }) {
   if (data.missingItems.length === 0) return null;
+  // 맨몸으로 재는 것부터 — 측정 화면도 이 차례대로 위에 올린다
+  const missing = missingInOrder(data.missingItems);
   return (
     <NavLink
       href={measureHref(
         profileId,
-        data.missingItems.map((m) => m.itemCode),
+        missing.map((m) => m.itemCode),
       )}
       className={cn("press bg-sub mt-4 flex min-h-13 items-center gap-2 rounded-2xl px-4 py-3")}
     >
       <span className="min-w-0 flex-1">
         <span className="text-caption text-ink-soft block font-bold">더 측정할 항목</span>
         <span className="block text-sm font-extrabold">
-          {data.missingItems.map((m) => itemLabelOf(m.itemCode, m.itemName, catalogue)).join(", ")}
+          {/* 항목 하나는 한 줄 안에 — 「10m4회왕복달리기」 와 「(공간)」 이 줄을 넘어 갈라졌다 */}
+          {missing.map((m, i) => (
+            <Fragment key={m.itemCode}>
+              {i > 0 && ", "}
+              <span className="whitespace-nowrap">
+                {missingName(itemLabelOf(m.itemCode, m.itemName, catalogue), m.equipment)}
+              </span>
+            </Fragment>
+          ))}
         </span>
       </span>
       <ChevronRight aria-hidden className="text-ink-soft size-4 shrink-0" />
