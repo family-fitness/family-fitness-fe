@@ -22,6 +22,7 @@ import {
   useFamilyProfiles,
   useFitnessItems,
   useFitnessTests,
+  useLatestFitnessTest,
 } from "@/lib/api/queries";
 import { useSession } from "@/lib/session";
 import { REMEASURE_DAYS, measuredOn } from "@/lib/remeasure";
@@ -30,7 +31,7 @@ import { daysSince, today } from "@/lib/today";
 import { bodyError, bodyValue, rangeHint } from "@/lib/body";
 import { useBodyStore } from "@/stores/body-store";
 import { cn, withJosa } from "@/lib/utils";
-import { codesIn, parseItemCodes, pinFirst } from "@/lib/measure-focus";
+import { codesIn, parseItemCodes, pinFirst, recentValues } from "@/lib/measure-focus";
 import { ArtIcon } from "@/components/ui/art-icon";
 
 /** RHF 필드 이름. 항목 코드가 "012" 라 그대로 쓰면 경로 파서가 숫자로 본다 */
@@ -79,6 +80,9 @@ export default function MeasurePage() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [testedOn, setTestedOn] = useState(today());
   const { data: past } = useFitnessTests(profileId);
+  // 다시 잴 때 항목마다 지난 값을 범위 곁에 적는다. 미리 채우지는 않는다 — 오늘 잰 값이 아닌 것이 오늘 회차로 들어간다
+  const { data: latest } = useLatestFitnessTest(profileId);
+  const recent = useMemo(() => recentValues(latest?.items), [latest?.items]);
 
   /**
    * 키와 몸무게. 한 달 안에 적은 값만 미리 채운다 — 그보다 오래된 값을 채워 두면 항목만 적고 저장한 순간
@@ -403,6 +407,7 @@ export default function MeasurePage() {
                     item={item}
                     register={register(field(item.itemCode ?? ""), rules(item))}
                     error={errors[field(item.itemCode ?? "")]?.message}
+                    recent={recent[item.itemCode ?? ""]}
                   />
                 ))}
               </div>
@@ -438,6 +443,7 @@ export default function MeasurePage() {
                       item={item}
                       register={register(field(item.itemCode ?? ""), rules(item))}
                       error={errors[field(item.itemCode ?? "")]?.message}
+                      recent={recent[item.itemCode ?? ""]}
                     />
                   ))}
                 </div>

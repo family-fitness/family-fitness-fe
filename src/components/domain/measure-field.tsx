@@ -12,10 +12,13 @@ export function MeasureField({
   item,
   register,
   error,
+  recent,
 }: {
   item: FitnessItem;
   register: UseFormRegisterReturn;
   error?: string;
+  /** 가장 최근 회차의 값. 다시 잴 때 견주라고 범위 곁에 적는다 — 칸을 채우지는 않는다 */
+  recent?: number;
 }) {
   const range = item.range;
 
@@ -40,6 +43,12 @@ export function MeasureField({
           {range && (
             <span className="text-ink-soft ml-2">
               {range.min}~{range.max}
+              {item.unit}
+            </span>
+          )}
+          {recent != null && (
+            <span className="text-ink ml-2 font-semibold">
+              최근 측정 {recent}
               {item.unit}
             </span>
           )}
