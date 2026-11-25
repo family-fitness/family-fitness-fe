@@ -1,6 +1,8 @@
 "use client";
 
+import { Pencil } from "lucide-react";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
@@ -11,6 +13,7 @@ import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FactorView, FirstMeasure } from "@/components/domain/factor-view";
 import { MonthStats, RecentDays } from "@/components/domain/child-stats";
+import { EditMemberSheet } from "@/components/domain/edit-member-sheet";
 import { LevelBuddy } from "@/components/domain/level-buddy";
 import { AchievementGrid } from "@/components/domain/achievement-grid";
 import { FactorTable } from "@/components/domain/factor-table";
@@ -27,6 +30,7 @@ import {
   useLatestFitnessTest,
   useProgress,
 } from "@/lib/api/queries";
+import { canEditMember } from "@/lib/family";
 import { stageOf } from "@/lib/levels";
 import { useSession } from "@/lib/session";
 import { daysSince } from "@/lib/today";
@@ -43,7 +47,15 @@ import { ArtIcon } from "@/components/ui/art-icon";
  */
 export default function ChildDetailPage() {
   const { profileId } = useParams<{ profileId: string }>();
-  const { familyId, isPending, error: sessionError, refetch: refetchMe } = useSession();
+  const {
+    familyId,
+    profile: me,
+    isPending,
+    error: sessionError,
+    refetch: refetchMe,
+  } = useSession();
+  // 이름을 누르면 정보 고치기 — 가족 화면과 같은 시트
+  const [editOpen, setEditOpen] = useState(false);
 
   // 꺼진 조회의 isPending 은 영영 true 다 — 가족을 기다릴 때는 isLoading 으로 본다.
   // 안 기다리면 가족이 오기 전에 「찾을 수 없는 프로필이에요」 가 번쩍 떴다
@@ -130,7 +142,22 @@ export default function ChildDetailPage() {
           <div className="flex items-center gap-4">
             <LevelBuddy stage={stage.stage} size={80} />
             <div className="min-w-0 flex-1">
-              <h2 className="text-lead font-extrabold">{name}</h2>
+              {/* 생일을 잘못 넣으면 연령대가 틀려 아래 체력 비교가 통째로 어긋난다 — 이 자리에서 바로 고친다 */}
+              <h2 className="text-lead font-extrabold">
+                {canEditMember(me, profile) ? (
+                  <button
+                    type="button"
+                    onClick={() => setEditOpen(true)}
+                    aria-label={`${name} 정보 고치기`}
+                    className="press flex max-w-full items-center gap-1.5 text-left"
+                  >
+                    <span className="truncate">{name}</span>
+                    <Pencil aria-hidden className="text-faint size-4 shrink-0" />
+                  </button>
+                ) : (
+                  name
+                )}
+              </h2>
               <p className="text-caption text-ink-soft mt-0.5 font-bold">
                 {progress ? `Lv.${progress.level} ${stage.name}` : " "}
               </p>
@@ -141,6 +168,13 @@ export default function ChildDetailPage() {
               )}
             </div>
           </div>
+          <EditMemberSheet
+            key={profile.profileId}
+            open={editOpen}
+            onClose={() => setEditOpen(false)}
+            member={profile}
+            familyId={familyId ?? ""}
+          />
           {/* 측정한 적이 있는지로 가른다. 만 7~10세는 측정했어도 점수가 없을 수 있다(규칙 8).
               측정한 적이 없으면 꼭지점이 빈 육각형 대신 키움이와 첫 측정 길(부모 홈과 같은 부품) */}
           {testedOn == null ? (
