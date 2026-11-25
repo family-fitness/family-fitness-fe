@@ -874,6 +874,35 @@ const missions = [
       });
     },
   ),
+
+  /**
+   * 등록한 운동 지우기. 서버와 같은 차례 — 없음 404 MISSION_NOT_FOUND → 다른 가족 403 NOT_SAME_FAMILY ·
+   * 아이 계정 403 NOT_A_PARENT → 기간이 끝남 409 MISSION_ENDED → 누가 한 칸이라도 끝냄 409 MISSION_ALREADY_STARTED.
+   * 지우면 204. 받은 칭찬은 받은 사람의 기록이라 남긴다(서버도 그대로 둔다)
+   */
+  http.delete<PathParams>(`${BASE}/missions/:missionId`, ({ params }) => {
+    const mission = db.missions.find((m) => m.missionId === String(params.missionId));
+    if (!mission) return fail(404, "MISSION_NOT_FOUND", "미션이 없습니다");
+    const me = acting();
+    // 목의 운동에는 가족 칸이 없다 — 참여자의 가족으로 본다
+    const familyOf = db.profiles.profiles.find(
+      (p) => p.profileId === mission.participants?.[0]?.profileId,
+    )?.familyId;
+    if (me && familyOf && me.familyId !== familyOf) {
+      return fail(403, "NOT_SAME_FAMILY", "다른 가족입니다");
+    }
+    if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자가 아닙니다");
+    const today = toDateString(new Date());
+    const end = mission.endDate ?? mission.startDate ?? "";
+    if (end < today) return fail(409, "MISSION_ENDED", "기간이 끝난 미션입니다");
+    const started = ((mission.participants ?? []) as ParticipantRow[]).some(
+      (p) => p.completed || (p.progress ?? 0) > 0 || (p.doneSessions?.length ?? 0) > 0,
+    );
+    if (started) return fail(409, "MISSION_ALREADY_STARTED", "이미 시작한 미션입니다");
+    db.missions = db.missions.filter((m) => m.missionId !== mission.missionId);
+    saveMissions();
+    return new HttpResponse(null, { status: 204 });
+  }),
 ];
 
 export const handlers = [

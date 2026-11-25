@@ -1276,6 +1276,72 @@ const pendingCodes = async () =>
   );
 }
 
+/* ─── 등록한 운동 지우기 ──────────────────────────────────── */
+{
+  setActingProfile(DEMO.mom);
+  const make = async (date: string) =>
+    (
+      (await (
+        await post(`/families/${DEMO.familyId}/missions`, {
+          title: "지울 운동",
+          startDate: date,
+          endDate: date,
+          targetMetric: "TIMER_MINUTES",
+          targetValue: 1,
+          participantProfileIds: [DEMO.kid],
+          sessions: [{ position: 1, phase: "MAIN", title: "본", minutes: 1 }],
+        })
+      ).json()) as { missionId: string }
+    ).missionId;
+  const ids = async () =>
+    (
+      (await (await get(`/families/${DEMO.familyId}/missions?scope=ALL`)).json()) as {
+        missions: { missionId: string }[];
+      }
+    ).missions.map((m) => m.missionId);
+  const tomorrow = daysBefore(-1, today);
+  const future = await make(tomorrow);
+  setActingProfile(DEMO.kid);
+  let r = await send("DELETE", `/missions/${future}`);
+  check(
+    "아이 계정은 운동을 지울 수 없다(403 NOT_A_PARENT)",
+    r.status === 403 && (await codeOf(r)) === "NOT_A_PARENT",
+  );
+  setActingProfile(DEMO.mom);
+  r = await send("DELETE", `/missions/${future}`);
+  check(
+    "보호자는 아직 시작하지 않은 앞날 운동을 지운다(204)",
+    r.status === 204 && !(await ids()).includes(future),
+  );
+  r = await send("DELETE", `/missions/${future}`);
+  check(
+    "지운 운동을 또 지우면 404 MISSION_NOT_FOUND",
+    r.status === 404 && (await codeOf(r)) === "MISSION_NOT_FOUND",
+  );
+  // 서버는 지난 날짜로 운동을 만들지 않는다(INVALID_DATE) — 기간이 지난 운동은 시간이 흘러 생긴다.
+  // 목에서는 바로 만들어 보고, 로컬 백엔드에서는 시계를 이틀 옮겨 같은 409 를 확인했다
+  const past = await make(daysBefore(2, today));
+  r = await send("DELETE", `/missions/${past}`);
+  check(
+    "기간이 끝난 운동은 지울 수 없다(409 MISSION_ENDED)",
+    r.status === 409 && (await codeOf(r)) === "MISSION_ENDED",
+  );
+  const begun = await make(today);
+  await post(`/missions/${begun}/sessions/1/done`, {
+    profileId: DEMO.kid,
+    activeSeconds: 60,
+    startedAt: today,
+    endedAt: today,
+  });
+  r = await send("DELETE", `/missions/${begun}`);
+  const startedCode = await codeOf(r);
+  check(
+    "누가 한 칸이라도 끝낸 운동은 지울 수 없다(409 MISSION_ALREADY_STARTED)",
+    r.status === 409 && startedCode === "MISSION_ALREADY_STARTED",
+    `${r.status} ${startedCode}`,
+  );
+}
+
 server.close();
 console.log(failed === 0 ? "\n전부 통과" : `\n${failed}건 실패`);
 process.exit(failed === 0 ? 0 : 1);
