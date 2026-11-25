@@ -52,3 +52,19 @@ export function codesIn<T extends { itemCode?: string | null }>(
 ): string[] {
   return codes.filter((code) => list.some((item) => item.itemCode === code));
 }
+
+/**
+ * 최근 회차의 항목 값 — 코드마다 하나. 측정 화면이 범위 곁에 「최근 측정」 으로 적는다(미리 채우지는 않는다).
+ * 회차가 없거나(첫 측정) 값이 숫자가 아니면 그 항목은 없다
+ */
+export function recentValues(
+  items: readonly { itemCode?: string | null; value?: number | null }[] | null | undefined,
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const item of items ?? []) {
+    if (item.itemCode && typeof item.value === "number" && Number.isFinite(item.value)) {
+      out[item.itemCode] = item.value;
+    }
+  }
+  return out;
+}

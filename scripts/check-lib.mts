@@ -131,7 +131,7 @@ import {
   moreItemsLine,
   trendOf,
 } from "@/lib/fitness-age";
-import { codesIn, measureHref, parseItemCodes, pinFirst } from "@/lib/measure-focus";
+import { codesIn, measureHref, parseItemCodes, pinFirst, recentValues } from "@/lib/measure-focus";
 import { measuredOn } from "@/lib/remeasure";
 
 import { ApiError } from "@/lib/api/client";
@@ -2292,6 +2292,30 @@ check(
 check(
   "회차 목록이 아직 없거나 날짜가 비면 막지 않는다",
   !measuredOn(undefined, "2026-11-25") && !measuredOn([{ testedOn: "2026-11-25" }], ""),
+);
+
+// 측정 화면의 최근 측정값
+check(
+  "최근 회차의 값을 항목 코드마다 하나씩 고른다",
+  JSON.stringify(
+    recentValues([
+      { itemCode: "019", value: 25 },
+      { itemCode: "041", value: 0.44 },
+    ]),
+  ) === '{"019":25,"041":0.44}',
+);
+check(
+  "회차가 없거나 코드 · 값이 비면 그 항목은 없다 — 0 은 값이다",
+  Object.keys(recentValues(null)).length === 0 &&
+    Object.keys(recentValues(undefined)).length === 0 &&
+    JSON.stringify(
+      recentValues([
+        { itemCode: null, value: 3 },
+        { itemCode: "019", value: null },
+        { itemCode: "012", value: 0 },
+        { itemCode: "020", value: Number.NaN },
+      ]),
+    ) === '{"012":0}',
 );
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
