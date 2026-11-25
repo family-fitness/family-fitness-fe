@@ -11,7 +11,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FamilyCalendar } from "@/components/domain/family-calendar";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import type { FitnessMapMember } from "@/lib/api/types";
-import { useFitnessAge, useFitnessMap } from "@/lib/api/queries";
+import { useFitnessAge, useFitnessAgeHistory, useFitnessMap } from "@/lib/api/queries";
+import { lastKnownAge } from "@/lib/fitness-age";
 import { useSession } from "@/lib/session";
 import { longDate } from "@/lib/today";
 
@@ -114,6 +115,12 @@ function PersonLine({ person, me }: { person: FitnessMapMember; me: boolean }) {
     person.profileId ?? undefined,
     Boolean(testedOn) && person.ageGroup === "성인",
   );
+  // 항목이 모자란 회차(하나만 다시 잰 날)면 이력에서 마지막으로 셈한 체력 나이를 — 체력 나이 카드와 같은 말을 한다
+  const { data: history } = useFitnessAgeHistory(
+    person.profileId ?? undefined,
+    age?.status === "NOT_ENOUGH_ITEMS",
+  );
+  const last = age?.status === "NOT_ENOUGH_ITEMS" ? lastKnownAge(history?.tests ?? []) : null;
 
   return (
     <li className="py-3">
@@ -135,10 +142,16 @@ function PersonLine({ person, me }: { person: FitnessMapMember; me: boolean }) {
                 ? `${longDate(testedOn)}에 측정했어요`
                 : "아직 측정하지 않았어요"}
           </span>
-          {age?.fitnessAge != null && (
+          {age?.fitnessAge != null ? (
             <span className="text-caption text-ink-soft block truncate font-bold">
               체력 나이 {age.fitnessAge}세
             </span>
+          ) : (
+            last && (
+              <span className="text-caption text-ink-soft block truncate font-bold">
+                지난 체력 나이 {last.fitnessAge}세
+              </span>
+            )
           )}
         </span>
         {testedOn && score != null && (
