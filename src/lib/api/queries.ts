@@ -340,6 +340,24 @@ export function useClaimProfile() {
   });
 }
 
+/**
+ * 구성원의 이름 · 생년월일 · 성별을 고친다. 보낸 칸만 바뀌고 빠진 칸은 그대로다.
+ * 보호자만, 자기 프로필과 계정 없는 프로필만 고친다(계정 붙은 다른 사람은 403 FORBIDDEN).
+ * 응답의 연령대 · 동의 필요 · 측정 가능은 고친 생년월일로 바로 셈한 값이다. 지난 측정은 그때 값 그대로다
+ */
+export function useEditProfile(profileId: Uuid, familyId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (edit: { name?: string; birthDate?: string; sex?: "M" | "F" }) =>
+      api.patch<ProfileSummary>(path`/profiles/${profileId}`, edit),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.family.profiles(familyId) });
+      qc.invalidateQueries({ queryKey: qk.family.fitnessMap(familyId) });
+      qc.invalidateQueries({ queryKey: qk.me() });
+    },
+  });
+}
+
 export function useUpdateSupportMode(profileId: Uuid, familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({

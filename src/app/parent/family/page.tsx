@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { useState } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
@@ -26,7 +26,7 @@ import {
   useRemoveMember,
 } from "@/lib/api/queries";
 import { missionsOn } from "@/lib/day";
-import { canRemoveMember, removeMemberCopy } from "@/lib/family";
+import { canEditMember, canRemoveMember, removeMemberCopy } from "@/lib/family";
 import { pendingInviteDetail, pendingInviteTitle } from "@/lib/invite";
 import { useSession } from "@/lib/session";
 import { today } from "@/lib/today";
@@ -34,6 +34,7 @@ import { usePhotoStore } from "@/stores/photo-store";
 import { useRoleStore } from "@/stores/role-store";
 import { PhotoSheet } from "@/components/domain/photo-sheet";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
+import { EditMemberSheet } from "@/components/domain/edit-member-sheet";
 import { InviteSheet } from "@/components/domain/invite-sheet";
 
 /** 가족 관리 — 구성원, 아이 등록하기, 초대하기, 보낸 초대. */
@@ -58,6 +59,9 @@ export default function MembersPage() {
   // 내보내기 확인 시트. 시트가 닫히며 내려가는 동안에도 글이 남도록, 누구를 내보낼지는 state 에 따로 들고 있는다
   const [removing, setRemoving] = useState<ProfileSummary | null>(null);
   const [removeOpen, setRemoveOpen] = useState(false);
+  // 고치기 시트 — 내보내기와 같이, 닫히며 내려가는 동안에도 누구인지 남긴다
+  const [editing, setEditing] = useState<ProfileSummary | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   if (sessionPending || isLoading) return <MembersSkeleton />;
 
@@ -103,6 +107,14 @@ export default function MembersPage() {
                   setReopened(null);
                   setInviting(p.profileId ?? null);
                 }}
+                onEdit={
+                  canEditMember(me, p)
+                    ? () => {
+                        setEditing(p);
+                        setEditOpen(true);
+                      }
+                    : undefined
+                }
                 onRemove={
                   canRemoveMember(me, p)
                     ? () => {
@@ -182,6 +194,13 @@ export default function MembersPage() {
           initialId={inviting}
           shown={reopened}
         />
+        <EditMemberSheet
+          key={editing?.profileId ?? "none"}
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          member={editing}
+          familyId={familyId ?? ""}
+        />
         <RemoveMemberSheet
           open={removeOpen}
           onClose={() => setRemoveOpen(false)}
@@ -196,10 +215,13 @@ export default function MembersPage() {
 function MemberRow({
   profile,
   onInvite,
+  onEdit,
   onRemove,
 }: {
   profile: ProfileSummary;
   onInvite: () => void;
+  /** 보호자가 자기 줄과 계정 없는 구성원 줄에서만 받는다. 없으면 고치기를 내지 않는다 */
+  onEdit?: () => void;
   /** 오너가 다른 구성원 줄에서만 받는다. 없으면 내보내기를 내지 않는다 */
   onRemove?: () => void;
 }) {
@@ -238,12 +260,30 @@ function MemberRow({
             tone={profile.role === "CHILD" ? "signal" : "mark"}
           />
         )}
-        <div className="min-w-0 flex-1">
-          <p className="text-body font-bold">{profile.name}</p>
-          <p className="text-faint mt-0.5 text-xs">
-            {profile.ageGroup}, {profile.role === "PARENT" ? "보호자" : "아이"}
-          </p>
-        </div>
+        {/* 이름을 누르면 고치기 — 줄 끝에 단추를 더 두면 이름 칸이 좁아져 「성인, 보호자」 가 두 줄로 꺾였다 */}
+        {onEdit ? (
+          <button
+            type="button"
+            onClick={onEdit}
+            aria-label={`${profile.name ?? ""} 정보 고치기`}
+            className="press min-w-0 flex-1 py-1 text-left"
+          >
+            <span className="flex items-center gap-1">
+              <span className="text-body truncate font-bold">{profile.name}</span>
+              <Pencil aria-hidden className="text-faint size-3.5 shrink-0" />
+            </span>
+            <span className="text-faint mt-0.5 block truncate text-xs">
+              {profile.ageGroup}, {profile.role === "PARENT" ? "보호자" : "아이"}
+            </span>
+          </button>
+        ) : (
+          <div className="min-w-0 flex-1">
+            <p className="text-body truncate font-bold">{profile.name}</p>
+            <p className="text-faint mt-0.5 truncate text-xs">
+              {profile.ageGroup}, {profile.role === "PARENT" ? "보호자" : "아이"}
+            </p>
+          </div>
+        )}
 
         <div className="flex shrink-0 items-center gap-1">
           {profile.hasAccount ? (

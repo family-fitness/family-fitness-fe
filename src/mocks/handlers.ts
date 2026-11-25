@@ -36,6 +36,7 @@ import {
   saveRestDays,
   sessionsOfRow,
   withMedia,
+  consentRecordOf,
 } from "./db";
 
 import { clips } from "./clips";
@@ -435,6 +436,7 @@ const identity = [
 
     const given = body.personalData && body.healthData;
     profile.consentGiven = given;
+    (profile as Profile).consentRecord = given ? "given" : "withdrawn";
     // 철회하면 그 순간부터 측정이 막힌다. 다시 주면 만 4세가 넘었는지로 — 연령대(유아기 0~6세)로 보면
     // 동의를 한 번 거둔 5살은 영영 못 잰다. 생일을 모르면 유아기만 막아 둔다(만 4세 미만일 수 있다)
     const age = ageOf((profile as Profile).birthDate);
@@ -448,6 +450,66 @@ const identity = [
       consentBy: given ? db.actingProfileId : null,
       measurable: profile.measurable,
     });
+  }),
+
+  /**
+   * 이름 · 생년월일 · 성별 고치기. 서버와 같은 차례 — 본문 검사 400 → 프로필 없음 404 → 다른 가족 403 NOT_SAME_FAMILY ·
+   * 아이 계정 403 NOT_A_PARENT → 계정 붙은 다른 사람 403 FORBIDDEN(자기 프로필과 계정 없는 프로필만) →
+   * 보호자를 만 14세 미만으로 422 UNDER_14_NOT_ALLOWED. 보낸 칸만 바꾸고, 연령대 · 동의 필요 · 측정 가능은 고친 생일로 다시 셈한다
+   */
+  http.patch<PathParams>(`${BASE}/profiles/:profileId`, async ({ params, request }) => {
+    const body = (await request.json()) as {
+      name?: string | null;
+      birthDate?: string | null;
+      sex?: string | null;
+    };
+    const name = body.name == null ? null : body.name;
+    if (name != null && (name.trim() === "" || name.length > 20)) {
+      return fail(400, "BAD_REQUEST", "이름은 1~20자입니다");
+    }
+    if (
+      body.birthDate != null &&
+      (ageOf(body.birthDate) == null || body.birthDate > toDateString(new Date()))
+    ) {
+      return fail(400, "BAD_REQUEST", "생년월일은 오늘까지입니다");
+    }
+    if (body.sex != null && body.sex !== "M" && body.sex !== "F") {
+      return fail(400, "BAD_REQUEST", "성별은 M · F 입니다");
+    }
+    const profile = db.profiles.profiles.find((p) => p.profileId === params.profileId) as
+      Profile | undefined;
+    if (!profile) return fail(404, "PROFILE_NOT_FOUND", "프로필이 없습니다");
+    const me = acting();
+    if (me && me.familyId !== profile.familyId) {
+      return fail(403, "NOT_SAME_FAMILY", "다른 가족입니다");
+    }
+    if (me?.role !== "PARENT") return fail(403, "NOT_A_PARENT", "보호자가 아닙니다");
+    if (profile.profileId !== me.profileId && profile.hasAccount) {
+      return fail(403, "FORBIDDEN", "계정이 있는 다른 사람은 고칠 수 없습니다");
+    }
+    const birthDate = body.birthDate ?? profile.birthDate;
+    const age = ageOf(birthDate);
+    if (profile.role === "PARENT" && age != null && age < 14) {
+      return fail(422, "UNDER_14_NOT_ALLOWED", "만 14세 미만은 보호자가 될 수 없습니다");
+    }
+
+    if (name != null) profile.name = name.trim();
+    if (body.sex === "M" || body.sex === "F") profile.sex = body.sex;
+    if (body.birthDate != null && age != null) {
+      profile.birthDate = body.birthDate;
+      profile.ageGroup = ageGroupOf(age);
+      // 서버처럼 동의 기록으로 본다 — 만 14세 미만 아이는 기록이 있어야 동의한 것이고, 거둔 기록은 나이가 지나도 막힌 채다
+      const record = consentRecordOf(profile);
+      profile.consentRecord = record;
+      const required = (profile.role === "CHILD" && age < 14) || record === "withdrawn";
+      const given = !required || record === "given";
+      profile.consentRequired = required;
+      profile.consentGiven = given;
+      profile.measurable = given && age >= 4;
+    }
+    syncMapMember(profile);
+    saveFamily();
+    return HttpResponse.json(profile);
   }),
 
   http.post(`${BASE}/families/:familyId/cheers`, async ({ request }) => {
@@ -492,9 +554,13 @@ const identity = [
 function syncMapMember(profile: Profile) {
   const member = db.fitnessMap.members.find((m) => m.profileId === profile.profileId);
   if (!member) return;
+  // 이름 · 연령대 · 동의 필요는 구성원 정보를 고치면 바뀐다
+  member.name = profile.name;
+  member.ageGroup = profile.ageGroup;
   member.supportMode = profile.supportMode;
   member.hasAccount = profile.hasAccount;
   member.measurable = profile.measurable;
+  member.consentRequired = profile.consentRequired;
   member.consentGiven = profile.consentGiven;
 }
 
