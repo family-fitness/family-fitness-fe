@@ -312,6 +312,9 @@ const identity = [
     const birthDate = String(body.birthDate ?? "");
     const age = ageOf(birthDate);
     if (!name || age == null) return fail(400, "INVALID_INPUT", "이름과 생일이 필요합니다");
+    // 성별은 서버가 꼭 받는다(@NotNull) — 프로필 응답에도 늘 실린다
+    const sex = body.sex === "M" || body.sex === "F" ? body.sex : null;
+    if (!sex) return fail(400, "BAD_REQUEST", "성별이 필요합니다");
     const consentRequired = age < 14;
     // 서버와 같게 — 만 14세 미만은 보호자(PARENT)로 들어올 수 없다(동의보다 먼저 본다)
     if (body.role === "PARENT" && consentRequired) {
@@ -331,7 +334,7 @@ const identity = [
       name,
       role: body.role === "PARENT" ? "PARENT" : "CHILD",
       ageGroup: ageGroupOf(age),
-      ...(body.sex === "M" || body.sex === "F" ? { sex: body.sex } : {}),
+      sex,
       birthDate,
       hasAccount: false,
       inviteStatus: "NONE",
@@ -350,7 +353,7 @@ const identity = [
       name: profile.name,
       role: profile.role,
       ageGroup: profile.ageGroup,
-      ...(profile.sex ? { sex: profile.sex } : {}),
+      sex,
       hasAccount: false,
       supportMode: profile.supportMode,
       measurable: profile.measurable,
@@ -760,17 +763,14 @@ const missions = [
         needsGuardianCheck: false,
         doneSessions: [],
       })),
-      // 칸의 끝냄은 사람마다 따로 든다 — 보낸 쪽이 칸에 적어 온 끝냄은 믿지 않는다
-      ...(body.sessions?.length
-        ? {
-            sessions: body.sessions.map((s) => {
-              const { completed: _c, verifiedBy: _v, ...rest } = s as Record<string, unknown>;
-              // 서버처럼 칸의 영상에 공단 mp4 주소를 채운다 — 보낸 쪽은 아이디 · 구간만 싣는다
-              const clip = rest.clip as { videoId?: string | null } | null | undefined;
-              return clip ? { ...rest, clip: withMedia(clip) } : rest;
-            }),
-          }
-        : {}),
+      // 칸의 끝냄은 사람마다 따로 든다 — 보낸 쪽이 칸에 적어 온 끝냄은 믿지 않는다.
+      // 칸이 없으면 서버처럼 빈 배열이다(서버는 sessions 를 늘 싣는다)
+      sessions: (body.sessions ?? []).map((s) => {
+        const { completed: _c, verifiedBy: _v, ...rest } = s as Record<string, unknown>;
+        // 서버처럼 칸의 영상에 공단 mp4 주소를 채운다 — 보낸 쪽은 아이디 · 구간만 싣는다
+        const clip = rest.clip as { videoId?: string | null } | null | undefined;
+        return clip ? { ...rest, clip: withMedia(clip) } : rest;
+      }) as MissionRow["sessions"],
     } as MissionRow;
     db.missions.push(mission);
     saveMissions();

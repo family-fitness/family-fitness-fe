@@ -79,7 +79,7 @@ export type InviteCode = S["InviteResponse"];
  */
 export type FamilyInvite = S["FamilyInviteResponse"];
 /** 아직 쓰지 않았고 기한이 남은 가족 초대 한 장 */
-export type PendingInvite = S["FamilyInviteView"];
+export type PendingInvite = S["FamilyInviteItem"];
 export type PendingInviteList = S["FamilyInviteListResponse"];
 /** 만 14세 미만 아이를 등록하거나 아이로 초대할 때 받는 보호자 동의. 둘 다 true 여야 한다 */
 export type GuardianConsent = { personalData: boolean; healthData: boolean };
@@ -89,8 +89,25 @@ export type Cheer = S["CheerResponse"];
 
 export type FitnessMap = S["FitnessMapResponse"];
 export type FitnessMapMember = S["Member"];
-export type FitnessItems = S["FitnessItemsResponse"];
-export type FitnessItem = S["Item"];
+/**
+ * 연령대별 측정 항목 — 손으로 쓴다. 서버의 `FitnessItemsResponse.Item` 과 체력 나이의 `FitnessAgeResponse.Item` 이
+ * 같은 이름(`Item`)이라 생성된 API 문서에는 체력 나이 쪽만 남는다(값 범위 `ValueRange` 도 같이 빠진다).
+ * 모양은 서버 record 그대로다. ▲ 백엔드 요청: 두 record 의 스키마 이름을 나눠 달라 — 나뉘면 `S[…]` 로 돌아간다
+ */
+export type FitnessItem = {
+  itemCode?: string;
+  itemName?: string;
+  /** 화면 이름. 왕복오래달리기는 연령대마다 거리가 달라 따로 온다(규칙 5) */
+  itemLabel?: string;
+  unit?: string;
+  factor?: FitnessFactor;
+  higherIsBetter?: boolean;
+  inputGroup?: "EASY" | "EQUIPMENT";
+  optional?: boolean;
+  equipment?: string | null;
+  range?: { min?: number; max?: number };
+};
+export type FitnessItems = { ageGroup?: AgeGroup; items?: FitnessItem[] };
 export type FitnessTestResult = S["FitnessTestResponse"];
 export type LatestFitnessTest = S["LatestFitnessResponse"];
 export type ItemResult = S["ItemResult"];
