@@ -543,6 +543,23 @@ export function useRejectCoachRun(runId: Uuid, familyId?: Uuid) {
 }
 
 /** 직접 짠 운동을 그날의 운동으로 등록한다(날마다 한 건). 보호자만 할 수 있다 */
+/**
+ * 등록한 운동 지우기 — 보호자만, 기간이 끝나지 않았고 아무도 시작하지 않은 운동만(서버가 409 로 거절한다).
+ * 지우면 그 운동의 「운동 준비됐어요」 알림도 서버가 거둔다. 받은 칭찬은 남는다
+ */
+export function useDeleteMission(familyId: Uuid) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (missionId: Uuid) => api.delete<void>(path`/missions/${missionId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["family", familyId, "missions"] });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "calendar"] });
+      qc.invalidateQueries({ queryKey: ["family", familyId, "league"] });
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
 export function useCreateMission(familyId: Uuid) {
   const qc = useQueryClient();
   return useMutation({
