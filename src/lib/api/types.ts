@@ -88,6 +88,11 @@ export type FamilyCreated = S["FamilyCreatedResponse"];
 export type Cheer = S["CheerResponse"];
 
 export type FitnessMap = S["FitnessMapResponse"];
+/**
+ * 가족 주간 요약(월~일) — `GET /families/{familyId}/report/weekly?weekStart=`. 구성원마다 그 주의 운동 시간
+ * (`activeMinutes` 모든 출처 · `verifiedMinutes` 타이머 · 영상)과 끝낸 운동 수. `summary` 는 코치 회차의 설명 문장이라 화면에 내지 않는다
+ */
+export type WeeklyReport = S["WeeklyReportView"];
 export type FitnessMapMember = S["Member"];
 export type FitnessItems = S["FitnessItemsResponse"];
 export type FitnessItem = S["Item"];

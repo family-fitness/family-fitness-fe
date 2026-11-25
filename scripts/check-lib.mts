@@ -6,6 +6,7 @@
  * AGENTS.md — "lib/*.ts 순수 함수. 여기 있는 건 전부 테스트 가능해야 한다".
  * 테스트 프레임워크를 붙이는 PR 에서 정식 테스트로 옮긴다. 그 전까지는 이 한 파일이다.
  */
+import { familyWeek, isThisWeek, shiftWeek, weekParam, weekRangeLabel } from "@/lib/week-report";
 import type { ClipView } from "@/lib/api/types";
 import type { DayLog } from "@/lib/api/types";
 import {
@@ -2178,6 +2179,43 @@ check(
   check("저장된 값이 깨졌으면 빈 값이다", same(savedUtm(broken), {}));
   check("저장소를 못 쓰면 아무것도 붙이지 않는다", same(savedUtm(null), {}));
 }
+
+// 주간 돌아보기
+check(
+  "주소의 주는 그 주 월요일로, 없거나 틀리면 지난주다",
+  weekParam("2026-11-19", "2026-11-25") === "2026-11-16" &&
+    weekParam(null, "2026-11-25") === "2026-11-16" &&
+    weekParam("abc", "2026-11-25") === "2026-11-16" &&
+    weekParam("2026-13-40", "2026-11-25") === "2026-11-16",
+);
+check(
+  "앞날 주를 달라고 해도 지난주를 보인다 — 지나간 주를 돌아보는 화면이다",
+  weekParam("2026-12-07", "2026-11-25") === "2026-11-16" &&
+    weekParam("2026-11-26", "2026-11-25") === "2026-11-23",
+);
+check(
+  "주를 앞뒤로 옮기고, 이번 주에서는 다음 주로 가지 않는다",
+  shiftWeek("2026-11-16", -1) === "2026-11-09" &&
+    shiftWeek("2026-11-16", 1) === "2026-11-23" &&
+    isThisWeek("2026-11-23", "2026-11-25") &&
+    !isThisWeek("2026-11-16", "2026-11-25"),
+);
+check(
+  "한 주는 월요일부터 일요일까지 적는다",
+  weekRangeLabel("2026-11-16") === "11월 16일 ~ 11월 22일",
+);
+check(
+  "가족 운동 시간은 확인된 시간의 합이고, 직접 적은 것까지 든 시간은 쓰지 않는다",
+  familyWeek({
+    members: [
+      { verifiedMinutes: 30, activeMinutes: 50 },
+      { verifiedMinutes: 12, activeMinutes: 12 },
+    ],
+    missionStats: { total: 5, completed: 3 },
+  }).minutes === 42 &&
+    familyWeek({ members: [], missionStats: { total: 2, completed: 0 } }).moved === false &&
+    familyWeek(undefined).moved === false,
+);
 
 console.log(failed === 0 ? "\n전부 통과" : `\n실패 ${failed}건`);
 process.exit(failed === 0 ? 0 : 1);
