@@ -9,6 +9,7 @@ import { Stage } from "@/components/app-shell/stage";
 import { CardHead } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { NavLink } from "@/components/ui/nav-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProfileAvatar } from "@/components/domain/profile-avatar";
 import { WeekTower } from "@/components/scene/week-tower";
@@ -115,7 +116,13 @@ function WeekView() {
         ) : (
           <>
             <FamilyWeek report={report} loading={isLoading} days={days} logs={logs} now={now} />
-            <MembersWeek report={report} loading={isLoading} roleOf={roleOf} />
+            <MembersWeek
+              report={report}
+              loading={isLoading}
+              roleOf={roleOf}
+              // 아이 줄은 그 아이의 그 주 하루 기록으로 — 지난 주면 일요일, 이번 주면 오늘. 요일 줄에서 날을 고른다
+              dayOf={days[6] < now ? days[6] : now}
+            />
           </>
         )}
       </Stage>
@@ -200,10 +207,13 @@ function MembersWeek({
   report,
   loading,
   roleOf,
+  dayOf,
 }: {
   report?: WeeklyReport;
   loading: boolean;
   roleOf: (profileId: string | undefined) => string | undefined;
+  /** 아이 줄을 누르면 열 하루 기록의 날 */
+  dayOf: string;
 }) {
   const members = report?.members ?? [];
   return (
@@ -219,12 +229,13 @@ function MembersWeek({
           {members.map((m) => {
             const minutes = m.verifiedMinutes ?? 0;
             const done = m.completedMissions ?? 0;
-            return (
-              <li key={m.profileId} className="flex items-center gap-3 py-3">
+            const child = roleOf(m.profileId) === "CHILD";
+            const line = (
+              <>
                 <ProfileAvatar
                   profileId={m.profileId}
                   name={m.name}
-                  tone={roleOf(m.profileId) === "CHILD" ? "signal" : "mark"}
+                  tone={child ? "signal" : "mark"}
                 />
                 <span className="min-w-0 flex-1 truncate font-extrabold">{m.name}</span>
                 {minutes > 0 || done > 0 ? (
@@ -236,6 +247,22 @@ function MembersWeek({
                   <span className="text-ink-soft text-caption shrink-0 font-semibold">
                     기록이 없어요
                   </span>
+                )}
+              </>
+            );
+            // 하루 기록은 아이마다 있다. 보호자 줄은 누를 곳이 없다
+            return (
+              <li key={m.profileId}>
+                {child && m.profileId ? (
+                  <NavLink
+                    href={`/calendar/${dayOf}?profileId=${encodeURIComponent(m.profileId)}`}
+                    className="press flex min-h-14 items-center gap-3 py-3"
+                  >
+                    {line}
+                    <ChevronRight aria-hidden className="text-faint size-4 shrink-0" />
+                  </NavLink>
+                ) : (
+                  <div className="flex min-h-14 items-center gap-3 py-3">{line}</div>
                 )}
               </li>
             );
