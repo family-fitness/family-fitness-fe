@@ -3,29 +3,46 @@
 import { CalendarDays, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, type ReactNode } from "react";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
 
 import { AppBar } from "@/components/app-shell/app-bar";
 import { Stage } from "@/components/app-shell/stage";
+import { Button } from "@/components/ui/button";
 import { Card, CardHead } from "@/components/ui/card";
 import { EmptyState, EmptyStateAction } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
 import { NavLink } from "@/components/ui/nav-link";
+import { Sheet } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { VideoThumb } from "@/components/ui/video-thumb";
 import { ChildSwitch } from "@/components/domain/child-switch";
 import { DayRings } from "@/components/domain/day-rings";
 import { StickerArt } from "@/components/domain/sticker-art";
 import type { DayLog, Mission, ProfileWithSex, VideoClip } from "@/lib/api/types";
-import { useCalendar, useFamilyProfiles, useFitnessMap, useMissions } from "@/lib/api/queries";
-import { daySummary, didSomething, isRealDate, plannedDay, plannedOn } from "@/lib/day";
+import {
+  useCalendar,
+  useDeleteMission,
+  useFamilyProfiles,
+  useFitnessMap,
+  useMissions,
+} from "@/lib/api/queries";
+import {
+  canCancelMission,
+  daySummary,
+  didSomething,
+  isRealDate,
+  plannedDay,
+  plannedOn,
+  spansDays,
+} from "@/lib/day";
+import { errorMessage } from "@/lib/errors";
 import { callName } from "@/lib/family";
 import { verifiedLabel } from "@/lib/mission";
 import { PHASE_LABEL, sessionsOf, stepMinutes, totalMinutes } from "@/lib/session-plan";
 import { useSession } from "@/lib/session";
 import { stickerOf } from "@/lib/stickers";
 import { daysBefore, longDate, monthOf, today, weekOf, weekdayOf } from "@/lib/today";
-import { cn } from "@/lib/utils";
+import { cn, formatDate, withJosa } from "@/lib/utils";
 import { useIsKidView } from "@/lib/view-role";
 import { exerciseLine, sessionHref } from "@/lib/videos";
 import { useRoleStore } from "@/stores/role-store";
@@ -57,7 +74,10 @@ function Day() {
   const date = isRealDate(params.date) ? params.date : now;
 
   const kidView = useIsKidView();
-  const { familyId, isPending, error: sessionError, refetch: refetchMe } = useSession();
+  const { familyId, profile, isPending, error: sessionError, refetch: refetchMe } = useSession();
+  // 지울 운동 — 시트가 닫히며 내려가는 동안에도 제목이 남도록 따로 든다
+  const [removing, setRemoving] = useState<Mission | null>(null);
+  const [removeOpen, setRemoveOpen] = useState(false);
   // 꺼진 조회(가족을 모를 때)의 isPending 은 영영 true 다 — isLoading 으로 본다
   const { data: map, isLoading: mapLoading, error: mapError, refetch } = useFitnessMap(familyId);
   const { data: family } = useFamilyProfiles(familyId);
@@ -427,11 +447,30 @@ function Day() {
             <CardHead title="할 운동" />
             <ul className="mt-2 space-y-3">
               {planned.map((m) => (
-                <PlannedRows key={m.missionId} mission={m} nameOf={nameOf} />
+                <PlannedRows
+                  key={m.missionId}
+                  mission={m}
+                  nameOf={nameOf}
+                  // 보호자 화면에서만, 아직 아무도 시작하지 않은 오늘 · 앞날 운동만 지운다(서버와 같은 조건)
+                  onRemove={
+                    !kidView && profile?.role === "PARENT" && canCancelMission(m, now)
+                      ? () => {
+                          setRemoving(m);
+                          setRemoveOpen(true);
+                        }
+                      : undefined
+                  }
+                />
               ))}
             </ul>
           </Card>
         )}
+        <RemoveMissionSheet
+          open={removeOpen}
+          onClose={() => setRemoveOpen(false)}
+          mission={removing}
+          familyId={familyId ?? ""}
+        />
 
         {log && log.stickers.length > 0 && (
           <Card>
@@ -634,21 +673,36 @@ function Done() {
 function PlannedRows({
   mission,
   nameOf,
+  onRemove,
 }: {
   mission: Mission;
   nameOf: (profileId: string, fallback: string) => string;
+  /** 지울 수 있을 때만 받는다 */
+  onRemove?: () => void;
 }) {
   // 앞으로 할 운동이라 끝낸 칸이 없다 — 칸 이름 · 시간 · 영상만 쓴다
   const sessions = sessionsOf(mission, null);
   const together = (mission.participants?.length ?? 0) > 1;
   return (
     <li>
-      <p className="text-sm font-extrabold">
-        {mission.title}
-        {totalMinutes(sessions) > 0 && (
-          <span className="text-ink-soft ml-1.5 font-bold">{totalMinutes(sessions)}분</span>
+      <div className="flex items-start justify-between gap-2">
+        <p className="min-w-0 text-sm font-extrabold">
+          {mission.title}
+          {totalMinutes(sessions) > 0 && (
+            <span className="text-ink-soft ml-1.5 font-bold">{totalMinutes(sessions)}분</span>
+          )}
+        </p>
+        {onRemove && (
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label={`${mission.title ?? "이 운동"} 지우기`}
+            className="press text-ink-soft text-caption -my-3 min-h-11 shrink-0 px-2 font-bold"
+          >
+            지우기
+          </button>
         )}
-      </p>
+      </div>
       {together && (
         <p className="text-caption text-ink-soft mt-0.5 font-semibold">
           {(mission.participants ?? [])
@@ -673,6 +727,85 @@ function PlannedRows({
         ))}
       </ul>
     </li>
+  );
+}
+
+/**
+ * 등록한 운동 지우기 확인. 여러 날에 걸친 운동은 그 날들이 함께 지워진다 — 하루만 빼는 길은 서버에 없다
+ */
+function RemoveMissionSheet({
+  open,
+  onClose,
+  mission,
+  familyId,
+}: {
+  open: boolean;
+  onClose: () => void;
+  mission: Mission | null;
+  familyId: string;
+}) {
+  const remove = useDeleteMission(familyId);
+  const [error, setError] = useState<string | null>(null);
+  const close = () => {
+    setError(null);
+    onClose();
+  };
+  const confirm = async () => {
+    if (!mission?.missionId) return;
+    setError(null);
+    try {
+      await remove.mutateAsync(mission.missionId);
+      close();
+    } catch (e) {
+      setError(
+        errorMessage(
+          e,
+          {
+            MISSION_ENDED: "기간이 지난 운동은 지울 수 없어요.",
+            MISSION_ALREADY_STARTED: "벌써 시작한 운동은 지울 수 없어요.",
+            NOT_A_PARENT: "보호자만 지울 수 있어요.",
+            NOT_SAME_FAMILY: "다른 가족의 운동은 지울 수 없어요.",
+            MISSION_NOT_FOUND: "이미 지워진 운동이에요.",
+          },
+          "지우지 못했어요. 잠시 뒤에 다시 해 주세요.",
+        ),
+      );
+    }
+  };
+  return (
+    <Sheet
+      open={open}
+      onClose={close}
+      title={`${withJosa(mission?.title ?? "이 운동", "을를")} 지울까요`}
+    >
+      <div className="space-y-5">
+        {mission && spansDays(mission) && (
+          <p className="text-body text-ink-soft">
+            {formatDate(mission.startDate ?? "")}부터 {formatDate(mission.endDate ?? "")}까지 함께
+            지워져요
+          </p>
+        )}
+        {error && (
+          <p role="alert" className="text-signal-deep text-sm font-semibold">
+            {error}
+          </p>
+        )}
+        <div className="flex gap-2">
+          <Button variant="outline" size="md" className="flex-1" onClick={close}>
+            그대로 두기
+          </Button>
+          <Button
+            variant="danger"
+            size="md"
+            className="flex-1"
+            loading={remove.isPending}
+            onClick={() => void confirm()}
+          >
+            지우기
+          </Button>
+        </div>
+      </div>
+    </Sheet>
   );
 }
 

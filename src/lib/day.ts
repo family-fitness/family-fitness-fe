@@ -1,4 +1,11 @@
-import type { DayLog, Mission, MissionSession, SessionPhase, VerifiedBy } from "./api/types";
+import type {
+  DayLog,
+  Mission,
+  MissionParticipant,
+  MissionSession,
+  SessionPhase,
+  VerifiedBy,
+} from "./api/types";
 import { sessionsOf, stepMinutes } from "./session-plan";
 import { monthOf, shiftMonth } from "./today";
 
@@ -125,6 +132,26 @@ export function missionTitle(mission: Mission, now: string): string {
   const d = new Date(`${start}T00:00:00`);
   if (Number.isNaN(d.getTime())) return "오늘 운동";
   return `${d.getMonth() + 1}월 ${d.getDate()}일 운동`;
+}
+
+/**
+ * 보호자가 이 운동을 지울 수 있나 — 서버와 같은 조건이다. 기간이 끝나지 않았고(끝나는 날이 오늘이거나 앞날),
+ * 참여자 누구도 한 칸이라도 끝내지 않았다. 서버는 끝난 운동을 409 MISSION_ENDED, 누가 시작한 운동을
+ * 409 MISSION_ALREADY_STARTED 로 거절한다 — 한 것을 지우면 그날 기록과 경험치가 어긋난다
+ */
+export function canCancelMission(mission: Mission, now: string): boolean {
+  const end = mission.endDate ?? mission.startDate ?? "";
+  if (!end || end < now) return false;
+  return !(mission.participants ?? []).some((p: MissionParticipant) => {
+    return Boolean(p.completed) || (p.progress ?? 0) > 0 || (p.doneSessions?.length ?? 0) > 0;
+  });
+}
+
+/** 여러 날에 걸친 운동인가 — 지우면 모든 날이 함께 지워진다 */
+export function spansDays(mission: Mission): boolean {
+  const start = mission.startDate ?? "";
+  const end = mission.endDate ?? start;
+  return Boolean(start) && end > start;
 }
 
 /** 이 아이가 그날 할 운동 */
