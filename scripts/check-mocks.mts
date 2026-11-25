@@ -1276,6 +1276,31 @@ const pendingCodes = async () =>
   );
 }
 
+/* ─── 로그아웃 — 서버의 로그인 유지 토큰을 끊는다 ─────────── */
+{
+  const signedIn = (await (
+    await post("/auth/dev-login", { providerUserId: "demo-parent" })
+  ).json()) as { refreshToken?: string };
+  const token = signedIn.refreshToken ?? "";
+  let r = await post("/auth/refresh", { refreshToken: token });
+  check("끊기 전에는 리프레시 토큰으로 새 토큰을 받는다", r.status === 200);
+  r = await post("/auth/logout", { refreshToken: token });
+  check("로그아웃은 204", r.status === 204);
+  r = await post("/auth/refresh", { refreshToken: token });
+  check("끊은 리프레시 토큰으로는 새로 받지 못한다(401)", r.status === 401);
+  r = await post("/auth/logout");
+  const unknown = await post("/auth/logout", { refreshToken: "모르는-토큰" });
+  check(
+    "본문이 없거나 모르는 토큰이어도 204(서버와 같다)",
+    r.status === 204 && unknown.status === 204,
+  );
+  const other = (await (
+    await post("/auth/dev-login", { providerUserId: "demo-parent" })
+  ).json()) as { refreshToken?: string };
+  r = await post("/auth/refresh", { refreshToken: other.refreshToken });
+  check("다른 로그인의 토큰은 끊기지 않는다", r.status === 200 && other.refreshToken !== token);
+}
+
 server.close();
 console.log(failed === 0 ? "\n전부 통과" : `\n${failed}건 실패`);
 process.exit(failed === 0 ? 0 : 1);

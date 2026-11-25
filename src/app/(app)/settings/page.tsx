@@ -224,7 +224,8 @@ function WithdrawSheet({
       await withdraw.mutateAsync();
       // 로그아웃과 같은 차례. 먼저 떠나야 비운 `/me` 를 다시 받으려다 오류 화면이 비치지 않는다
       router.replace(WITHDRAWN_PATH);
-      signOut();
+      // 서버가 탈퇴하며 토큰 기록까지 지웠다 — 끊으러 다시 부르지 않는다
+      signOut({ revoke: false });
     } catch (e) {
       if (e instanceof ApiError && e.code === "FAMILY_NOT_EMPTY") {
         setFamilyNotEmpty(true);

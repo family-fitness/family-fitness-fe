@@ -3,6 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 
+import { api } from "./api/client";
 import { useMe } from "./api/queries";
 import { resetDevice } from "@/stores/device";
 import { useAuthStore } from "@/stores/auth-store";
@@ -39,13 +40,26 @@ export function useSession() {
 /**
  * 이 기기에서 나간다 — 토큰, 이 기기에만 둔 것(역할 · 아이 사진 · 키 몸무게 · 짜던 운동), 받아 둔 서버 값까지.
  * 받아 둔 값을 남기면 다음에 들어온 계정이 첫 화면에서 앞 계정의 `/me` 로 길을 정한다.
+ *
+ * 서버의 로그인 유지 토큰도 끊는다(`revoke`, 기본). 이 기기에서만 지우면 그 리프레시 토큰은 30일 동안 살아 있어,
+ * 어딘가 남은 토큰으로 계속 새 접속 토큰을 받을 수 있었다. 탈퇴는 끊지 않는다 — 서버가 토큰 기록까지 지운다
  */
 export function useSignOut() {
   const qc = useQueryClient();
-  return () => {
+  return ({ revoke = true }: { revoke?: boolean } = {}) => {
+    const refreshToken = useAuthStore.getState().refreshToken;
     useAuthStore.getState().signOut({ forget: true });
     resetDevice();
     void qc.cancelQueries();
     qc.removeQueries();
+    if (revoke && refreshToken) revokeOnServer(refreshToken);
   };
+}
+
+/**
+ * 그 로그인 묶음을 서버에서 끊는다. 공개 경로라 접속 토큰 없이 부르고, 서버는 모르는 토큰이어도 204 다.
+ * 기다리지 않는다 — 화면은 바로 떠나고, 실패해도 이 기기는 이미 로그아웃했다
+ */
+function revokeOnServer(refreshToken: string) {
+  void api.post<void>("/auth/logout", { refreshToken }).catch(() => undefined);
 }

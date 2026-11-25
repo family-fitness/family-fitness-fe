@@ -109,8 +109,12 @@ function nextStepOf(me: Profile): "SUPPORT_MODE" | "HOME" {
  * 초대 코드를 들고 와도 로그인은 코드를 쓰지 않는다(BE 와 같다). 가족이 없는 계정이면 nextStep 이 CLAIM 이고,
  * 가족이 있는 계정이면 코드와 상관없이 HOME 이다
  */
+/** 로그아웃으로 끊은 리프레시 토큰. 탭이 살아 있는 동안만 — 목의 토큰은 로그인마다 새로 난다 */
+const revokedTokens = new Set<string>();
+
 function signIn(providerUserId: string | undefined, claimCode?: string | null) {
-  const token = { accessToken: "mock-access-token", refreshToken: "mock-refresh-token" };
+  // 로그인마다 다른 리프레시 토큰 — 로그아웃이 그 로그인 하나만 끊는다(서버의 로그인 묶음과 같다)
+  const token = { accessToken: "mock-access-token", refreshToken: `mock-refresh-token-${uuid()}` };
   // 없는 코드를 넣은 횟수는 계정마다 센다
   db.claimMisses = 0;
 
@@ -203,11 +207,23 @@ const identity = [
     });
   }),
 
-  /** 액세스 토큰 새로 받기. 목은 토큰을 따지지 않으니 같은 모양으로 돌려준다 */
+  /** 액세스 토큰 새로 받기. 목은 토큰을 따지지 않으니 같은 모양으로 돌려준다 — 로그아웃으로 끊은 토큰만 401 */
   http.post(`${BASE}/auth/refresh`, async ({ request }) => {
     const body = (await request.json().catch(() => ({}))) as { refreshToken?: string };
     if (!body.refreshToken) return fail(401, "UNAUTHORIZED", "리프레시 토큰이 없습니다");
+    if (revokedTokens.has(body.refreshToken)) {
+      return fail(401, "UNAUTHORIZED", "끊긴 로그인입니다");
+    }
     return HttpResponse.json({ accessToken: "mock-access-token", refreshToken: body.refreshToken });
+  }),
+
+  /**
+   * 로그아웃 — 그 리프레시 토큰의 로그인을 끊는다. 서버처럼 공개 경로이고, 본문이 없거나 모르는 토큰이어도 204 다
+   */
+  http.post(`${BASE}/auth/logout`, async ({ request }) => {
+    const body = (await request.json().catch(() => null)) as { refreshToken?: string } | null;
+    if (body?.refreshToken) revokedTokens.add(body.refreshToken);
+    return new HttpResponse(null, { status: 204 });
   }),
 
   http.post(`${BASE}/auth/dev-login`, async ({ request }) => {
